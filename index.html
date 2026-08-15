@@ -83,6 +83,7 @@
 <link rel="stylesheet" href="auris-master-action-plan-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-sop-generator-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-swms-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-document-control-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -8833,40 +8834,40 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">Document Control</div>
-<div style="font-size:12px;color:var(--text2)">Version control - Approval workflow - Controlled copies - Acknowledgements - Expiry tracking</div>
+<div class="auris-documents-s-7299078644">Version control - Approval workflow - Controlled copies - Acknowledgements - Expiry tracking</div>
 </div>
-<div style="display:flex;gap:8px" id="doc-add-btn">
+<div id="doc-add-btn" class="auris-documents-s-9c40389b4a">
 <button class="btn" id="dc-print-btn" data-auris-onclick="h0989"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="dc-new-btn" style="display:none" data-auris-onclick="h0990"><i class="ti ti-plus"></i>New document</button>
+<button class="btn btn-primary auris-documents-s-6aa34d7432" id="dc-new-btn" data-auris-onclick="h0990"><i class="ti ti-plus"></i>New document</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="dc-m3active">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Draft</div><div style="font-size:22px;font-weight:800;color:#854F0B" id="dc-m3draft">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Approval</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="dc-m3pending">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Review Due</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="dc-m3review">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Expired</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="dc-m3expired">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Ack.</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="dc-m3ack">-</div></div>
+<div class="auris-documents-s-0b8cad26ad">
+<div class="card auris-documents-s-7a5e61eb83"><div class="auris-documents-s-4422804ebb">Active</div><div id="dc-m3active" class="auris-documents-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-documents-s-eccffcaf4c"><div class="auris-documents-s-4422804ebb">Draft</div><div id="dc-m3draft" class="auris-documents-s-58368c28c6">-</div></div>
+<div class="card auris-documents-s-b6d403ee7e"><div class="auris-documents-s-4422804ebb">Pending Approval</div><div id="dc-m3pending" class="auris-documents-s-6f56b8363e">-</div></div>
+<div class="card auris-documents-s-530946d91c"><div class="auris-documents-s-4422804ebb">Review Due</div><div id="dc-m3review" class="auris-documents-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-documents-s-03bd966c28"><div class="auris-documents-s-4422804ebb">Expired</div><div id="dc-m3expired" class="auris-documents-s-ffe267bce1">-</div></div>
+<div class="card auris-documents-s-24ac637923"><div class="auris-documents-s-4422804ebb">Pending Ack.</div><div id="dc-m3ack" class="auris-documents-s-bc6456303a">-</div></div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="dc-tab-all" data-auris-onclick="h0991" style="white-space:nowrap">All Documents</button>
-<button class="mtg-tab" id="dc-tab-approval" data-auris-onclick="h0992" style="white-space:nowrap">Pending Approval</button>
-<button class="mtg-tab" id="dc-tab-expiry" data-auris-onclick="h0993" style="white-space:nowrap">Expiry / Review</button>
-<button class="mtg-tab" id="dc-tab-copies" data-auris-onclick="h0994" style="white-space:nowrap">Controlled Copies</button>
-<button class="mtg-tab" id="dc-tab-ack" data-auris-onclick="h0995" style="white-space:nowrap">Acknowledgements</button>
+<div class="auris-documents-s-0904085f3d">
+<button class="mtg-tab active auris-documents-s-eb99a4c193" id="dc-tab-all" data-auris-onclick="h0991">All Documents</button>
+<button class="mtg-tab auris-documents-s-eb99a4c193" id="dc-tab-approval" data-auris-onclick="h0992">Pending Approval</button>
+<button class="mtg-tab auris-documents-s-eb99a4c193" id="dc-tab-expiry" data-auris-onclick="h0993">Expiry / Review</button>
+<button class="mtg-tab auris-documents-s-eb99a4c193" id="dc-tab-copies" data-auris-onclick="h0994">Controlled Copies</button>
+<button class="mtg-tab auris-documents-s-eb99a4c193" id="dc-tab-ack" data-auris-onclick="h0995">Acknowledgements</button>
 </div>
 
 <!-- -- ALL DOCUMENTS VIEW -- -->
 <div id="dc-view-all">
 <!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="dc-search" placeholder="Search title, ref, author..." data-auris-oninput="h0996" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="dc-filter-type" data-auris-onchange="h0997" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-documents-s-54bb9f1d16">
+<div class="auris-documents-s-d5129e1520">
+<input type="text" id="dc-search" class="auris-documents-s-11856befbc" placeholder="Search title, ref, author..." data-auris-oninput="h0996"/>
+<select id="dc-filter-type" class="auris-documents-s-d35063206b" data-auris-onchange="h0997">
 <option value="">All types</option>
 <option value="policy">Policy</option><option value="procedure">Procedure</option>
 <option value="sop">SOP</option><option value="swms">SWMS</option><option value="manual">Manual</option>
@@ -8874,14 +8875,14 @@ Offline mode - changes will sync when connection is restored
 <option value="risk_assessment">Risk Assessment</option><option value="legal">Legal</option>
 <option value="certificate">Certificate</option><option value="other">Other</option>
 </select>
-<select id="dc-filter-status" data-auris-onchange="h0997" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="dc-filter-status" class="auris-documents-s-d35063206b" data-auris-onchange="h0997">
 <option value="">All statuses</option>
 <option value="draft">Draft</option><option value="pending_review">Pending Review</option>
 <option value="under_review">Under Review</option><option value="pending_approval">Pending Approval</option>
 <option value="approved">Approved</option><option value="rejected">Rejected</option>
 <option value="superseded">Superseded</option>
 </select>
-<select id="dc-filter-dept" data-auris-onchange="h0997" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="dc-filter-dept" class="auris-documents-s-d35063206b" data-auris-onchange="h0997">
 <option value="">All departments</option>
 </select>
 </div>
@@ -8890,18 +8891,18 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- APPROVAL VIEW -- -->
-<div id="dc-view-approval" style="display:none">
+<div id="dc-view-approval" class="auris-documents-s-6aa34d7432">
 <div id="dc-approval-list"></div>
 </div>
 
 <!-- -- EXPIRY VIEW -- -->
-<div id="dc-view-expiry" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
-<div style="font-weight:700;font-size:14px;margin-bottom:4px"><i class="ti ti-alert-triangle"></i> Document Expiry &amp; Review Tracker</div>
-<div style="font-size:12px;opacity:.85">Documents requiring review or approaching expiry. Outdated documents create compliance and safety risk.</div>
+<div id="dc-view-expiry" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-1d7c02f7a9">
+<div class="auris-documents-s-a70f62612a"><i class="ti ti-alert-triangle"></i> Document Expiry &amp; Review Tracker</div>
+<div class="auris-documents-s-dc4ac84a01">Documents requiring review or approaching expiry. Outdated documents create compliance and safety risk.</div>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-<button class="btn" id="dc-exp-btn-expired" data-auris-onclick="h0998" style="background:#DC2626;color:#fff;border-color:#DC2626">Expired</button>
+<div class="auris-documents-s-7c3219e933">
+<button class="btn auris-documents-s-ce950f1509" id="dc-exp-btn-expired" data-auris-onclick="h0998">Expired</button>
 <button class="btn" id="dc-exp-btn-30" data-auris-onclick="h0999">Due &lt;30d</button>
 <button class="btn" id="dc-exp-btn-90" data-auris-onclick="h1000">Due &lt;90d</button>
 <button class="btn" id="dc-exp-btn-all" data-auris-onclick="h1001">All active</button>
@@ -8910,56 +8911,56 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- CONTROLLED COPIES VIEW -- -->
-<div id="dc-view-copies" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Controlled Copy Register</div><div style="font-size:12px;color:var(--text2)">Track who holds controlled copies of each document</div></div>
-<button class="btn btn-primary" id="dc-copy-add-btn" style="display:none" data-auris-onclick="h1002"><i class="ti ti-plus"></i>Issue copy</button>
+<div id="dc-view-copies" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-e2e1112055">
+<div><div class="card-title auris-documents-s-ab79ea2b85">Controlled Copy Register</div><div class="auris-documents-s-7299078644">Track who holds controlled copies of each document</div></div>
+<button class="btn btn-primary auris-documents-s-6aa34d7432" id="dc-copy-add-btn" data-auris-onclick="h1002"><i class="ti ti-plus"></i>Issue copy</button>
 </div>
 <div id="dc-copies-list"></div>
 </div>
 
 <!-- -- ACKNOWLEDGEMENTS VIEW -- -->
-<div id="dc-view-ack" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Read &amp; Understand Acknowledgements</div><div style="font-size:12px;color:var(--text2)">Track who has read and acknowledged controlled documents</div></div>
-<button class="btn btn-primary" id="dc-ack-add-btn" style="display:none" data-auris-onclick="h1003"><i class="ti ti-plus"></i>Issue acknowledgement</button>
+<div id="dc-view-ack" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-e2e1112055">
+<div><div class="card-title auris-documents-s-ab79ea2b85">Read &amp; Understand Acknowledgements</div><div class="auris-documents-s-7299078644">Track who has read and acknowledged controlled documents</div></div>
+<button class="btn btn-primary auris-documents-s-6aa34d7432" id="dc-ack-add-btn" data-auris-onclick="h1003"><i class="ti ti-plus"></i>Issue acknowledgement</button>
 </div>
-<div id="dc-ack-alerts" style="margin-bottom:10px"></div>
+<div id="dc-ack-alerts" class="auris-documents-s-b922c89f16"></div>
 <div id="dc-ack-list"></div>
 </div>
 
 <!-- ------- DOCUMENT FORM ------- -->
-<div id="dc-form3view" style="display:none">
+<div id="dc-form3view" class="auris-documents-s-6aa34d7432">
 
 <!-- Header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="dc-form3banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card auris-documents-s-54ec8874e7">
+<div id="dc-form3banner" class="auris-documents-s-712a1559a6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="dc-form3type-label">Document</div>
-<div style="font-size:18px;font-weight:800" id="dc-form3title">New Document</div>
-<div style="display:flex;gap:14px;margin-top:4px;flex-wrap:wrap">
-<span style="font-family:monospace;font-size:12px;color:#a8d8f0" id="dc-form3ref">DOC-AUTO</span>
-<span style="font-size:12px;color:#a8d8f0" id="dc-form3version-badge">v1.0</span>
+<div id="dc-form3type-label" class="auris-documents-s-c542f2bc2e">Document</div>
+<div id="dc-form3title" class="auris-documents-s-e56ce903a9">New Document</div>
+<div class="auris-documents-s-91a01d01ca">
+<span id="dc-form3ref" class="auris-documents-s-bd8c8ed086">DOC-AUTO</span>
+<span id="dc-form3version-badge" class="auris-documents-s-906b9b49c9">v1.0</span>
 </div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1004"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="dc-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h1005"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#185FA5;font-weight:800;border-color:#fff" data-auris-onclick="h1006"><i class="ti ti-robot"></i>AI review</button>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1007"><i class="ti ti-device-floppy"></i>Save</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h1008"><i class="ti ti-send"></i>Submit for approval</button>
+<div class="auris-documents-s-c9dc9b5648">
+<button class="btn auris-documents-s-5c09edd131" data-auris-onclick="h1004"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="dc-del-btn" class="btn auris-documents-s-0e610f7b67" data-auris-onclick="h1005"><i class="ti ti-trash"></i></button>
+<button class="btn auris-documents-s-12347b66ef" data-auris-onclick="h1006"><i class="ti ti-robot"></i>AI review</button>
+<button class="btn auris-documents-s-5c09edd131" data-auris-onclick="h1007"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn auris-documents-s-c7b9e5b2c7" data-auris-onclick="h1008"><i class="ti ti-send"></i>Submit for approval</button>
 </div>
 </div>
 <!-- Workflow bar -->
-<div id="dc-workflow-bar" style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);overflow-x:auto"></div>
+<div id="dc-workflow-bar" class="auris-documents-s-42926a8d3d"></div>
 </div>
 
 <!-- Action buttons -->
-<div id="dc-action-btns" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
+<div id="dc-action-btns" class="auris-documents-s-7c3219e933"></div>
 
-<div id="dc-ai-review-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #bfdbfe;background:#eff6ff"></div>
+<div id="dc-ai-review-panel" class="card auris-documents-s-3961f4c2a7"></div>
 <!-- Form tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-documents-s-6bf792afaa">
 <button class="mtg-tab active" id="dc-ftab-details" data-auris-onclick="h1009">Details</button>
 <button class="mtg-tab" id="dc-ftab-approval" data-auris-onclick="h1010">Approval</button>
 <button class="mtg-tab" id="dc-ftab-versions" data-auris-onclick="h1011">Versions</button>
@@ -8969,9 +8970,9 @@ Offline mode - changes will sync when connection is restored
 
 <!-- Details tab -->
 <div id="dc-fview-details">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-documents-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Document Information</div>
+<div class="card auris-documents-s-42a6ced8b6"><div class="card-title">Document Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Document title</label><input type="text" id="df-title" placeholder="Full document title..."/></div>
 <div class="form3group"><label class="form3label">Document type</label>
@@ -8985,17 +8986,17 @@ Offline mode - changes will sync when connection is restored
 </select></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Reference number</label><input type="text" id="df-ref" style="font-family:monospace" placeholder="Auto-generated if blank"/></div>
+<div class="form3group"><label class="form3label">Reference number</label><input type="text" id="df-ref" class="auris-documents-s-7b8c3df564" placeholder="Auto-generated if blank"/></div>
 <div class="form3group"><label class="form3label">Department / Area</label><input type="text" id="df-dept"/></div>
 <div class="form3group"><label class="form3label">Category / Subject</label><input type="text" id="df-category" placeholder="e.g. Health & Safety, Environment..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Description / Purpose</label><textarea id="df-description" style="min-height:60px" placeholder="Brief description of what this document covers..."></textarea></div>
-<div class="form3group"><label class="form3label">Scope of application</label><textarea id="df-scope" style="min-height:50px" placeholder="Who and what does this document apply to?"></textarea></div>
+<div class="form3group"><label class="form3label">Description / Purpose</label><textarea id="df-description" class="auris-documents-s-07bdff4587" placeholder="Brief description of what this document covers..."></textarea></div>
+<div class="form3group"><label class="form3label">Scope of application</label><textarea id="df-scope" class="auris-documents-s-2b013fa0d9" placeholder="Who and what does this document apply to?"></textarea></div>
 <div class="form3group"><label class="form3label">Tags (comma separated)</label><input type="text" id="df-tags" placeholder="e.g. safety, PPE, chemical, contractor..."/></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Version Control</div>
+<div class="card auris-documents-s-42a6ced8b6"><div class="card-title auris-documents-s-ca32b871b2">Version Control</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Version</label><input type="text" id="df-version" placeholder="e.g. 1.0, 2.1" style="font-family:monospace;font-size:14px;font-weight:700"/></div>
+<div class="form3group"><label class="form3label">Version</label><input type="text" id="df-version" class="auris-documents-s-7f408d943d" placeholder="e.g. 1.0, 2.1"/></div>
 <div class="form3group"><label class="form3label">Revision type</label>
 <select id="df-rev-type">
 <option value="major">Major - significant changes</option>
@@ -9003,16 +9004,16 @@ Offline mode - changes will sync when connection is restored
 <option value="correction">Correction - errors fixed</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Revision summary - what changed?</label><textarea id="df-rev-summary" style="min-height:60px" placeholder="Describe what changed from the previous version..."></textarea></div>
+<div class="form3group"><label class="form3label">Revision summary - what changed?</label><textarea id="df-rev-summary" class="auris-documents-s-07bdff4587" placeholder="Describe what changed from the previous version..."></textarea></div>
 </div>
-<div class="card"><div class="card-title" style="color:#185FA5">Related Documents</div>
-<div class="form3group"><label class="form3label">Supersedes document ref</label><select id="df-supersedes" style="font-family:monospace"><option value="">Select document...</option></select></div>
+<div class="card"><div class="card-title auris-documents-s-ca32b871b2">Related Documents</div>
+<div class="form3group"><label class="form3label">Supersedes document ref</label><select id="df-supersedes" class="auris-documents-s-7b8c3df564"><option value="">Select document...</option></select></div>
 <div class="form3group"><label class="form3label">Legal references</label><input type="text" id="df-legal-refs" placeholder="e.g. OSH Act 2005 s.14, ISO 45001:2018..."/></div>
 </div>
 </div>
 <div>
 <!-- Status -->
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status &amp; Dates</div>
+<div class="card auris-documents-s-9bcefa3fff"><div class="card-title auris-documents-s-ca32b871b2">Status &amp; Dates</div>
 <div class="form3group"><label class="form3label">Approval status</label>
 <select id="df-status">
 <option value="draft">Draft</option><option value="pending_review">Pending Review</option>
@@ -9031,37 +9032,37 @@ Offline mode - changes will sync when connection is restored
 <option value="60">Every 5 years</option>
 </select></div></div>
 <!-- File -->
-<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-file-upload" style="color:var(--green)"></i> File &amp; Location</div>
+<div class="card auris-documents-s-42a6ced8b6"><div class="card-title"><i class="ti ti-file-upload auris-documents-s-7608acb292"></i> File &amp; Location</div>
 
 <!-- Drag & drop uploader -->
 <div id="df-uploader" class="dc-uploader" data-auris-onclick="h1014" data-auris-ondragover="h1015" data-auris-ondragleave="h1016" data-auris-ondrop="h1017">
-  <div id="df-uploader-idle" style="text-align:center">
-    <i class="ti ti-cloud-upload" style="font-size:34px;color:var(--green);display:block;margin-bottom:6px"></i>
-    <div style="font-size:13px;font-weight:600;color:var(--text)">Drag &amp; drop a file here, or click to browse</div>
-    <div style="font-size:11px;color:var(--text2);margin-top:3px">PDF, Word, Excel, PowerPoint, images - max 50 MB</div>
+  <div id="df-uploader-idle" class="auris-documents-s-905008530c">
+    <i class="ti ti-cloud-upload auris-documents-s-145da7ea8f"></i>
+    <div class="auris-documents-s-b45a17b9a4">Drag &amp; drop a file here, or click to browse</div>
+    <div class="auris-documents-s-20b350857e">PDF, Word, Excel, PowerPoint, images - max 50 MB</div>
   </div>
-  <div id="df-uploader-progress" style="display:none;width:100%">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px"><span id="df-upload-name">Uploading...</span></div>
-    <div style="background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden"><div id="df-upload-bar" style="background:var(--green);height:100%;width:0%;transition:width .2s"></div></div>
-    <div id="df-upload-pct" style="font-size:11px;color:var(--text2);margin-top:4px">0%</div>
+  <div id="df-uploader-progress" class="auris-documents-s-2e620f1751">
+    <div class="auris-documents-s-95a98a9f27"><span id="df-upload-name">Uploading...</span></div>
+    <div class="auris-documents-s-4de43fc55e"><div id="df-upload-bar" class="auris-documents-s-9454749748"></div></div>
+    <div id="df-upload-pct" class="auris-documents-s-34b3cf0d1f">0%</div>
   </div>
-  <div id="df-uploader-done" style="display:none;width:100%">
-    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px">
-      <div style="width:36px;height:36px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center"><i id="df-upload-icon" class="ti ti-file"></i></div>
-      <div style="flex:1;min-width:0">
-        <div id="df-upload-done-name" style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-        <div id="df-upload-done-size" style="font-size:11px;color:var(--text2)"></div>
+  <div id="df-uploader-done" class="auris-documents-s-2e620f1751">
+    <div class="auris-documents-s-c19ca98d55">
+      <div class="auris-documents-s-a0ad3c3fbe"><i id="df-upload-icon" class="ti ti-file"></i></div>
+      <div class="auris-documents-s-286372957b">
+        <div id="df-upload-done-name" class="auris-documents-s-3fd54cf47d"></div>
+        <div id="df-upload-done-size" class="auris-documents-s-d37c8e8fe6"></div>
       </div>
-      <button type="button" class="btn" style="padding:5px 10px;font-size:11px" data-auris-onclick="h1018"><i class="ti ti-eye"></i>Preview</button>
-      <button type="button" class="btn" style="padding:5px 10px;font-size:11px;color:var(--red)" data-auris-onclick="h1019"><i class="ti ti-x"></i></button>
+      <button type="button" class="btn auris-documents-s-a3bd72e274" data-auris-onclick="h1018"><i class="ti ti-eye"></i>Preview</button>
+      <button type="button" class="btn auris-documents-s-304bfd4ae4" data-auris-onclick="h1019"><i class="ti ti-x"></i></button>
     </div>
   </div>
 </div>
-<input type="file" id="df-file-input" style="display:none" data-auris-onchange="h1020" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.png,.jpg,.jpeg,.gif,.webp,.svg"/>
+<input type="file" id="df-file-input" class="auris-documents-s-6aa34d7432" data-auris-onchange="h1020" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.png,.jpg,.jpeg,.gif,.webp,.svg"/>
 
-<details style="margin-top:10px">
-  <summary style="cursor:pointer;font-size:12px;color:var(--text2);font-weight:600">-or paste an external URL instead</summary>
-  <div style="padding-top:10px">
+<details class="auris-documents-s-df928149c5">
+  <summary class="auris-documents-s-cc2329d9f0">-or paste an external URL instead</summary>
+  <div class="auris-documents-s-5ce21214b6">
     <div class="form3group"><label class="form3label">Document URL / link</label><input type="text" id="df-url" placeholder="https://... or network path" data-auris-oninput="h1021"/></div>
     <div class="form3group"><label class="form3label">File name</label><input type="text" id="df-file-name" placeholder="filename.pdf"/></div>
   </div>
@@ -9072,8 +9073,8 @@ Offline mode - changes will sync when connection is restored
 <input type="hidden" id="df-file-mime"/>
 <input type="hidden" id="df-file-path"/>
 
-<div class="form3group" style="margin-top:14px"><label class="form3label">Physical location (optional)</label><input type="text" id="df-location" placeholder="e.g. Server / Shelf B3 / Online"/></div>
-<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="df-controlled" checked style="accent-color:var(--green)"/><label for="df-controlled" style="font-size:12px;font-weight:600;cursor:pointer">Controlled document</label></div>
+<div class="form3group auris-documents-s-c53ea1da23"><label class="form3label">Physical location (optional)</label><input type="text" id="df-location" placeholder="e.g. Server / Shelf B3 / Online"/></div>
+<div class="auris-documents-s-a4e017b7b0"><input type="checkbox" id="df-controlled" class="auris-documents-s-283f12d7fe" checked/><label class="auris-documents-s-cc6390bafc" for="df-controlled">Controlled document</label></div>
 </div>
 <!-- People -->
 <div class="card"><div class="card-title">Document Ownership</div>
@@ -9085,59 +9086,59 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Approval tab -->
-<div id="dc-fview-approval" style="display:none">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="dc-fview-approval" class="auris-documents-s-6aa34d7432">
+<div class="auris-documents-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> Review &amp; Approval Workflow</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="padding:12px;border:1px solid var(--border);border-radius:10px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#1D9E75">Step 1 - Document Author</div>
+<div class="card auris-documents-s-9bcefa3fff"><div class="card-title auris-documents-s-ca32b871b2"><i class="ti ti-certificate"></i> Review &amp; Approval Workflow</div>
+<div class="auris-documents-s-f0de252a84">
+<div class="auris-documents-s-dc51ee876f">
+<div class="auris-documents-s-5aac70f01f">Step 1 - Document Author</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Prepared by</label><select id="dc-sign-author"><option value="">Select...</option></select></div>
 <div class="form3group"><label class="form3label">Date prepared</label><input type="date" id="dc-sign-author-date"/></div>
 </div></div>
-<div style="padding:12px;border:1px solid var(--border);border-radius:10px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#185FA5">Step 2 - Technical Review</div>
+<div class="auris-documents-s-dc51ee876f">
+<div class="auris-documents-s-7aad637b8b">Step 2 - Technical Review</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reviewer</label><select id="dc-sign-reviewer"><option value="">Select...</option></select></div>
 <div class="form3group"><label class="form3label">Review date</label><input type="date" id="dc-sign-reviewer-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">Review comments</label><textarea id="df-review-comments" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Review comments</label><textarea id="df-review-comments" class="auris-documents-s-2b013fa0d9"></textarea></div>
 </div>
-<div style="padding:12px;border:1px solid var(--border);border-radius:10px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#8B5CF6">Step 3 - HSE Review</div>
+<div class="auris-documents-s-dc51ee876f">
+<div class="auris-documents-s-02e39d3fa7">Step 3 - HSE Review</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">HSE Reviewer</label><input type="text" id="dc-sign-hse"/></div>
 <div class="form3group"><label class="form3label">HSE review date</label><input type="date" id="dc-sign-hse-date"/></div>
 </div></div>
-<div style="padding:12px;border:1px solid var(--border);border-radius:10px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#DC2626">Step 4 - Management Approval</div>
+<div class="auris-documents-s-dc51ee876f">
+<div class="auris-documents-s-bfbc5ecd3d">Step 4 - Management Approval</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Approved by</label><select id="dc-sign-approver"><option value="">Select...</option></select></div>
 <div class="form3group"><label class="form3label">Approval date</label><input type="date" id="dc-sign-approver-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">Rejection reason (if rejected)</label><textarea id="dc-rejection-reason" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Rejection reason (if rejected)</label><textarea id="dc-rejection-reason" class="auris-documents-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Distribution List</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Who should receive and acknowledge this document</div>
-<div id="dc-dist-list" style="margin-bottom:10px"></div>
+<div class="card auris-documents-s-42a6ced8b6"><div class="card-title">Distribution List</div>
+<div class="auris-documents-s-fa530ed1c3">Who should receive and acknowledge this document</div>
+<div id="dc-dist-list" class="auris-documents-s-b922c89f16"></div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h1022"><i class="ti ti-plus"></i>Add person / group</button>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5">Approval Actions</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<button class="btn" style="background:#185FA5;color:#fff;border-color:#185FA5;width:100%;justify-content:center" data-auris-onclick="h1023"><i class="ti ti-check"></i>Approve document</button>
-<button class="btn" style="color:#E24B4A;border-color:#E24B4A;width:100%;justify-content:center" data-auris-onclick="h1024"><i class="ti ti-x"></i>Reject - return for revision</button>
-<button class="btn" style="color:#854F0B;border-color:#EF9F27;width:100%;justify-content:center" data-auris-onclick="h1025"><i class="ti ti-refresh"></i>Create new revision</button>
-<button class="btn" style="color:#6B7280;border-color:#6B7280;width:100%;justify-content:center" data-auris-onclick="h1026"><i class="ti ti-ban"></i>Withdraw document</button>
+<div class="card auris-documents-s-169bb1a458">
+<div class="card-title auris-documents-s-ca32b871b2">Approval Actions</div>
+<div class="auris-documents-s-0fbf9e859f">
+<button class="btn auris-documents-s-469a20db43" data-auris-onclick="h1023"><i class="ti ti-check"></i>Approve document</button>
+<button class="btn auris-documents-s-ed074f18dd" data-auris-onclick="h1024"><i class="ti ti-x"></i>Reject - return for revision</button>
+<button class="btn auris-documents-s-12685c3262" data-auris-onclick="h1025"><i class="ti ti-refresh"></i>Create new revision</button>
+<button class="btn auris-documents-s-49da8bb0e9" data-auris-onclick="h1026"><i class="ti ti-ban"></i>Withdraw document</button>
 </div>
-<div style="margin-top:14px;padding:12px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border-radius:8px">
-<div style="font-size:11px;font-weight:700;color:#185FA5;margin-bottom:8px">Approval Checklist</div>
-<div style="font-size:11px;color:#374151;line-height:1.8">
+<div class="auris-documents-s-490b1f8a2b">
+<div class="auris-documents-s-3672456dca">Approval Checklist</div>
+<div class="auris-documents-s-64e5e78d4b">
 Content accurate and current<br>Consistent with legislation<br>Roles and responsibilities clear<br>Previous version referenced<br>Distribution list updated<br>Effective date set
 </div>
 </div>
@@ -9147,40 +9148,40 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- Versions tab -->
-<div id="dc-fview-versions" style="display:none">
+<div id="dc-fview-versions" class="auris-documents-s-6aa34d7432">
 <div class="card"><div class="card-title"><i class="ti ti-history"></i> Revision History</div>
 <div id="dc-revisions-list"><div class="loading-msg">Loading...</div></div>
 </div>
 </div>
 
 <!-- Copies tab -->
-<div id="dc-fview-copies" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div class="card-title" style="margin:0">Controlled Copies</div>
+<div id="dc-fview-copies" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-6a3a628b9a">
+<div class="card-title auris-documents-s-ab79ea2b85">Controlled Copies</div>
 <button class="btn btn-sm btn-primary" id="dc-copy-form3btn" data-auris-onclick="h1027"><i class="ti ti-plus"></i>Issue copy</button>
 </div>
 <div id="dc-doc-copies-list"></div>
 </div>
 
 <!-- Acknowledgements tab -->
-<div id="dc-fview-ack" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="dc-fview-ack" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-01b4441777">
 <div>
-<div class="card-title" style="margin:0">Read &amp; Understand Acknowledgements</div>
-<div style="font-size:12px;color:var(--text2)">Track who has confirmed they have read and understood this document</div>
+<div class="card-title auris-documents-s-ab79ea2b85">Read &amp; Understand Acknowledgements</div>
+<div class="auris-documents-s-7299078644">Track who has confirmed they have read and understood this document</div>
 </div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h1028"><i class="ti ti-send"></i>Issue to persons</button>
 </div>
 <div id="dc-doc-ack-list"></div>
-<div id="dc-ack-form" style="display:none;margin-top:14px">
-<div class="card" style="border:2px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6">Issue Acknowledgement Request</div>
+<div id="dc-ack-form" class="auris-documents-s-9951c63fa3">
+<div class="card auris-documents-s-82d616954c">
+<div class="card-title auris-documents-s-48a87f51bd">Issue Acknowledgement Request</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="daf-emp-name" data-auris-onchange="h1029"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="daf-dept"/></div>
 <div class="form3group"><label class="form3label">Due date</label><input type="date" id="daf-due"/></div>
 </div>
-<div style="display:flex;gap:8px;margin-top:10px">
+<div class="auris-documents-s-ea231f8b13">
 <button class="btn btn-primary" data-auris-onclick="h1030"><i class="ti ti-device-floppy"></i>Issue</button>
 <button class="btn" data-auris-onclick="h1031">Cancel</button>
 </div>
@@ -9191,13 +9192,13 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div><!-- end dc-form3view -->
 
 <!-- -- CONTROLLED COPY ISSUE FORM -- -->
-<div id="dc-copy-issue-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="dc-copy-form3title">Issue Controlled Copy</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1032"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h1033"><i class="ti ti-device-floppy"></i>Issue</button>
+<div id="dc-copy-issue-form" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-54ec8874e7">
+<div class="auris-documents-s-6e86c59eb5">
+<div id="dc-copy-form3title" class="auris-documents-s-75021e57ca">Issue Controlled Copy</div>
+<div class="auris-documents-s-9c40389b4a">
+<button class="btn auris-documents-s-5c09edd131" data-auris-onclick="h1032"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-documents-s-c7b9e5b2c7" data-auris-onclick="h1033"><i class="ti ti-device-floppy"></i>Issue</button>
 </div>
 </div>
 </div>
@@ -9214,19 +9215,19 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group"><label class="form3label">Issued date</label><input type="date" id="dcf-issued-date"/></div>
 <div class="form3group"><label class="form3label">Issued by</label><select id="dcf-issued-by"><option value="">Select person...</option></select></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="dcf-is-master" style="accent-color:var(--green)"/><label for="dcf-is-master" style="font-size:13px;font-weight:600;cursor:pointer">This is the master copy</label></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="dcf-notes" style="min-height:40px"></textarea></div>
+<div class="auris-documents-s-ba28bccee4"><input type="checkbox" id="dcf-is-master" class="auris-documents-s-283f12d7fe"/><label class="auris-documents-s-22514dbec4" for="dcf-is-master">This is the master copy</label></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="dcf-notes" class="auris-documents-s-7e000820e7"></textarea></div>
 </div>
 </div>
 
 <!-- -- STANDALONE ACK FORM (for Ack tab) -- -->
-<div id="dc-standalone-ack-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#8B5CF6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800">Issue Acknowledgement Request</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1036"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h1037"><i class="ti ti-device-floppy"></i>Issue</button>
+<div id="dc-standalone-ack-form" class="auris-documents-s-6aa34d7432">
+<div class="card auris-documents-s-54ec8874e7">
+<div class="auris-documents-s-6877e79d37">
+<div class="auris-documents-s-75021e57ca">Issue Acknowledgement Request</div>
+<div class="auris-documents-s-9c40389b4a">
+<button class="btn auris-documents-s-5c09edd131" data-auris-onclick="h1036"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-documents-s-c7b9e5b2c7" data-auris-onclick="h1037"><i class="ti ti-device-floppy"></i>Issue</button>
 </div>
 </div>
 </div>
@@ -9237,26 +9238,26 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="saf-dept"/></div>
 <div class="form3group"><label class="form3label">Due date</label><input type="date" id="saf-due"/></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="saf-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="saf-notes" class="auris-documents-s-7e000820e7"></textarea></div>
 </div>
 </div>
 
 </div><!-- end page-documents -->
 
 <!-- ------- DOCUMENT VIEWER MODAL (inline preview) ------- -->
-<div id="dc-viewer-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.85);z-index:600;align-items:center;justify-content:center;padding:24px" data-auris-onclick="h1039">
-  <div style="background:var(--card);border-radius:12px;width:100%;max-width:1100px;height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden">
-    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:#0f172a;color:#fff">
-      <i class="ti ti-file-text" style="font-size:20px;color:var(--green)"></i>
-      <div style="flex:1;min-width:0">
-        <div id="dc-viewer-title" style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Document</div>
-        <div id="dc-viewer-meta" style="font-size:11px;color:#94a3b8;margin-top:1px"></div>
+<div id="dc-viewer-modal" class="auris-documents-s-4a2bbf0829" data-auris-onclick="h1039">
+  <div class="auris-documents-s-c3620b3c23">
+    <div class="auris-documents-s-10d4de0853">
+      <i class="ti ti-file-text auris-documents-s-ed9693d4b3"></i>
+      <div class="auris-documents-s-286372957b">
+        <div id="dc-viewer-title" class="auris-documents-s-6612642c17">Document</div>
+        <div id="dc-viewer-meta" class="auris-documents-s-b4a6f19792"></div>
       </div>
-      <a id="dc-viewer-open" href="#" target="_blank" rel="noopener noreferrer" class="btn" style="padding:6px 12px;font-size:12px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" title="Open in new tab"><i class="ti ti-external-link"></i>Open</a>
-      <a id="dc-viewer-download" href="#" download class="btn btn-primary" style="padding:6px 12px;font-size:12px"><i class="ti ti-download"></i>Download</a>
-      <button class="btn" style="padding:6px 10px;font-size:14px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" data-auris-onclick="h1040" title="Close"><i class="ti ti-x"></i></button>
+      <a id="dc-viewer-open" href="#" target="_blank" rel="noopener noreferrer" class="btn auris-documents-s-0161fd0b34" title="Open in new tab"><i class="ti ti-external-link"></i>Open</a>
+      <a id="dc-viewer-download" href="#" download class="btn btn-primary auris-documents-s-7745ca2539"><i class="ti ti-download"></i>Download</a>
+      <button class="btn auris-documents-s-dad9f2a181" data-auris-onclick="h1040" title="Close"><i class="ti ti-x"></i></button>
     </div>
-    <div id="dc-viewer-body" style="flex:1;position:relative;overflow:auto;background:#f8fafc"></div>
+    <div id="dc-viewer-body" class="auris-documents-s-bcba108d57"></div>
   </div>
 </div>
 
