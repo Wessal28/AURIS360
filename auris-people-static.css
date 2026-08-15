@@ -1,0 +1,19 @@
+/* Generated from People by scripts/extract-people-styles.cjs. */
+/* Non-important declarations preserve employee, contractor, HSE and register runtime states. */
+.auris-people-s-0562392f73{width:auto;padding:5px 9px;font-size:12px}
+.auris-people-s-4e3b78e924{color:var(--amber)}
+.auris-people-s-6aa34d7432{display:none}
+.auris-people-s-7608acb292{color:var(--green)}
+.auris-people-s-7f83ce9623{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.auris-people-s-9c40389b4a{display:flex;gap:8px}
+.auris-people-s-b1a3814463{font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em}
+.auris-people-s-bf4a218e05{margin-bottom:16px}
+.auris-people-s-e1bc9acca5{color:var(--blue)}
+/* Preserve former inline precedence over existing ID selectors. */
+#contractor-fields.auris-people-s-6aa34d7432{display:none}
+#filter-pstatus.auris-people-s-0562392f73{width:auto;padding:5px 9px;font-size:12px}
+#filter-ptype.auris-people-s-0562392f73{width:auto;padding:5px 9px;font-size:12px}
+#pe-con.auris-people-s-e1bc9acca5{color:var(--blue)}
+#pe-emp.auris-people-s-7608acb292{color:var(--green)}
+#pe-sub.auris-people-s-4e3b78e924{color:var(--amber)}
+#people-form.auris-people-s-6aa34d7432{display:none}
