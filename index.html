@@ -79,6 +79,7 @@
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -8114,9 +8115,9 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">Management of Change</div>
-<div style="font-size:12px;color:var(--text2)">Control process, equipment, chemical, legal and organisational changes before they create new risks</div>
+<div class="auris-moc-s-7299078644">Control process, equipment, chemical, legal and organisational changes before they create new risks</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div class="auris-moc-s-c9dc9b5648">
 <button class="btn" data-auris-onclick="h0915"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn" data-auris-onclick="h0916"><i class="ti ti-list-check"></i>Open linked MAP</button>
 <button class="btn btn-primary" data-auris-onclick="h0917"><i class="ti ti-plus"></i>New change request</button>
@@ -8130,10 +8131,10 @@ Offline mode - changes will sync when connection is restored
 <div class="metric"><div class="metric-label">Post-change review</div><div class="metric-value" id="moc-m3review">0</div></div>
 <div class="metric"><div class="metric-label">Closed</div><div class="metric-value" id="moc-m3closed">0</div></div>
 </div>
-<div class="card" style="padding:12px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input id="moc-search" type="text" placeholder="Search change title, reference, owner, location..." data-auris-oninput="h0918" style="flex:1;min-width:220px"/>
-<select id="moc-filter-status" data-auris-onchange="h0919" style="max-width:240px">
+<div class="card auris-moc-s-634e55ac34">
+<div class="auris-moc-s-d5129e1520">
+<input id="moc-search" class="auris-moc-s-42636e83b6" type="text" placeholder="Search change title, reference, owner, location..." data-auris-oninput="h0918"/>
+<select id="moc-filter-status" class="auris-moc-s-5c6bfadc51" data-auris-onchange="h0919">
 <option value="">All statuses</option>
 <option value="draft">Draft</option>
 <option value="screening">Screening</option>
@@ -8151,14 +8152,14 @@ Offline mode - changes will sync when connection is restored
 <div id="moc-list"></div>
 </div>
 
-<div id="moc-form3view" style="display:none">
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:16px 22px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-<div><div style="font-size:11px;text-transform:uppercase;opacity:.8;letter-spacing:.08em">Management of Change</div><div style="font-size:20px;font-weight:800" id="moc-form3title">New Change Request</div><div id="moc-form3ref" style="font-family:monospace;font-size:12px;opacity:.85">MOC-AUTO</div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" data-auris-onclick="h0920"><i class="ti ti-arrow-left"></i>Back</button><button id="moc-create-action-btn" class="btn" style="display:none;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" data-auris-onclick="h0921"><i class="ti ti-list-check"></i>Create corrective action</button><button id="moc-ai-btn" class="btn" style="display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)" data-auris-onclick="h0922"><i class="ti ti-robot"></i>AI screen</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" data-auris-onclick="h0923"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" data-auris-onclick="h0924"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
+<div id="moc-form3view" class="auris-moc-s-6aa34d7432">
+<div class="card auris-moc-s-d9c39add3c">
+<div class="auris-moc-s-e7a606635e">
+<div><div class="auris-moc-s-022eea8a74">Management of Change</div><div id="moc-form3title" class="auris-moc-s-74f70dcede">New Change Request</div><div id="moc-form3ref" class="auris-moc-s-632f87d42e">MOC-AUTO</div></div>
+<div class="auris-moc-s-c9dc9b5648"><button class="btn auris-moc-s-768f025ce3" data-auris-onclick="h0920"><i class="ti ti-arrow-left"></i>Back</button><button id="moc-create-action-btn" class="btn auris-moc-s-5a73f22934" data-auris-onclick="h0921"><i class="ti ti-list-check"></i>Create corrective action</button><button id="moc-ai-btn" class="btn auris-moc-s-f430600eb1" data-auris-onclick="h0922"><i class="ti ti-robot"></i>AI screen</button><button class="btn auris-moc-s-8bf9ace557" data-auris-onclick="h0923"><i class="ti ti-trash"></i></button><button class="btn auris-moc-s-4f8b3bb1da" data-auris-onclick="h0924"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
 </div>
-<div id="moc-ai-panel" style="display:none;margin:14px 22px 0"></div>
-<div style="padding:18px 22px">
+<div id="moc-ai-panel" class="auris-moc-s-1041bb2ecd"></div>
+<div class="auris-moc-s-700cd11c38">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Change title *</label><input id="moc-title" placeholder="e.g. Replace solvent, install new machine, change process layout"/></div>
 <div class="form3group"><label class="form3label">Change type</label><select id="moc-type"><option value="process">Process change</option><option value="equipment">Equipment / machinery</option><option value="chemical">Chemical / substance</option><option value="layout">Layout / premises</option><option value="people">Organisation / people</option><option value="supplier">Supplier / contractor</option><option value="legal">Legal / permit condition</option><option value="temporary">Temporary change</option><option value="emergency">Emergency change</option><option value="other">Other change</option></select></div>
@@ -8177,23 +8178,23 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Current situation</label><textarea id="moc-current" placeholder="Describe the existing condition, process or control."></textarea></div>
 <div class="form3group"><label class="form3label">Proposed change</label><textarea id="moc-proposed" placeholder="Describe what will change."></textarea></div>
 </div>
-<div class="card" style="padding:14px;margin:8px 0 14px"><div class="card-title">Impact screening</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:12px">
-<label><input class="moc-impact" type="checkbox" value="Risk assessment" style="width:auto;margin-right:6px">Risk assessment</label>
-<label><input class="moc-impact" type="checkbox" value="Legal compliance" style="width:auto;margin-right:6px">Legal compliance</label>
-<label><input class="moc-impact" type="checkbox" value="SOP / documents" style="width:auto;margin-right:6px">SOP / documents</label>
-<label><input class="moc-impact" type="checkbox" value="Training" style="width:auto;margin-right:6px">Training</label>
-<label><input class="moc-impact" type="checkbox" value="Permit to Work" style="width:auto;margin-right:6px">Permit to Work</label>
-<label><input class="moc-impact" type="checkbox" value="Emergency response" style="width:auto;margin-right:6px">Emergency response</label>
-<label><input class="moc-impact" type="checkbox" value="Chemical / SDS" style="width:auto;margin-right:6px">Chemical / SDS</label>
-<label><input class="moc-impact" type="checkbox" value="Fire / ATEX" style="width:auto;margin-right:6px">Fire / ATEX</label>
+<div class="card auris-moc-s-fdb5dc8f10"><div class="card-title">Impact screening</div>
+<div class="auris-moc-s-9025cce6fa">
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Risk assessment">Risk assessment</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Legal compliance">Legal compliance</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="SOP / documents">SOP / documents</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Training">Training</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Permit to Work">Permit to Work</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Emergency response">Emergency response</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Chemical / SDS">Chemical / SDS</label>
+<label><input class="moc-impact auris-moc-s-e52144009f" type="checkbox" value="Fire / ATEX">Fire / ATEX</label>
 </div></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Risk review / controls required</label><textarea id="moc-risk-review" placeholder="Summarise RA, controls, PTW, legal, fire, chemical or emergency checks required."></textarea></div>
 <div class="form3group"><label class="form3label">Pre-implementation actions</label><textarea id="moc-pre-actions" placeholder="Actions required before change goes live."></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">Post-change verification</label><textarea id="moc-post-review" placeholder="How will effectiveness be checked after implementation?"></textarea></div>
-<div id="moc-connected-records" style="margin-top:14px"></div>
+<div id="moc-connected-records" class="auris-moc-s-c53ea1da23"></div>
 </div>
 </div>
 </div>

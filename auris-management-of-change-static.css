@@ -1,0 +1,35 @@
+/* Generated from Management of Change by scripts/extract-management-of-change-styles.cjs. */
+/* Non-important declarations preserve register, review, approval, implementation and closure runtime state. */
+.auris-moc-s-022eea8a74{font-size:11px;text-transform:uppercase;opacity:.8;letter-spacing:.08em}
+.auris-moc-s-1041bb2ecd{display:none;margin:14px 22px 0}
+.auris-moc-s-42636e83b6{flex:1;min-width:220px}
+.auris-moc-s-4f8b3bb1da{background:#fff;color:#0F6E56;border-color:#fff}
+.auris-moc-s-5a73f22934{display:none;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+.auris-moc-s-5c6bfadc51{max-width:240px}
+.auris-moc-s-632f87d42e{font-family:monospace;font-size:12px;opacity:.85}
+.auris-moc-s-634e55ac34{padding:12px 14px}
+.auris-moc-s-6aa34d7432{display:none}
+.auris-moc-s-700cd11c38{padding:18px 22px}
+.auris-moc-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-moc-s-74f70dcede{font-size:20px;font-weight:800}
+.auris-moc-s-768f025ce3{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+.auris-moc-s-8bf9ace557{background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)}
+.auris-moc-s-9025cce6fa{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:12px}
+.auris-moc-s-c53ea1da23{margin-top:14px}
+.auris-moc-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-moc-s-d5129e1520{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.auris-moc-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-moc-s-e52144009f{width:auto;margin-right:6px}
+.auris-moc-s-e7a606635e{padding:16px 22px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.auris-moc-s-f430600eb1{display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)}
+.auris-moc-s-fdb5dc8f10{padding:14px;margin:8px 0 14px}
+/* Preserve former inline precedence over existing ID selectors. */
+#moc-ai-btn.auris-moc-s-f430600eb1{display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)}
+#moc-ai-panel.auris-moc-s-1041bb2ecd{display:none;margin:14px 22px 0}
+#moc-connected-records.auris-moc-s-c53ea1da23{margin-top:14px}
+#moc-create-action-btn.auris-moc-s-5a73f22934{display:none;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+#moc-filter-status.auris-moc-s-5c6bfadc51{max-width:240px}
+#moc-form3ref.auris-moc-s-632f87d42e{font-family:monospace;font-size:12px;opacity:.85}
+#moc-form3title.auris-moc-s-74f70dcede{font-size:20px;font-weight:800}
+#moc-form3view.auris-moc-s-6aa34d7432{display:none}
+#moc-search.auris-moc-s-42636e83b6{flex:1;min-width:220px}
