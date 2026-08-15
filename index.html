@@ -81,6 +81,7 @@
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-master-action-plan-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-sop-generator-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -8552,34 +8553,34 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">SOP Generator</div>
-<div style="font-size:12px;color:var(--text2)">Upload a task video > extract frames > AI generates a complete Standard Operating Procedure</div>
+<div class="auris-sop-s-7299078644">Upload a task video > extract frames > AI generates a complete Standard Operating Procedure</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-sop-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0957"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-primary" data-auris-onclick="h0958"><i class="ti ti-plus"></i>New SOP</button>
 </div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<div class="auris-sop-s-475caf50fd">
 <button class="mtg-tab active" id="sop-tab-list" data-auris-onclick="h0959">All SOPs</button>
 <button class="mtg-tab" id="sop-tab-create" data-auris-onclick="h0958">Create new</button>
 </div>
 
 <!-- LIST VIEW -->
 <div id="sop-view-list">
-<div class="card" style="padding:0;overflow:hidden"><div id="sop-list-container"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-sop-s-d9c39add3c"><div id="sop-list-container"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- CREATE VIEW - multi-step wizard -->
-<div id="sop-view-create" style="display:none">
-<div style="display:flex;justify-content:flex-start;margin-bottom:12px"><button class="btn" data-auris-onclick="h0960"><i class="ti ti-arrow-left"></i>Back to SOP list</button></div>
+<div id="sop-view-create" class="auris-sop-s-6aa34d7432">
+<div class="auris-sop-s-f08bfb4073"><button class="btn" data-auris-onclick="h0960"><i class="ti ti-arrow-left"></i>Back to SOP list</button></div>
 
 <!-- Progress stepper -->
-<div class="card" style="margin-bottom:16px;padding:16px 24px">
-<div style="display:flex;align-items:center;justify-content:space-between;position:relative">
-<div style="position:absolute;top:18px;left:10%;right:10%;height:2px;background:var(--border);z-index:0"></div>
-<div style="position:absolute;top:18px;left:10%;height:2px;background:var(--green);z-index:1;transition:width .4s" id="sop-step-bar" style="width:0%"></div>
+<div class="card auris-sop-s-641f8c169d">
+<div class="auris-sop-s-b764810d2f">
+<div class="auris-sop-s-aadffed6d2"></div>
+<div id="sop-step-bar" class="auris-sop-s-7741a2c08d auris-sop-s-5225e5b7d7"></div>
 <div class="sop-step-dot active" id="sop-dot-1" data-auris-onclick="h0961">1<div class="sop-step-label">Info</div></div>
 <div class="sop-step-dot" id="sop-dot-2" data-auris-onclick="h0962">2<div class="sop-step-label">Video</div></div>
 <div class="sop-step-dot" id="sop-dot-3" data-auris-onclick="h0963">3<div class="sop-step-label">Frames</div></div>
@@ -8609,95 +8610,95 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Version</label><input type="text" id="sop-version" value="Rev 00"/></div>
 </div>
 <div class="form3group"><label class="form3label">Brief task description</label>
-<textarea id="sop-desc" style="min-height:80px" placeholder="Describe the task in 2-3 sentences. What is being done, where, and why?"></textarea></div>
+<textarea id="sop-desc" class="auris-sop-s-770a4152c1" placeholder="Describe the task in 2-3 sentences. What is being done, where, and why?"></textarea></div>
 <div class="form3group"><label class="form3label">PPE Required (select all that apply)</label>
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="sop-ppe-list">
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety helmet"> Safety helmet</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety glasses"> Safety glasses</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Face shield"> Face shield</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Ear protection"> Ear protection</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Dust mask / Respirator"> Dust mask / Respirator</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety gloves"> Safety gloves</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety footwear"> Safety footwear</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="High visibility vest"> High visibility vest</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety harness"> Safety harness</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Chemical resistant gloves"> Chemical resistant gloves</label>
+<div id="sop-ppe-list" class="auris-sop-s-1f3c2b0cb7">
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Safety helmet"> Safety helmet</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Safety glasses"> Safety glasses</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Face shield"> Face shield</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Ear protection"> Ear protection</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Dust mask / Respirator"> Dust mask / Respirator</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Safety gloves"> Safety gloves</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Safety footwear"> Safety footwear</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="High visibility vest"> High visibility vest</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Safety harness"> Safety harness</label>
+<label class="auris-sop-s-5a8460d167"><input type="checkbox" value="Chemical resistant gloves"> Chemical resistant gloves</label>
 </div>
 </div>
 <div class="form3group"><label class="form3label">Additional PPE / Special equipment</label>
 <input type="text" id="sop-ppe-extra" placeholder="e.g. welding mask, anti-vibration gloves..."/></div>
 </div>
-<div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap">
+<div class="auris-sop-s-5d81724fb0">
 <button class="btn" data-auris-onclick="h0960"><i class="ti ti-arrow-left"></i>Cancel / Back</button>
 <button class="btn btn-primary" data-auris-onclick="h0966"><i class="ti ti-arrow-right"></i>Next - Upload Video</button>
 </div>
 </div>
 
 <!-- STEP 2: Video Upload -->
-<div id="sop-step-2" class="sop-step-panel" style="display:none">
-<div class="card" style="text-align:center;padding:40px">
-<div style="font-size:48px;margin-bottom:16px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:18px;font-weight:700;margin-bottom:8px">Upload your task demonstration video</div>
-<div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto">Record yourself performing the task step by step. Speak clearly explaining what you are doing at each step. MP4, MOV or WebM format.</div>
-<div id="sop-drop-zone" style="border:3px dashed var(--border);border-radius:16px;padding:40px;cursor:pointer;transition:all .2s;max-width:500px;margin:0 auto" data-auris-onclick="h0967" data-auris-ondragover="h0968" data-auris-ondrop="h0969">
+<div id="sop-step-2" class="sop-step-panel auris-sop-s-6aa34d7432">
+<div class="card auris-sop-s-e005ec9385">
+<div class="auris-sop-s-c6eccccb6f"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-sop-s-7ff7ed0c0d">Upload your task demonstration video</div>
+<div class="auris-sop-s-1261fcb65a">Record yourself performing the task step by step. Speak clearly explaining what you are doing at each step. MP4, MOV or WebM format.</div>
+<div id="sop-drop-zone" class="auris-sop-s-33086b453b" data-auris-onclick="h0967" data-auris-ondragover="h0968" data-auris-ondrop="h0969">
 <div id="sop-drop-label">
-<i class="ti ti-upload" style="font-size:32px;color:var(--text2)"></i>
-<div style="margin-top:8px;font-weight:600">Click to browse or drag & drop</div>
-<div style="font-size:12px;color:var(--text2);margin-top:4px">MP4, MOV, WebM - max 200MB</div>
+<i class="ti ti-upload auris-sop-s-1f17ad5dbf"></i>
+<div class="auris-sop-s-d4d9f49461">Click to browse or drag & drop</div>
+<div class="auris-sop-s-afac6844cc">MP4, MOV, WebM - max 200MB</div>
 </div>
 </div>
-<input type="file" id="sop-video-input" accept="video/*" style="display:none" data-auris-onchange="h0970"/>
-<video id="sop-video-preview" style="display:none;max-width:100%;border-radius:12px;margin-top:16px" controls></video>
-<div id="sop-video-info" style="margin-top:12px;font-size:13px;color:var(--text2)"></div>
+<input type="file" id="sop-video-input" class="auris-sop-s-6aa34d7432" accept="video/*" data-auris-onchange="h0970"/>
+<video id="sop-video-preview" class="auris-sop-s-4e195f1d5d" controls></video>
+<div id="sop-video-info" class="auris-sop-s-be97331479"></div>
 </div>
-<div style="display:flex;justify-content:space-between;margin-top:12px">
+<div class="auris-sop-s-b58cb7eb26">
 <button class="btn" data-auris-onclick="h0961"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn btn-primary" id="sop-to-frames-btn" style="display:none" data-auris-onclick="h0971"><i class="ti ti-photo-scan"></i>Extract frames</button>
+<button class="btn btn-primary auris-sop-s-6aa34d7432" id="sop-to-frames-btn" data-auris-onclick="h0971"><i class="ti ti-photo-scan"></i>Extract frames</button>
 </div>
 </div>
 
 <!-- STEP 3: Frame Review + Narration -->
-<div id="sop-step-3" class="sop-step-panel" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="sop-step-3" class="sop-step-panel auris-sop-s-6aa34d7432">
+<div class="card auris-sop-s-e94eb65b95">
+<div class="auris-sop-s-5e92a26fd0">
 <div>
-<div style="font-size:15px;font-weight:700">Step 3 - Review frames & add narration</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">For each frame, describe what you are doing in that step. The AI will use this to write the procedure.</div>
+<div class="auris-sop-s-93b62df276">Step 3 - Review frames & add narration</div>
+<div class="auris-sop-s-9c4ae63835">For each frame, describe what you are doing in that step. The AI will use this to write the procedure.</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-sop-s-9c40389b4a">
 <button class="btn btn-sm" data-auris-onclick="h0972"><i class="ti ti-plus"></i>Add step</button>
-<span id="sop-frame-count" style="font-size:12px;color:var(--text2);padding:6px 10px"></span>
+<span id="sop-frame-count" class="auris-sop-s-aae0f75fdb"></span>
 </div>
 </div>
 </div>
 <div id="sop-frames-container"></div>
-<div style="display:flex;justify-content:space-between;margin-top:12px">
+<div class="auris-sop-s-b58cb7eb26">
 <button class="btn" data-auris-onclick="h0962"><i class="ti ti-arrow-left"></i>Back</button>
 <button class="btn btn-primary" data-auris-onclick="h0973"><i class="ti ti-sparkles"></i>Generate SOP</button>
 </div>
 </div>
 
 <!-- STEP 4: Generating -->
-<div id="sop-step-4" class="sop-step-panel" style="display:none">
-<div class="card" style="text-align:center;padding:60px 40px">
-<div style="font-size:48px;margin-bottom:20px" id="sop-gen-icon"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:20px;font-weight:700;margin-bottom:12px" id="sop-gen-title">Generating your SOP...</div>
-<div style="font-size:14px;color:var(--text2);max-width:400px;margin:0 auto 24px" id="sop-gen-subtitle">The AI is analysing your frames and narration to write a professional SOP document</div>
-<div style="background:#f9fafb;border-radius:12px;padding:16px;max-width:400px;margin:0 auto">
-<div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
-<div id="sop-gen-bar" style="height:8px;background:var(--green);border-radius:4px;width:0%;transition:width .5s"></div>
+<div id="sop-step-4" class="sop-step-panel auris-sop-s-6aa34d7432">
+<div class="card auris-sop-s-69255ad855">
+<div id="sop-gen-icon" class="auris-sop-s-32ee70506c"><i class="ti ti-circle-dot"></i></div>
+<div id="sop-gen-title" class="auris-sop-s-e7b71e66b5">Generating your SOP...</div>
+<div id="sop-gen-subtitle" class="auris-sop-s-dd7e040035">The AI is analysing your frames and narration to write a professional SOP document</div>
+<div class="auris-sop-s-192000ec0e">
+<div class="auris-sop-s-ee39245050">
+<div id="sop-gen-bar" class="auris-sop-s-6450179908"></div>
 </div>
-<div style="font-size:12px;color:var(--text2);margin-top:8px" id="sop-gen-status">Initialising...</div>
+<div id="sop-gen-status" class="auris-sop-s-557964d7a7">Initialising...</div>
 </div>
 </div>
 </div>
 
 <!-- STEP 5: Review & Edit -->
-<div id="sop-step-5" class="sop-step-panel" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:15px;font-weight:700">Step 5 - Review, edit & save your SOP</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div id="sop-step-5" class="sop-step-panel auris-sop-s-6aa34d7432">
+<div class="card auris-sop-s-e94eb65b95">
+<div class="auris-sop-s-5e92a26fd0">
+<div class="auris-sop-s-93b62df276">Step 5 - Review, edit & save your SOP</div>
+<div class="auris-sop-s-c9dc9b5648">
 <button class="btn" data-auris-onclick="h0963"><i class="ti ti-arrow-left"></i>Back to frames</button>
 <button class="btn" data-auris-onclick="h0960"><i class="ti ti-list"></i>Back to SOP list</button>
 <button class="btn" data-auris-onclick="h0974"><i class="ti ti-printer"></i>Print / PDF</button>
@@ -8705,7 +8706,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 </div>
-<div id="sop-preview-container" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>
+<div id="sop-preview-container" class="auris-sop-s-9aec1e671d"></div>
 </div>
 
 </div><!-- end sop-view-create -->
