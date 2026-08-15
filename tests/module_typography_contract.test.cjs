@@ -31,7 +31,7 @@ test('headings tabs controls panels tables and labels use the shared hierarchy',
 });
 
 test('typography stylesheet is cache-busted for deployment and offline refresh', () => {
-  assert.match(html, /auris-icon-system\.css\?v=20260814-2/);
+  assert.match(html, /auris-icon-system\.css\?v=20260816-1/);
 });
 
 test('KPI header retains its functional subtitle rather than showing a company name', () => {

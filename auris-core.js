@@ -3311,7 +3311,6 @@ function closeTransientOverlays(){
     'client-meeting-checklist-modal',
     'client-demo-review-modal',
     'mobile-search-overlay',
-    'mobile-modules-drawer',
     'sidebar-backdrop',
     'modules-menu',
     'sa-company-menu'
@@ -3336,8 +3335,14 @@ function closeTransientOverlays(){
   var mobilePanel=document.getElementById('mobile-modules-panel');
   if(mobilePanel){
     mobilePanel.classList.remove('open','active');
-    mobilePanel.style.transform='translateY(100%)';
   }
+  var mobileDrawer=document.getElementById('mobile-modules-drawer');
+  if(mobileDrawer){
+    mobileDrawer.classList.remove('open','active');
+    mobileDrawer.setAttribute('aria-hidden','true');
+  }
+  var mobileModulesTrigger=document.getElementById('mob-btn-modules');
+  if(mobileModulesTrigger)mobileModulesTrigger.setAttribute('aria-expanded','false');
   if(typeof _modulesOpen!=='undefined')_modulesOpen=false;
 }
 
@@ -37680,19 +37685,20 @@ function mobileOpenModules() {
   var drawer = document.getElementById('mobile-modules-drawer');
   var panel  = document.getElementById('mobile-modules-panel');
   if (drawer) {
-    drawer.style.display = 'block';
+    drawer.style.display = '';
     drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
   }
   if (panel) {
-    panel.style.transition = 'none';
-    panel.style.transform = 'translateY(100%)';
-    setTimeout(function() {
-      panel.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-      panel.style.transform = 'translateY(0)';
-    }, 10);
+    panel.style.removeProperty('transition');
+    panel.style.removeProperty('transform');
+    panel.classList.add('open');
   }
   var mb = document.getElementById('mob-btn-modules');
-  if (mb) mb.classList.add('active');
+  if (mb) {
+    mb.classList.add('active');
+    mb.setAttribute('aria-expanded', 'true');
+  }
   history.pushState(null, '', window.location.href);
 }
 
@@ -37700,31 +37706,17 @@ function mobileCloseModules(immediate) {
   _modulesOpen = false;
   var panel  = document.getElementById('mobile-modules-panel');
   var drawer = document.getElementById('mobile-modules-drawer');
-  if (immediate) {
-    if (panel) panel.style.transform = 'translateY(100%)';
-    if (drawer) {
-      drawer.classList.remove('open');
-      drawer.style.display = 'none';
-    }
-    var mbNow = document.getElementById('mob-btn-modules');
-    if (mbNow) mbNow.classList.remove('active');
-    return;
-  }
   if (panel) {
-    panel.style.transform = 'translateY(100%)';
-    setTimeout(function() {
-      if (drawer) {
-        drawer.classList.remove('open');
-        drawer.style.display = 'none';
-      }
-    }, 300);
-  } else {
-    if (drawer) {
-      drawer.classList.remove('open');
-      drawer.style.display = 'none';
-    }
+    panel.style.removeProperty('transition');
+    panel.style.removeProperty('transform');
+    panel.classList.remove('open');
+  }
+  if (drawer) {
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
   }
   var mb = document.getElementById('mob-btn-modules');
+  if (mb) mb.setAttribute('aria-expanded', 'false');
   if (mb && _mobileCurrentPg !== 'dashboard' && _mobileCurrentPg !== 'events' && _mobileCurrentPg !== 'observation' && _mobileCurrentPg !== 'kpi') {
     mb.classList.add('active');
   } else if (mb) {
@@ -37741,16 +37733,15 @@ function mobileRenderModulesGrid() {
     if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
-    html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
+    html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" data-nav-key="' + m.k + '" class="mob-module-btn"'
       + ' data-auris-named-action="mobile-nav"'
       + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
       + 'gap:6px;padding:14px 6px;border:2px solid ' + (isCur ? color : 'transparent') + ';'
       + 'background:' + (isCur ? color + '18' : 'transparent') + ';'
       + 'border-radius:12px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:100%;">'
-      + '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;'
-      + 'display:flex;align-items:center;justify-content:center;">'
-      + '<i class="ti ' + m.i + '" style="font-size:22px;color:' + color + '"></i></div>'
-      + '<span style="font-size:10px;font-weight:600;color:var(--text);text-align:center;line-height:1.2">'
+      + '<div class="mob-module-icon-shell">'
+      + '<i class="ti ' + m.i + ' auris-module-icon"></i></div>'
+      + '<span class="mob-module-label">'
       + m.l + '</span></button>';
   }
   grid.innerHTML = html;
@@ -37766,10 +37757,10 @@ function mobileSearchModulesRender(q, el) {
     if (m.l.toLowerCase().indexOf(ql) === -1) continue;
     found++;
     var color = MODULE_COLORS[m.k] || '#185FA5';
-    html += '<div data-page="' + m.k + '" data-label="' + m.l + '" class="mob-search-result"'
+    html += '<div data-page="' + m.k + '" data-label="' + m.l + '" data-nav-key="' + m.k + '" class="mob-search-result"'
       + ' style="display:flex;align-items:center;gap:12px;padding:12px 4px;'
       + 'border-bottom:1px solid var(--border);touch-action:manipulation;-webkit-tap-highlight-color:transparent;">'
-      + '<i class="ti ' + m.i + '" style="font-size:20px;color:' + color + ';width:28px"></i>'
+      + '<i class="ti ' + m.i + ' auris-module-icon"></i>'
       + '<span style="font-size:14px;font-weight:500;color:var(--text)">' + m.l + '</span></div>';
   }
   if (!found) html = '<div style="padding:12px;color:var(--text2);font-size:13px">No modules found</div>';
