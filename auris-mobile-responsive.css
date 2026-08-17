@@ -248,3 +248,56 @@
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
+
+/* Phones use native document scrolling. Fixed nested scrollers can stop receiving
+   touch movement after a route change or PWA resume on iOS and Android. */
+@media (max-width: 480px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+  }
+
+  #app {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  #app .layout {
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  #app .main {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100dvh - 110px) !important;
+    max-height: none !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    touch-action: pan-y !important;
+    transform: none !important;
+    padding-top: calc(52px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  #app .page,
+  #app .page.active {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-y: visible !important;
+  }
+}

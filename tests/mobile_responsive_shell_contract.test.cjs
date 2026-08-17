@@ -9,9 +9,17 @@ const core = fs.readFileSync(path.join(root, 'auris-core.js'), 'utf8');
 const icons = fs.readFileSync(path.join(root, 'auris-icon-system.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'auris-mobile-responsive.css'), 'utf8');
 
-test('mobile content retains a single vertical touch scroll container', () => {
+test('tablet content retains a vertical touch scroll container', () => {
   assert.match(css, /\.main\s*\{[\s\S]*overflow-y:\s*auto\s*!important[\s\S]*touch-action:\s*pan-y\s*!important/);
   assert.match(css, /\.page,\s*\.page\.active\s*\{[\s\S]*height:\s*auto\s*!important/);
+});
+
+test('phones restore native document scrolling below fixed navigation', () => {
+  const phone = css.slice(css.lastIndexOf('@media (max-width: 480px)'));
+  assert.match(phone, /html,\s*\n\s*body\s*\{[\s\S]*overflow-y:\s*auto\s*!important/);
+  assert.match(phone, /#app\s*\{[\s\S]*position:\s*relative\s*!important[\s\S]*overflow:\s*visible\s*!important/);
+  assert.match(phone, /#app \.main\s*\{[\s\S]*position:\s*relative\s*!important[\s\S]*overflow-x:\s*clip\s*!important[\s\S]*overflow-y:\s*visible\s*!important/);
+  assert.match(phone, /padding-bottom:\s*calc\(74px \+ env\(safe-area-inset-bottom, 0px\)\)\s*!important/);
 });
 
 test('mobile module drawer opens and closes through classes without stale transforms', () => {
@@ -31,14 +39,21 @@ test('dynamic mobile navigation uses the shared colourful AURIS module artwork',
   assert.match(icons, /if\(el\.dataset\.page\)return el\.dataset\.page/);
 });
 
+test('CSP-safe sidebar handlers retain the previous colourful module artwork', () => {
+  assert.match(icons, /sidebarHandlerKeys=\{h0027:'dashboard'[\s\S]*h0062:'settings'\}/);
+  assert.match(icons, /getAttribute\('data-auris-onclick'\)/);
+  assert.match(icons, /if\(id\.indexOf\('nav-'\)===0\)/);
+  assert.match(core, /el\.dataset\.navKey = pageKey/);
+});
+
 test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /font-size:\s*21px\s*!important/);
   assert.match(css, /font-size:\s*10\.5px\s*!important/);
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-7/);
-  assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260817-1/);
+  assert.match(html, /auris-icon-system\.js\?v=20260817-1/);
 });
 
 test('dense operational tables have dedicated touch-scroll containers', () => {

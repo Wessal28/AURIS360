@@ -34597,6 +34597,7 @@ function applyRoles() {
   document.querySelectorAll('.nav-item').forEach(function(el){
     var pageKey = navPageKey(el);
     if(!pageKey) return;
+    el.dataset.navKey = pageKey;
     el.style.display = canAccessPage(pageKey) ? 'flex' : 'none';
     var label = el.textContent.trim();
     if(label){

@@ -30,7 +30,7 @@ test('tab icons use the colourful AURIS visual language and active emphasis', ()
 
 test('new icon assets are cache-busted in the application shell', () => {
   assert.match(html, /auris-icon-system\.css\?v=20260816-1/);
-  assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
+  assert.match(html, /auris-icon-system\.js\?v=20260817-1/);
 });
 
 test('dashboard indicators receive one icon before action decoration', () => {
