@@ -243,6 +243,66 @@
   }
 }
 
+/* Keep both mobile navigation surfaces independently touch-scrollable. The
+   page now uses native document scrolling, so fixed navigation must own its
+   own bounded scroll area instead of relying on the page underneath it. */
+@media (max-width: 768px) {
+  #app .sidebar,
+  #app .sidebar.open {
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 0 !important;
+    overflow-x: clip !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: none !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+    scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  #app .sidebar > :is(
+    .sidebar-top,
+    #sb-role-changer,
+    .nav-section,
+    .nav-item,
+    .sb-footer,
+    #pwa-install-btn
+  ) {
+    flex-shrink: 0 !important;
+  }
+
+  #mobile-modules-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    height: min(78dvh, 640px) !important;
+    max-height: calc(100dvh - 72px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    touch-action: pan-y !important;
+  }
+
+  #mobile-modules-panel > :first-child {
+    flex: 0 0 auto !important;
+  }
+
+  #mobile-modules-grid {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: clip !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  #mobile-modules-grid .mob-module-btn {
+    touch-action: pan-y !important;
+  }
+}
+
 @media (min-width: 481px) and (max-width: 768px) {
   #mobile-modules-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;

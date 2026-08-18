@@ -32,6 +32,14 @@ test('mobile module drawer opens and closes through classes without stale transf
   assert.match(html, /id="mobile-modules-drawer"[^>]+aria-hidden="true"/);
 });
 
+test('mobile sidebar and module drawer retain independent vertical touch scrolling', () => {
+  const navigation = css.slice(css.lastIndexOf('/* Keep both mobile navigation surfaces'));
+  assert.match(navigation, /#app \.sidebar,[\s\S]*#app \.sidebar\.open[\s\S]*height:\s*100dvh\s*!important[\s\S]*overflow-y:\s*auto\s*!important[\s\S]*touch-action:\s*pan-y\s*!important/);
+  assert.match(navigation, /#app \.sidebar > :is\([\s\S]*\.nav-item,[\s\S]*\.sb-footer[\s\S]*flex-shrink:\s*0\s*!important/);
+  assert.match(navigation, /#mobile-modules-panel\s*\{[\s\S]*display:\s*flex\s*!important[\s\S]*overflow:\s*hidden\s*!important/);
+  assert.match(navigation, /#mobile-modules-grid\s*\{[\s\S]*flex:\s*1 1 auto\s*!important[\s\S]*overflow-y:\s*auto\s*!important[\s\S]*touch-action:\s*pan-y\s*!important/);
+});
+
 test('dynamic mobile navigation uses the shared colourful AURIS module artwork', () => {
   assert.match(core, /data-nav-key="' \+ m\.k/);
   assert.match(core, /auris-module-icon/);
@@ -52,7 +60,7 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260817-1/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260818-1/);
   assert.match(html, /auris-icon-system\.js\?v=20260817-1/);
 });
 
