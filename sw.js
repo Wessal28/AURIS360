@@ -68,6 +68,17 @@ async function cacheFirstAsset(request) {
   return response;
 }
 
+async function networkFirstVersionedAsset(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  try {
+    const response = await fetch(request, { cache: 'no-cache' });
+    if (response.ok) await cache.put(new URL(request.url).pathname, response.clone());
+    return response;
+  } catch (error) {
+    return (await cache.match(request, { ignoreSearch: true })) || Response.error();
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (isPrivateOrApiRequest(url, event.request)) return;
@@ -76,7 +87,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin && ASSET_MANIFEST.assets.includes(url.pathname)) {
-    event.respondWith(cacheFirstAsset(event.request));
+    event.respondWith(url.search ? networkFirstVersionedAsset(event.request) : cacheFirstAsset(event.request));
   }
 });
 

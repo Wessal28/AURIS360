@@ -41,7 +41,20 @@
   background:#fff!important;
   box-shadow:0 10px 22px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.9)!important;
 }
-.sidebar-top .co-logo,.sidebar-top .co-initials{
+.sidebar-top .co-logo{
+  width:90px!important;
+  min-width:90px!important;
+  max-width:90px!important;
+  height:58px!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:12px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:#fff!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.08)!important;
+}
+.sidebar-top .co-initials{
   width:54px!important;
   height:54px!important;
   min-width:54px!important;
@@ -166,6 +179,7 @@
 @media (max-width:768px){
   .nav-item{min-height:48px!important}
   .nav-item i{width:26px!important;height:26px!important;min-width:26px!important}
+  .sidebar-top .co-logo{width:96px!important;min-width:96px!important;max-width:96px!important;height:62px!important}
 }
 .modules-menu-item{
   gap:9px!important;

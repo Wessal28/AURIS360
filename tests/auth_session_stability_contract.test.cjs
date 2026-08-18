@@ -24,8 +24,10 @@ test('slow session restoration never deletes the stored session',()=>{
   assert.doesNotMatch(init,/Set a hard timeout[\s\S]*?authClearSession/);
 });
 
-test('service-worker activation has exactly one reload path',()=>{
+test('service-worker activation never interrupts an open application session',()=>{
   const registration=html.match(/\/\/ Register service worker[\s\S]*?\/\/ Capture install prompt/)?.[0]||'';
-  assert.equal((registration.match(/window\.location\.reload\(\)/g)||[]).length,1);
+  assert.doesNotMatch(registration,/window\.location\.reload\(\)/);
   assert.match(registration,/controllerchange/);
+  assert.match(registration,/auris:service-worker-updated/);
+  assert.match(registration,/update installed in the background/);
 });

@@ -39,6 +39,8 @@ assert(sw.includes("importScripts('/sw-assets.js')"), 'service worker must load 
 assert(sw.includes('Promise.allSettled(OPTIONAL_ASSETS'), 'optional asset failure must not abort installation');
 assert(sw.includes("event.request.mode === 'navigate'"), 'navigation requests need an offline fallback');
 assert(sw.includes("cache.match('/index.html')"), 'offline navigation must fall back to the application shell');
+assert(sw.includes('networkFirstVersionedAsset'), 'versioned assets must refresh without forcing a second page load');
+assert(sw.includes("url.search ? networkFirstVersionedAsset(event.request) : cacheFirstAsset(event.request)"), 'versioned assets must prefer the network and retain offline fallback');
 assert(sw.includes("url.pathname.startsWith('/api/')"), 'application APIs must bypass caches');
 assert(sw.includes("url.hostname.includes('supabase.co')"), 'Supabase requests must bypass caches');
 assert(sw.includes("event.tag === 'sync-incidents'"), 'incident background sync must remain registered');

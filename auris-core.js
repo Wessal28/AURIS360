@@ -36999,11 +36999,14 @@ function pwaShowInstallInstructions(isIOS){
 
 // Register service worker
 if('serviceWorker' in navigator) {
-  var aurisRefreshingForUpdate = false;
+  var aurisServiceWorkerUpdated = false;
   navigator.serviceWorker.addEventListener('controllerchange', function() {
-    if(aurisRefreshingForUpdate) return;
-    aurisRefreshingForUpdate = true;
-    window.location.reload();
+    if(aurisServiceWorkerUpdated) return;
+    aurisServiceWorkerUpdated = true;
+    window.dispatchEvent(new CustomEvent('auris:service-worker-updated'));
+    if(typeof toast === 'function') {
+      toast('AURIS360 update ready for your next visit');
+    }
   });
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/sw.js')
@@ -37018,12 +37021,11 @@ if('serviceWorker' in navigator) {
           if(!newWorker) return;
           newWorker.addEventListener('statechange', function() {
             if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
+              // New version available. It activates without interrupting the
+              // current desktop or mobile session.
               if(typeof toast === 'function') {
-                toast('AURIS360 update installed - refreshing once');
+                toast('AURIS360 update installed in the background');
               }
-              // skipWaiting() causes controllerchange; that single handler is
-              // the authoritative reload path and prevents a double refresh.
             }
           });
         });
