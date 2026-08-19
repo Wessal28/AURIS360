@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "test": "node --test",
-    "vercel-build": "node scripts/verify-deployment-environment.cjs && node scripts/generate-sw-manifest.cjs --check",
+    "vercel-build": "node scripts/verify-deployment-environment.cjs && node scripts/generate-sw-manifest.cjs --check && node scripts/prepare-vercel-output.cjs",
     "check:environment": "node scripts/verify-deployment-environment.cjs",
     "release:readiness": "node scripts/release-readiness.cjs",
     "generate:sw-manifest": "node scripts/generate-sw-manifest.cjs",

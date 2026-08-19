@@ -73,5 +73,11 @@ assert.match(core, /AURIS_IS_APPROVED_PRODUCTION_RUNTIME/);
 assert.match(core, /aurisRequireRuntimeConfiguration\(\)/);
 assert.match(core, /apiBaseUrl\.textContent=SB\+'\/rest\/v1'/, 'the Integrations display must reflect the active environment');
 assert.strictEqual(vercel.buildCommand, 'npm run vercel-build', 'Vercel must enforce the deployment boundary before publishing a build');
+assert.strictEqual(vercel.outputDirectory, 'public', 'Vercel must publish only the generated allowlisted static bundle');
+const packageJson = JSON.parse(require('fs').readFileSync(path.join(root, 'package.json'), 'utf8'));
+assert.match(packageJson.scripts['vercel-build'], /prepare-vercel-output\.cjs/, 'Vercel build must prepare the allowlisted public bundle');
+const outputBuilder = require('fs').readFileSync(path.join(root, 'scripts', 'prepare-vercel-output.cjs'), 'utf8');
+assert.match(outputBuilder, /AURIS_SW_ASSET_MANIFEST/, 'Deployment bundle must derive from the verified offline asset manifest');
+assert.match(outputBuilder, /forbiddenExtensions/, 'Deployment bundle must reject repository-only file types');
 
 console.log('Deployment environment isolation contract passed.');
