@@ -29,6 +29,18 @@ Until the migration baseline is completed:
 4. Apply any later approved upgrade scripts in their documented order.
 5. Run `supabase_exposure_security_audit.sql` and the relevant relationship checks.
 
+For the current one-time staging bootstrap on Windows, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\copy-production-schema-to-staging.ps1
+```
+
+The guarded script accepts only the approved production project as its read-only
+source and `beoutmqttgfyyzndcdxu` as its staging write target. It prompts for
+Session pooler connection details locally, rejects data-bearing SQL, refuses a
+non-empty staging public schema and requires an exact confirmation before import.
+Passwords and generated schema files are not retained.
+
 Creating the authoritative migration baseline is a separate required hardening task. Once it exists, staging should be rebuilt from migrations and a committed synthetic seed instead of from a manual schema backup.
 
 ## 3. Separate Vercel variables
