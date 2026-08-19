@@ -1,0 +1,50 @@
+name: Release readiness
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out release candidate
+        uses: actions/checkout@v4
+
+      - name: Use supported Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install server dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify service-worker manifest
+        run: npm run check:sw-manifest
+
+      - name: Run complete automated test suite
+        run: npm test
+
+      - name: Generate release-readiness evidence
+        run: npm run release:readiness -- --report release-evidence/github-${{ github.sha }}.json
+
+      - name: Retain release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-${{ github.sha }}
+          path: release-evidence/
+          if-no-files-found: warn
+          retention-days: 30
