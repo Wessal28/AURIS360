@@ -111,8 +111,18 @@ try {
     }
 
     $schemaSql = Get-Content -LiteralPath $schemaFile -Raw
-    $dataStatements = [regex]::Matches(
+    # Stored procedures legitimately contain INSERT/UPDATE/DELETE statements in
+    # their dollar-quoted bodies. Those statements are definitions at restore
+    # time, not data operations. Remove the bodies only for this safety scan so
+    # top-level data-bearing statements are still rejected.
+    $validationSql = [regex]::Replace(
         $schemaSql,
+        '(?s)\$(?<tag>[A-Za-z_][A-Za-z0-9_]*)\$.*?\$\k<tag>\$',
+        ''
+    )
+    $validationSql = [regex]::Replace($validationSql, '(?s)\$\$.*?\$\$', '')
+    $dataStatements = [regex]::Matches(
+        $validationSql,
         '(?im)^\s*(?:copy\s+[^\r\n]+\s+from\s+stdin|insert\s+into|update\s+[^\r\n]+\s+set|delete\s+from|truncate\b)'
     )
     if ($dataStatements.Count -gt 0) {
