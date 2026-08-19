@@ -8,6 +8,8 @@ const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const check = childProcess.spawnSync(process.execPath, ['scripts/generate-sw-manifest.cjs', '--check'], { cwd: root, encoding: 'utf8' });
 assert.strictEqual(check.status, 0, check.stderr || check.stdout);
+const generator = read('scripts/generate-sw-manifest.cjs');
+assert(generator.includes("replace(/\\r\\n?/g, '\\n')"), 'manifest hashing must normalize text line endings across Windows and Linux');
 
 const sandbox = { self: {} };
 vm.runInNewContext(read('sw-assets.js'), sandbox, { filename: 'sw-assets.js' });

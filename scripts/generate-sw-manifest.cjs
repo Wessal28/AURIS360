@@ -5,6 +5,15 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const outputPath = path.join(root, 'sw-assets.js');
 const checkOnly = process.argv.includes('--check');
+const textHashExtensions = new Set([
+  '.css', '.html', '.js', '.json', '.md', '.svg', '.txt', '.webmanifest', '.xml'
+]);
+
+function readStableHashContent(absolutePath) {
+  const content = fs.readFileSync(absolutePath);
+  if (!textHashExtensions.has(path.extname(absolutePath).toLowerCase())) return content;
+  return Buffer.from(content.toString('utf8').replace(/\r\n?/g, '\n'), 'utf8');
+}
 
 function cleanReference(value) {
   if (!value || /^(?:https?:|data:|blob:|#)/i.test(value)) return null;
@@ -75,7 +84,7 @@ for (const relativePath of files) {
   const absolutePath = assertLocalFile(relativePath, relativePath === 'manifest.json' ? 'app shell' : 'index.html/CSS');
   hash.update(relativePath);
   hash.update('\0');
-  hash.update(fs.readFileSync(absolutePath));
+  hash.update(readStableHashContent(absolutePath));
   hash.update('\0');
 }
 
