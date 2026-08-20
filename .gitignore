@@ -1,2 +1,7 @@
 node_modules/
 release-evidence/
+public/
+.env
+.env.*
+!.env.preview.example
+.vercel/

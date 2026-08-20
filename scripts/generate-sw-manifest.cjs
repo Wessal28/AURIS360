@@ -19,7 +19,9 @@ function cleanReference(value) {
   if (!value || /^(?:https?:|data:|blob:|#)/i.test(value)) return null;
   const withoutQuery = value.split(/[?#]/, 1)[0].replace(/^\.\//, '');
   if (!withoutQuery || withoutQuery === '/') return null;
-  return withoutQuery.replace(/^\//, '').replace(/\\/g, '/');
+  const normalized = withoutQuery.replace(/^\//, '').replace(/\\/g, '/');
+  if (normalized.startsWith('api/')) return null;
+  return normalized;
 }
 
 function collectTagReferences(html) {

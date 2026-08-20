@@ -75,8 +75,19 @@
 
 
 
-const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
-const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
+const LEGACY_SB='https://iarfxjhahzbhncsaohbg.supabase.co';
+const LEGACY_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
+const AURIS_RUNTIME_CONFIG=window.__AURIS_RUNTIME_CONFIG__||{};
+const AURIS_APPROVED_PRODUCTION_HOSTS=['auris360.app','www.auris360.app','auris-360.vercel.app'];
+const AURIS_IS_APPROVED_PRODUCTION_HOST=AURIS_APPROVED_PRODUCTION_HOSTS.indexOf(String(window.location.hostname||'').toLowerCase())!==-1;
+const AURIS_IS_APPROVED_PRODUCTION_RUNTIME=AURIS_IS_APPROVED_PRODUCTION_HOST||(AURIS_RUNTIME_CONFIG.environment==='production'&&AURIS_RUNTIME_CONFIG.supabaseUrl===LEGACY_SB&&!AURIS_RUNTIME_CONFIG.error);
+const SB=String(AURIS_RUNTIME_CONFIG.supabaseUrl||(AURIS_IS_APPROVED_PRODUCTION_RUNTIME?LEGACY_SB:'')).replace(/\/$/,'');
+const KEY=String(AURIS_RUNTIME_CONFIG.supabaseAnonKey||(AURIS_IS_APPROVED_PRODUCTION_RUNTIME?LEGACY_KEY:''));
+const AURIS_RUNTIME_CONFIG_READY=Boolean(SB&&KEY&&!AURIS_RUNTIME_CONFIG.error);
+function aurisRuntimeConfigurationMessage(){return String(AURIS_RUNTIME_CONFIG.error||'This Preview deployment is not connected to an isolated staging environment.');}
+function aurisRequireRuntimeConfiguration(){if(!AURIS_RUNTIME_CONFIG_READY)throw new Error(aurisRuntimeConfigurationMessage());}
+function aurisShowRuntimeConfigurationError(){var message=aurisRuntimeConfigurationMessage();console.error('[AURIS360 configuration] '+message);aurisSetDisplay('login-screen','flex');aurisSetDisplay('app','none');authShowPanel('signin');authShowErr(message);}
+
 let tok=null,prof=null,co=null,chkItems=[],people=[];
 let rolePreview=null;
 const RL={inspector:1,manager:2,admin:3,sephs_admin:4};
@@ -179,6 +190,7 @@ function apiCompanyScopeIssue(path,o,method){
 }
 async function api(path,o={}
 ){
+aurisRequireRuntimeConfiguration();
 const resilienceFault=typeof window.aurisResilienceFaultForPath==='function'?window.aurisResilienceFaultForPath(path):'';
 if(resilienceFault)throw new Error(resilienceFault);
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
@@ -2021,6 +2033,8 @@ function authUpdateStrength() {
 document.addEventListener('DOMContentLoaded', function() {
   var regPw=document.getElementById('reg-pw');
   if(regPw) regPw.addEventListener('input', authUpdateStrength);
+  var apiBaseUrl=document.getElementById('api-base-url');
+  if(apiBaseUrl&&SB)apiBaseUrl.textContent=SB+'/rest/v1';
   enhanceIconOnlyButtons(document);
   if(window.MutationObserver) {
     var iconButtonObserver = new MutationObserver(function(mutations) {
@@ -2417,6 +2431,8 @@ function doLogout() {
 async function authInitSession() {
   // Always show login screen immediately - don't leave user stuck
   // Session restore happens silently and hides the login screen if successful
+
+  if(!AURIS_RUNTIME_CONFIG_READY){aurisShowRuntimeConfigurationError();return;}
 
   // Check URL hash for password reset / invite / signup-confirm tokens
   // Older Supabase flow: #access_token=xxx&refresh_token=yyy&type=zzz
@@ -6458,6 +6474,7 @@ function aiDownload(elId, prefix) {
 
 // ===== APP.JS =====
 async function authQ(path,body){
+aurisRequireRuntimeConfiguration();
 const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
 const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
 }
