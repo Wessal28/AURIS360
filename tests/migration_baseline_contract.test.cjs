@@ -53,3 +53,13 @@ test('allows DML in function bodies but rejects table rows in a baseline', (t) =
   assert.notEqual(unsafe.status, 0);
   assert.match(unsafe.stderr, /must not contain table data changes/i);
 });
+
+test('requires a baseline to coexist with the public schema supplied by Supabase', (t) => {
+  const directory = fixture({
+    '20260820000000_production_schema_baseline.sql': `-- raw pg_dump schema declaration\nCREATE SCHEMA public;\n${' '.repeat(120)}`
+  });
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const result = run(directory);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /CREATE SCHEMA IF NOT EXISTS public/i);
+});

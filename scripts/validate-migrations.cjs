@@ -65,6 +65,9 @@ for (const [index, name] of migrationFiles.entries()) {
   const executableSql = withoutFunctionBodies(sql);
   const dataStatements = executableSql.match(/^\s*(?:copy\s+[^\r\n]+\s+from\s+stdin|insert\s+into|update\s+[^\r\n]+\s+set|delete\s+from|truncate\b)/gim) || [];
   const isBaseline = name.endsWith('_schema_baseline.sql');
+  if (isBaseline && /^CREATE SCHEMA public;$/im.test(sql)) {
+    errors.push(`${name}: use CREATE SCHEMA IF NOT EXISTS public so the baseline replays on Supabase.`);
+  }
   if (isBaseline && dataStatements.length > 0) {
     errors.push(`${name}: a schema baseline must not contain table data changes.`);
   } else if (!isBaseline && dataStatements.length > 0 && !/^\s*--\s*auris360:\s*allow-data-migration\s*$/im.test(sql)) {

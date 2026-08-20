@@ -92,6 +92,15 @@ try {
         throw 'Generated baseline is empty or unexpectedly small.'
     }
 
+    # A new PostgreSQL/Supabase database already contains the public schema.
+    # Make the schema-only dump replayable without requiring a destructive drop.
+    $baselineSql = Get-Content -LiteralPath $baselineFile -Raw
+    $normalizedSql = $baselineSql -replace '(?m)^CREATE SCHEMA public;$', 'CREATE SCHEMA IF NOT EXISTS public;'
+    if ($normalizedSql -eq $baselineSql) {
+        throw 'Could not locate the expected public-schema declaration in the generated dump.'
+    }
+    [IO.File]::WriteAllText($baselineFile, $normalizedSql, [Text.UTF8Encoding]::new($false))
+
     & $nodeCli (Join-Path $PSScriptRoot 'validate-migrations.cjs') --write-manifest
     if ($LASTEXITCODE -ne 0) { throw 'Generated migration baseline failed validation.' }
 
