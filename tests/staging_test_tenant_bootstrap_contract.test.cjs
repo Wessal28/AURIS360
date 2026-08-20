@@ -23,6 +23,7 @@ test('staging bootstrap is repeatable for its labelled company and site', () => 
   assert.match(sql, /if not exists \([\s\S]*from public\.sites[\s\S]*Staging Office/i);
   assert.match(sql, /where id = v_user_id/);
   assert.match(sql, /role = 'admin'/);
+  assert.doesNotMatch(sql, /update public\.profiles[\s\S]*\n\s*active\s*=/i);
 });
 
 test('staging bootstrap repairs only the profile for an existing staging Auth identity', () => {

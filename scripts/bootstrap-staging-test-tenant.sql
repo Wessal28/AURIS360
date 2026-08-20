@@ -78,7 +78,6 @@ begin
       role = 'admin',
       company_id = v_company_id,
       status = 'active',
-      active = true,
       updated_at = now()
   where id = v_user_id;
 
