@@ -22,7 +22,8 @@ const testFiles = [
   'tests/location_identity_contract.test.cjs',
   'tests/verified_operational_references_contract.test.cjs',
   'tests/pending_notifications_security_contract.test.cjs',
-  'tests/migration_baseline_contract.test.cjs'
+  'tests/migration_baseline_contract.test.cjs',
+  'tests/migration_replay_contract.test.cjs'
 ];
 
 function run(label, command, args) {
