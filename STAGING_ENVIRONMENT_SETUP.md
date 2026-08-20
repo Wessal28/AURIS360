@@ -98,3 +98,15 @@ On the successful Preview deployment:
 - Synthetic record ID
 - Production before/after record counts
 - Tester and date
+
+## 7. Capture the ordered database baseline
+
+After the schema-only staging copy and synthetic acceptance tests pass, capture the immutable migration baseline from staging:
+
+```powershell
+npm run migration:capture-baseline
+```
+
+The command is restricted to project `beoutmqttgfyyzndcdxu`, verifies that staging contains no non-test company, exports schema only, rejects top-level table data changes and writes a checksum manifest. It never exports production rows or Auth users.
+
+Once the baseline has been reviewed and committed, every later database change must be a new ordered file in `supabase/migrations` and must pass `npm run migration:validate` before promotion.
