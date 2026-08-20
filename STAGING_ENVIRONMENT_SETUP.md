@@ -116,3 +116,16 @@ powershell -ExecutionPolicy Bypass -File scripts\capture-staging-schema-baseline
 The command is restricted to project `beoutmqttgfyyzndcdxu`, verifies that staging contains no non-test company, exports schema only, rejects top-level table data changes and writes a checksum manifest. It never exports production rows or Auth users.
 
 Once the baseline has been reviewed and committed, every later database change must be a new ordered file in `supabase/migrations` and must pass `npm run migration:validate` before promotion.
+
+## 8. Automated migration replay and drift gate
+
+Every pull request replays the complete ordered migration history on a fresh,
+disposable PostgreSQL 17 service. The replay target is restricted to a localhost
+database named `auris360_migration_replay`; production and staging URLs are
+rejected. CI then compares the reconstructed catalog with the committed
+`replay-expectations.json` inventory.
+
+When an approved migration intentionally adds or removes tables, policies or
+routines, update the expectation counts in the same pull request and attach the
+successful replay output as release evidence. Never weaken the localhost or
+database-name guards to make a migration pass.

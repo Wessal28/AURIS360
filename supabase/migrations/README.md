@@ -29,3 +29,9 @@ Validate the baseline and all later migrations:
 ```powershell
 npm run migration:validate
 ```
+
+The required pull-request workflow also replays the complete ordered history on
+a fresh local PostgreSQL service and compares the resulting tables, policies and
+routines with `replay-expectations.json`. The replay command is deliberately
+restricted to `localhost` and the database name `auris360_migration_replay`; it
+cannot be pointed at production or staging.

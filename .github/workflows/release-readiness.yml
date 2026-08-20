@@ -19,6 +19,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: auris360_ci_only
+          POSTGRES_DB: auris360_migration_replay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d auris360_migration_replay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      MIGRATION_REPLAY_DATABASE_URL: postgresql://postgres:auris360_ci_only@127.0.0.1:5432/auris360_migration_replay
+      AURIS360_MIGRATION_REPLAY_CONFIRM: REPLAY LOCAL MIGRATIONS
+
     steps:
       - name: Check out release candidate
         uses: actions/checkout@v4
@@ -36,6 +55,9 @@ jobs:
 
       - name: Run complete automated test suite
         run: npm test
+
+      - name: Replay ordered migrations on disposable PostgreSQL
+        run: npm run migration:replay
 
       - name: Generate release-readiness evidence
         run: npm run release:readiness -- --report release-evidence/github-${{ github.sha }}.json
