@@ -10,6 +10,7 @@
 
 - [ ] Release Readiness workflow passes.
 - [ ] Preview deployment was tested against staging, not production data.
+- [ ] Staging Acceptance workflow passes for the successful Preview deployment.
 - [ ] Affected modules and their shared navigation paths were tested.
 - [ ] Employee, manager and administrator access was considered.
 - [ ] Desktop and mobile behaviour was checked where relevant.

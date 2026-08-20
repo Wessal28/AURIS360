@@ -129,3 +129,24 @@ When an approved migration intentionally adds or removes tables, policies or
 routines, update the expectation counts in the same pull request and attach the
 successful replay output as release evidence. Never weaken the localhost or
 database-name guards to make a migration pass.
+
+## 9. Automated Preview acceptance gate
+
+The `Staging acceptance` GitHub workflow runs after a successful non-production
+deployment. It refuses production application and database URLs, verifies
+`/api/runtime-config`, signs in using the dedicated staging test identity and
+confirms that the profile belongs to `AURIS360 Staging Test`.
+
+Create a protected GitHub Actions environment named `staging` and add these
+environment secrets:
+
+- `STAGING_SUPABASE_URL` = `https://beoutmqttgfyyzndcdxu.supabase.co`
+- `STAGING_SUPABASE_ANON_KEY` = the staging publishable/anon key
+- `STAGING_TEST_EMAIL` = the dedicated confirmed staging administrator email
+- `STAGING_TEST_PASSWORD` = that staging-only account password
+
+The gate performs read-only, tenant-scoped requests against the data sources for
+Executive Dashboard, Monthly KPI Follow-up, Safety Engagement and Document
+Control, plus the staging site. Empty tables are accepted; inaccessible or
+misconfigured sources fail the gate. Evidence is retained for 30 days and never
+contains the password, token or public key.
