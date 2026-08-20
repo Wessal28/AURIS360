@@ -21,7 +21,8 @@ const testFiles = [
   'tests/person_identity_reconciliation_contract.test.cjs',
   'tests/location_identity_contract.test.cjs',
   'tests/verified_operational_references_contract.test.cjs',
-  'tests/pending_notifications_security_contract.test.cjs'
+  'tests/pending_notifications_security_contract.test.cjs',
+  'tests/migration_baseline_contract.test.cjs'
 ];
 
 function run(label, command, args) {
@@ -39,6 +40,7 @@ function run(label, command, args) {
 
 const results = [
   run('Offline manifest freshness', process.execPath, ['scripts/generate-sw-manifest.cjs', '--check']),
+  run('Ordered migration baseline', process.execPath, ['scripts/validate-migrations.cjs']),
   run('Automated release contracts', process.execPath, ['--test', ...testFiles])
 ];
 const passed = results.every((result) => result.passed);
