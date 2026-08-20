@@ -51,10 +51,6 @@ begin
     raise exception 'No Auth user exists for the supplied staging email.';
   end if;
 
-  if not exists (select 1 from public.profiles where id = v_user_id) then
-    raise exception 'The profile trigger has not created a matching public.profiles row.';
-  end if;
-
   select id
   into v_company_id
   from public.companies
@@ -66,6 +62,14 @@ begin
     insert into public.companies (name, industry, active)
     values (v_company_name, 'Software verification', true)
     returning id into v_company_id;
+  end if;
+
+  -- A schema-only staging copy contains no Auth users and may not include the
+  -- production auth.users trigger. Create only the application profile that
+  -- corresponds to the already-created staging Auth identity.
+  if not exists (select 1 from public.profiles where id = v_user_id) then
+    insert into public.profiles (id, email, full_name, role, company_id)
+    values (v_user_id, v_admin_email, 'Staging Administrator', 'admin', v_company_id);
   end if;
 
   update public.profiles

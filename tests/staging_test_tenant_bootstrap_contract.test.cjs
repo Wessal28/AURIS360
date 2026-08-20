@@ -24,3 +24,10 @@ test('staging bootstrap is repeatable for its labelled company and site', () => 
   assert.match(sql, /where id = v_user_id/);
   assert.match(sql, /role = 'admin'/);
 });
+
+test('staging bootstrap repairs only the profile for an existing staging Auth identity', () => {
+  assert.match(sql, /if not exists \(select 1 from public\.profiles where id = v_user_id\)/i);
+  assert.match(sql, /insert into public\.profiles \(id, email, full_name, role, company_id\)/i);
+  assert.match(sql, /values \(v_user_id, v_admin_email, 'Staging Administrator', 'admin', v_company_id\)/i);
+  assert.match(sql, /from auth\.users[\s\S]*lower\(email\) = lower\(v_admin_email\)/i);
+});
