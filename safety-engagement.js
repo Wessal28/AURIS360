@@ -57,7 +57,7 @@ async function loadData(force){
 function mount(){
   if(document.getElementById('page-engagement'))return;
   var main=document.querySelector('.main');if(!main)return;
-  var page=document.createElement('div');page.id='page-engagement';page.className='page se-page';page.style.display='none';
+  var page=document.createElement('div');page.id='page-engagement';page.className='page se-page';
   page.innerHTML='<div class="se-shell" id="se-root"></div><div class="se-drawer-backdrop" id="se-drawer" data-auris-module-onclick="f0001"><div class="se-drawer" id="se-drawer-panel"></div></div>';
   main.appendChild(page);
   var kpiNav=document.querySelector('.sidebar .nav-item[data-nav-key="kpi"]')||Array.from(document.querySelectorAll('.sidebar .nav-item')).find(function(x){return (x.textContent||'').indexOf('Objectives & KPIs')>=0;});

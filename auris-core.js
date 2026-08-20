@@ -3376,13 +3376,36 @@ document.querySelectorAll('.page').forEach(p=>{
   p.classList.remove('active');
 });
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-const target=document.getElementById('page-'+name);
-if(target){
+const activateRoutedPage=function(){
+  const target=document.getElementById('page-'+name);
+  if(!target)return null;
   target.classList.add('active');
-}
+  // Dynamic/upgraded modules must not be allowed to retain a stale inline
+  // hidden state after the router has selected them.
+  if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
+  return target;
+};
+activateRoutedPage();
 if(el&&el.classList)el.classList.add('active');
 const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,engagement:loadSafetyEngagement,workschedule:loadWorkSchedule,events:loadEvents,observation:()=>{if(typeof window.loadBbsObservations==='function')window.loadBbsObservations();else loadObservation();},inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,sitemap:loadSiteMap,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:()=>{if(typeof window.loadNoiseManagement==='function')window.loadNoiseManagement();else loadNoise();},meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
-if(L[name])L[name]();
+if(L[name]){
+  try{
+    var pageLoadResult=L[name]();
+    // Some module upgrades mount or rebuild their page synchronously inside
+    // the loader. Reassert the route after that work, and once more after an
+    // asynchronous loader settles.
+    activateRoutedPage();
+    if(pageLoadResult&&typeof pageLoadResult.then==='function'){
+      pageLoadResult.then(activateRoutedPage,function(error){
+        activateRoutedPage();
+        console.error('Module load failed ('+name+'):',error);
+      });
+    }
+  }catch(error){
+    activateRoutedPage();
+    console.error('Module load failed ('+name+'):',error);
+  }
+}
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
   if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
