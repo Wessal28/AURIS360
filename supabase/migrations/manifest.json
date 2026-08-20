@@ -1,0 +1,11 @@
+{
+  "format_version": 1,
+  "baseline": "20260820000000_production_schema_baseline.sql",
+  "migrations": [
+    {
+      "order": 1,
+      "file": "20260820000000_production_schema_baseline.sql",
+      "sha256": "af663e5ea5d0c5b228dc3bfc4db56107ff07f15a26ad6f63fc9ac67a341f3c51"
+    }
+  ]
+}

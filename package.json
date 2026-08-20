@@ -47,6 +47,8 @@
     ,"test:elearning-path": "node tests/elearning_course_path_contract.test.cjs"
     ,"test:tab-icons": "node tests/module_tab_icon_contract.test.cjs"
     ,"test:module-typography": "node tests/module_typography_contract.test.cjs"
+    ,"migration:capture-baseline": "powershell -ExecutionPolicy Bypass -File scripts/capture-staging-schema-baseline.ps1"
+    ,"migration:validate": "node scripts/validate-migrations.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",
