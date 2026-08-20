@@ -107,6 +107,12 @@ After the schema-only staging copy and synthetic acceptance tests pass, capture 
 npm run migration:capture-baseline
 ```
 
+On a Windows terminal without `npm`, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\capture-staging-schema-baseline.ps1
+```
+
 The command is restricted to project `beoutmqttgfyyzndcdxu`, verifies that staging contains no non-test company, exports schema only, rejects top-level table data changes and writes a checksum manifest. It never exports production rows or Auth users.
 
 Once the baseline has been reviewed and committed, every later database change must be a new ordered file in `supabase/migrations` and must pass `npm run migration:validate` before promotion.

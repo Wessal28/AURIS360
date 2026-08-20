@@ -10,6 +10,9 @@ $migrationDir = Join-Path $repoRoot 'supabase\migrations'
 $baselineFile = Join-Path $migrationDir '20260820000000_production_schema_baseline.sql'
 $dockerBin = Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin'
 $dockerCli = Join-Path $dockerBin 'docker.exe'
+$bundledNode = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+$nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+$nodeCli = if ($nodeCommand) { $nodeCommand.Source } elseif (Test-Path -LiteralPath $bundledNode) { $bundledNode } else { $null }
 $createdBaseline = $false
 
 function ConvertFrom-SecureValue {
@@ -21,6 +24,9 @@ function ConvertFrom-SecureValue {
 
 if (-not (Test-Path -LiteralPath $dockerCli)) {
     throw "Docker CLI not found at $dockerCli. Start Docker Desktop before retrying."
+}
+if (-not $nodeCli) {
+    throw 'Node.js is required for checksum validation. Open this repository in Codex or install Node.js 24.'
 }
 if (Test-Path -LiteralPath $baselineFile) {
     throw "Baseline already exists at $baselineFile. It will not be overwritten."
@@ -86,7 +92,7 @@ try {
         throw 'Generated baseline is empty or unexpectedly small.'
     }
 
-    & node (Join-Path $PSScriptRoot 'validate-migrations.cjs') --write-manifest
+    & $nodeCli (Join-Path $PSScriptRoot 'validate-migrations.cjs') --write-manifest
     if ($LASTEXITCODE -ne 0) { throw 'Generated migration baseline failed validation.' }
 
     $hash = (Get-FileHash -LiteralPath $baselineFile -Algorithm SHA256).Hash

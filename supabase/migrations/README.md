@@ -18,6 +18,12 @@ Capture the initial baseline only from the isolated staging project:
 npm run migration:capture-baseline
 ```
 
+If `npm` is not installed in the Windows terminal, run the PowerShell entry point directly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\capture-staging-schema-baseline.ps1
+```
+
 Validate the baseline and all later migrations:
 
 ```powershell
