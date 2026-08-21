@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('corrected HSE design release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-08-21-design-requirements-2"/);
+  assert.match(index, /name="auris-build" content="2026-08-21-stability-phase-9"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
@@ -25,6 +25,6 @@ test('all corrected design assets use the same release cache key', () => {
   ];
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(index, new RegExp(`${escaped}\\?v=20260821-2`), `${asset} must be cache-versioned`);
+    assert.match(index, new RegExp(`${escaped}\\?v=20260821-3`), `${asset} must be cache-versioned`);
   }
 });
