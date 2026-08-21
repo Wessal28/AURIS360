@@ -51,6 +51,7 @@
     ,"migration:validate": "node scripts/validate-migrations.cjs"
     ,"migration:replay": "node scripts/replay-migrations.cjs"
     ,"staging:acceptance": "node scripts/verify-staging-acceptance.cjs"
+    ,"production:smoke": "node scripts/verify-production-smoke.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",

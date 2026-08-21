@@ -18,6 +18,8 @@ npm run release:readiness -- --report release-evidence/<tenant>-<cohort>.json
 
 All checks must pass. The generated JSON intentionally leaves the eight environment gates pending.
 
+After production promotion, the **Production smoke** workflow must pass for the exact promoted commit. Retain its 90-day evidence artifact with the release record. The smoke is read-only and verifies deployment identity and public runtime health; it does not replace authenticated tenant acceptance.
+
 After applying the current migrations, run `core_control_live_gate_verification.sql` in Supabase. Its final `OVERALL` row must be `PASS`; retain the result as live environment evidence. A `REVIEW` result is a stop signal, not permission to enable a cohort.
 
 ## 2. Environment evidence

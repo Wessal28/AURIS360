@@ -22,6 +22,7 @@ The script is designed to be re-run safely.
 - On Vercel Hobby, cron schedules are daily only; for near-real-time email notifications use a Pro plan, an external scheduler, or a separate worker.
 - The PWA manifest uses relative URLs so the same deployment can support future custom domains.
 - After each deploy, manually check login, dashboard load, one print preview, one notification queue item, and mobile/PWA install behaviour.
+- After production promotion, require the `Production smoke` workflow to confirm the canonical domain is serving the intended commit and approved production runtime before sign-off.
 
 ## Password resets
 
