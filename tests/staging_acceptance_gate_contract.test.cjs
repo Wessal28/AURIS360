@@ -22,12 +22,29 @@ test('staging acceptance authenticates without exposing credentials and verifies
   assert.doesNotMatch(source, /console\.log\([^\n]*(password|access_token|anonKey)/i);
 });
 
-test('four previously blank module data sources are checked read-only', () => {
+test('four previously blank modules verify deployed render and controlled empty-state contracts', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {
     assert.match(source, new RegExp(`${table}\\?select=id`));
   }
-  assert.doesNotMatch(source, /method:\s*'(POST|PATCH|PUT|DELETE)'[^\n]*rest\/v1/i);
+  for (const asset of ['auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+    assert.match(source, new RegExp(asset.replace(/\./g, '\\\.')));
+  }
+  for (const marker of ['No open incidents', 'No KPI data is available.', 'No engagement results for', 'No documents']) {
+    assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(source, /presentation_state: rows\.length \? 'populated' : 'controlled_empty'/);
+});
+
+test('staging acceptance safely proves tenant-scoped write persistence', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /method: 'PATCH'/);
+  assert.match(source, /sites\?id=eq\.\$\{encodeURIComponent\(site\.id\)\}&\$\{companyFilter\}/);
+  assert.match(source, /\{ name: site\.name \}/);
+  assert.match(source, /same-value site PATCH/);
+  const persistenceProbe = source.match(/const restWrite[\s\S]*?const profiles/);
+  assert.ok(persistenceProbe, 'tenant write helper must remain identifiable');
+  assert.doesNotMatch(persistenceProbe[0], /method:\s*'(POST|PUT|DELETE)'/);
 });
 
 test('successful Preview deployments trigger the governed acceptance workflow', () => {

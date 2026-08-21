@@ -57,6 +57,19 @@ function runtimeConfig(script) {
   try { return JSON.parse(match[1]); } catch (_) { fail('Preview runtime configuration could not be parsed.'); }
 }
 
+function deployedAssetUrl(html, preview, fileName) {
+  const escaped = fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = String(html).match(new RegExp(`(?:src|href)=["']([^"']*${escaped}(?:\\?[^"']*)?)["']`, 'i'));
+  if (!match) fail(`Preview does not publish ${fileName}.`);
+  return new URL(match[1], preview).href;
+}
+
+function requireMarkers(source, label, markers) {
+  for (const marker of markers) {
+    if (!String(source).includes(marker)) fail(`${label} is missing its ${marker} functional marker.`);
+  }
+}
+
 function reportPathFromArgs() {
   const index = process.argv.indexOf('--report');
   if (index === -1) return '';
@@ -74,14 +87,43 @@ async function main() {
   const email = required('STAGING_TEST_EMAIL');
   const password = required('STAGING_TEST_PASSWORD');
   const vercelBypassSecret = required('VERCEL_AUTOMATION_BYPASS_SECRET');
+  const previewHeaders = { 'x-vercel-protection-bypass': vercelBypassSecret };
 
   if (PRODUCTION_HOSTS.has(preview.hostname.toLowerCase())) fail('Production application URLs are forbidden.');
   const expectedRef = projectRef(configuredSupabase.href);
   if (expectedRef === PRODUCTION_REF) fail('The production Supabase project is forbidden.');
   if (expectedRef !== APPROVED_STAGING_REF) fail(`Expected approved staging project ${APPROVED_STAGING_REF}.`);
 
+  const appHtml = await responseText(new URL('/', preview).href, { headers: previewHeaders })
+    .catch((error) => fail(`preview shell verification failed (${error.message}).`));
+  requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
+
+  const assetSources = new Map();
+  for (const fileName of ['auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+    const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
+      .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
+    if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
+    assetSources.set(fileName, source);
+  }
+
+  const functionalViews = [
+    ['Executive Dashboard', 'auris-core.js', ['async function loadExecutive()', 'No open incidents']],
+    ['Monthly KPI Follow-up', 'kpi-module-upgrade.js', ['No KPI data is available.', 'kpiXRenderMonthly']],
+    ['Safety Engagement', 'safety-engagement.js', ['page-engagement', 'No engagement results for']],
+    ['Document Control', 'document-control-upgrade.js', ['Loading Document Control', 'No documents']]
+  ];
+  for (const [label, asset, markers] of functionalViews) requireMarkers(assetSources.get(asset), label, markers);
+
+  const coreSource = assetSources.get('auris-core.js');
+  requireMarkers(coreSource, 'Module navigation', [
+    'executive:loadExecutive',
+    'kpi:kpiLoadAll',
+    'engagement:loadSafetyEngagement',
+    'documents:loadDocs'
+  ]);
+
   const runtime = runtimeConfig(await responseText(new URL('/api/runtime-config', preview).href, {
-    headers: { 'x-vercel-protection-bypass': vercelBypassSecret }
+    headers: previewHeaders
   }).catch((error) => fail(`preview runtime verification failed (${error.message}).`)));
   if (runtime.error) fail(`Preview rejected its runtime configuration: ${runtime.error}`);
   if (runtime.environment !== 'preview') fail(`Expected a Preview deployment, received ${runtime.environment || 'unknown'}.`);
@@ -98,6 +140,11 @@ async function main() {
 
   const headers = { apikey: anonKey, Authorization: `Bearer ${auth.access_token}`, Accept: 'application/json' };
   const rest = async (resource) => jsonRequest(`${base}/rest/v1/${resource}`, { headers });
+  const restWrite = async (resource, body) => jsonRequest(`${base}/rest/v1/${resource}`, {
+    method: 'PATCH',
+    headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body)
+  });
   const profiles = await rest(`profiles?select=id,company_id,role,status&id=eq.${encodeURIComponent(auth.user.id)}&limit=1`)
     .catch((error) => fail(`profile verification failed (${error.message}).`));
   if (!Array.isArray(profiles) || profiles.length !== 1 || !profiles[0].company_id) fail('Staging identity has no usable application profile.');
@@ -117,23 +164,40 @@ async function main() {
     ['Monthly KPI Follow-up', `kpi_monthly_data?select=id&${companyFilter}&limit=1`],
     ['Safety Engagement', `engagement_configuration_versions?select=id&${companyFilter}&limit=1`],
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
-    ['Staging site', `sites?select=id&${companyFilter}&limit=1`]
+    ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
   const checks = [];
+  const sourceRows = new Map();
   for (const [label, resource] of sources) {
     const rows = await rest(resource).catch((error) => fail(`${label} data source is unavailable (${error.message}).`));
     if (!Array.isArray(rows)) fail(`${label} data source returned an invalid response.`);
-    checks.push({ label, accessible: true, sample_rows: rows.length });
+    sourceRows.set(label, rows);
+    checks.push({ label, accessible: true, sample_rows: rows.length, presentation_state: rows.length ? 'populated' : 'controlled_empty' });
   }
+
+  const site = (sourceRows.get('Staging site') || [])[0];
+  if (!site || !site.id || !site.name) fail('The staging tenant needs one dedicated site for the persistence probe.');
+  const writeRows = await restWrite(
+    `sites?id=eq.${encodeURIComponent(site.id)}&${companyFilter}&select=id,name,updated_at`,
+    { name: site.name }
+  ).catch((error) => fail(`staging write persistence probe failed (${error.message}).`));
+  if (!Array.isArray(writeRows) || writeRows.length !== 1 || writeRows[0].id !== site.id || writeRows[0].name !== site.name) {
+    fail('Staging write persistence probe did not return the exact tenant-scoped site.');
+  }
+  checks.push({ label: 'Tenant-scoped write persistence', accessible: true, record_id: site.id, operation: 'same-value site PATCH' });
+
+  const emptySources = checks.filter((check) => check.presentation_state === 'controlled_empty').map((check) => check.label);
 
   const evidence = {
     generated_at: new Date().toISOString(),
-    status: 'passed',
+    status: emptySources.length ? 'passed_with_controlled_empty_states' : 'passed',
     preview_host: preview.hostname,
     staging_project_ref: APPROVED_STAGING_REF,
     tenant_name: companies[0].name,
     profile_role: profile.role,
-    checks
+    checks,
+    deployed_functional_views: functionalViews.map((view) => view[0]),
+    controlled_empty_sources: emptySources
   };
   const reportPath = reportPathFromArgs();
   if (reportPath) {
@@ -141,7 +205,8 @@ async function main() {
     fs.writeFileSync(reportPath, `${JSON.stringify(evidence, null, 2)}\n`);
     console.log(`Staging acceptance evidence written to ${path.relative(root, reportPath)}.`);
   }
-  console.log(`Staging acceptance passed: ${checks.length} tenant-scoped sources verified on ${preview.hostname}.`);
+  if (emptySources.length) console.warn(`Controlled empty states verified for: ${emptySources.join(', ')}.`);
+  console.log(`Staging functional acceptance passed: ${functionalViews.length} rendered module contracts and ${checks.length} tenant-scoped checks verified on ${preview.hostname}.`);
 }
 
 main().catch((error) => fail(error && error.message ? error.message : 'unexpected verification failure.'));
