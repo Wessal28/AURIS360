@@ -32,6 +32,7 @@ jobs:
       STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
       STAGING_TEST_EMAIL: ${{ secrets.STAGING_TEST_EMAIL }}
       STAGING_TEST_PASSWORD: ${{ secrets.STAGING_TEST_PASSWORD }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
     steps:
       - name: Check out deployment source

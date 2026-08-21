@@ -40,3 +40,12 @@ test('successful Preview deployments trigger the governed acceptance workflow', 
   }
   assert.match(workflow, /upload-artifact@v4/);
 });
+
+test('protected Vercel previews use the automation bypass without exposing it in the URL', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  const workflow = read('.github/workflows/staging-acceptance.yml');
+  assert.match(workflow, /secrets\.VERCEL_AUTOMATION_BYPASS_SECRET/);
+  assert.match(source, /required\('VERCEL_AUTOMATION_BYPASS_SECRET'\)/);
+  assert.match(source, /'x-vercel-protection-bypass': vercelBypassSecret/);
+  assert.doesNotMatch(source, /x-vercel-protection-bypass=/);
+});

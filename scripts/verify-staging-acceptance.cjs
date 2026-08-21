@@ -36,6 +36,9 @@ async function responseText(url, options = {}) {
   try {
     const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'follow' });
     const text = await response.text();
+    if (response.url.startsWith('https://vercel.com/login') && new URL(url).hostname.endsWith('.vercel.app')) {
+      throw new Error('Preview deployment protection rejected the automation bypass secret');
+    }
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
     return text;
   } finally {
@@ -70,13 +73,16 @@ async function main() {
   const anonKey = required('STAGING_SUPABASE_ANON_KEY');
   const email = required('STAGING_TEST_EMAIL');
   const password = required('STAGING_TEST_PASSWORD');
+  const vercelBypassSecret = required('VERCEL_AUTOMATION_BYPASS_SECRET');
 
   if (PRODUCTION_HOSTS.has(preview.hostname.toLowerCase())) fail('Production application URLs are forbidden.');
   const expectedRef = projectRef(configuredSupabase.href);
   if (expectedRef === PRODUCTION_REF) fail('The production Supabase project is forbidden.');
   if (expectedRef !== APPROVED_STAGING_REF) fail(`Expected approved staging project ${APPROVED_STAGING_REF}.`);
 
-  const runtime = runtimeConfig(await responseText(new URL('/api/runtime-config', preview).href));
+  const runtime = runtimeConfig(await responseText(new URL('/api/runtime-config', preview).href, {
+    headers: { 'x-vercel-protection-bypass': vercelBypassSecret }
+  }).catch((error) => fail(`preview runtime verification failed (${error.message}).`)));
   if (runtime.error) fail(`Preview rejected its runtime configuration: ${runtime.error}`);
   if (runtime.environment !== 'preview') fail(`Expected a Preview deployment, received ${runtime.environment || 'unknown'}.`);
   if (projectRef(runtime.supabaseUrl) !== APPROVED_STAGING_REF) fail('Preview is not connected to the approved staging project.');
