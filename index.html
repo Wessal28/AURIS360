@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-08-21-stability-phase-9"/>
+<meta name="auris-build" content="2026-08-21-stability-phase-9-callouts"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -41,7 +41,7 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260821-3"></script>
+<script src="auris-core.js?v=20260821-4"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260821-3">
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260821-3">
@@ -55,8 +55,8 @@
 <link rel="stylesheet" href="sop-video-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="learning-competency-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260805-1">
-<link rel="stylesheet" href="contractor-management-upgrade.css?v=20260805-1">
-<link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260805-1">
+<link rel="stylesheet" href="contractor-management-upgrade.css?v=20260821-4">
+<link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
@@ -5199,7 +5199,7 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-contractor-s-7d3bddef4a"><div class="card-title auris-contractor-s-ca98ae97df">Overall Rating</div>
 <div class="auris-contractor-s-651d52088e"><div id="cev-total-score" class="auris-contractor-s-337b9e03eb">-</div><div id="cev-rating-badge" class="auris-contractor-s-db5a3c91c6">-</div></div>
-<div class="form3group"><label class="form3label">Recommend for future work?</label><select id="cevf-recommend"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div class="form3group"><label class="form3label">Recommend for future work?</label><select id="cevf-recommend"><option value="true">Yes</option><option value="conditional">Yes with conditions</option><option value="false">No</option></select></div>
 <div class="form3group"><label class="form3label">Notes</label><textarea id="cevf-rec-notes" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
@@ -5220,7 +5220,7 @@ Offline mode - changes will sync when connection is restored
 <div id="catw-persons-list"></div></div>
 <div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Conditions</div>
 <div class="form3group"><label class="form3label">Conditions</label><textarea id="catwf-conditions" class="auris-contractor-s-07bdff4587"></textarea></div>
-<div class="form3row"><div class="form3group"><label class="form3label">PPE required</label><input type="text" id="catwf-ppe"/></div><div class="form3group"><label class="form3label">Supervision</label><input type="text" id="catwf-supervision"/></div></div>
+<div class="form3row"><div class="form3group"><label class="form3label">PPE required</label><div class="catw-ppe-control"><input type="text" id="catwf-ppe" readonly placeholder="Select required PPE"/><button type="button" class="btn btn-sm" id="catwf-ppe-select-btn"><i class="ti ti-shield-check"></i>Select PPE</button></div></div><div class="form3group"><label class="form3label">Supervision</label><input type="text" id="catwf-supervision"/></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">RA ref</label><select id="catwf-ra-ref" class="auris-contractor-s-7b8c3df564"><option value="">Select risk assessment...</option></select></div><div class="form3group"><label class="form3label">Method Statement</label><select id="catwf-ms-ref" class="auris-contractor-s-7b8c3df564"><option value="">Select method statement / SOP...</option></select></div></div></div>
 </div>
 <div>
@@ -11631,7 +11631,7 @@ I can help you:<br>
 <script src="elearning-course-path.js?v=20260813-1"></script>
 <script src="chemical-control-upgrade.js?v=20260806-1"></script>
 <script src="contractor-management-upgrade.js?v=20260821-3"></script>
-<script src="tools-equipment-upgrade.js?v=20260806-1"></script>
+<script src="tools-equipment-upgrade.js?v=20260821-4"></script>
 <script src="auris-icon-system.js?v=20260817-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="offline-sync-diagnostic.js?v=20260814-1"></script>
