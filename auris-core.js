@@ -2980,8 +2980,7 @@ function locationAttachSearchableSelectors(){
   ['ev-location','obs-location','if-site','ra-site-name','ra-workshop','pf-loc','mf-location'].forEach(function(id){var el=document.getElementById(id);if(el&&el.tagName==='INPUT'){el.setAttribute('list','canonical-location-options');el.setAttribute('autocomplete','off');}});
 }
 function fillPplDrops(){
-var scopeCompany=(typeof ccid==='function'?ccid():null);
-var dropdownPeople=(people||[]).filter(function(p){return !scopeCompany||!p.company_id||p.company_id===scopeCompany;});
+var dropdownPeople=tenantPeople();
 const opts='<option value="">Select person...</option>'+dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+dropdownPeople.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
@@ -2989,6 +2988,13 @@ const nameOpts='<option value="">Select person...</option>'+dropdownPeople.map(f
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 if(typeof ptwPopulatePeopleFields==='function')ptwPopulatePeopleFields();
+}
+
+function tenantPeople(){
+  var scopeCompany=(typeof ccid==='function'?ccid():null);
+  return (people||[]).filter(function(p){
+    return !scopeCompany||String(p.company_id||'')===String(scopeCompany);
+  });
 }
 
 function personFullName(p){
@@ -3070,7 +3076,7 @@ async function openVerifiedReferenceSelect(selectId,kind){
 function fillPersonSelect(id,selectedName){
   var el=document.getElementById(id);if(!el)return;
   var cur=selectedName||el.value||'';
-  var opts='<option value="">Select person...</option>'+(people||[]).map(function(p){var nm=personFullName(p);return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
+  var opts='<option value="">Select person...</option>'+tenantPeople().map(function(p){var nm=personFullName(p);return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
   el.innerHTML=opts;
   setSelectValueWithFallback(id,cur);
 }
@@ -20694,11 +20700,14 @@ function cevBuildScores(){
       var col=i<=2?'#E24B4A':i===3?'#EF9F27':'#1D9E75';
       h+='<button class="cev-score-btn" data-field="'+c.field+'" data-val="'+i+'" '
         +'style="width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:#f9fafb;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s" '
-        +'onclick="cevSetScore(\''+c.field+'\','+i+')">'+i+'</button>';
+        +'type="button" aria-label="'+escH(c.label)+' score '+i+'">'+i+'</button>';
     }
     h+='</div></div>';
   });
   el.innerHTML=h;
+  el.querySelectorAll('.cev-score-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){cevSetScore(btn.dataset.field,parseInt(btn.dataset.val));});
+  });
   cevCalcTotal();
 }
 
@@ -20712,13 +20721,28 @@ function cevSetScore(field, val){
     btn.style.color=active?'#fff':'#333';
     btn.style.borderColor=active?col:'var(--border)';
   });
-  btn=document.querySelector('[data-field="'+field+'"][data-val="'+val+'"]');
+  var btn=document.querySelector('[data-field="'+field+'"][data-val="'+val+'"]');
   if(btn)btn.setAttribute('data-selected',val);
   // Store in hidden input
   var inp=document.getElementById('cev-score-'+field);
   if(!inp){inp=document.createElement('input');inp.type='hidden';inp.id='cev-score-'+field;document.getElementById('cev-scores').appendChild(inp);}
   inp.value=val;
   cevCalcTotal();
+}
+
+var CEV_CONDITIONAL_PREFIX='[YES WITH CONDITIONS]';
+function cevRecommendationValue(x){
+  if(x&&x.recommend_future_use===false)return 'false';
+  return String(x?.recommendation_notes||'').trim().indexOf(CEV_CONDITIONAL_PREFIX)===0?'conditional':'true';
+}
+function cevRecommendationNotes(value,notes){
+  notes=String(notes||'').replace(/^\[YES WITH CONDITIONS\]\s*/,'').trim();
+  return value==='conditional'?[CEV_CONDITIONAL_PREFIX,notes].filter(Boolean).join('\n'):notes||null;
+}
+function cevRecommendationLabel(x){
+  var value=cevRecommendationValue(x);
+  if(value==='conditional')return '<span style="color:#9e5c00;font-weight:700">Yes with conditions</span>';
+  return value==='true'?'<span style="color:var(--green);font-weight:700">Yes</span>':'<span style="color:var(--red)">No</span>';
 }
 
 function cevCalcTotal(){
@@ -20770,7 +20794,7 @@ async function cevLoad(){
         +'<td style="padding:9px 10px;font-size:11px">'+escH((x.work_description||'-').substring(0,50))+'</td>'
         +'<td style="padding:9px 10px;text-align:center;font-weight:800;color:'+rc[1]+'">'+( x.total_score||'-')+'</td>'
         +'<td style="padding:9px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+( x.overall_rating||'-')+'</span></td>'
-        +'<td style="padding:9px 10px;text-align:center">'+(x.recommend_future_use?'<span style="color:var(--green);font-weight:700">Yes</span>':'<span style="color:var(--red)">No</span>')+'</td>'
+        +'<td style="padding:9px 10px;text-align:center">'+cevRecommendationLabel(x)+'</td>'
         +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
         +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0149"><i class="ti ti-edit"></i></button>'
         +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0150"><i class="ti ti-trash"></i></button>':'')
@@ -20814,13 +20838,14 @@ async function cevEdit(id){
   document.getElementById('cev-form3title').textContent='Edit Evaluation';
   var conSel=document.getElementById('cevf-contractor');
   if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});conSel.value=x.contractor_id||'';}
-  var flds={'cevf-work-desc':'work_description','cevf-evaluator':'evaluated_by','cevf-positive':'positive_observations','cevf-improve':'areas_improvement','cevf-incident-details':'incident_details','cevf-rec-notes':'recommendation_notes'};
+  var flds={'cevf-work-desc':'work_description','cevf-evaluator':'evaluated_by','cevf-positive':'positive_observations','cevf-improve':'areas_improvement','cevf-incident-details':'incident_details'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var notes=document.getElementById('cevf-rec-notes');if(notes)notes.value=String(x.recommendation_notes||'').replace(/^\[YES WITH CONDITIONS\]\s*/,'');
   var dt=document.getElementById('cevf-date');if(dt)dt.value=x.evaluation_date||'';
   var st=document.getElementById('cevf-start');if(st)st.value=x.work_period_start||'';
   var en=document.getElementById('cevf-end');if(en)en.value=x.work_period_end||'';
   var inc=document.getElementById('cevf-incidents');if(inc)inc.value=x.incidents_during_work||0;
-  var rec=document.getElementById('cevf-recommend');if(rec)rec.value=String(x.recommend_future_use!==false);
+  var rec=document.getElementById('cevf-recommend');if(rec)rec.value=cevRecommendationValue(x);
   cevShowForm();
   setTimeout(function(){
     CEV_CRITERIA.forEach(function(c){if(x[c.field])cevSetScore(c.field,x[c.field]);});
@@ -20831,7 +20856,8 @@ async function cevSave(){
   var conId=document.getElementById('cevf-contractor')?.value;
   if(!conId){toast('Please select a contractor',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),contractor_id:conId,evaluation_date:g('cevf-date'),evaluated_by:g('cevf-evaluator'),work_description:g('cevf-work-desc'),work_period_start:g('cevf-start'),work_period_end:g('cevf-end'),incidents_during_work:parseInt(g('cevf-incidents'))||0,incident_details:g('cevf-incident-details'),positive_observations:g('cevf-positive'),areas_improvement:g('cevf-improve'),recommendation_notes:g('cevf-rec-notes'),recommend_future_use:document.getElementById('cevf-recommend')?.value!=='false',updated_at:new Date().toISOString()};
+  var recommendation=document.getElementById('cevf-recommend')?.value||'true';
+  var body={company_id:ccid(),contractor_id:conId,evaluation_date:g('cevf-date'),evaluated_by:g('cevf-evaluator'),work_description:g('cevf-work-desc'),work_period_start:g('cevf-start'),work_period_end:g('cevf-end'),incidents_during_work:parseInt(g('cevf-incidents'))||0,incident_details:g('cevf-incident-details'),positive_observations:g('cevf-positive'),areas_improvement:g('cevf-improve'),recommendation_notes:cevRecommendationNotes(recommendation,g('cevf-rec-notes')),recommend_future_use:recommendation!=='false',updated_at:new Date().toISOString()};
   var total=0;
   CEV_CRITERIA.forEach(function(c){var inp=document.getElementById('cev-score-'+c.field);var v=inp?parseInt(inp.value)||0:0;body[c.field]=v||null;total+=v;});
   body.total_score=total;
@@ -20946,13 +20972,33 @@ async function catwNew(){
   // Populate issued-by
   await catwLoadReferenceOptions();
   var issSel=document.getElementById('catwf-issued-by');
-  if(issSel){issSel.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;issSel.appendChild(o);});}
+  if(issSel){issSel.innerHTML='<option value="">Select...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;issSel.appendChild(o);});}
+  var ppeBtn=document.getElementById('catwf-ppe-select-btn');if(ppeBtn&&!ppeBtn.dataset.bound){ppeBtn.dataset.bound='1';ppeBtn.addEventListener('click',catwOpenPPESelector);}
   ['catwf-desc','catwf-location','catwf-conditions','catwf-ppe','catwf-supervision','catwf-ra-ref','catwf-ms-ref','catwf-induction-topics','catwf-con-sig','catwf-notes','catwf-induction-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['catwf-from','catwf-until','catwf-induction-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var ind=document.getElementById('catwf-induction-done');if(ind)ind.checked=false;
   var st=document.getElementById('catwf-status');if(st)st.value='active';
   catwRenderPersons();
   catwShowForm();
+}
+
+var CATW_PPE_OPTIONS=['Safety helmet','Safety glasses','Face shield','Hearing protection','Respiratory protection','Protective gloves','Safety footwear','High-visibility clothing','Fall protection','Protective clothing'];
+function catwOpenPPESelector(){
+  var current=String(document.getElementById('catwf-ppe')?.value||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+  var known=CATW_PPE_OPTIONS.map(function(x){return x.toLowerCase();});
+  var custom=current.filter(function(x){return !known.includes(x.toLowerCase());}).join(', ');
+  var modal=document.createElement('div');modal.id='catw-ppe-selector';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:13000;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="catw-ppe-title" style="width:min(620px,100%);max-height:90vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 id="catw-ppe-title" style="margin:0">Select required PPE</h2><button type="button" class="btn btn-sm catw-ppe-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><p style="color:var(--text2);font-size:12px">Select every item required for this authorisation to work.</p><div class="catw-ppe-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">'+CATW_PPE_OPTIONS.map(function(item){var checked=current.some(function(x){return x.toLowerCase()===item.toLowerCase();});return '<label style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:10px"><input type="checkbox" value="'+escH(item)+'" '+(checked?'checked':'')+'>'+escH(item)+'</label>';}).join('')+'</div><div class="form3group" style="margin-top:14px"><label class="form3label" for="catw-ppe-other">Other PPE</label><input id="catw-ppe-other" type="text" value="'+escH(custom)+'" placeholder="Add other requirements, separated by commas"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn catw-ppe-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary catw-ppe-apply"><i class="ti ti-check"></i>Apply selection</button></div></div>';
+  document.body.appendChild(modal);
+  var close=function(){modal.remove();};
+  modal.querySelectorAll('.catw-ppe-cancel').forEach(function(btn){btn.addEventListener('click',close);});
+  modal.querySelector('.catw-ppe-apply').addEventListener('click',function(){
+    var selected=Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(function(x){return x.value;});
+    var other=String(modal.querySelector('#catw-ppe-other').value||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+    var input=document.getElementById('catwf-ppe');if(input)input.value=selected.concat(other).join(', ');
+    close();
+  });
+  modal.addEventListener('click',function(ev){if(ev.target===modal)close();});
 }
 
 async function catwLoadReferenceOptions(selectedRA, selectedMS){
@@ -24360,6 +24406,7 @@ function toolsNew(){
 function toolsEdit(id){
   var x=[].concat(toolsAllData||[],toolsRcdData||[],toolsLiftingData||[]).find(function(r){return String(r.id)===String(id);});
   if(!x)return;
+  if(toolsIsRCD(x)){toolsOpenRCDAssetForm(x);return;}
   toolsEditingId=id;
   document.getElementById('tools-form3title').textContent='Edit Equipment';
   document.getElementById('tools-form3ref').textContent=x.ref_number||'';
@@ -24701,7 +24748,8 @@ async function toolsNewInspection(){
 }
 
 async function toolsStartInspection(toolId,returnTab){
-  toolsInspectionReturnTab=returnTab||'inspection';
+  var activeToolsTab=document.querySelector('#teu-tabs button.active')?.dataset?.tab||document.querySelector('#page-tools [id^="tools-tab-"].active')?.id?.replace('tools-tab-','');
+  toolsInspectionReturnTab=returnTab||(activeToolsTab==='register'?'register':'inspection');
   var tool=toolsAllData.find(x=>x.id===toolId)||toolsLiftingData.find(x=>x.id===toolId);
   if(!tool&&toolId){try{var d=await api('/tools_register?id=eq.'+toolId+'&select=*');tool=d?.[0];}catch(e){}}
   if(!tool){toast('Equipment not found',false);return;}
@@ -24716,7 +24764,7 @@ async function toolsStartInspection(toolId,returnTab){
   var dt=document.getElementById('insp-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
   // Inspector dropdown
   var insp=document.getElementById('insp-inspector');
-  if(insp){insp.innerHTML='<option value="">Select inspector...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;insp.appendChild(o);});}
+  if(insp){insp.innerHTML='<option value="">Select inspector...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;insp.appendChild(o);});}
   // Set next inspection based on frequency
   var nextDate=new Date();
   var freqDays={daily:1,weekly:7,monthly:30,quarterly:90,six_monthly:183,annual:365};
@@ -24786,8 +24834,10 @@ function toolsInspScore(){
 }
 
 function toolsInspFormBack(){
-  document.getElementById('tools-insp-form').style.display='none';
   var target=toolsInspectionReturnTab||'inspection';
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-tabs')){teuSwitch(target);return;}
+  document.getElementById('tools-insp-form').style.display='none';
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   var view=document.getElementById('tools-view-'+target)||document.getElementById('tools-view-inspection');
   if(view)view.style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -24801,7 +24851,7 @@ async function toolsSaveInspection(){
   if(!date){toast('Please set inspection date',false);return;}
   var inspId=document.getElementById('insp-inspector')?.value;
   var inspName='';
-  if(inspId){var p=(people||[]).find(x=>x.id===inspId);inspName=p?(p.last_name+', '+p.first_name):'';}
+  if(inspId){var p=tenantPeople().find(x=>x.id===inspId);inspName=p?(p.last_name+', '+p.first_name):'';}
   // Collect checklist
   var rows=document.querySelectorAll('#insp-checklist-body tr');
   var results=[];
@@ -24825,16 +24875,18 @@ async function toolsSaveInspection(){
   };
   try{
     await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
-    // If fail, add to MAP
+    // If fail, add to MAP. A follow-up failure must never misreport the inspection save.
     if(body.overall_result==='fail'&&body.defects_found){
       var tool=toolsAllData.find(x=>x.id===toolsInspEquipId);
-      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:ccid(),source_module:'tools',source_id:toolsInspEquipId,
-        source_ref:(tool?.ref_number||'Equipment')+' - Failed inspection',
-        description:'Equipment failed inspection: '+body.defects_found,
-        responsible:inspName||null,priority:'high',status:'open',created_by:prof?.id
-      }});
-      toast('Inspection saved - FAIL recorded and action added to MAP.');
+      try{
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),source_module:'inspection',source_id:toolsInspEquipId,
+          source_ref:(tool?.ref_number||'Equipment')+' - Failed inspection',
+          description:'Equipment failed inspection: '+body.defects_found,
+          responsible:inspName||null,priority:'high',status:'open',created_by:prof?.id
+        }});
+        toast('Inspection saved - FAIL recorded and action added to MAP.');
+      }catch(actionError){console.error(actionError);toast('Inspection saved. The MAP follow-up could not be created and needs attention.',false);}
     }else{
       toast('Inspection saved!');
     }
@@ -24869,7 +24921,9 @@ async function toolsLoadRCD(){
       +'<th>Ref</th>'
       +'<th>RCD / Distribution board</th>'
       +'<th>Location</th>'
+      +'<th>Distribution board</th>'
       +'<th>Rating / type</th>'
+      +'<th>Circuit protected</th>'
       +'<th>Last test</th>'
       +'<th>Next due</th>'
       +'<th>Result</th>'
@@ -24888,7 +24942,9 @@ async function toolsLoadRCD(){
         +'<td style="padding:9px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'AUTO')+'</td>'
         +'<td style="padding:9px 12px;font-weight:700">'+escH(x.name||'RCD')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.location||'--')+'</td>'
-        +'<td style="padding:9px 12px">'+escH(x.model||x.brand||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.brand||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.model||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.description||'--')+'</td>'
         +'<td style="padding:9px 12px">'+(last?.inspection_date?new Date(last.inspection_date).toLocaleDateString('en-GB'):'--')+'</td>'
         +'<td style="padding:9px 12px;'+(overdue?'color:var(--red);font-weight:700':dueSoon?'color:#C2410C;font-weight:700':'')+'">'+(next?next.toLocaleDateString('en-GB'):'No test recorded')+(next&&overdue?' overdue':dueSoon?' due soon':'')+'</td>'
         +'<td style="padding:9px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
@@ -24905,13 +24961,35 @@ async function toolsLoadRCD(){
 }
 
 function toolsNewRCD(){
-  toolsNew();
-  toolsFormReturnTab='rcd';
-  var cat=document.getElementById('teq-cat');if(cat){cat.value='electrical';toolsCatChange();}
-  var name=document.getElementById('teq-name');if(name&&!name.value)name.value='RCD / Distribution board';
-  var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
-  var stat=document.getElementById('teq-statutory');if(stat)stat.checked=false;
-  var notes=document.getElementById('teq-notes');if(notes&&!notes.value)notes.value='RCD monthly push-button testing required.';
+  toolsOpenRCDAssetForm(null);
+}
+
+function toolsOpenRCDAssetForm(record){
+  record=record||{};
+  var modal=document.createElement('div');modal.id='tools-rcd-asset-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:13000;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="tools-rcd-asset-title" style="width:min(760px,100%);max-height:92vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 id="tools-rcd-asset-title" style="margin:0">'+(record.id?'Edit RCD':'Add RCD')+'</h2><div style="color:var(--text2);font-size:12px;margin-top:4px">Dedicated RCD and distribution-board record</div></div><button type="button" class="btn btn-sm rcd-asset-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:18px"><div class="form3group"><label class="form3label">RCD / device name *</label><input id="rcda-name" value="'+escH(record.name||'')+'"></div><div class="form3group"><label class="form3label">Distribution board reference *</label><input id="rcda-db-ref" value="'+escH(record.brand||'')+'" placeholder="e.g. DB-L1-02"></div></div><div class="form3row"><div class="form3group"><label class="form3label">RCD rating *</label><input id="rcda-rating" value="'+escH(record.model||'')+'" placeholder="e.g. 30 mA / 40 A"></div><div class="form3group"><label class="form3label">Circuit protected *</label><input id="rcda-circuit" value="'+escH(record.description||'')+'" placeholder="e.g. Workshop socket circuit"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Location</label><input id="rcda-location" value="'+escH(record.location||'')+'"></div><div class="form3group"><label class="form3label">Serial number</label><input id="rcda-serial" value="'+escH(record.serial_number||'')+'"></div><div class="form3group"><label class="form3label">Status</label><select id="rcda-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="rcda-notes">'+escH(record.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn rcd-asset-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary rcd-asset-save"><i class="ti ti-device-floppy"></i>Save RCD</button></div></div>';
+  document.body.appendChild(modal);
+  var status=modal.querySelector('#rcda-status');if(status)status.value=record.status||'active';
+  var close=function(){modal.remove();};
+  modal.querySelectorAll('.rcd-asset-cancel').forEach(function(btn){btn.addEventListener('click',close);});
+  modal.querySelector('.rcd-asset-save').addEventListener('click',function(){toolsSaveRCDAsset(record.id,modal);});
+  modal.addEventListener('click',function(ev){if(ev.target===modal)close();});
+}
+
+async function toolsSaveRCDAsset(id,modal){
+  var g=function(key){return modal.querySelector('#'+key)?.value?.trim()||null;};
+  if(!g('rcda-name')||!g('rcda-db-ref')||!g('rcda-rating')||!g('rcda-circuit')){toast('Name, distribution board reference, rating and circuit protected are required.',false);return;}
+  var body={company_id:ccid(),category:'electrical',name:g('rcda-name'),brand:g('rcda-db-ref'),model:g('rcda-rating'),description:g('rcda-circuit'),location:g('rcda-location'),serial_number:g('rcda-serial'),status:g('rcda-status')||'active',inspection_frequency:'monthly',requires_statutory:false,statutory_type:'RCD',is_vehicle:false,notes:g('rcda-notes')||'RCD monthly push-button testing required.',updated_at:new Date().toISOString()};
+  try{
+    if(id){await api('/tools_register?id=eq.'+encodeURIComponent(id),{m:'PATCH',p:'return=minimal',b:body});toast('RCD updated!');}
+    else{
+      body.created_by=prof?.id;
+      var saved=await api('/tools_register',{m:'POST',p:'return=representation',b:body});
+      if(saved?.[0]?.id){try{var ref=await api('/rpc/generate_tool_ref',{m:'POST',b:{cat:'electrical'}});if(ref)await api('/tools_register?id=eq.'+saved[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});}catch(refError){console.warn('RCD reference generation failed',refError);}}
+      toast('RCD added!');
+    }
+    modal.remove();toolsLoadRCD();
+  }catch(e){toastActionError('Save RCD','Tools & Equipment',e);}
 }
 
 function toolsStartRCDTest(toolId){
@@ -24925,7 +25003,7 @@ function toolsStartRCDTest(toolId){
   var nd=new Date();nd.setMonth(nd.getMonth()+1);
   var next=document.getElementById('rcd-next-date');if(next)next.value=nd.toISOString().slice(0,10);
   var tester=document.getElementById('rcd-tester');
-  if(tester){tester.innerHTML='<option value="">Select tester...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;tester.appendChild(o);});}
+  if(tester){tester.innerHTML='<option value="">Select tester...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;tester.appendChild(o);});}
   var currentPersonId=prof?.person_id||prof?.id||'';
   if(tester&&currentPersonId&&Array.from(tester.options).some(function(o){return o.value===currentPersonId;}))tester.value=currentPersonId;
   [['rcd-visual','ok'],['rcd-button','pass'],['rcd-label','ok']].forEach(function(x){var el=document.getElementById(x[0]);if(el)el.value=x[1];});
@@ -24937,6 +25015,7 @@ function toolsStartRCDTest(toolId){
 }
 
 function toolsRCDBack(){
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-tabs')){teuSwitch('rcd');return;}
   document.getElementById('tools-rcd-form').style.display='none';
   document.getElementById('tools-view-rcd').style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -24951,7 +25030,7 @@ async function toolsSaveRCDTest(){
   var testerId=document.getElementById('rcd-tester')?.value;
   if(!testerId){toast('Please select the tester',false);return;}
   var testerName='';
-  if(testerId){var p=(people||[]).find(function(x){return x.id===testerId;});testerName=p?(p.last_name+', '+p.first_name):'';}
+  if(testerId){var p=tenantPeople().find(function(x){return x.id===testerId;});testerName=p?(p.last_name+', '+p.first_name):'';}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var visual=g('rcd-visual')||'ok', button=g('rcd-button')||'pass', label=g('rcd-label')||'ok';
   var tripMs=parseFloat(g('rcd-trip-time')||'');
@@ -24977,14 +25056,16 @@ async function toolsSaveRCDTest(){
     await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
     if(fail&&body.defects_found){
       var tool=toolsRcdData.find(function(x){return x.id===toolsInspEquipId;});
-      await api('/tools_register?id=eq.'+toolsInspEquipId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service'}});
-      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:ccid(),source_module:'tools',source_id:toolsInspEquipId,
-        source_ref:(tool?.ref_number||'RCD')+' - Failed RCD test',
-        description:'RCD monthly test failed: '+body.defects_found,
-        responsible:testerName||null,priority:'high',status:'open',created_by:prof?.id
-      }});
-      toast('RCD test saved - failure added to MAP.');
+      try{
+        await api('/tools_register?id=eq.'+toolsInspEquipId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service'}});
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),source_module:'inspection',source_id:toolsInspEquipId,
+          source_ref:(tool?.ref_number||'RCD')+' - Failed RCD test',
+          description:'RCD monthly test failed: '+body.defects_found,
+          responsible:testerName||null,priority:'high',status:'open',created_by:prof?.id
+        }});
+        toast('RCD test saved - failure added to MAP.');
+      }catch(actionError){console.error(actionError);toast('RCD test saved. Quarantine or MAP follow-up needs attention.',false);}
     }else toast('RCD test saved!');
     toolsRCDBack();
   }catch(e){toastActionError('Save RCD test','Tools & Equipment',e);console.error(e);}
