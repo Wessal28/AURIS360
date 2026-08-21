@@ -50,6 +50,7 @@
     ,"migration:capture-baseline": "powershell -ExecutionPolicy Bypass -File scripts/capture-staging-schema-baseline.ps1"
     ,"migration:validate": "node scripts/validate-migrations.cjs"
     ,"migration:replay": "node scripts/replay-migrations.cjs"
+    ,"staging:acceptance": "node scripts/verify-staging-acceptance.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",

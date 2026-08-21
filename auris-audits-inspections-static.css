@@ -169,3 +169,6 @@
 #ps-ra-ref.auris-audit-s-7b8c3df564{font-family:monospace}
 #ps-stop-work.auris-audit-s-283f12d7fe{accent-color:var(--green)}
 #ps-tbt-done.auris-audit-s-283f12d7fe{accent-color:var(--green)}
+.audit-type-locked .audit-type-btn{opacity:.45;cursor:not-allowed;filter:grayscale(.45)}
+.audit-type-locked .audit-type-btn[style*="scale(1.05)"]{opacity:1;cursor:default;filter:none}
+.audit-type-locked:after{content:"Inspection type fixed by the selected category tab";display:block;grid-column:1/-1;padding:7px 9px;border-radius:7px;background:#eaf7f3;color:#08745f;font-size:10px;font-weight:750}
