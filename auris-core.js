@@ -20360,11 +20360,40 @@ function conFilterRegister(){
 }
 
 function conOpenDetail(id){
-  // Quick view: switch to pre-assessment tab for this contractor
   var x=conAllData.find(function(r){return r.id===id;});
   if(!x)return;
-  toast('Contractor: '+x.contractor_name+' - Status: '+(CON_STATUS_CFG[x.status]?.[2]||x.status));
-  conEdit(id);
+  aurisReadOnlyRecordModal('Contractor details',x.contractor_name||'Contractor',x,[
+    ['Status',String(x.status||'pending').replace(/_/g,' ')],['Category',String(x.category||'general').replace(/_/g,' ')],
+    ['Contact',x.contact_person],['Email',x.contact_email],['Phone',x.contact_phone],['Registration',x.registration_number],
+    ['Specialisation',x.specialisation],['Insurance expiry',x.insurance_expiry],['Approval expiry',x.expiry_date],['Next review',x.next_review_date],['Notes',x.notes]
+  ]);
+}
+
+function aurisReadOnlyRecordModal(kind,title,row,fields){
+  document.getElementById('auris-readonly-record-modal')?.remove();
+  var modal=document.createElement('div');modal.id='auris-readonly-record-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var body=(fields||[]).filter(function(f){return f[1]!==null&&f[1]!==undefined&&String(f[1]).trim()!=='';}).map(function(f){return '<div style="border-bottom:1px solid var(--border);padding:9px 0"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(f[0])+'</div><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">'+escH(String(f[1]))+'</div></div>';}).join('');
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="'+escH(kind)+'" style="width:100%;max-width:720px;max-height:88vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(kind)+'</div><h2 style="margin:4px 0">'+escH(title||'Record')+'</h2><div style="font-family:monospace;font-size:11px;color:var(--text2)">'+escH(displayRecordRef(row||{},['reference_no','ref_number','plan_ref','drill_ref','issuance_ref'],'READ ONLY'))+'</div></div><button class="btn btn-sm auris-readonly-close"><i class="ti ti-x"></i></button></div><div style="margin-top:14px">'+(body||'<div class="empty">No additional details recorded.</div>')+'</div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary auris-readonly-close">Close</button></div></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.auris-readonly-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+}
+
+function aurisRowRecordId(row){
+  var node=row&&row.querySelector('[data-id],[data-auris-runtime-args]');if(!node)return '';
+  if(node.dataset.id)return node.dataset.id;
+  try{var args=JSON.parse(decodeURIComponent(node.getAttribute('data-auris-runtime-args')||''));return args&&args[0]||'';}catch(_){return '';}
+}
+
+function aurisBindReadOnlyRows(pageId,resolver){
+  var page=document.getElementById(pageId);if(!page||page.dataset.readonlyRowsBound)return;
+  page.dataset.readonlyRowsBound='1';page.addEventListener('click',function(ev){
+    if(ev.target.closest('button,a,input,select,textarea,label'))return;
+    var row=ev.target.closest('tr');if(!row||!page.contains(row))return;
+    var list=row.closest('[id$="-list"], [id$="-alerts"]');if(!list)return;
+    var id=aurisRowRecordId(row);if(id)resolver(list.id,id);
+  });
+}
+function aurisReadableRecordFields(row){
+  return Object.keys(row||{}).filter(function(k){return !['id','company_id','created_by','updated_by'].includes(k)&&typeof row[k]!=='object';}).slice(0,24).map(function(k){return [k.replace(/_/g,' '),row[k]];});
 }
 
 // -- CONTRACTOR FORM -----------------------------------------------------------
@@ -21854,6 +21883,11 @@ async function loadEmergency(){
    'em3act-add-btn','em3bcp-add-btn','em3eq-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
+  aurisBindReadOnlyRows('page-emergency',function(listId,id){
+    var sets=[emPlansData,emErtData,emMusterData,emDrillsData,emActivationsData,emBcpData,emEqData],row=null;
+    sets.some(function(rows){row=(rows||[]).find(function(x){return String(x.id)===String(id);});return !!row;});
+    if(row)aurisReadOnlyRecordModal('Emergency record details',emRecordLabel(row),row,aurisReadableRecordFields(row));
+  });
   emLoadDash();
 }
 
@@ -22538,6 +22572,11 @@ async function loadOHealth(){
   ['oh-ms-add-btn','oh-aud-add-btn','oh-spi-add-btn','oh-vax-add-btn',
    'oh-exp-add-btn','oh-od-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
+  aurisBindReadOnlyRows('page-ohealth',function(listId,id){
+    var sets=[ohMsData,ohAudData,ohSpiData,ohVaxData,ohExpData,ohOdData],row=null;
+    sets.some(function(rows){row=(rows||[]).find(function(x){return String(x.id)===String(id);});return !!row;});
+    if(row)aurisReadOnlyRecordModal('Occupational health record',row.employee_name||row.disease_type||row.exposure_type||'Employee record',row,aurisReadableRecordFields(row));
   });
   ohLoadDash();
 }
@@ -23404,6 +23443,11 @@ async function loadPPE(){
   ['ppe-cat-add-btn','ppe-inventory-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
+  aurisBindReadOnlyRows('page-ppe',function(listId,id){
+    var sets=[ppeCatData,ppeIssData,ppeInspData,ppeRepData],row=null;
+    sets.some(function(rows){row=(rows||[]).find(function(x){return String(x.id)===String(id);});return !!row;});
+    if(row)aurisReadOnlyRecordModal('PPE record details',row.ppe_name||row.name||row.employee_name||'PPE record',row,aurisReadableRecordFields(row));
+  });
   ppeLoadDash();
 }
 
@@ -24051,7 +24095,7 @@ async function ppeQuickReplace(issId,empName,ppeName){
 // ===== TOOLS_JS.JS =====
 
 // ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLiftingData=[], toolsLastInspectionByTool={}, toolsInspectionReturnTab='inspection';
+let toolsAllData=[], toolsInspectionData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLiftingData=[], toolsLastInspectionByTool={}, toolsInspectionReturnTab='inspection', toolsFormReturnTab='register', toolsCategoryLocked=false;
 
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
@@ -24136,6 +24180,16 @@ function toolsInspectionIntervalDays(freq){
   return {daily:1,weekly:7,monthly:31,quarterly:92,six_monthly:183,annual:366,yearly:366}[freq||'']||30;
 }
 
+function toolsIsRCD(x){
+  x=x||{};
+  var txt=[x.name,x.ref_number,x.model,x.notes,x.statutory_type].filter(Boolean).join(' ').toLowerCase();
+  return x.category==='electrical'&&(/\brcd\b|residual current|distribution board/.test(txt));
+}
+
+function toolsIsGeneralEquipment(x){
+  return !!x && x.category!=='vehicle' && !x.is_vehicle && !toolsIsRCD(x);
+}
+
 function toolsInspectionState(x,today){
   var last=toolsLastInspectionByTool[x.id];
   var dt=last&&last.inspection_date?new Date(last.inspection_date):null;
@@ -24172,6 +24226,8 @@ async function loadTools(){
   if(vehBtn)vehBtn.style.display=isMgr()?'inline-flex':'none';
   var rcdBtn=document.getElementById('rcd-add-btn');
   if(rcdBtn)rcdBtn.style.display=isMgr()?'inline-flex':'none';
+  var search=document.getElementById('tools-insp-search');
+  if(search&&!search.dataset.bound){search.dataset.bound='1';search.addEventListener('input',toolsRenderInspections);}
   toolsLoadRegister();
 }
 
@@ -24185,14 +24241,13 @@ async function toolsLoadRegister(){
       api('/tools_register?select=*'+cf()+'&order=category,name'),
       api('/tool_inspections?select=tool_id,inspection_date,overall_result'+cf()+'&order=inspection_date.desc&limit=800')
     ]);
-    toolsAllData=res[0]||[];
+    toolsAllData=(res[0]||[]).filter(toolsIsGeneralEquipment);
     toolsLastInspectionByTool={};
     (res[1]||[]).forEach(function(x){if(x.tool_id&&!toolsLastInspectionByTool[x.tool_id])toolsLastInspectionByTool[x.tool_id]=x;});
     var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('tools-m3active',toolsAllData.filter(x=>x.status==='active').length);
     setM('tools-m3oos',toolsAllData.filter(x=>x.status==='out_of_service').length);
-    setM('tools-m3veh',toolsAllData.filter(x=>x.category==='vehicle').length);
     setM('tools-m3stat',toolsAllData.filter(x=>x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon).length);
     setM('tools-m3due',toolsAllData.filter(function(x){return (x.status||'active')==='active'&&toolsInspectionState(x,today).due;}).length);
     toolsFilterRegister();
@@ -24248,7 +24303,7 @@ function toolsFilterRegister(){
     var sc=statusCfg[x.status]||statusCfg.active;
     var inspBg=inspState.due?'#FCEBEB':inspState.soon?'#FEF6E7':'#EAF3DE';
     var inspColor=inspState.due?'#A32D2D':inspState.soon?'#C2410C':'#3B6D11';
-    html+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOos?';opacity:.72':'')+(isStatDue?';border-left:4px solid #8B5CF6':inspState.due?';border-left:4px solid var(--red)':inspState.soon?';border-left:4px solid #C2410C':'')+'">'
+    html+='<tr data-tool-detail-id="'+x.id+'" title="Open equipment details and inspection history" style="cursor:pointer;border-bottom:1px solid #f0f0f0;background:'+bg+(isOos?';opacity:.72':'')+(isStatDue?';border-left:4px solid #8B5CF6':inspState.due?';border-left:4px solid var(--red)':inspState.soon?';border-left:4px solid #C2410C':'')+'">'
       +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:'+col+'">'+escH(x.ref_number||'--')+'</td>'
       +'<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><i class="ti '+(TOOL_CAT_ICONS[cat]||'ti-package')+'" style="font-size:18px;color:'+col+'"></i><div><div style="font-weight:800">'+escH(x.name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.brand||'')+'</div></div></div></td>'
       +'<td style="padding:10px 12px"><span style="background:'+col+'18;color:'+col+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(TOOL_CAT_LABELS[cat]||cat)+'</span></td>'
@@ -24263,10 +24318,28 @@ function toolsFilterRegister(){
   });
   html+='</tbody></table></div>';
   el.innerHTML=html;
+  el.querySelectorAll('[data-tool-detail-id]').forEach(function(row){row.addEventListener('click',function(ev){if(ev.target.closest('button'))return;toolsOpenEquipmentDetail(row.dataset.toolDetailId);});});
+}
+
+async function toolsOpenEquipmentDetail(id){
+  var x=toolsAllData.find(function(r){return String(r.id)===String(id);});if(!x)return;
+  try{
+    var inspections=await api('/tool_inspections?tool_id=eq.'+encodeURIComponent(id)+'&select=*&order=inspection_date.desc&limit=100')||[];
+    document.getElementById('tools-equipment-detail-modal')?.remove();
+    var modal=document.createElement('div');modal.id='tools-equipment-detail-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    var rows=inspections.map(function(r){return '<tr><td>'+escH(r.inspection_date?new Date(r.inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(String(r.inspection_type||'periodic').replace(/_/g,' '))+'</td><td>'+escH(r.inspected_by_name||'-')+'</td><td>'+escH(r.overall_result||'-')+'</td><td><button class="btn btn-sm tools-detail-inspection" data-id="'+r.id+'"><i class="ti ti-eye"></i></button></td></tr>';}).join('');
+    modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="Equipment details" style="width:100%;max-width:900px;max-height:90vh;overflow:auto;padding:18px"><div class="tool-print-area"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);text-transform:uppercase;font-weight:800">Equipment record</div><h2 style="margin:4px 0">'+escH(x.name||'Equipment')+'</h2><div style="font-family:monospace;color:var(--text2)">'+escH(x.ref_number||'')+'</div></div><button class="btn btn-sm tools-detail-close"><i class="ti ti-x"></i></button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0">'+toolsInspectionDetailMetric('Category',TOOL_CAT_LABELS[x.category]||x.category)+toolsInspectionDetailMetric('Serial / model',[x.serial_number,x.model].filter(Boolean).join(' / ')||'-')+toolsInspectionDetailMetric('Location',x.location||'-')+toolsInspectionDetailMetric('Status',String(x.status||'active').replace(/_/g,' '))+'</div><h3>Inspection history</h3><div class="table-scroll"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Inspector</th><th>Result</th><th>View</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">No inspections recorded.</td></tr>')+'</tbody></table></div></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn tools-detail-print"><i class="ti ti-printer"></i>Print this equipment</button><button class="btn btn-primary tools-detail-close">Close</button></div></div>';
+    document.body.appendChild(modal);
+    modal.querySelectorAll('.tools-detail-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+    modal.querySelector('.tools-detail-print')?.addEventListener('click',function(){printRegisterView('Equipment inspection history - '+(x.name||''),'#tools-equipment-detail-modal .tool-print-area');});
+    modal.querySelectorAll('.tools-detail-inspection').forEach(function(b){b.addEventListener('click',function(){toolsViewInspection(b.dataset.id);});});
+    modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+  }catch(e){toastActionError('Open equipment details','Tools & Equipment',e);}
 }
 
 // -- ADD / EDIT FORM ----------------------------------------------------------
 function toolsNew(){
+  toolsFormReturnTab='register';toolsCategoryLocked=false;
   toolsEditingId=null;
   document.getElementById('tools-form3title').textContent='New Equipment';
   document.getElementById('tools-form3ref').textContent='';
@@ -24274,7 +24347,7 @@ function toolsNew(){
   document.getElementById('teq-ref-display').textContent='AUTO';
   ['teq-name','teq-brand','teq-model','teq-serial','teq-location','teq-notes','teq-reg','teq-stat-type','teq-stat-body'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['teq-purchase-date','teq-insurance','teq-roadworthy','teq-stat-last','teq-stat-next'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var cat=document.getElementById('teq-cat');if(cat)cat.value='hand_tool';
+  var cat=document.getElementById('teq-cat');if(cat){cat.value='hand_tool';cat.disabled=false;cat.removeAttribute('aria-describedby');}
   var st=document.getElementById('teq-status');if(st)st.value='active';
   var fr=document.getElementById('teq-freq');if(fr)fr.value='weekly';
   var as=document.getElementById('teq-assigned');if(as){as.innerHTML='<option value="">General use</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');as.appendChild(o);});}
@@ -24285,7 +24358,7 @@ function toolsNew(){
 }
 
 function toolsEdit(id){
-  var x=toolsAllData.find(function(r){return r.id===id;});
+  var x=[].concat(toolsAllData||[],toolsRcdData||[],toolsLiftingData||[]).find(function(r){return String(r.id)===String(id);});
   if(!x)return;
   toolsEditingId=id;
   document.getElementById('tools-form3title').textContent='Edit Equipment';
@@ -24298,7 +24371,8 @@ function toolsEdit(id){
     var key={'teq-purchase-date':'purchase_date','teq-stat-last':'last_statutory_date','teq-stat-next':'next_statutory_date'}[id];
     var el=document.getElementById(id);if(el)el.value=x[key]||'';
   });
-  var cat=document.getElementById('teq-cat');if(cat)cat.value=x.category||'hand_tool';
+  toolsFormReturnTab=x.category==='lifting'?'lifting':toolsIsRCD(x)?'rcd':'register';toolsCategoryLocked=x.category==='lifting';
+  var cat=document.getElementById('teq-cat');if(cat){cat.value=x.category||'hand_tool';cat.disabled=toolsCategoryLocked;}
   var st=document.getElementById('teq-status');if(st)st.value=x.status||'active';
   var fr=document.getElementById('teq-freq');if(fr)fr.value=x.inspection_frequency||'weekly';
   var as=document.getElementById('teq-assigned');
@@ -24334,17 +24408,18 @@ function toolsShowForm(){
 
 function toolsFormBack(){
   document.getElementById('tools-form').style.display='none';
-  document.getElementById('tools-view-register').style.display='block';
+  var returnTab=toolsFormReturnTab||'register';
+  var view=document.getElementById('tools-view-'+returnTab);if(view)view.style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
-  var tab=document.getElementById('tools-tab-register');if(tab)tab.classList.add('active');
-  toolsLoadRegister();
+  var tab=document.getElementById('tools-tab-'+returnTab);if(tab)tab.classList.add('active');
+  if(returnTab==='lifting')toolsLoadLiftingAccessories();else if(returnTab==='rcd')toolsLoadRCD();else toolsLoadRegister();
 }
 
 async function toolsSaveEquipment(){
   var name=document.getElementById('teq-name')?.value?.trim();
   if(!name){toast('Please enter a name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var cat=g('teq-cat')||'hand_tool';
+  var cat=toolsCategoryLocked?'lifting':(g('teq-cat')||'hand_tool');
   var personId=g('teq-assigned');
   var personName='';
   if(personId){var p=(people||[]).find(function(x){return x.id===personId;});personName=p?(p.last_name+', '+p.first_name):'';}
@@ -24472,11 +24547,22 @@ async function toolsLoadInspections(){
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100');
-    if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0228"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
-      return;
-    }
+    toolsInspectionData=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100')||[];
+    toolsRenderInspections();
+  }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
+}
+
+function toolsRenderInspections(){
+  var el=document.getElementById('tools-insp-list');if(!el)return;
+  var q=String(document.getElementById('tools-insp-search')?.value||'').trim().toLowerCase();
+  var d=(toolsInspectionData||[]).filter(function(x){
+    var t=x.tools_register||{};
+    return !q||[t.name,t.ref_number,x.inspected_by_name,x.inspection_type,x.overall_result].filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+  if(!d.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'+(q?'No inspections match this equipment search.':'No inspections recorded yet.')+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0228"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
+    return;
+  }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:860px"><thead><tr>'
       +'<th>Date</th>'
       +'<th>Equipment</th>'
@@ -24503,8 +24589,7 @@ async function toolsLoadInspections(){
         +'</tr>';
     });
     h+='</tbody></table></div>';
-    if(el)el.innerHTML=h;
-  }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
+  el.innerHTML=h;
 }
 
 async function toolsLoadLiftingAccessories(){
@@ -24592,7 +24677,8 @@ function toolsMiniMetric(label,value,color){
 
 function toolsNewLiftingAccessory(){
   toolsNew();
-  var cat=document.getElementById('teq-cat');if(cat){cat.value='lifting';toolsCatChange();}
+  toolsFormReturnTab='lifting';toolsCategoryLocked=true;
+  var cat=document.getElementById('teq-cat');if(cat){cat.value='lifting';cat.disabled=true;cat.setAttribute('aria-describedby','tools-form3title');toolsCatChange();}
   var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
   var name=document.getElementById('teq-name');if(name&&!name.value)name.placeholder='e.g. Web sling 2T, shackle, chain block';
   var model=document.getElementById('teq-model');if(model&&!model.value)model.placeholder='SWL / WLL, size or model';
@@ -24633,7 +24719,7 @@ async function toolsStartInspection(toolId,returnTab){
   if(insp){insp.innerHTML='<option value="">Select inspector...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;insp.appendChild(o);});}
   // Set next inspection based on frequency
   var nextDate=new Date();
-  var freqDays={daily:1,weekly:7,monthly:30,quarterly:90,annual:365};
+  var freqDays={daily:1,weekly:7,monthly:30,quarterly:90,six_monthly:183,annual:365};
   var days=freqDays[tool.inspection_frequency]||7;
   nextDate.setDate(nextDate.getDate()+days);
   var nd=document.getElementById('insp-next-date');if(nd)nd.value=nextDate.toISOString().slice(0,10);
@@ -24765,10 +24851,7 @@ async function toolsLoadRCD(){
   try{
     var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
     var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)'+cf()+'&order=inspection_date.desc&limit=300&select=*');
-    toolsRcdData=(tools||[]).filter(function(x){
-      var txt=((x.name||'')+' '+(x.ref_number||'')+' '+(x.model||'')+' '+(x.notes||'')+' '+(x.statutory_type||'')).toLowerCase();
-      return txt.indexOf('rcd')!==-1 || txt.indexOf('residual current')!==-1 || x.inspection_frequency==='monthly';
-    });
+    toolsRcdData=(tools||[]).filter(toolsIsRCD);
     var lastByTool={};
     (tests||[]).forEach(function(t){if(t.tool_id&&!lastByTool[t.tool_id])lastByTool[t.tool_id]=t;});
     if(!toolsRcdData.length){
@@ -24823,6 +24906,7 @@ async function toolsLoadRCD(){
 
 function toolsNewRCD(){
   toolsNew();
+  toolsFormReturnTab='rcd';
   var cat=document.getElementById('teq-cat');if(cat){cat.value='electrical';toolsCatChange();}
   var name=document.getElementById('teq-name');if(name&&!name.value)name.value='RCD / Distribution board';
   var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
@@ -25046,7 +25130,7 @@ async function toolsViewInspection(id){
       +'<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.8">Equipment inspection report</div><div style="font-size:18px;font-weight:900;margin-top:3px">'+escH(tool.name||'Equipment')+'</div><div style="font-family:monospace;font-size:12px;opacity:.8">'+escH(tool.ref_number||'')+'</div></div>'
       +'<button class="btn btn-sm" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0238"><i class="ti ti-x"></i></button>'
       +'</div>'
-      +'<div style="padding:18px 20px">'
+      +'<div class="tools-inspection-print-area" style="padding:18px 20px">'
       +'<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px">'
       +toolsInspectionDetailMetric('Date',x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-')
       +toolsInspectionDetailMetric('Type',String(x.inspection_type||'periodic').replace(/_/g,' '))
@@ -25067,9 +25151,10 @@ async function toolsViewInspection(id){
       +'</div>'
       +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff"><div style="padding:10px 12px;font-size:12px;font-weight:900;background:#f9fafb;border-bottom:1px solid var(--border)">Checklist results</div>'
       +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 10px;text-align:left">Check item</th><th style="padding:8px 10px;text-align:center;width:90px">Result</th><th style="padding:8px 10px;text-align:left">Notes</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
-      +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-auris-generated-onclick="g0023"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn tools-inspection-print"><i class="ti ti-printer"></i>Print this inspection</button><button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
       +'</div></div>';
     document.body.appendChild(modal);
+    modal.querySelector('.tools-inspection-print')?.addEventListener('click',function(){printRegisterView('Equipment inspection - '+(tool.name||''),'#tools-inspection-detail-modal .tools-inspection-print-area');});
     modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
   }catch(e){toast(actionErrorMessage('Open inspection details','Tools & Equipment',e),false);}
 }
@@ -25216,10 +25301,33 @@ function fleetRender(){
   el.innerHTML=h;
 }
 
-function fleetNewVehicle(){showPage('tools',null);setTimeout(function(){if(typeof toolsNewVehicle==='function')toolsNewVehicle();},120);}
-function fleetEditVehicle(id){showPage('tools',null);setTimeout(function(){if(typeof toolsEdit==='function')toolsEdit(id);},160);}
-function fleetMonthlyCheck(id){showPage('tools',null);setTimeout(function(){if(typeof toolsStartInspection==='function')toolsStartInspection(id);},160);}
+function fleetNewVehicle(){fleetOpenVehicleForm(null);}
+function fleetEditVehicle(id){fleetOpenVehicleForm(id);}
+function fleetMonthlyCheck(id){
+  var v=(fleetVehicles||[]).find(function(x){return String(x.id)===String(id);});if(!v)return;
+  document.getElementById('fleet-check-modal')?.remove();var modal=document.createElement('div');modal.id='fleet-check-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var checks=TOOL_INSPECTION_CHECKLISTS.vehicle;
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="Monthly vehicle check" style="width:100%;max-width:760px;max-height:90vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Fleet monthly check</div><h2 style="margin:3px 0">'+escH(fleetLabel(v))+'</h2></div><button class="btn btn-sm fleet-check-close"><i class="ti ti-x"></i></button></div><div style="margin:14px 0">'+checks.map(function(c,i){return '<label style="display:flex;gap:9px;align-items:flex-start;padding:9px;border-bottom:1px solid var(--border)"><input type="checkbox" class="fleet-check-item" data-label="'+escH(c)+'" checked/> <span>'+escH(c)+'</span></label>';}).join('')+'</div><div class="form3group"><label class="form3label">Defects found</label><textarea id="fleet-check-defects"></textarea></div><div class="form3group"><label class="form3label">Actions taken</label><textarea id="fleet-check-actions"></textarea></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn fleet-check-close">Cancel</button><button class="btn btn-primary fleet-check-save"><i class="ti ti-device-floppy"></i>Save monthly check</button></div></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.fleet-check-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelector('.fleet-check-save')?.addEventListener('click',async function(){var items=Array.from(modal.querySelectorAll('.fleet-check-item')).map(function(c){return {item:c.dataset.label,result:c.checked?'ok':'fail',note:''};}),failed=items.some(function(x){return x.result==='fail';}),defects=modal.querySelector('#fleet-check-defects')?.value.trim(),actions=modal.querySelector('#fleet-check-actions')?.value.trim();if(failed&&(!defects||!actions)){toast('Failed checks require defects and corrective actions.',false);return;}var next=new Date();next.setDate(next.getDate()+30);var body={company_id:ccid(),tool_id:v.id,inspection_date:new Date().toISOString().slice(0,10),inspection_type:'vehicle_monthly',inspected_by:prof?.id||null,inspected_by_name:prof?.full_name||prof?.name||prof?.email||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null,next_inspection_date:next.toISOString().slice(0,10),created_by:prof?.id||null};try{await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});toast('Monthly vehicle check saved in Fleet.');modal.remove();loadFleet();}catch(e){toastActionError('Save monthly vehicle check','Fleet',e);}});
+  modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+}
 function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew==='function'){esgFuelNew();var el=document.getElementById('ff-vehicle');if(el)el.value=label||'';}},180);}
+
+function fleetOpenVehicleForm(id){
+  var x=(fleetVehicles||[]).find(function(v){return String(v.id)===String(id);})||{};
+  document.getElementById('fleet-vehicle-modal')?.remove();
+  var modal=document.createElement('div');modal.id='fleet-vehicle-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="'+(id?'Edit':'Add')+' vehicle" style="width:100%;max-width:760px;padding:20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Fleet register</div><h2 style="margin:3px 0">'+(id?'Edit vehicle':'Add vehicle')+'</h2></div><button class="btn btn-sm fleet-vehicle-close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:16px"><div class="form3group"><label class="form3label">Vehicle name</label><input id="fleet-v-name" value="'+escH(x.name||'')+'" placeholder="e.g. Site pickup 01"/></div><div class="form3group"><label class="form3label">Registration number</label><input id="fleet-v-reg" value="'+escH(x.registration_number||'')+'"/></div><div class="form3group"><label class="form3label">Make</label><input id="fleet-v-brand" value="'+escH(x.brand||'')+'"/></div></div><div class="form3row"><div class="form3group"><label class="form3label">Model</label><input id="fleet-v-model" value="'+escH(x.model||'')+'"/></div><div class="form3group"><label class="form3label">Location</label><input id="fleet-v-location" value="'+escH(x.location||'')+'"/></div><div class="form3group"><label class="form3label">Status</label><select id="fleet-v-status"><option value="active">Active</option><option value="under_maintenance">Under maintenance</option><option value="out_of_service">Out of service</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="fleet-v-notes">'+escH(x.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn fleet-vehicle-close">Cancel</button><button class="btn btn-primary fleet-vehicle-save"><i class="ti ti-device-floppy"></i>Save vehicle</button></div></div>';
+  document.body.appendChild(modal);var status=modal.querySelector('#fleet-v-status');if(status)status.value=x.status||'active';
+  modal.querySelectorAll('.fleet-vehicle-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelector('.fleet-vehicle-save')?.addEventListener('click',async function(){
+    var name=modal.querySelector('#fleet-v-name')?.value.trim(),reg=modal.querySelector('#fleet-v-reg')?.value.trim();if(!name||!reg){toast('Vehicle name and registration number are required.',false);return;}
+    var body={company_id:ccid(),category:'vehicle',is_vehicle:true,name:name,registration_number:reg,brand:modal.querySelector('#fleet-v-brand')?.value||null,model:modal.querySelector('#fleet-v-model')?.value||null,location:modal.querySelector('#fleet-v-location')?.value||null,status:modal.querySelector('#fleet-v-status')?.value||'active',inspection_frequency:'monthly',notes:modal.querySelector('#fleet-v-notes')?.value||null,updated_at:new Date().toISOString()};
+    try{if(id)await api('/tools_register?id=eq.'+encodeURIComponent(id),{m:'PATCH',p:'return=minimal',b:body});else{body.created_by=prof?.id;await api('/tools_register',{m:'POST',p:'return=minimal',b:body});}toast(id?'Vehicle updated.':'Vehicle added to Fleet.');modal.remove();loadFleet();}catch(e){toastActionError('Save vehicle','Fleet',e);}
+  });
+  modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+}
 
 // ===== ATEX / HAZARDOUS AREA MODULE =====
 let atexAreas=[], atexEditId=null;
@@ -25232,6 +25340,7 @@ async function loadATEX(){
   var print=document.getElementById('atex-print-btn');
   if(print)print.style.display='inline-flex';
   var sf=document.getElementById('atex-filter-status');if(sf&&!sf.value)sf.value='active';
+  var plan=document.getElementById('atex-plan-btn');if(plan&&!plan.dataset.bound){plan.dataset.bound='1';plan.addEventListener('click',atexToggleZoningPlan);}
   await atexLoadRegister();
 }
 
@@ -25265,6 +25374,7 @@ function atexRender(){
   setM('atex-m3action',atexAreas.filter(x=>x.status==='action_required').length);
   setM('atex-m3oos',atexAreas.filter(x=>x.status==='out_of_service').length);
   setM('atex-m3due',atexAreas.filter(x=>x.status!=='archived'&&x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
+  atexRenderZoningPlan();
   if(!filtered.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0244"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
     return;
@@ -25293,6 +25403,19 @@ function atexRender(){
   });
   h+='</tbody></table></div>';
   el.innerHTML=h;
+}
+
+function atexToggleZoningPlan(){
+  var el=document.getElementById('atex-zoning-plan');if(!el)return;
+  el.hidden=!el.hidden;atexRenderZoningPlan();
+}
+
+function atexRenderZoningPlan(){
+  var el=document.getElementById('atex-zoning-plan');if(!el||el.hidden)return;
+  var zones=['zone_0','zone_1','zone_2','zone_20','zone_21','zone_22'];
+  var colors={zone_0:'#7F1D1D',zone_1:'#DC2626',zone_2:'#F97316',zone_20:'#581C87',zone_21:'#7E22CE',zone_22:'#A855F7'};
+  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><div class="card-title">ATEX site zoning plan</div><div style="font-size:12px;color:var(--text2)">Tenant-specific hazardous areas grouped by gas/vapour and dust zone. Use the Site Map module for spatial plan placement.</div></div><button class="btn btn-sm" id="atex-open-site-map"><i class="ti ti-map-pin"></i>Open Site Map</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px">'+zones.map(function(z){var rows=(atexAreas||[]).filter(function(x){return x.zone_type===z&&x.status!=='archived';});return '<section style="border:2px solid '+colors[z]+';border-radius:10px;overflow:hidden;background:#fff"><div style="padding:8px 10px;background:'+colors[z]+';color:#fff;font-weight:900">'+escH(ATEX_ZONE_LABELS[z])+' <span style="float:right">'+rows.length+'</span></div><div style="padding:9px 10px;min-height:70px;font-size:11px">'+(rows.length?rows.map(function(x){return '<div style="padding:4px 0;border-bottom:1px solid var(--border)"><strong>'+escH(x.area_name||x.area_ref||'Area')+'</strong><br>'+escH(x.location||x.plant_area||'Location not set')+'</div>';}).join(''):'No areas assigned')+'</div></section>';}).join('')+'</div>';
+  el.querySelector('#atex-open-site-map')?.addEventListener('click',function(){showPage('sitemap',null);toast('Site Map opened for spatial plan placement.');});
 }
 
 function atexShowForm(show){
@@ -41557,7 +41680,7 @@ function smPrintMapHtml(){
     var x=p.x, y=p.y;
     return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:'+col+';color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:12px;height:12px;border-radius:999px;background:#185FA5;border:1px solid #fff;font-size:6pt;line-height:12px;text-align:center">L</span>':'')+'</div>';
   }).join('');
-  var eventDots=(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40).map(function(ev,i){
+  var eventDots=smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40).map(function(ev,i){
     var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase(), col=/critical|high/.test(sev)?'#DC2626':'#F97316';
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:'+col+';border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25)"></div>';
   }).join('');
@@ -41602,6 +41725,13 @@ function smMatchMode(row,site){
 }
 function smMatchedRows(rows,site){
   return (rows||[]).map(function(r){var mode=smMatchMode(r,site);return mode?Object.assign({},r,{__sm_match_mode:mode}):null;}).filter(Boolean);
+}
+function smUniqueRows(rows){
+  var seen={};return (rows||[]).filter(function(r,i){var key=String(r.id||r.event_ref||r.reference_no||r.ra_ref||('row-'+i));if(seen[key])return false;seen[key]=true;return true;});
+}
+function smMappedRows(rows){
+  var sites=siteMapState.sites||[];
+  return smUniqueRows(rows).filter(function(r){return sites.some(function(s){return smMatch(r,s);});});
 }
 function smRecordsForSite(site){
   return {
@@ -41652,7 +41782,7 @@ function smUpdateMapRiskToggle(){var b=document.getElementById('sitemap-risk-tog
 function smToggleMapRisks(){siteMapState.showRisks=!siteMapState.showRisks;if(!siteMapState.showRisks)siteMapState.selectedRisk=null;smUpdateMapRiskToggle();smRenderCanvas();}
 function smRenderSummary(){
   var el=document.getElementById('sitemap-summary');if(!el)return;
-  var openInc=siteMapState.events.filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
+  var openInc=smMappedRows(siteMapState.events).filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
   var highRisk=siteMapState.risks.filter(function(x){return /high|critical|very/i.test(String(x.overall_risk_level||''));}).length;
   var openAct=siteMapState.actions.filter(function(x){return !['closed','completed'].includes(String(x.status||'').toLowerCase());}).length;
   var total=siteMapState.sites.length;
@@ -41689,7 +41819,7 @@ function smRenderCanvas(){
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
   var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
-  var openEvents=siteMapState.showEvents?(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
+  var openEvents=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
   var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
   el.innerHTML=context+'<div data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
