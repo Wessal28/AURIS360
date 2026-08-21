@@ -5748,7 +5748,38 @@ function execExportReport() {
 
 
 let aiOpen=false,aiHist=[];
-function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
+var aiDragMoved=false,aiDragReady=false;
+function aiUpdateDocking(){
+  var panel=document.getElementById('ai-panel');if(!panel)return;
+  var rect=panel.getBoundingClientRect(),windowHeight=Math.min(520,Math.max(260,window.innerHeight-82));
+  panel.classList.toggle('ai-dock-right',rect.left<410);
+  panel.classList.toggle('ai-dock-below',rect.top-12<windowHeight&&window.innerHeight-rect.bottom>rect.top);
+}
+function aiClampPosition(left,top){
+  var panel=document.getElementById('ai-panel'),toggle=panel?.querySelector('.ai-toggle');
+  var width=toggle?.offsetWidth||54,height=toggle?.offsetHeight||54,pad=8;
+  return {left:Math.max(pad,Math.min(window.innerWidth-width-pad,left)),top:Math.max(pad,Math.min(window.innerHeight-height-pad,top))};
+}
+function aiApplyPosition(left,top){
+  var panel=document.getElementById('ai-panel');if(!panel)return;
+  var pos=aiClampPosition(left,top);panel.style.left=pos.left+'px';panel.style.top=pos.top+'px';panel.style.right='auto';panel.style.bottom='auto';aiUpdateDocking();
+}
+function aiInitDrag(){
+  if(aiDragReady||window.innerWidth<=768)return;
+  var panel=document.getElementById('ai-panel'),toggle=panel?.querySelector('.ai-toggle');if(!panel||!toggle)return;
+  aiDragReady=true;
+  try{var saved=JSON.parse(localStorage.getItem('auris360_ai_position')||'null');if(saved&&Number.isFinite(saved.left)&&Number.isFinite(saved.top))aiApplyPosition(saved.left,saved.top);}catch(_){}
+  toggle.addEventListener('pointerdown',function(event){
+    if(event.button!==0)return;
+    var rect=panel.getBoundingClientRect(),startX=event.clientX,startY=event.clientY,startLeft=rect.left,startTop=rect.top,moved=false;
+    toggle.setPointerCapture(event.pointerId);panel.classList.add('ai-dragging');
+    function move(e){var dx=e.clientX-startX,dy=e.clientY-startY;if(Math.abs(dx)+Math.abs(dy)>5)moved=true;aiApplyPosition(startLeft+dx,startTop+dy);}
+    function end(){toggle.removeEventListener('pointermove',move);toggle.removeEventListener('pointerup',end);toggle.removeEventListener('pointercancel',end);panel.classList.remove('ai-dragging');if(moved){aiDragMoved=true;var finalRect=panel.getBoundingClientRect();try{localStorage.setItem('auris360_ai_position',JSON.stringify({left:Math.round(finalRect.left),top:Math.round(finalRect.top)}));}catch(_){}}}
+    toggle.addEventListener('pointermove',move);toggle.addEventListener('pointerup',end);toggle.addEventListener('pointercancel',end);
+  });
+  window.addEventListener('resize',function(){var rect=panel.getBoundingClientRect();if(window.innerWidth>768)aiApplyPosition(rect.left,rect.top);});
+}
+function toggleAI(){if(aiDragMoved){aiDragMoved=false;return;}aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');aiUpdateDocking();}
 const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
 // -- AI configuration ----------------------------------------------------------
 // Direct browser-to-AI-provider calls do not work safely because provider API
@@ -5782,7 +5813,7 @@ function applyAIAvailability() {
     else el.style.display = 'none';
   });
 }
-window.addEventListener('load', applyAIAvailability);
+window.addEventListener('load',function(){applyAIAvailability();aiInitDrag();});
 
 async function getCtx(){
 try{
@@ -13127,13 +13158,27 @@ async function wsLoadReferenceOptions(selectedRA,selectedPTW){
   }
 }
 
+function wsTeamMemberName(p){return [p?.first_name,p?.last_name].filter(Boolean).join(' ')||p?.email||'';}
+function wsPopulateTeamSelect(selectedValue){
+  var select=document.getElementById('wsf-team');if(!select)return;
+  var selected=Array.isArray(selectedValue)?selectedValue:String(selectedValue||'').split(/[,;\n]+/).map(function(v){return v.trim();}).filter(Boolean);
+  var selectedKeys=selected.map(function(v){return v.toLowerCase();});select.innerHTML='';
+  tenantPeople().filter(function(p){return (!p.status||String(p.status).toLowerCase()==='active')&&String(p.person_type||'employee').toLowerCase()==='employee';}).forEach(function(p){
+    var name=wsTeamMemberName(p),reverse=[p.last_name,p.first_name].filter(Boolean).join(', '),option=document.createElement('option');
+    option.value=name;option.textContent=(reverse||name)+(p.job_title?' - '+p.job_title:'');option.selected=selectedKeys.includes(name.toLowerCase())||selectedKeys.includes(reverse.toLowerCase());select.appendChild(option);
+  });
+  selected.forEach(function(name){if(!Array.from(select.options).some(function(o){return o.value.toLowerCase()===name.toLowerCase();})){var option=document.createElement('option');option.value=name;option.textContent=name+' (saved)';option.selected=true;select.appendChild(option);}});
+}
+function wsSelectedTeamNames(){var select=document.getElementById('wsf-team');return select?Array.from(select.selectedOptions).map(function(o){return o.value;}).filter(Boolean).join(', ')||null:null;}
+
 async function wsNew(){
   wsEditingId=null;
   document.getElementById('ws-form3title').textContent='New Work Order';
   document.getElementById('ws-form3ref').textContent='';
   document.getElementById('ws-del-btn').style.display='none';
   document.getElementById('wsf-ref-display').textContent='WO-AUTO';
-  ['wsf-title','wsf-desc','wsf-location','wsf-dept','wsf-duration','wsf-team','wsf-notes','wsf-ra-ref','wsf-ptw-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['wsf-title','wsf-desc','wsf-location','wsf-dept','wsf-duration','wsf-notes','wsf-ra-ref','wsf-ptw-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  wsPopulateTeamSelect('');
   await wsLoadReferenceOptions();
   ['wsf-start','wsf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var t=document.getElementById('wsf-type');if(t)t.value='maintenance';
@@ -13143,7 +13188,7 @@ async function wsNew(){
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=true;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=false;
   var sup=document.getElementById('wsf-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});}
+  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});}
   ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
@@ -13157,8 +13202,9 @@ async function wsEdit(id){
   document.getElementById('ws-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('wsf-ref-display').textContent=x.ref_number||'WO-AUTO';
   await wsLoadReferenceOptions(x.ra_ref,x.permit_ref);
-  var flds={'wsf-title':'title','wsf-desc':'description','wsf-location':'location','wsf-dept':'department','wsf-duration':'estimated_duration','wsf-team':'team_members','wsf-notes':'notes','wsf-ra-ref':'ra_ref','wsf-ptw-ref':'permit_ref'};
+  var flds={'wsf-title':'title','wsf-desc':'description','wsf-location':'location','wsf-dept':'department','wsf-duration':'estimated_duration','wsf-notes':'notes','wsf-ra-ref':'ra_ref','wsf-ptw-ref':'permit_ref'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  wsPopulateTeamSelect(x.team_members||'');
   var st=document.getElementById('wsf-start');if(st)st.value=x.planned_start||'';
   var en=document.getElementById('wsf-end');if(en)en.value=x.planned_end||'';
   var t=document.getElementById('wsf-type');if(t)t.value=x.work_type||'maintenance';
@@ -13168,7 +13214,7 @@ async function wsEdit(id){
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=x.requires_ra!==false;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=!!x.requires_permit;
   var sup=document.getElementById('wsf-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
+  if(sup){sup.innerHTML='<option value="">Select...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
   ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
@@ -13187,7 +13233,7 @@ async function wsSave(){
   if(!title){toast('Please enter a work order title',false);return;}
   var supId=document.getElementById('wsf-supervisor')?.value||null;
   var supName='';
-  if(supId){var p=(people||[]).find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
+  if(supId){var p=tenantPeople().find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
     company_id:ccid(),title:title,
@@ -13197,7 +13243,7 @@ async function wsSave(){
     planned_start:g('wsf-start'),planned_end:g('wsf-end'),
     estimated_duration:g('wsf-duration'),
     supervisor_id:supId||null,supervisor_name:supName||null,
-    team_members:g('wsf-team'),
+    team_members:wsSelectedTeamNames(),
     requires_ra:document.getElementById('wsf-requires-ra')?.checked||false,
     requires_permit:document.getElementById('wsf-requires-permit')?.checked||false,
     ra_ref:g('wsf-ra-ref'),permit_ref:g('wsf-ptw-ref'),
@@ -34492,12 +34538,17 @@ function saCompanySetContext(companyId) {
 function saCompanyUpdateLabel() {
   var lbl = document.getElementById('sa-company-label');
   if(!lbl) return;
+  var logo = document.getElementById('sa-company-logo');
+  var fallback = document.getElementById('sa-company-fallback-icon');
+  var selectedCompany = sephsCompanyContext ? saCompanyList.find(function(c){return c.id===sephsCompanyContext;}) : null;
+  var logoUrl = selectedCompany ? aurisSafeMediaUrl(selectedCompany.logo_url,'image') : '';
   if(!sephsCompanyContext) {
     lbl.textContent = 'All companies';
   } else {
-    var co = saCompanyList.find(function(c){return c.id===sephsCompanyContext;});
-    lbl.textContent = co ? co.name : 'Selected company';
+    lbl.textContent = selectedCompany ? selectedCompany.name : 'Selected company';
   }
+  if(logo){logo.src=logoUrl||'';logo.alt=logoUrl&&selectedCompany?selectedCompany.name+' logo':'';logo.hidden=!logoUrl;}
+  if(fallback)fallback.hidden=!!logoUrl;
 }
 
 async function saCompanyInit() {
@@ -34561,7 +34612,8 @@ function saCompanyMenuBuild() {
     html += '<div class="modules-menu-section">Companies (' + saCompanyList.length + ')</div>';
     saCompanyList.forEach(function(c){
       var isActive = sephsCompanyContext === c.id;
-      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" data-auris-runtime-onclick="r0109" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'"><i class="ti ti-building"></i>'+escapeHtml(c.name||'(unnamed)')+'</div>';
+      var safeLogo=aurisSafeMediaUrl(c.logo_url,'image');
+      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" data-auris-runtime-onclick="r0109" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'">'+(safeLogo?'<img class="sa-company-menu-logo" src="'+escapeHtml(safeLogo)+'" alt="">':'<i class="ti ti-building"></i>')+escapeHtml(c.name||'(unnamed)')+'</div>';
     });
   }
   menu.innerHTML = html;
