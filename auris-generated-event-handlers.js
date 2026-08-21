@@ -758,7 +758,7 @@ mocAIApplyReview()
 mapNew()
     },
     "g0253": function (event) {
-mapEdit(this.dataset.id)
+mapOpenDetail(this.dataset.id)
     },
     "g0254": function (event) {
 mapAISuggestion=null;document.getElementById('map-ai-review-panel').style.display='none'
