@@ -36,7 +36,12 @@ Keep these environment boundaries:
 7. Merge the approved pull request to create a staged production build.
 8. Verify the staged build, its commit, build logs and non-destructive production smoke checks.
 9. Promote that staged build to production.
-10. Observe authentication, browser errors, API errors and notification failures after promotion.
+10. Confirm the **Production smoke** workflow passes for the promoted commit and retain its evidence artifact.
+11. Observe authentication, browser errors, API errors and notification failures after promotion.
+
+The production smoke gate is deliberately read-only. It verifies that the canonical domain serves the expected Git commit, the approved production runtime and Supabase project, enforced browser-security headers, the service worker and critical Core Control assets. It never signs in or writes production data.
+
+To repeat it manually from GitHub Actions, run **Production smoke** with the canonical production URL and the full commit SHA expected to be live. A release-identity mismatch is a stop signal: confirm the Vercel promotion rather than accepting evidence from an older deployment.
 
 ## Local release checks
 
@@ -73,5 +78,6 @@ Pause promotion or rollout when any of these occurs:
 - The dashboard or module shell fails to load without a manual refresh.
 - Mobile navigation prevents access to required controls.
 - Critical notifications or linked actions fail.
+- The Production smoke workflow reports a release-identity, runtime-boundary, security-header or critical-asset failure.
 
 For an application-only incident, restore the last known-good Vercel production deployment. For a database incident, use the migration-specific recovery procedure; do not improvise destructive SQL during the incident.

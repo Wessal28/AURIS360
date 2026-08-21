@@ -1,0 +1,58 @@
+name: Production smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: Canonical AURIS360 production URL
+        required: false
+        default: https://auris360.app
+        type: string
+      expected_sha:
+        description: Git commit expected to be live
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: production-smoke-${{ github.event.deployment.id || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    name: Verify canonical production release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PRODUCTION_APP_URL: ${{ inputs.production_url || 'https://auris360.app' }}
+      EXPECTED_DEPLOYMENT_SHA: ${{ inputs.expected_sha || github.event.deployment.sha || github.sha }}
+
+    steps:
+      - name: Check out deployed release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha || github.event.deployment.sha || github.sha }}
+
+      - name: Use supported Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify canonical production release
+        run: npm run production:smoke -- --report release-evidence/production-${{ inputs.expected_sha || github.event.deployment.sha || github.sha }}.json
+
+      - name: Retain production smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-${{ inputs.expected_sha || github.event.deployment.sha || github.sha }}
+          path: release-evidence/
+          if-no-files-found: warn
+          retention-days: 90
