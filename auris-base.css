@@ -2645,3 +2645,19 @@ input[type="button"], input[type="submit"] {
 .ims-register-mini{max-height:330px;overflow:auto;border:1px solid var(--border);border-radius:14px}
 @media(max-width:1200px){.ims-dash-toolbar{grid-template-columns:repeat(3,1fr)}.ims-kpi-grid{grid-template-columns:repeat(3,1fr)}.ims-dash-grid,.ims-info-grid{grid-template-columns:1fr}.ims-workflow{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.ims-dash-toolbar,.ims-kpi-grid{grid-template-columns:1fr}.ims-workflow{grid-template-columns:1fr 1fr}.ims-kpi-card{min-height:92px}.ims-heat-map{min-height:220px}}
+
+/* Phase 9 blue-callout completion: company identity, employee selection and movable AI. */
+.sa-company-context-logo{width:24px;height:24px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid var(--border);padding:2px;flex:0 0 auto}
+.sa-company-menu-logo{width:22px;height:22px;border-radius:5px;object-fit:contain;background:#fff;border:1px solid var(--border);padding:2px;flex:0 0 auto}
+.ws-team-select{min-height:128px;padding:5px}
+.ws-team-select option{padding:7px 9px;border-radius:5px}
+.ws-team-select option:checked{background:linear-gradient(0deg,#dff5ee,#dff5ee);color:#075e4c}
+.ws-team-help{margin-top:5px;font-size:11px;color:var(--text3)}
+@media (min-width:769px){
+  .ai-panel{touch-action:none}
+  .ai-toggle{touch-action:none;cursor:grab}
+  .ai-panel.ai-dragging .ai-toggle{cursor:grabbing}
+  .ai-window{position:absolute;right:0;bottom:66px;width:min(380px,calc(100vw - 16px));height:min(520px,calc(100vh - 82px))}
+  .ai-panel.ai-dock-right .ai-window{left:0;right:auto}
+  .ai-panel.ai-dock-below .ai-window{top:66px;bottom:auto}
+}

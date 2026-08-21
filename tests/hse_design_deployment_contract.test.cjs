@@ -7,11 +7,12 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('corrected HSE design release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-08-21-stability-phase-9-callouts"/);
+  assert.match(index, /name="auris-build" content="2026-08-22-stability-phase-9-blue-callouts-2"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
   const assets = [
+    'auris-base.css',
     'auris-core.js',
     'kpi-module-upgrade.css',
     'kpi-module-upgrade.js',
@@ -28,7 +29,9 @@ test('all corrected design assets use the same release cache key', () => {
   ];
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const expected = asset.startsWith('tools-equipment-upgrade') || asset === 'contractor-management-upgrade.css' || asset === 'auris-core.js' ? '20260821-4' : '20260821-3';
+    const expected = ['auris-base.css','auris-core.js','incident-management-upgrade.css','incident-management-upgrade.js'].includes(asset)
+      ? '20260822-1'
+      : asset.startsWith('tools-equipment-upgrade') || asset === 'contractor-management-upgrade.css' ? '20260821-4' : '20260821-3';
     assert.match(index, new RegExp(`${escaped}\\?v=${expected}`), `${asset} must be cache-versioned`);
   }
 });

@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-08-21-stability-phase-9-callouts"/>
+<meta name="auris-build" content="2026-08-22-stability-phase-9-blue-callouts-2"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -28,7 +28,7 @@
 <title>AURIS360 v4 - HSE Management Platform</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="auris-base.css"/>
+<link rel="stylesheet" href="auris-base.css?v=20260822-1"/>
 <link rel="stylesheet" href="auris-runtime-state.css?v=20260815-2"/>
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
@@ -41,13 +41,13 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260821-4"></script>
+<script src="auris-core.js?v=20260822-1"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260821-3">
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260821-3">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
-<link rel="stylesheet" href="incident-management-upgrade.css?v=20260821-3">
+<link rel="stylesheet" href="incident-management-upgrade.css?v=20260822-1">
 <link rel="stylesheet" href="document-control-upgrade.css?v=20260803-2">
 <link rel="stylesheet" href="swms-upgrade.css?v=20260803-1">
 <link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260804-1">
@@ -330,9 +330,9 @@
   <!-- Company context switcher - visible only to sephs_admin -->
   <div class="modules-dropdown auris-shell-s-6aa34d7432" id="sa-company-switcher">
     <button class="topbar-btn" data-auris-onclick="h0067" id="sa-company-trigger">
-      <i class="ti ti-building auris-shell-s-ca32b871b2"></i>
-      <span class="auris-shell-s-6e8bcfac8d">Viewing:</span>
-      <span id="sa-company-label">All companies</span>
+      <img id="sa-company-logo" class="sa-company-context-logo" alt=""/>
+      <i id="sa-company-fallback-icon" class="ti ti-building auris-shell-s-ca32b871b2"></i>
+      <span id="sa-company-label" class="auris-shell-s-6e8bcfac8d">All companies</span>
       <i class="ti ti-chevron-down auris-shell-s-ab19584647"></i>
     </button>
     <div class="modules-menu auris-shell-s-aa29569754" id="sa-company-menu"></div>
@@ -1230,7 +1230,7 @@
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Supervisor</label><select id="wsf-supervisor"><option value="">Select...</option></select></div>
-<div class="form3group"><label class="form3label">Team members</label><input type="text" id="wsf-team" placeholder="Names of all team members..."/></div>
+<div class="form3group"><label class="form3label" for="wsf-team">Team members</label><select id="wsf-team" class="ws-team-select" multiple size="5" aria-describedby="wsf-team-help"></select><div id="wsf-team-help" class="ws-team-help">Select one or more active employees in this company.</div></div>
 </div>
 <div class="form3group"><label class="form3label">Notes</label><textarea id="wsf-notes" class="auris-work-s-2b013fa0d9"></textarea></div>
 </div>
@@ -11621,7 +11621,7 @@ I can help you:<br>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260821-3"></script>
 <script src="noise-management.js?v=20260803-3"></script>
-<script src="incident-management-upgrade.js?v=20260821-3"></script>
+<script src="incident-management-upgrade.js?v=20260822-1"></script>
 <script src="document-control-upgrade.js?v=20260803-2"></script>
 <script src="swms-upgrade.js?v=20260806-1"></script>
 <script src="legal-compliance-upgrade.js?v=20260806-1"></script>

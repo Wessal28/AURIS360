@@ -31,3 +31,10 @@
 .imx-emergency{border:1px solid #efb9b5;background:#fff4f3;border-radius:10px;padding:12px;margin:0 0 14px}.imx-emergency h3{font-size:13px;color:#a8342d;margin:0 0 5px}.imx-emergency p{font-size:11px;color:#77514e;margin:0 0 10px}.imx-emergency-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 @media(max-width:1100px){.imx-grid.six{grid-template-columns:repeat(3,1fr)}.imx-grid.four{grid-template-columns:repeat(2,1fr)}.imx-toolbar{grid-template-columns:repeat(3,1fr)}.imx-config-layout{grid-template-columns:190px minmax(0,1fr)}}
 @media(max-width:720px){#page-events.imx-page>.page-header{padding:14px}.imx-head{flex-direction:column}.imx-actions{justify-content:flex-start}.imx-grid.two,.imx-grid.three,.imx-grid.four,.imx-grid.six{grid-template-columns:1fr}.imx-toolbar{grid-template-columns:1fr}.imx-config-layout{grid-template-columns:1fr}.imx-config-nav{display:flex;overflow:auto}.imx-config-nav button{width:auto;white-space:nowrap}.imx-form{grid-template-columns:1fr}.imx-form .full{grid-column:auto}.imx-emergency-grid{grid-template-columns:1fr 1fr}.imx-drawer{width:100%}.imx-table{min-width:720px}}
+
+/* Keep every incident workspace visible without a horizontal tab scroller. */
+#page-events.imx-page>.module-tabs{display:flex;flex-wrap:wrap;overflow:visible;gap:5px}
+#page-events.imx-page>.module-tabs .mtg-tab{flex:1 1 150px;white-space:normal;justify-content:flex-start}
+.imx-attention-row{width:100%;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.imx-attention-row:hover{background:#f2f8f6}
+.imx-attention-row:focus-visible{outline:3px solid rgba(8,139,120,.22);outline-offset:2px;border-radius:7px}
