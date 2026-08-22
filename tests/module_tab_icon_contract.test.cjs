@@ -17,7 +17,8 @@ test('shared decorator covers static and dynamically generated module tabs', () 
 });
 
 test('tabs without icons receive a semantic glyph while existing icons are retained', () => {
-  assert.match(js, /if\(!icon\)\{icon=document\.createElement\('i'\)/);
+  assert.match(js, /if\(!icon&&!iconShell\)\{icon=document\.createElement\('i'\)/);
+  assert.match(js, /:scope>\[class\*="tab-icon"\]/);
   assert.match(js, /tabGlyph\(text\)/);
   for (const concept of ['dashboard', 'incident', 'configuration', 'recognition', 'monthly']) assert.ok(js.includes(concept));
 });
@@ -30,11 +31,13 @@ test('tab icons use the colourful AURIS visual language and active emphasis', ()
 
 test('new icon assets are cache-busted in the application shell', () => {
   assert.match(html, /auris-icon-system\.css\?v=20260816-1/);
-  assert.match(html, /auris-icon-system\.js\?v=20260817-1/);
+  assert.match(html, /auris-icon-system\.js\?v=20260822-3/);
 });
 
 test('dashboard indicators receive one icon before action decoration', () => {
   assert.match(js, /applyTabs\(\);applyIndicators\(\);applyActions\(\)/);
   assert.match(js, /classList\.contains\('auris-indicator-icon'\)/);
   assert.match(js, /closest\('#page-dashboard,#page-kpi'\)/);
+  assert.match(js, /:scope>\[class\*="metric-icon"\],:scope>\[class\*="indicator-icon"\]/);
+  assert.match(js, /if\(!icon&&!iconShell\)/);
 });

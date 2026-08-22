@@ -13319,10 +13319,42 @@ async function wsDelete(){
 // ===== WS_EXTRAS_JS.JS =====
 
 // -- RA & PTW LINKS -----------------------------------------------------------
-function wsOpenRA(){
+async function wsOpenRA(){
   var x=wsGetCurrent();
+  if(!x)return;
+  var choice=await appPrompt({
+    title:'Risk Assessment for this work order',
+    message:'Create a new assessment, start from a template, or link an existing assessment.',
+    options:[
+      {value:'new',label:'Create a new assessment'},
+      {value:'template',label:'Create from a template'},
+      {value:'existing',label:'Choose an existing assessment'}
+    ],
+    confirmText:'Continue',cancelText:'Back'
+  });
+  if(!choice)return;
+  if(choice==='existing'){
+    try{
+      var rows=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150');
+      if(!rows||!rows.length){toast('No existing risk assessments are available for this company.',false);return;}
+      var selected=await appPrompt({
+        title:'Choose an existing risk assessment',
+        message:'The selected assessment will be linked to this work order.',
+        options:rows.map(function(r){var ref=r.ra_ref||r.id;return {value:ref,label:[ref,r.title||r.activity,r.status].filter(Boolean).join(' - ')};}),
+        confirmText:'Link assessment',cancelText:'Back'
+      });
+      if(!selected)return;
+      await wsLinkedRecordChanged('ra',selected);
+      await wsOpenLinkedRecord('ra',selected);
+    }catch(e){toastActionError('Choose risk assessment','Work Schedule',e);}
+    return;
+  }
+  window.wsPendingRiskLink={workOrderId:x.id,companyId:ccid(),workOrderTitle:x.title||x.ref_number||'Work order'};
   showPage('risk',document.querySelector('[onclick*="\'risk\'"]'));
-  if(x.ra_ref)setTimeout(function(){wsOpenLinkedRecord('ra',x.ra_ref);},250);
+  setTimeout(function(){
+    if(choice==='template'&&typeof raShowNewPanel==='function')raShowNewPanel();
+    else if(typeof raNew==='function')raNew('baseline');
+  },250);
 }
 
 function wsOpenPTW(){

@@ -14,6 +14,14 @@ test('tools navigation wraps into rows without horizontal scrolling', () => {
   assert.match(toolsCss, /\.teu-tabs button\{flex:1 1 calc\(16\.666% - 7px\);min-width:150px\}/);
 });
 
+test('Fleet owns vehicles and Tools does not expose a duplicate Vehicles workspace', () => {
+  const shellStart = toolsJs.indexOf('function ensureShell()');
+  const shellEnd = toolsJs.indexOf('function ensureDrawer()', shellStart);
+  const shell = toolsJs.slice(shellStart, shellEnd > shellStart ? shellEnd : toolsJs.length);
+  assert.doesNotMatch(shell, /\['vehicles','ti-car','Vehicles'\]/);
+  assert.match(core, /function fleetNewVehicle\(\)/);
+});
+
 test('inspection and ERT selectors use selected-company people only', () => {
   assert.match(core, /function tenantPeople\(\)/);
   assert.match(core, /function fillPersonSelect[\s\S]*?tenantPeople\(\)\.map/);
