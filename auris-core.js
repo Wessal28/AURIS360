@@ -9284,6 +9284,18 @@ async function swmsSaveToDocuments(){
 
 
 async function loadMtgs(){
+  aurisBindReadOnlyRows('page-meetings',function(listId,id){
+    var sources={
+      'mtg-series-list':{rows:mtgSeriesData,kind:'Meeting schedule'},
+      'mtg-minutes-list':{rows:mtgMinutesData,kind:'Meeting minutes'},
+      'tbt-list':{rows:tbtAllData,kind:'Toolbox talk'},
+      'alert-list':{rows:alertAllData,kind:'Safety alert'},
+      'bulletin-list':{rows:bulletinAllData,kind:'Safety bulletin'}
+    };
+    var source=sources[listId];if(!source)return;
+    var record=(source.rows||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
+    aurisReadOnlyRecordModal(source.kind,record.title||record.name||record.meeting_title||'Record',record,aurisReadableRecordFields(record));
+  });
   var btn=document.getElementById('mtg-new-series-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   mtgRoadmapYear=new Date().getFullYear();
@@ -20430,6 +20442,7 @@ function aurisReadOnlyRecordModal(kind,title,row,fields){
 }
 
 function aurisRowRecordId(row){
+  if(row&&row.dataset&&row.dataset.id)return row.dataset.id;
   var node=row&&row.querySelector('[data-id],[data-auris-runtime-args]');if(!node)return '';
   if(node.dataset.id)return node.dataset.id;
   try{var args=JSON.parse(decodeURIComponent(node.getAttribute('data-auris-runtime-args')||''));return args&&args[0]||'';}catch(_){return '';}
@@ -20441,7 +20454,7 @@ function aurisBindReadOnlyRows(pageId,resolver){
     if(ev.target.closest('button,a,input,select,textarea,label'))return;
     var row=ev.target.closest('tr');if(!row||!page.contains(row))return;
     var list=row.closest('[id$="-list"], [id$="-alerts"]');if(!list)return;
-    var id=aurisRowRecordId(row);if(id)resolver(list.id,id);
+    var id=aurisRowRecordId(row);if(id){ev.stopPropagation();resolver(list.id,id);}
   });
 }
 function aurisReadableRecordFields(row){
@@ -21368,6 +21381,19 @@ function esgSwitchTab(tab, btn){
 }
 
 async function loadESG(){
+  aurisBindReadOnlyRows('page-esg',function(listId,id){
+    var sources={
+      'esg-waste-list':{rows:esgWasteData,kind:'Waste record'},
+      'esg-hw-list':{rows:esgHWData,kind:'Hazardous waste record'},
+      'esg-fuel-list':{rows:esgFuelData,kind:'Fuel / energy record'},
+      'esg-water-list':{rows:esgWaterData,kind:'Water usage record'},
+      'esg-spill-list':{rows:esgSpillData,kind:'Spill report'},
+      'esg-insp-list':{rows:esgInspData,kind:'Environmental inspection'}
+    };
+    var source=sources[listId];if(!source)return;
+    var record=(source.rows||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
+    aurisReadOnlyRecordModal(source.kind,record.title||record.description||record.category||'Environmental record',record,aurisReadableRecordFields(record));
+  });
   ensureContractorNameOptions();
   var btns=['esg-waste-add-btn','esg-hw-add-btn','esg-fuel-add-btn','esg-water-add-btn','esg-spill-add-btn','esg-insp-add-btn'];
   btns.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';});
@@ -26679,6 +26705,11 @@ function mapNew(){
   document.getElementById('map-form3view').style.display='block';
   connectedRecordsMount('map-connected-records',null,{allowCreate:false});
   mapFormTab('details', document.getElementById('map-ftab-details'));
+}
+
+function mapOpenDetail(id){
+  var record=(mapAllData||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
+  aurisReadOnlyRecordModal('Master Action Plan record',record.title||record.description||mapDisplayRef(record),record,aurisReadableRecordFields(record));
 }
 
 async function mapEdit(id){

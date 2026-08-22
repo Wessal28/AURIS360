@@ -89,7 +89,7 @@ event.stopPropagation();noiseRemovePoint(args[0])
 event.stopPropagation();noiseSetActivePoint(args[0])
     },
     "r0030": function (event, args) {
-chemEdit(args[0])
+ccuOpenChemicalDetail(args[0])
     },
     "r0031": function (event, args) {
 event.stopPropagation();chemEdit(args[0])

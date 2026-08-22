@@ -153,6 +153,9 @@ ccuSaveInventory()
     },
     "c0051": function (event, args) {
 window.aurisExecuteModuleCommand(this.getAttribute('data-auris-module-command') || '', 'dcx')
+    },
+    "c0052": function (event, args) {
+ccuGenerateRiskAssessment(args[0])
     }
   };
   var eventTypes = ["change","click","input"];

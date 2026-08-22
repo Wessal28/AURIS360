@@ -14,7 +14,7 @@ test('core application has no executable inline event attributes', () => {
   assert.doesNotMatch(html, eventAttribute);
   assert.doesNotMatch(core, eventAttribute);
   assert.doesNotMatch(core, /on[a-z]+=\\["']/i);
-  assert.match(html, /src="auris-runtime-event-handlers\.js\?v=20260814-1"/);
+  assert.match(html, /src="auris-runtime-event-handlers\.js\?v=20260822-2"/);
 });
 
 test('runtime argument registry is precompiled and allowlisted', () => {

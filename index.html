@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-08-22-stability-phase-9-blue-callouts-2"/>
+<meta name="auris-build" content="2026-08-22-stability-phase-9-design-requirements-3"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -33,28 +33,28 @@
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
 <script src="auris-static-event-handlers.js?v=20260814-1"></script>
-<script src="auris-generated-event-handlers.js?v=20260814-1"></script>
-<script src="auris-runtime-event-handlers.js?v=20260814-1"></script>
+<script src="auris-generated-event-handlers.js?v=20260822-2"></script>
+<script src="auris-runtime-event-handlers.js?v=20260822-2"></script>
 <script src="auris-module-event-handlers-batch-1.js?v=20260814-1"></script>
-<script src="auris-module-event-handlers-batch-2.js?v=20260814-1"></script>
+<script src="auris-module-event-handlers-batch-2.js?v=20260822-2"></script>
 <script src="auris-module-event-handlers-batch-3.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260822-1"></script>
+<script src="auris-core.js?v=20260822-2"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260821-3">
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260821-3">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
 <link rel="stylesheet" href="incident-management-upgrade.css?v=20260822-1">
-<link rel="stylesheet" href="document-control-upgrade.css?v=20260803-2">
+<link rel="stylesheet" href="document-control-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="swms-upgrade.css?v=20260803-1">
-<link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260804-1">
+<link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="risk-assessment-upgrade.css?v=20260821-3">
 <link rel="stylesheet" href="sop-video-upgrade.css?v=20260805-1">
-<link rel="stylesheet" href="learning-competency-upgrade.css?v=20260805-1">
-<link rel="stylesheet" href="chemical-control-upgrade.css?v=20260805-1">
+<link rel="stylesheet" href="learning-competency-upgrade.css?v=20260822-2">
+<link rel="stylesheet" href="chemical-control-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="contractor-management-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
@@ -75,7 +75,7 @@
 <link rel="stylesheet" href="auris-tools-equipment-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-permit-work-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-contractor-management-static.css?v=20260815-1">
-<link rel="stylesheet" href="auris-environmental-esg-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-environmental-esg-static.css?v=20260822-2">
 <link rel="stylesheet" href="auris-emergency-management-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
@@ -5287,17 +5287,17 @@ Offline mode - changes will sync when connection is restored
 </div>
 <!-- Dashboard -->
 <div id="esg-view-dash">
-<div class="auris-esg-s-311c2a86b4">
-<div class="card auris-esg-s-aa88118587"><div class="auris-esg-s-7fd5539fb9">Total Waste (kg)</div><div id="esg-m3waste" class="auris-esg-s-9500d42bf8">-</div><div id="esg-m3waste-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
-<div class="card auris-esg-s-69251753c7"><div class="auris-esg-s-7fd5539fb9">Fuel Used (L)</div><div id="esg-m3fuel" class="auris-esg-s-c85dfe6fed">-</div><div id="esg-m3fuel-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
-<div class="card auris-esg-s-70f898cb02"><div class="auris-esg-s-7fd5539fb9">Water (m3)</div><div id="esg-m3water" class="auris-esg-s-2fe91b0e78">-</div><div id="esg-m3water-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
-<div class="card auris-esg-s-341b35f676"><div class="auris-esg-s-7fd5539fb9">CO2e (kg)</div><div id="esg-m3carbon" class="auris-esg-s-6a6fa8c798">-</div><div class="auris-esg-s-d37c8e8fe6">estimated</div></div>
+<div class="auris-esg-s-311c2a86b4 esg-standard-metrics">
+<div class="card auris-esg-s-aa88118587"><span class="esg-metric-icon"><i class="ti ti-recycle"></i></span><div class="auris-esg-s-7fd5539fb9">Total Waste (kg)</div><div id="esg-m3waste" class="auris-esg-s-9500d42bf8">-</div><div id="esg-m3waste-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
+<div class="card auris-esg-s-69251753c7"><span class="esg-metric-icon"><i class="ti ti-gas-station"></i></span><div class="auris-esg-s-7fd5539fb9">Fuel Used (L)</div><div id="esg-m3fuel" class="auris-esg-s-c85dfe6fed">-</div><div id="esg-m3fuel-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
+<div class="card auris-esg-s-70f898cb02"><span class="esg-metric-icon"><i class="ti ti-droplet"></i></span><div class="auris-esg-s-7fd5539fb9">Water (m3)</div><div id="esg-m3water" class="auris-esg-s-2fe91b0e78">-</div><div id="esg-m3water-sub" class="auris-esg-s-d37c8e8fe6">this month</div></div>
+<div class="card auris-esg-s-341b35f676"><span class="esg-metric-icon"><i class="ti ti-cloud"></i></span><div class="auris-esg-s-7fd5539fb9">CO2e (kg)</div><div id="esg-m3carbon" class="auris-esg-s-6a6fa8c798">-</div><div class="auris-esg-s-d37c8e8fe6">estimated</div></div>
 </div>
-<div class="auris-esg-s-311c2a86b4">
-<div class="card auris-esg-s-92bbef3a51"><div class="auris-esg-s-7fd5539fb9">Open Spills</div><div id="esg-m3spills" class="auris-esg-s-6ca3277dba">-</div></div>
-<div class="card auris-esg-s-5064b7ceb8"><div class="auris-esg-s-7fd5539fb9">Hazardous Waste</div><div id="esg-m3hazwaste" class="auris-esg-s-b1c126973c">-</div><div class="auris-esg-s-d37c8e8fe6">items stored</div></div>
-<div class="card auris-esg-s-aa88118587"><div class="auris-esg-s-7fd5539fb9">Recycling Rate</div><div id="esg-m3recycle" class="auris-esg-s-9500d42bf8">-</div></div>
-<div class="card auris-esg-s-69251753c7"><div class="auris-esg-s-7fd5539fb9">Inspections</div><div id="esg-m3inspections" class="auris-esg-s-c85dfe6fed">-</div><div class="auris-esg-s-d37c8e8fe6">this year</div></div>
+<div class="auris-esg-s-311c2a86b4 esg-standard-metrics">
+<div class="card auris-esg-s-92bbef3a51"><span class="esg-metric-icon"><i class="ti ti-alert-triangle"></i></span><div class="auris-esg-s-7fd5539fb9">Open Spills</div><div id="esg-m3spills" class="auris-esg-s-6ca3277dba">-</div></div>
+<div class="card auris-esg-s-5064b7ceb8"><span class="esg-metric-icon"><i class="ti ti-biohazard"></i></span><div class="auris-esg-s-7fd5539fb9">Hazardous Waste</div><div id="esg-m3hazwaste" class="auris-esg-s-b1c126973c">-</div><div class="auris-esg-s-d37c8e8fe6">items stored</div></div>
+<div class="card auris-esg-s-aa88118587"><span class="esg-metric-icon"><i class="ti ti-refresh"></i></span><div class="auris-esg-s-7fd5539fb9">Recycling Rate</div><div id="esg-m3recycle" class="auris-esg-s-9500d42bf8">-</div></div>
+<div class="card auris-esg-s-69251753c7"><span class="esg-metric-icon"><i class="ti ti-clipboard-check"></i></span><div class="auris-esg-s-7fd5539fb9">Inspections</div><div id="esg-m3inspections" class="auris-esg-s-c85dfe6fed">-</div><div class="auris-esg-s-d37c8e8fe6">this year</div></div>
 </div>
 <div class="auris-esg-s-67e92fd3c7">
 <div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i> Waste by Category</div><div id="esg-waste-chart" class="auris-esg-s-5e461f0709"></div></div>
@@ -11620,7 +11620,7 @@ I can help you:<br>
 <script src="kpi-module-upgrade.js?v=20260821-3"></script>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260821-3"></script>
-<script src="noise-management.js?v=20260803-3"></script>
+<script src="noise-management.js?v=20260822-2"></script>
 <script src="incident-management-upgrade.js?v=20260822-1"></script>
 <script src="document-control-upgrade.js?v=20260803-2"></script>
 <script src="swms-upgrade.js?v=20260806-1"></script>
@@ -11629,7 +11629,7 @@ I can help you:<br>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
 <script src="learning-competency-upgrade.js?v=20260809-2"></script>
 <script src="elearning-course-path.js?v=20260813-1"></script>
-<script src="chemical-control-upgrade.js?v=20260806-1"></script>
+<script src="chemical-control-upgrade.js?v=20260822-2"></script>
 <script src="contractor-management-upgrade.js?v=20260821-3"></script>
 <script src="tools-equipment-upgrade.js?v=20260821-4"></script>
 <script src="auris-icon-system.js?v=20260817-1"></script>
