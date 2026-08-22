@@ -53,9 +53,10 @@ function applyTabs(){
     if(tab.closest('.modal,.drawer,[role="dialog"]')&&!tab.matches('[role="tab"]'))return;
     var text=(tab.textContent||tab.getAttribute('aria-label')||'').trim();if(!text)return;
     var icon=tab.querySelector(':scope>i.ti');
-    if(!icon){icon=document.createElement('i');icon.className='ti '+tabGlyph(text);tab.insertBefore(icon,tab.firstChild);}
-    icon.classList.remove('auris-action-icon');delete icon.dataset.actionIcon;
-    icon.classList.add('auris-tab-icon');tab.classList.add('auris-icon-tab');
+    var iconShell=tab.querySelector(':scope>[class*="tab-icon"]');
+    if(!icon&&!iconShell){icon=document.createElement('i');icon.className='ti '+tabGlyph(text);tab.insertBefore(icon,tab.firstChild);}
+    if(icon){icon.classList.remove('auris-action-icon');delete icon.dataset.actionIcon;icon.classList.add('auris-tab-icon');}
+    tab.classList.add('auris-icon-tab');
     tab.dataset.tabTone=tabTone(text,index);
   });
 }
@@ -78,8 +79,9 @@ function applyIndicators(){
     var siblings=Array.prototype.filter.call(card.parentElement?card.parentElement.children:[],function(el){return el.matches('.card,.metric,[class*="-metric"]');});
     var idx=Math.max(0,siblings.indexOf(card));card.classList.add('auris-indicator-card');card.dataset.indicatorTone=indicatorTones[idx%indicatorTones.length];
     var icon=card.querySelector(':scope>i');
-    if(!icon){icon=document.createElement('i');icon.className='ti '+indicatorGlyph(card.textContent);card.insertBefore(icon,card.firstChild);}
-    icon.classList.add('auris-indicator-icon');
+    var iconShell=card.querySelector(':scope>[class*="metric-icon"],:scope>[class*="indicator-icon"]');
+    if(!icon&&!iconShell){icon=document.createElement('i');icon.className='ti '+indicatorGlyph(card.textContent);card.insertBefore(icon,card.firstChild);}
+    if(icon)icon.classList.add('auris-indicator-icon');
     var value=card.querySelector('[id*="-m3"],.metric-value,[class*="metric-value"],.value,b,strong');if(value)value.classList.add('auris-indicator-value');
   });
 }

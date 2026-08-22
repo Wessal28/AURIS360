@@ -84,3 +84,17 @@ test('Contractor work package and mobilisation actions are operational', () => {
   assert.match(js, /api\('\/contractor_work_packages'/);
   assert.match(js, /function\(id\).*contractor_mobilisation_gates/s);
 });
+
+test('ordered production migrations include the complete Noise workspace schema', () => {
+  const migration = read('supabase/migrations/20260822010000_noise_management_schema_completion.sql');
+  for (const table of [
+    'noise_mgmt_map_versions',
+    'noise_mgmt_map_points',
+    'noise_mgmt_map_layers',
+    'noise_mgmt_map_surfaces',
+    'noise_mgmt_map_reviews',
+    'noise_mgmt_config_records'
+  ]) assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+  const manifest = JSON.parse(read('supabase/migrations/manifest.json'));
+  assert.ok(manifest.migrations.some((entry) => entry.file === '20260822010000_noise_management_schema_completion.sql'));
+});

@@ -61,7 +61,7 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
   assert.match(html, /auris-mobile-responsive\.css\?v=20260818-1/);
-  assert.match(html, /auris-icon-system\.js\?v=20260817-1/);
+  assert.match(html, /auris-icon-system\.js\?v=20260822-3/);
 });
 
 test('dense operational tables have dedicated touch-scroll containers', () => {

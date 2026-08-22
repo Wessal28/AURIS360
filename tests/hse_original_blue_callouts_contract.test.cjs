@@ -34,6 +34,20 @@ test('work schedule team members are company-scoped employee multi-select choice
   assert.match(core, /team_members:wsSelectedTeamNames\(\)/);
 });
 
+test('work schedule offers new, template and existing risk-assessment paths and links the result', () => {
+  const start = core.indexOf('async function wsOpenRA()');
+  const end = core.indexOf('function wsOpenPTW()', start);
+  const section = core.slice(start, end);
+  for (const choice of ['Create a new assessment', 'Create from a template', 'Choose an existing assessment']) {
+    assert.ok(section.includes(choice), `missing ${choice}`);
+  }
+  assert.match(section, /appPrompt\(/);
+  assert.match(section, /wsLinkedRecordChanged\('ra',selected\)/);
+  const risk = read('risk-assessment-upgrade.js');
+  assert.match(risk, /wsPendingRiskLink/);
+  assert.match(risk, /risk_assessment_id:afterId/);
+});
+
 test('incident tabs wrap and dashboard attention opens a read-only incident view', () => {
   assert.match(incidentCss, /module-tabs\{display:flex;flex-wrap:wrap;overflow:visible/);
   assert.match(incident, /imv2OpenIncidentReadOnly/);
