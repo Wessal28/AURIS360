@@ -13,6 +13,8 @@ test('BuildCo showcase seed is guarded, labelled and uses non-deliverable identi
   assert.match(migration, /fictional demonstration data/i);
   assert.match(migration, /non-showcase company named BuildCo Mauritius already exists/i);
   assert.match(migration, /jsonb_build_object\('is_demo',true/);
+  assert.match(migration, /cb1d7272-2715-43e9-aeb5-7dee920c24bc/, 'must reuse the existing production BuildCo tenant');
+  assert.doesNotMatch(migration, /b1000000-0000-4000-8000-000000000001/, 'must not create a duplicate BuildCo tenant');
   const emails = migration.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
   assert.ok(emails.length >= 12, 'expected fictional employee and workflow contacts');
   assert.ok(emails.every((email) => email.toLowerCase().endsWith('.example.invalid')), `deliverable-looking demo email found: ${emails.join(', ')}`);
