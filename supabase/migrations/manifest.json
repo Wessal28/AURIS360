@@ -11,6 +11,11 @@
       "order": 2,
       "file": "20260822010000_noise_management_schema_completion.sql",
       "sha256": "843c523a5d1121cbc83a256e48722140087950a29f1050206acc5dc0b9c19517"
+    },
+    {
+      "order": 3,
+      "file": "20260822030000_buildco_mauritius_showcase_seed.sql",
+      "sha256": "8068a635ce74f72f36c56807b16e5149cd9c607240422543010a3b6072058541"
     }
   ]
 }
