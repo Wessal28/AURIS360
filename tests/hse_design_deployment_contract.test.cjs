@@ -30,8 +30,10 @@ test('all corrected design assets use the same release cache key', () => {
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const expected = asset === 'auris-core.js'
-      ? '20260822-3'
-      : ['auris-base.css','incident-management-upgrade.css','incident-management-upgrade.js'].includes(asset)
+      ? '20260822-4'
+      : asset === 'incident-management-upgrade.css'
+      ? '20260822-2'
+      : ['auris-base.css','incident-management-upgrade.js'].includes(asset)
       ? '20260822-1'
       : asset === 'tools-equipment-upgrade.js' ? '20260822-3'
       : asset === 'risk-assessment-upgrade.js' ? '20260822-3'
