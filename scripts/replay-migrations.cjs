@@ -33,11 +33,24 @@ function run(command, commandArgs, options = {}) {
   const result = spawnSync(command, commandArgs, {
     cwd: root,
     encoding: 'utf8',
-    stdio: options.capture ? 'pipe' : 'inherit',
+    stdio: 'pipe',
     env: process.env
   });
   if (result.error) fail(`${command} could not start: ${result.error.message}`);
-  if (result.status !== 0) fail(`${options.label || command} failed with exit code ${result.status}.`);
+  if (result.status !== 0) {
+    const label = options.label || command;
+    const diagnostic = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
+    if (process.env.GITHUB_ACTIONS === 'true' && diagnostic) {
+      const escaped = diagnostic.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+      console.error(`::error title=${label}::${escaped}`);
+    }
+    if (diagnostic) console.error(diagnostic);
+    fail(`${label} failed with exit code ${result.status}.`);
+  }
+  if (!options.capture) {
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+  }
   return options.capture ? result.stdout.trim() : '';
 }
 
