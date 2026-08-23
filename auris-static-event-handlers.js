@@ -3434,7 +3434,13 @@ aiGenerateRAMS()
 aiCopyOutput('rams-output')
     },
     "h1145": function (event) {
-aiDownload('rams-output','RAMS')
+aiDownloadRAMSWord()
+    },
+    "h1145s": function (event) {
+aiSaveRAMSToAuris()
+    },
+    "h1145p": function (event) {
+aiPrintRAMS()
     },
     "h1146": function (event) {
 aiGenerateToolboxTalk()
