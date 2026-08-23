@@ -243,9 +243,10 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 /* Colourful, icon-led dashboard indicators across every HSE module. */
 .auris-indicator-card{
   --indicator:#2563eb;--indicator-soft:#eff6ff;
-  position:relative!important;overflow:hidden!important;border:1px solid color-mix(in srgb,var(--indicator) 24%,#dce7e4)!important;
-  border-left:4px solid var(--indicator)!important;background:linear-gradient(145deg,#fff 0%,var(--indicator-soft) 145%)!important;
-  box-shadow:0 8px 18px color-mix(in srgb,var(--indicator) 10%,transparent)!important;
+  position:relative!important;overflow:hidden!important;min-height:118px!important;
+  border:1px solid color-mix(in srgb,var(--indicator) 22%,#dce7e4)!important;
+  border-left:5px solid var(--indicator)!important;background:#fff!important;
+  box-shadow:0 8px 18px color-mix(in srgb,var(--indicator) 9%,transparent)!important;
 }
 .auris-indicator-card[data-indicator-tone="green"]{--indicator:#059669;--indicator-soft:#ecfdf5}
 .auris-indicator-card[data-indicator-tone="amber"]{--indicator:#d97706;--indicator-soft:#fffbeb}
@@ -256,15 +257,29 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
   content:""!important;display:block!important;position:absolute!important;right:-25px!important;bottom:-30px!important;
   width:82px!important;height:82px!important;border-radius:50%!important;background:var(--indicator)!important;opacity:.07!important;pointer-events:none!important;
 }
-i.auris-indicator-icon{
-  width:36px!important;height:36px!important;min-width:36px!important;border-radius:11px!important;margin:0 0 9px!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;color:#fff!important;font-size:19px!important;
-  background:linear-gradient(145deg,color-mix(in srgb,var(--indicator) 58%,#fff),var(--indicator) 62%,color-mix(in srgb,var(--indicator) 76%,#06192e))!important;
-  border:1px solid color-mix(in srgb,var(--indicator) 72%,#fff)!important;
-  box-shadow:inset 0 1px rgba(255,255,255,.72),inset 0 -5px 9px rgba(6,25,46,.16),0 7px 12px color-mix(in srgb,var(--indicator) 24%,transparent)!important;
-  text-shadow:0 2px 3px rgba(6,25,46,.25)!important;
+.auris-indicator-icon{
+  width:34px!important;height:34px!important;min-width:34px!important;flex:0 0 34px!important;
+  display:block!important;margin:0 0 9px!important;border:0!important;border-radius:0!important;
+  color:transparent!important;font-size:0!important;background-color:transparent!important;
+  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
+  background-size:614px 410px!important;background-position:-19px -92px!important;
+  box-shadow:none!important;text-shadow:none!important;overflow:hidden!important;mix-blend-mode:multiply;
 }
-.auris-indicator-value{color:var(--indicator)!important}
+.auris-indicator-icon:before,.auris-indicator-icon:after,.auris-indicator-icon>i{content:none!important;display:none!important}
+.auris-indicator-icon[data-indicator-icon="incident"]{background-position:-418px -92px!important}
+.auris-indicator-icon[data-indicator-icon="action"]{background-position:-80px -149px!important}
+.auris-indicator-icon[data-indicator-icon="risk"]{background-position:-360px -92px!important}
+.auris-indicator-icon[data-indicator-icon="training"]{background-position:-303px -149px!important}
+.auris-indicator-icon[data-indicator-icon="permit"]{background-position:-137px -149px!important}
+.auris-indicator-icon[data-indicator-icon="inspection"]{background-position:-19px -149px!important}
+.auris-indicator-icon[data-indicator-icon="people"]{background-position:-244px -274px!important}
+.auris-indicator-icon[data-indicator-icon="tools"]{background-position:-418px -149px!important}
+.auris-indicator-icon[data-indicator-icon="environment"]{background-position:-418px -207px!important}
+.auris-indicator-icon[data-indicator-icon="document"]{background-position:-187px -274px!important}
+.auris-indicator-icon[data-indicator-icon="schedule"]{background-position:-130px -337px!important}
+.auris-indicator-icon[data-indicator-icon="compliance"]{background-position:-18px -337px!important}
+.auris-indicator-icon[data-indicator-icon="kpi"]{background-position:-251px -92px!important}
+.auris-indicator-value{color:#08152c!important}
 .resilience-simulation-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:11px 14px;border:1px solid #f59e0b;border-left:4px solid #d97706;border-radius:10px;background:#fffbeb;color:#92400e;font-size:11px;line-height:1.45}
 .resilience-simulation-banner>span{display:flex;align-items:center;gap:7px}.resilience-simulation-banner>span>i{font-size:18px;color:#d97706}.resilience-simulation-banner .btn{flex:0 0 auto;background:#fff}
 @media(max-width:720px){.resilience-simulation-banner{align-items:flex-start;flex-direction:column}}
