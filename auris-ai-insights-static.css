@@ -110,6 +110,11 @@
 #aitab-risk.auris-ai-insights-s-eb99a4c193{white-space:nowrap}
 #aitab-safetyos.auris-ai-insights-s-eb99a4c193{white-space:nowrap}
 #aitab-toolbox.auris-ai-insights-s-eb99a4c193{white-space:nowrap}
+
+/* Requirements 4: keep every AI workspace visible without a horizontal rail. */
+#page-ai-insights>.auris-ai-insights-s-0904085f3d{display:flex;flex-wrap:wrap;overflow:visible;gap:5px;white-space:normal}
+#page-ai-insights>.auris-ai-insights-s-0904085f3d .mtg-tab{flex:1 1 calc(14.285% - 5px);min-width:145px;white-space:normal;justify-content:flex-start}
+.ai-file-drop{margin:10px 0;padding:13px;border:1px dashed #8eb6aa;border-radius:10px;background:#f5fbf9}.ai-file-drop label{display:block;font-size:11px;font-weight:850;color:#175b4b;margin-bottom:7px}.ai-file-drop input{width:100%;font-size:12px}.ai-file-state{font-size:10px;color:#64748b;margin-top:6px}.ai-save-destinations{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 #aiview-compliance.auris-ai-insights-s-6aa34d7432{display:none}
 #aiview-docs.auris-ai-insights-s-6aa34d7432{display:none}
 #aiview-qr.auris-ai-insights-s-6aa34d7432{display:none}

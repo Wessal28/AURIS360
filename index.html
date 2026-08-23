@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-08-22-hse-document-acceptance-corrections-1"/>
+<meta name="auris-build" content="2026-08-23-hse-design-requirements-4"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -32,26 +32,26 @@
 <link rel="stylesheet" href="auris-runtime-state.css?v=20260815-2"/>
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
-<script src="auris-static-event-handlers.js?v=20260823-2"></script>
-<script src="auris-generated-event-handlers.js?v=20260822-2"></script>
-<script src="auris-runtime-event-handlers.js?v=20260822-2"></script>
+<script src="auris-static-event-handlers.js?v=20260823-4"></script>
+<script src="auris-generated-event-handlers.js?v=20260823-4"></script>
+<script src="auris-runtime-event-handlers.js?v=20260823-4"></script>
 <script src="auris-module-event-handlers-batch-1.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-2.js?v=20260822-2"></script>
 <script src="auris-module-event-handlers-batch-3.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260823-3"></script>
-<link rel="stylesheet" href="kpi-module-upgrade.css?v=20260821-3">
-<link rel="stylesheet" href="safety-engagement.css">
-<link rel="stylesheet" href="bbs-observations.css?v=20260821-3">
+<script src="auris-core.js?v=20260823-4"></script>
+<link rel="stylesheet" href="kpi-module-upgrade.css?v=20260823-4">
+<link rel="stylesheet" href="safety-engagement.css?v=20260823-4">
+<link rel="stylesheet" href="bbs-observations.css?v=20260823-4">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
-<link rel="stylesheet" href="incident-management-upgrade.css?v=20260822-2">
+<link rel="stylesheet" href="incident-management-upgrade.css?v=20260823-4">
 <link rel="stylesheet" href="document-control-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="swms-upgrade.css?v=20260803-1">
 <link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260822-2">
-<link rel="stylesheet" href="risk-assessment-upgrade.css?v=20260821-3">
+<link rel="stylesheet" href="risk-assessment-upgrade.css?v=20260823-4">
 <link rel="stylesheet" href="sop-video-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="learning-competency-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260822-2">
@@ -61,12 +61,12 @@
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
-<link rel="stylesheet" href="auris-dashboard-executive.css?v=20260814-1">
+<link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
-<link rel="stylesheet" href="auris-work-schedule.css?v=20260814-1">
+<link rel="stylesheet" href="auris-work-schedule.css?v=20260823-4">
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
-<link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260821-3">
+<link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260823-4">
 <link rel="stylesheet" href="auris-risk-assessment-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-chemical-control-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-legal-compliance-static.css?v=20260814-1">
@@ -91,7 +91,7 @@
 <link rel="stylesheet" href="auris-users-roles-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-administration-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-integrations-static.css?v=20260815-1">
-<link rel="stylesheet" href="auris-ai-insights-static.css?v=20260823-2">
+<link rel="stylesheet" href="auris-ai-insights-static.css?v=20260823-4">
 <link rel="stylesheet" href="auris-approval-center-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-audit-trail-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-settings-static.css?v=20260815-1">
@@ -2424,7 +2424,6 @@
 <div id="insp-header-btns" class="auris-audit-s-9c40389b4a">
 <button class="btn" id="audit-print-current-btn" data-auris-onclick="h0288"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="insp-new-btn" data-auris-onclick="h0289"><i class="ti ti-plus"></i>New inspection</button>
-<button class="btn btn-sm" data-auris-onclick="h0290" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -10305,6 +10304,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <option value="UK HSE">UK HSE / COSHH</option><option value="general best practice">General HSE best practice</option>
 </select></div>
 <div class="form3group"><label class="form3label">Paste document text *</label><textarea id="comp-check-text" class="auris-ai-insights-s-fc834a6259" placeholder="Paste the full text of the document, policy or procedure to analyse..."></textarea></div>
+<div class="ai-file-drop"><label for="comp-check-file"><i class="ti ti-file-upload"></i> Or upload a PDF or document</label><input id="comp-check-file" type="file" accept=".pdf,.docx,.txt,.md,.csv,.json" data-auris-onchange="h1262"><div id="comp-check-file-state" class="ai-file-state">The document is extracted securely for this analysis.</div></div>
 <button class="btn btn-primary auris-ai-insights-s-9c026675bf" data-auris-onclick="h1161"><i class="ti ti-robot"></i>Run AI compliance check</button>
 </div>
 <div class="card">
@@ -10389,6 +10389,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 </select></div>
 </div>
 <div class="form3group"><label class="form3label">Paste document text *</label><textarea id="doc-analysis-text" class="auris-ai-insights-s-8e685f4c45" placeholder="Paste incident report, audit finding, SDS, contractor document, legal notice or any HSE text..."></textarea></div>
+<div class="ai-file-drop"><label for="doc-analysis-file"><i class="ti ti-file-upload"></i> Or upload a PDF or document</label><input id="doc-analysis-file" type="file" accept=".pdf,.docx,.txt,.md,.csv,.json" data-auris-onchange="h1263"><div id="doc-analysis-file-state" class="ai-file-state">Upload replaces the pasted text only after extraction succeeds.</div></div>
 <button class="btn btn-primary auris-ai-insights-s-b7aa1ec004" data-auris-onclick="h1171"><i class="ti ti-robot"></i>Analyse document</button>
 </div>
 <div class="card auris-ai-insights-s-6aa34d7432" id="doc-output-card">
@@ -10401,6 +10402,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 </div>
 </div>
 <div id="doc-output" class="auris-ai-insights-s-551f6b13d5"></div>
+<div id="doc-save-destinations" class="ai-save-destinations auris-ai-insights-s-6aa34d7432"></div>
 </div>
 </div>
 
@@ -11625,13 +11627,13 @@ I can help you:<br>
 <script src="kpi-configuration.js"></script>
 <script src="kpi-module-upgrade.js?v=20260821-3"></script>
 <script src="safety-engagement.js"></script>
-<script src="bbs-observations.js?v=20260821-3"></script>
+<script src="bbs-observations.js?v=20260823-4"></script>
 <script src="noise-management.js?v=20260822-2"></script>
-<script src="incident-management-upgrade.js?v=20260822-1"></script>
+<script src="incident-management-upgrade.js?v=20260823-4"></script>
 <script src="document-control-upgrade.js?v=20260803-2"></script>
 <script src="swms-upgrade.js?v=20260806-1"></script>
 <script src="legal-compliance-upgrade.js?v=20260806-1"></script>
-<script src="risk-assessment-upgrade.js?v=20260822-3"></script>
+<script src="risk-assessment-upgrade.js?v=20260823-4"></script>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
 <script src="learning-competency-upgrade.js?v=20260809-2"></script>
 <script src="elearning-course-path.js?v=20260822-1"></script>

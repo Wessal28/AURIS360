@@ -173,7 +173,7 @@ event.stopPropagation();wsTERemove(args[0])
 event.stopPropagation();wsOpenLinkedRecord(args[0],args[1])
     },
     "r0058": function (event, args) {
-wsLinkedRecordChanged(args[0],this.value)
+wsLinkedRecordChanged(args[0],this.multiple?Array.from(this.selectedOptions).map(function(o){return o.value;}).filter(Boolean):this.value)
     },
     "r0059": function (event, args) {
 event.stopPropagation();wsOpenLinkedRecord(args[0])
@@ -182,7 +182,7 @@ event.stopPropagation();wsOpenLinkedRecord(args[0])
 imsRemovePhoto(args[0])
     },
     "r0061": function (event, args) {
-imsOpenInvestigation(args[0])
+imv2OpenInvestigationReadOnly(args[0])
     },
     "r0062": function (event, args) {
 navigator.clipboard.writeText(args[0]).then(()=>toast('Copied!'))

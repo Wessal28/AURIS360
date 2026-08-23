@@ -3795,6 +3795,12 @@ document.getElementById('fire-equip-modal').style.display='none'
     },
     "h1261": function (event) {
 fireSaveEquip()
+    },
+    "h1262": function (event) {
+aiExtractUploadedDocument(this,'comp-check-text','comp-check-file-state')
+    },
+    "h1263": function (event) {
+aiExtractUploadedDocument(this,'doc-analysis-text','doc-analysis-file-state')
     }
   };
   var eventTypes = ["change","click","dragleave","dragover","drop","input","keydown","mouseout","mouseover"];
