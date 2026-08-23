@@ -275,7 +275,7 @@ imsOpenEvidenceFile(this.dataset.path)
 imsClearDashFilter()
     },
     "g0092": function (event) {
-imsOpenEdit(this.dataset.id)
+imv2OpenIncidentReadOnly(this.dataset.id)
     },
     "g0093": function (event) {
 imsScrollIncidentRegister()
@@ -347,13 +347,13 @@ event.stopPropagation();imsOpenEvidenceFile(this.dataset.path)
 raShowNewPanel()
     },
     "g0116": function (event) {
-raOpen(this.dataset.id)
+raOpenReadOnly(this.dataset.id)
     },
     "g0117": function (event) {
 jsaNew()
     },
     "g0118": function (event) {
-jsaEdit(this.dataset.id)
+jsaOpenReadOnly(this.dataset.id)
     },
     "g0119": function (event) {
 raNew('hira')
@@ -974,7 +974,7 @@ authDeleteFromList(this.getAttribute('data-id'))
 auditStartFromCurrentTab()
     },
     "g0325": function (event) {
-auditOpen(this.dataset.id)
+auditOpenReadOnly(this.dataset.id)
     },
     "g0326": function (event) {
 auditUploadEvidenceFile(this)

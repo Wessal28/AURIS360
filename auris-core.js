@@ -838,6 +838,10 @@ function kpiPrint() {
   html += '<div class="print-doc-footer">AURIS360 &middot; '+kpiPrintEsc(companyName)+'</div>';
   html += '</div>';
 
+  // Open a full-size landscape preview so wide monthly columns remain readable.
+  aurisPrint(html,'KPI Scorecard - '+companyName+' - '+year);
+  return;
+
   // Inject into the page (inside a print-only wrapper)
   var wrapper = document.getElementById('kpi-print-wrapper');
   if (!wrapper) {
@@ -6188,6 +6192,24 @@ function aiQuickTBT(topic) {
   aiGenerateToolboxTalk();
 }
 
+// -- Uploaded document extraction ---------------------------------------------
+async function aiExtractUploadedDocument(input,targetId,stateId){
+  var file=input&&input.files&&input.files[0],state=document.getElementById(stateId),target=document.getElementById(targetId);if(!file||!target)return;
+  if(file.size>4*1024*1024){if(state)state.textContent='File is larger than the 4 MB analysis limit.';toast('Choose a document smaller than 4 MB',false);input.value='';return;}
+  if(state)state.textContent='Extracting '+file.name+'...';
+  try{
+    var simple=/\.(txt|md|csv|json)$/i.test(file.name),text;
+    if(simple)text=await file.text();
+    else{
+      var buffer=await file.arrayBuffer(),bytes=new Uint8Array(buffer),binary='',chunk=0x8000;
+      for(var i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+      var response=await fetch('/api/extract-document',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(tok||'')},body:JSON.stringify({name:file.name,type:file.type,data:btoa(binary)})});
+      var payload=await response.json().catch(function(){return{};});if(!response.ok)throw new Error(payload.error||'Document extraction failed');text=payload.text;
+    }
+    text=String(text||'').trim();if(text.length<20)throw new Error('No readable text was found in this document');target.value=text;if(state)state.textContent=file.name+' · '+text.length.toLocaleString()+' characters ready for analysis';toast('Document text extracted');
+  }catch(e){if(state)state.textContent='Could not extract '+file.name+': '+e.message;toast('Document upload failed: '+e.message,false);}
+}
+
 // -- Compliance Checker --------------------------------------------------------
 async function aiComplianceCheck() {
   var text = document.getElementById('comp-check-text')?.value?.trim();
@@ -6509,8 +6531,13 @@ function aiDocRenderStructured(out){
       +'</tbody></table></div></div>';
   }
   html+='</div>';
+  aiDocRenderSaveDestinations(out);
   return html;
 }
+
+function aiDocSaveTargets(){var type=document.getElementById('doc-analysis-type')?.value||'summarise';if(type==='risk_assess')return [['risk','Risk Assessment']];if(type==='incident_review')return [['lesson','Incident Lessons Learned']];if(type==='sds_review')return [['chemical','Chemical Control']];if(type==='contractor_review')return [['contractor','Contractor Management']];if(type==='extract_actions')return [['actions','Master Action Plan']];return [['documents','Document Control']];}
+function aiDocRenderSaveDestinations(out){setTimeout(function(){var el=document.getElementById('doc-save-destinations');if(!el)return;var targets=aiDocSaveTargets();el.style.display='flex';el.innerHTML='<span style="font-size:11px;font-weight:800;color:var(--text2);align-self:center">Save extracted data?</span>'+targets.map(function(t){return '<button type="button" class="btn btn-sm" data-ai-save-target="'+t[0]+'"><i class="ti ti-device-floppy"></i>Save draft to '+t[1]+'</button>';}).join('');el.querySelectorAll('[data-ai-save-target]').forEach(function(btn){btn.addEventListener('click',function(){aiDocSaveToModule(this.dataset.aiSaveTarget,out);});});},0);}
+async function aiDocSaveToModule(target,out){if(!isMgr()){toast('Only authorised managers/admins can create module records.',false);return;}var destination=aiDocSaveTargets().find(function(x){return x[0]===target;})?.[1]||'the selected module',ok=await appConfirm({title:'Save AI-extracted data?',message:'Create a Draft in '+destination+'?',detail:'Review and validate the source document and every extracted field before approval or publication.',confirmText:'Save Draft',cancelText:'Not now'});if(!ok)return;var title=String(out.summary||'AI document analysis').slice(0,120),now=new Date().toISOString();try{if(target==='actions'){await aiCreateDocActions();return;}if(target==='risk')await api('/risk_assessments',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:title,activity:title,scope:(out.risks||[]).join('\n'),status:'draft',ai_generated:true,ai_suggestions:out,created_by:prof?.id,created_at:now}});else if(target==='lesson')await api('/incident_mgmt_records',{m:'POST',p:'return=minimal',b:{company_id:ccid(),record_type:'lesson',title:'Document lesson · '+title,status:'draft',owner_name:prof?.full_name||prof?.email,payload:{key_learning:out.summary,approved_facts:(out.key_requirements||[]).join('\n'),required_behaviours:(out.recommended_next_steps||[]).join('\n'),source:'ai_document_analysis'},created_by:prof?.id,created_at:now}});else if(target==='chemical')await api('/chemical_register',{m:'POST',p:'return=minimal',b:{company_id:ccid(),product_name:title,notes:JSON.stringify(out),status:'draft',created_by:prof?.id,created_at:now}});else if(target==='contractor')await api('/contractors',{m:'POST',p:'return=minimal',b:{company_id:ccid(),company_name:title,notes:JSON.stringify(out),status:'draft',created_by:prof?.id,created_at:now}});else await api('/documents',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:title,description:JSON.stringify(out),document_type:'ai_analysis',status:'draft',created_by:prof?.id,created_at:now}});toast('Draft saved. Open '+destination+' to review it.');}catch(e){toast('Draft could not be saved: '+e.message,false);}}
 
 async function aiCreateDocActions(){
   if(!aiDocLastActions.length){toast('No extracted action items to create',false);return;}
@@ -13279,7 +13306,8 @@ function wsOpenSiteInspection(){
 
 
 function wsBackToDetail(){
-  document.getElementById('ws-tbt-form').style.display='none';
+  ['ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  wsChkToolId=null;wsChkToolName='';wsChkToolCat='';
   document.getElementById('ws-detail-view').style.display='block';
 }
 
@@ -13339,7 +13367,9 @@ function wsPopulateTeamSelect(selectedValue){
     option.value=name;option.textContent=(reverse||name)+(p.job_title?' - '+p.job_title:'');option.selected=selectedKeys.includes(name.toLowerCase())||selectedKeys.includes(reverse.toLowerCase());select.appendChild(option);
   });
   selected.forEach(function(name){if(!Array.from(select.options).some(function(o){return o.value.toLowerCase()===name.toLowerCase();})){var option=document.createElement('option');option.value=name;option.textContent=name+' (saved)';option.selected=true;select.appendChild(option);}});
+  wsInitTeamMultiSelect(select);
 }
+function wsInitTeamMultiSelect(select){if(!select||select.dataset.clickToggleBound)return;select.dataset.clickToggleBound='1';var help=document.getElementById('wsf-team-help');if(help)help.textContent='Click employees to select or deselect them. Ctrl is not required.';var summary=document.getElementById('wsf-team-summary');if(!summary){summary=document.createElement('div');summary.id='wsf-team-summary';summary.className='ws-team-summary';select.insertAdjacentElement('afterend',summary);}var paint=function(){var chosen=Array.from(select.selectedOptions);summary.innerHTML=chosen.length?'<b>'+chosen.length+' selected:</b> '+chosen.map(function(o){return '<span>'+escH(o.value)+'</span>';}).join(''):'No employees selected';};select.addEventListener('mousedown',function(e){var option=e.target.closest('option');if(!option)return;e.preventDefault();option.selected=!option.selected;select.focus();paint();});select.addEventListener('change',paint);paint();}
 function wsSelectedTeamNames(){var select=document.getElementById('wsf-team');return select?Array.from(select.selectedOptions).map(function(o){return o.value;}).filter(Boolean).join(', ')||null:null;}
 
 async function wsNew(){
@@ -13771,7 +13801,7 @@ async function wsOpenLinkedRecord(kind,value){
         rec=rows&&rows[0];
         if(rec&&!(raAllData||[]).some(function(r){return r.id===rec.id;}))raAllData.unshift(rec);
       }
-      if(rec&&typeof raOpen==='function'){setTimeout(function(){raOpen(rec.id);},150);return;}
+      if(rec&&typeof raOpenReadOnly==='function'){setTimeout(function(){raOpenReadOnly(rec.id);},150);return;}
     }
     if(kind==='ptw'){
       showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
@@ -13802,13 +13832,13 @@ async function wsOpenLinkedRecord(kind,value){
         a=audits&&audits[0];
         if(a&&!(auditAllData||[]).some(function(r){return r.id===a.id;}))auditAllData.unshift(a);
       }
-      if(a&&typeof auditOpen==='function'){setTimeout(function(){auditOpen(a.id);},150);return;}
+      if(a&&typeof auditOpenReadOnly==='function'){setTimeout(function(){auditOpenReadOnly(a.id);},150);return;}
     }
     if(kind==='event'){
       showPage('events',document.querySelector('[onclick*="\'events\'"]'));
       var ev=(typeof imsAllData!=='undefined'?imsAllData:[]).find(function(r){return r.id===value||r.event_ref===value||r.incident_number===value;});
       if(!ev){var eventRows=await api('/events?select=*'+cf()+'&or=(id.eq.'+wsRestEqValue(value)+',event_ref.eq.'+wsRestEqValue(value)+',incident_number.eq.'+wsRestEqValue(value)+')&limit=1').catch(function(){return[];});ev=eventRows&&eventRows[0];}
-      if(ev&&typeof imsOpenEdit==='function'){setTimeout(function(){imsOpenEdit(ev.id);},180);return;}
+      if(ev&&typeof imv2OpenIncidentReadOnly==='function'){setTimeout(function(){imv2OpenIncidentReadOnly(ev.id);},180);return;}
     }
     toast('Linked record not found or not accessible',false);
   }catch(e){
@@ -13823,7 +13853,7 @@ async function wsRenderLinkedRecords(x){
     return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
       +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
       +'<span style="font-size:12px;color:var(--text2);flex:0 0 105px">'+label+'</span>'
-      +'<select id="ws-link-'+kind+'" data-auris-runtime-onchange="r0058" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
+      +'<select id="ws-link-'+kind+'" '+(['tbt','prestart','site','ptw'].includes(kind)?'multiple size="3" title="Select one or more records" ':'')+'data-auris-runtime-onchange="r0058" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
       +'<option value="">Loading...</option></select>'
       +'<button class="btn btn-sm" type="button" title="Open linked record" data-auris-runtime-onclick="r0059" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="padding:5px 7px"><i class="ti ti-external-link"></i></button>'
       +'</div>';
@@ -13840,12 +13870,13 @@ async function wsRenderLinkedRecords(x){
 }
 
 function wsLinkedOptionHtml(rows,selected,blankLabel,valueFn,labelFn){
+  var selectedValues=(Array.isArray(selected)?selected:[selected]).filter(Boolean).map(String);
   var html='<option value="">'+escH(blankLabel||'None')+'</option>';
   (rows||[]).forEach(function(r){
     var val=valueFn(r)||'';
-    html+='<option value="'+escH(val)+'" data-record-id="'+escH(r.id||'')+'" data-record-ref="'+escH(val)+'" data-record-status="'+escH(r.status||'')+'" '+(String(val)===String(selected||'')?'selected':'')+'>'+escH(labelFn(r)||val)+'</option>';
+    html+='<option value="'+escH(val)+'" data-record-id="'+escH(r.id||'')+'" data-record-ref="'+escH(val)+'" data-record-status="'+escH(r.status||'')+'" '+(selectedValues.includes(String(val))?'selected':'')+'>'+escH(labelFn(r)||val)+'</option>';
   });
-  if(selected&&html.indexOf('value="'+escH(selected)+'"')<0)html+='<option value="'+escH(selected)+'" selected>'+escH(selected)+' (saved)</option>';
+  selectedValues.forEach(function(saved){if(html.indexOf('value="'+escH(saved)+'"')<0)html+='<option value="'+escH(saved)+'" selected>'+escH(saved)+' (saved)</option>';});
   return html;
 }
 
@@ -13870,15 +13901,17 @@ async function wsLoadLinkedRecordOptions(x){
       api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
       api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];}),
       api('/events?select=id,event_ref,incident_number,event_type,severity,status,description,event_date'+cf()+'&order=event_date.desc,created_at.desc&limit=150').catch(function(){return[];})
+      ,api('/work_schedule_links?select=*'+cf()+'&work_order_id=eq.'+wsRestEqValue(x.id)+'&order=created_at.asc').catch(function(){return[];})
     ]);
+    x.__hseLinks=data[6]||[];var linked=function(kind,fallback){var values=x.__hseLinks.filter(function(l){return l.link_type===kind;}).map(function(l){return l.record_ref||l.record_id;}).filter(Boolean);if(fallback&&!values.includes(fallback))values.unshift(fallback);return values;};
     data[0]=await wsEnsureLinkedRow(data[0],x.toolbox_talk_id,'/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&id=eq.'+wsRestEqValue(x.toolbox_talk_id)+'&limit=1',function(r,v){return r.id===v||r.tbt_ref===v;});
     data[1]=await wsEnsureLinkedRow(data[1],x.prestart_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.prestart_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
     data[2]=await wsEnsureLinkedRow(data[2],x.site_inspection_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.site_inspection_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
-    set('ws-link-tbt',wsLinkedOptionHtml(data[0],x.toolbox_talk_id,'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
-    set('ws-link-prestart',wsLinkedOptionHtml(data[1],x.prestart_id,'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
-    set('ws-link-site',wsLinkedOptionHtml(data[2],x.site_inspection_id,'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
+    set('ws-link-tbt',wsLinkedOptionHtml(data[0],linked('tbt',x.toolbox_talk_id),'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
+    set('ws-link-prestart',wsLinkedOptionHtml(data[1],linked('prestart',x.prestart_id),'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
+    set('ws-link-site',wsLinkedOptionHtml(data[2],linked('site',x.site_inspection_id),'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
     set('ws-link-ra',wsLinkedOptionHtml(data[3],x.ra_ref,'No risk assessment',function(r){return r.ra_ref||r.id;},function(r){return [(r.ra_ref||'RA'),r.title||r.activity,r.status].filter(Boolean).join(' - ');}));
-    set('ws-link-ptw',wsLinkedOptionHtml(data[4],x.permit_ref,'No permit to work',function(r){return r.permit_number||r.id;},function(r){var type=r.permit_type_v2||r.permit_type;var cfg=(typeof PTW_TYPE_CFG!=='undefined')?PTW_TYPE_CFG[type]:null;return [(r.permit_number||'PTW'),cfg?.label||type,r.status].filter(Boolean).join(' - ');}));
+    set('ws-link-ptw',wsLinkedOptionHtml(data[4],linked('ptw',x.permit_ref),'No permit to work',function(r){return r.permit_number||r.id;},function(r){var type=r.permit_type_v2||r.permit_type;var cfg=(typeof PTW_TYPE_CFG!=='undefined')?PTW_TYPE_CFG[type]:null;return [(r.permit_number||'PTW'),cfg?.label||type,r.status].filter(Boolean).join(' - ');}));
     set('ws-link-event',wsLinkedOptionHtml(data[5],x.linked_event_ref,'No incident or hazard report',function(r){return r.event_ref||r.incident_number||r.id;},function(r){return [(r.event_ref||r.incident_number||'Event'),r.event_type,r.severity,r.status].filter(Boolean).join(' - ');}));
   }catch(e){
     ['tbt','prestart','site','ra','ptw','event'].forEach(function(k){set('ws-link-'+k,'<option value="">Unable to load</option>');});
@@ -13887,6 +13920,7 @@ async function wsLoadLinkedRecordOptions(x){
 
 async function wsLinkedRecordChanged(kind,value){
   if(!wsCurrentId)return;
+  var values=(Array.isArray(value)?value:[value]).filter(Boolean),primary=values[0]||'';value=primary;
   var patch={updated_at:new Date().toISOString()};
   if(kind==='tbt')patch.toolbox_talk_id=value||null;
   if(kind==='prestart')patch.prestart_id=value||null;
@@ -13896,6 +13930,10 @@ async function wsLinkedRecordChanged(kind,value){
   if(kind==='ptw'){patch.permit_ref=value||null;patch.permit_id=selectedId;patch.requires_permit=!!value;}
   if(kind==='event')patch.linked_event_ref=value||null;
   try{
+    if(['tbt','prestart','site','ptw'].includes(kind)){
+      await api('/work_schedule_links?work_order_id=eq.'+encodeURIComponent(wsCurrentId)+'&link_type=eq.'+encodeURIComponent(kind),{m:'DELETE',p:'return=minimal'}).catch(function(){return null;});
+      for(var li=0;li<values.length;li++){var opt=Array.from(document.getElementById('ws-link-'+kind)?.options||[]).find(function(o){return o.value===values[li];});await api('/work_schedule_links',{m:'POST',p:'return=minimal',b:{company_id:ccid(),work_order_id:wsCurrentId,link_type:kind,record_id:opt?.dataset.recordId||null,record_ref:opt?.dataset.recordRef||values[li],created_by:prof?.id}}).catch(function(){return null;});}
+    }
     await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:patch},'Work order relationship');
     var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
     if(x)Object.assign(x,patch);
@@ -20682,6 +20720,10 @@ function aurisBindReadOnlyRows(pageId,resolver){
 function aurisReadableRecordFields(row){
   return Object.keys(row||{}).filter(function(k){return !['id','company_id','created_by','updated_by'].includes(k)&&typeof row[k]!=='object';}).slice(0,24).map(function(k){return [k.replace(/_/g,' '),row[k]];});
 }
+
+function raOpenReadOnly(id){var row=(raAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('Risk assessment · Read-only preview',row.title||row.activity||'Risk assessment',row,[['Reference',row.ra_ref],['Type',row.ra_type_v2||row.ra_type],['Activity / scope',row.activity||row.scope],['Site / location',row.site_name||row.location||row.workshop],['Department',row.department||row.dept],['Assessed by',row.assessed_by||row.ra_assessor],['Assessment date',row.ra_date||row.assessment_date||row.date],['Initial risk',row.initial_risk_level||row.risk_level],['Residual risk',row.overall_risk_level||row.residual_risk_level],['Status',row.status],['Review date',row.review_date],['Controls / notes',row.controls||row.notes||row.revision_notes]]);}
+function jsaOpenReadOnly(id){var row=(raAllJSA||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('JSA / JHA · Read-only preview',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Scope',row.scope||row.description],['Location',row.location],['Prepared by',row.prepared_by],['Status',row.status],['Revision',row.revision],['Job steps',Array.isArray(row.steps)?row.steps.map(function(x){return x.step||x.task||x.description;}).filter(Boolean).join('\n'):row.steps]]);}
+function auditOpenReadOnly(id){var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('Audit / inspection · Read-only preview',row.site||row.audit_scope||'Inspection',row,[['Reference',row.reference_no],['Type',row.inspection_type],['Site / department',[row.site||row.if_site,row.department].filter(Boolean).join(' / ')],['Inspection date',row.inspection_date||row.if_date],['Inspector',row.inspector||row.by||row.if_by],['Standard',row.audit_standard],['Status',row.status],['Priority',row.priority],['Positive observations',row.positive_obs||row.if_pos],['Findings',row.negative_obs||row.if_neg],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]]);}
 
 // -- CONTRACTOR FORM -----------------------------------------------------------
 function conShowForm(){
@@ -39183,8 +39225,8 @@ function auditExportCsv(){
 function aurisPrint(html, title) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report');
-  var w = window.open('', '_blank', isLandscapePrint?'width=1280,height=820':'width=900,height=700');
+  var isLandscapePrint=isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var w = window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
   function safePrintColor(value,fallback){return /^#[0-9a-f]{3,8}$/i.test(String(value||''))?String(value):fallback;}

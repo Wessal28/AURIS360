@@ -16,6 +16,11 @@
       "order": 3,
       "file": "20260822030000_buildco_mauritius_showcase_seed.sql",
       "sha256": "837c52c71a830722244230d9438e8827cb04189a7c29298b94e25262b471438e"
+    },
+    {
+      "order": 4,
+      "file": "20260823010000_requirements_4_work_schedule_links.sql",
+      "sha256": "e180c07d0807d8907a03579c24f9046f6ec79706aff21113078b458035250adf"
     }
   ]
 }
