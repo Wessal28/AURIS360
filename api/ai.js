@@ -66,6 +66,20 @@ function getOutputText(data) {
   return '';
 }
 
+function getResponseFormat(input) {
+  const candidate = input && input.response_schema;
+  if (!candidate || !candidate.schema || typeof candidate.schema !== 'object') return null;
+  const serialised = JSON.stringify(candidate.schema);
+  if (serialised.length > 12000) return null;
+  const name = String(candidate.name || 'structured_response').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  return {
+    type: 'json_schema',
+    name: name || 'structured_response',
+    strict: true,
+    schema: candidate.schema
+  };
+}
+
 const AI_ALLOWED_ROLES = ['sephs_admin', 'admin', 'hse_manager', 'hse_officer'];
 
 async function getUserRole(supabaseUrl, supabaseKey, user, userToken) {
@@ -124,17 +138,22 @@ async function callOpenAI(input, messages) {
     });
   });
 
+  const payload = {
+    model: model,
+    max_output_tokens: Math.min(Number(input.max_tokens || 2000), 4000),
+    input: inputItems
+  };
+  const responseFormat = getResponseFormat(input);
+  if (responseFormat) payload.text = { format: responseFormat };
+  if (/^gpt-5(?:[.-]|$)/i.test(model)) payload.reasoning = { effort: 'low' };
+
   const aiRes = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + apiKey
     },
-    body: JSON.stringify({
-      model: model,
-      max_output_tokens: Math.min(Number(input.max_tokens || 2000), 4000),
-      input: inputItems
-    })
+    body: JSON.stringify(payload)
   });
 
   const data = await aiRes.json().catch(function() { return null; });
@@ -145,12 +164,23 @@ async function callOpenAI(input, messages) {
     };
   }
 
+  const outputText = getOutputText(data);
+  if (!outputText.trim()) {
+    const incompleteReason = data && data.incomplete_details && data.incomplete_details.reason;
+    return {
+      status: 502,
+      body: {
+        error: 'OpenAI returned no usable output' + (incompleteReason ? ': ' + incompleteReason : '')
+      }
+    };
+  }
+
   return {
     status: aiRes.status,
     body: {
       provider: 'openai',
       model: model,
-      content: [{ type: 'text', text: getOutputText(data) }],
+      content: [{ type: 'text', text: outputText }],
       raw: data
     }
   };

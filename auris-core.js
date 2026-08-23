@@ -5842,7 +5842,7 @@ var aiCurrentTab = 'insights';
 
 // -- Real callAI implementation ------------------------------------------------
 // Replaces the stub with secure backend AI calls.
-async function callAI(msgs, systemOverride) {
+async function callAI(msgs, systemOverride, options) {
   if(typeof canUseAI === 'function' && !canUseAI()) {
     throw new Error('AURIS AI is restricted to SEPHS admin, company admin, HSE manager and HSE officer roles.');
   }
@@ -5850,13 +5850,15 @@ async function callAI(msgs, systemOverride) {
     throw new Error('AI features require a backend proxy. Ask your administrator to configure AI_PROXY_URL in Settings > AI Setup.');
   }
   var sys = systemOverride || SYS;
+  options=options||{};
   var response = await fetch(AI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (tok || '') },
     body: JSON.stringify({
-      max_tokens: 2000,
+      max_tokens: options.max_tokens||2000,
       system: sys,
-      messages: msgs
+      messages: msgs,
+      response_schema: options.response_schema||undefined
     })
   });
   if(!response.ok) {
@@ -6225,6 +6227,40 @@ async function safetyOSCollectContext(input){
     equipment:safetyOSCompact((results[9]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','ref_number','name','category','status','inspection_status','next_inspection_date','location','assigned_to'],10)
   };
 }
+function safetyOSFallbackDecision(ctx,cause){
+  var input=ctx.request||{};
+  var highRisk=['hot_work','confined_space','working_at_height','electrical','lifting','chemical','excavation'].includes(input.work_type);
+  var missing=[],blocking=[],conditions=[];
+  if(!(ctx.risk_assessments||[]).length)missing.push('No matching approved risk assessment or RAMS was found for this task and location.');
+  if(highRisk&&!(ctx.permits||[]).length)missing.push('No matching permit-to-work record was found for this high-risk activity.');
+  if(highRisk&&!(ctx.toolbox_talks||[]).length)missing.push('No matching toolbox talk or pre-start briefing was found.');
+  if(input.worker&&!(ctx.people||[]).length)missing.push('The named worker or team could not be verified in the company people register.');
+  if(input.worker&&highRisk&&!(ctx.certifications||[]).length)missing.push('No current competency or certification record was found for the named worker or team.');
+  (ctx.open_actions||[]).forEach(function(x){if(['critical','high'].includes(String(x.priority||'').toLowerCase()))blocking.push('Open '+String(x.priority).toLowerCase()+'-priority action: '+(x.title||x.source_ref||'record requires review')+'.');});
+  (ctx.recent_incidents||[]).forEach(function(x){if(['critical','high'].includes(String(x.severity||'').toLowerCase())&&String(x.status||'').toLowerCase()!=='closed')conditions.push('Review open '+String(x.severity).toLowerCase()+'-severity incident '+(x.event_ref||x.id||'record')+' before authorising work.');});
+  if(missing.length)blocking=blocking.concat(missing);
+  if(!blocking.length)conditions.push('A competent supervisor must verify the task-specific controls and authorise the start because the AI advisory service did not return a decision.');
+  return {
+    decision:blocking.length?'NO_GO':'CONDITIONAL_GO',
+    confidence:'high',
+    decision_summary:blocking.length?'Work must not start until the listed readiness gaps are closed and verified.':'Core records were found, but work requires supervisor verification before starting.',
+    blocking_items:blocking,
+    conditions_to_start:conditions,
+    missing_records:missing,
+    verified_controls:[
+      (ctx.risk_assessments||[]).length+' matching RA/RAMS record(s)',
+      (ctx.permits||[]).length+' matching permit record(s)',
+      (ctx.toolbox_talks||[]).length+' matching toolbox talk(s)',
+      (ctx.certifications||[]).length+' matching competency record(s)'
+    ],
+    required_documents:missing,
+    required_notifications:['Supervisor and HSE representative must review this fallback decision before work starts.'],
+    supervisor_briefing:'This is a conservative rules-based fallback using live AURIS records. Confirm record applicability, field conditions, isolations and controls before authorisation.',
+    evidence:['Live company-scoped AURIS registers were checked.'],
+    next_actions:blocking.length?['Close or formally control every blocking item, then rerun SafetyOS.']:['Complete field verification and record the supervisor authorisation.'],
+    fallback_notice:'The AI provider did not return a valid structured decision. SafetyOS applied its conservative live-record fallback instead.'
+  };
+}
 async function safetyOSRunCheck(){
   var out=document.getElementById('safetyos-output');if(!out)return;
   if(typeof canUseAI==='function'&&!canUseAI()){out.innerHTML=aiFriendlyErrorHtml(new Error('restricted'));return;}
@@ -6235,9 +6271,12 @@ async function safetyOSRunCheck(){
   try{
     var ctx=await safetyOSCollectContext(input);
     var prompt='You are SafetyOS, an HSE work readiness decision engine. Review whether this planned work can start today based on live HSE records. Return STRICT JSON only with keys: decision string GO|CONDITIONAL_GO|NO_GO, confidence string high|medium|low, decision_summary string, blocking_items array, conditions_to_start array, missing_records array, verified_controls array, required_documents array, required_notifications array, supervisor_briefing string, evidence array, next_actions array. Be conservative: if critical records are missing for high-risk work, use NO_GO or CONDITIONAL_GO. Check permits, RA/RAMS, SWMS, toolbox talk, training/competency, medical/fitness if relevant, inspections/equipment validity, gas test/rescue/fire watch for hot work/confined space, chemical SDS/controls, open actions and recent incidents. Context: '+JSON.stringify(ctx).slice(0,22000);
-    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS SafetyOS, a conservative HSE decision engine. Return valid JSON only. Never say work is safe unless evidence supports it.');
+    var schema={type:'object',additionalProperties:false,required:['decision','confidence','decision_summary','blocking_items','conditions_to_start','missing_records','verified_controls','required_documents','required_notifications','supervisor_briefing','evidence','next_actions'],properties:{decision:{type:'string',enum:['GO','CONDITIONAL_GO','NO_GO']},confidence:{type:'string',enum:['high','medium','low']},decision_summary:{type:'string'},blocking_items:{type:'array',items:{type:'string'}},conditions_to_start:{type:'array',items:{type:'string'}},missing_records:{type:'array',items:{type:'string'}},verified_controls:{type:'array',items:{type:'string'}},required_documents:{type:'array',items:{type:'string'}},required_notifications:{type:'array',items:{type:'string'}},supervisor_briefing:{type:'string'},evidence:{type:'array',items:{type:'string'}},next_actions:{type:'array',items:{type:'string'}}}};
+    var raw;
+    try{raw=await callAI([{role:'user',content:prompt}], 'You are AURIS SafetyOS, a conservative HSE decision engine. Return valid JSON only. Never say work is safe unless evidence supports it.',{max_tokens:4000,response_schema:{name:'safetyos_decision',schema:schema}});}
+    catch(aiError){safetyOSRenderDecision(safetyOSFallbackDecision(ctx,aiError),ctx);toast('SafetyOS fallback decision ready',false);return;}
     var data=aiExtractJson(raw)||{};
-    if(!data.decision&&!data.decision_summary)throw new Error('No structured SafetyOS decision returned');
+    if(!data.decision&&!data.decision_summary)data=safetyOSFallbackDecision(ctx,new Error('No structured SafetyOS decision returned'));
     safetyOSRenderDecision(data,ctx);
     toast('SafetyOS decision ready');
   }catch(e){out.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
@@ -6248,7 +6287,7 @@ function safetyOSRenderDecision(data,ctx){
   var decision=String(data.decision||'CONDITIONAL_GO').toUpperCase();
   var cfg=decision==='GO'?{label:'GO',color:'#0F6E56',bg:'#ECFDF5'}:decision==='NO_GO'?{label:'NO-GO',color:'#B91C1C',bg:'#FEF2F2'}:{label:'CONDITIONAL GO',color:'#B45309',bg:'#FFFBEB'};
   var section=function(title,items,icon){items=arr(items);if(!items.length)return '';return '<div style="margin-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:5px">'+escH(icon||'-')+' '+escH(title)+'</div><ul style="margin:0 0 0 18px;color:#334155;font-size:12px;line-height:1.55">'+items.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';};
-  var h='<div style="border-left:5px solid '+cfg.color+';background:'+cfg.bg+';border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:900;text-transform:uppercase;color:'+cfg.color+'">SafetyOS decision</div><div style="font-size:30px;font-weight:900;color:'+cfg.color+';margin-top:2px">'+cfg.label+'</div><div style="font-size:13px;color:#111827;margin-top:5px">'+escH(data.decision_summary||'Review required before work starts.')+'</div><div style="font-size:11px;color:#475569;margin-top:6px">Confidence: '+escH(data.confidence||'medium')+'</div></div>';
+  var h=(data.fallback_notice?'<div style="padding:10px;margin-bottom:10px;border-radius:8px;background:#FFF7ED;color:#9A3412;font-size:12px"><b>Conservative fallback:</b> '+escH(data.fallback_notice)+'</div>':'')+'<div style="border-left:5px solid '+cfg.color+';background:'+cfg.bg+';border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:900;text-transform:uppercase;color:'+cfg.color+'">SafetyOS decision</div><div style="font-size:30px;font-weight:900;color:'+cfg.color+';margin-top:2px">'+cfg.label+'</div><div style="font-size:13px;color:#111827;margin-top:5px">'+escH(data.decision_summary||'Review required before work starts.')+'</div><div style="font-size:11px;color:#475569;margin-top:6px">Confidence: '+escH(data.confidence||'medium')+'</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">RA/RAMS</div><div style="font-size:20px;font-weight:900">'+(ctx.risk_assessments||[]).length+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Permits</div><div style="font-size:20px;font-weight:900">'+(ctx.permits||[]).length+'</div></div>'
