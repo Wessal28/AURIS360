@@ -21,6 +21,11 @@
       "order": 4,
       "file": "20260823010000_requirements_4_work_schedule_links.sql",
       "sha256": "e180c07d0807d8907a03579c24f9046f6ec79706aff21113078b458035250adf"
+    },
+    {
+      "order": 5,
+      "file": "20260824010000_requirements_5_rcd_fleet.sql",
+      "sha256": "b2cc3d98d54406e0c4c8535daf2ee5b5fcd5dd8e4f62fd1957d1a6fbb9f6bc78"
     }
   ]
 }

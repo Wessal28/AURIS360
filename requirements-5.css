@@ -1,0 +1,47 @@
+/* HSE Soft design requirements 5: layout, record viewers and responsive controls. */
+.r5-rcd-printbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:0 0 12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:#f8fafc}
+.r5-rcd-printbar label{display:grid;gap:4px;font-size:11px;font-weight:800;color:var(--text2)}
+.r5-rcd-printbar select,.r5-rcd-printbar input{min-width:145px;background:#fff}
+.r5-record-modal{position:fixed;inset:0;z-index:15000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.62);backdrop-filter:blur(2px)}
+.r5-record-dialog{width:min(1050px,100%);max-height:92vh;overflow:auto;padding:20px}
+.r5-record-dialog>header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.r5-record-dialog h2{margin:3px 0}.r5-record-dialog header p{margin:0;color:var(--text2)}
+.r5-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:900;color:var(--green)}
+.r5-view-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.r5-view-tabs button{border:1px solid var(--border);border-radius:9px;background:#fff;padding:8px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.r5-view-tabs button.active{background:var(--green);border-color:var(--green);color:#fff}
+.r5-view-panel{min-height:190px}.r5-panel-actions{display:flex;justify-content:flex-end;margin-bottom:10px}
+.r5-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.r5-detail-grid>div{padding:11px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;display:grid;gap:5px}
+.r5-detail-grid span{font-size:10px;text-transform:uppercase;font-weight:800;color:var(--text2)}
+.r5-record-dialog>footer{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px;margin-top:16px}
+.r5-record-form .form3row{margin-top:14px}.r5-map-dialog{max-width:1200px}
+.r5-location-map{min-height:360px;display:grid;place-items:center;margin:14px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#f8fafc}
+.r5-location-map img{display:block;width:100%;max-height:560px;object-fit:contain}
+
+/* The Site Map is map-first; the location list is below, never beside it. */
+#page-sitemap .auris-site-map-s-2b25fa4835{display:flex;flex-direction:column;gap:14px}
+#page-sitemap .auris-site-map-s-9a6e98845f{position:static;order:2;width:100%}
+#page-sitemap .auris-site-map-s-2b25fa4835>div:last-child{order:1;width:100%;min-width:0}
+#page-sitemap .auris-site-map-s-8b7fe46d45{grid-template-columns:1fr}
+#sitemap-plan-list{max-width:100%;overflow-x:auto}
+
+/* Tabs wrap instead of forcing horizontal page scrolling. */
+#page-contractor .cmu-tabs,#page-noise .noise-tabs,#page-document .doc-tabs,#page-document .mtg-tabs,
+#page-training .lcu-tabs,#page-chemical .ccu-tabs,#page-fire .fire-tabs,#page-legal .legal-tabs,
+#page-swms .swx-tabs,.cmu-tabs,.ccu-tabs,.lcu-tabs,.swx-tabs{display:flex!important;flex-wrap:wrap!important;overflow-x:visible!important;white-space:normal!important}
+#page-contractor,#page-noise,#page-document,#page-training,#page-chemical,#page-fire,#page-legal,#page-swms{max-width:100%;overflow-x:hidden}
+
+/* Action labels stay aligned and readable, including Add PPE Type. */
+#page-ppe .btn,#page-fire .btn,#page-contractor .cmu-btn,#page-training .lcu-btn,#page-document .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;line-height:1.2;white-space:normal;text-align:center}
+
+/* E-learning is presented as a visual course library. */
+#page-training .lcu-course-grid,#page-training [data-course-grid],#page-training .course-library{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px}
+#page-training .lcu-course-card,#page-training [data-course-card]{overflow:hidden;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.07)}
+#page-training .lcu-course-card img,#page-training [data-course-card] img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#e2e8f0}
+#page-training .lcu-course-fallback{display:grid;place-items:center;aspect-ratio:16/9;background:linear-gradient(135deg,#dbeafe,#d1fae5);color:#087b68;font-size:52px}
+#page-training .lcu-course-body{padding:14px}#page-training .lcu-course-body h3{margin:0 0 5px;font-size:16px}
+#page-training .lcu-course-meta,#page-training .lcu-course-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:13px}
+.ccu-card-select{display:flex;align-items:center;gap:7px;margin:-3px 0 10px;font-size:12px;font-weight:800;color:var(--green)}
+
+@media(max-width:720px){.r5-record-modal{padding:8px}.r5-record-dialog{padding:14px;max-height:96vh}.r5-rcd-printbar>*{width:100%}.r5-rcd-printbar select,.r5-rcd-printbar input{width:100%;min-width:0}.r5-location-map{min-height:240px}}
