@@ -14138,6 +14138,37 @@ function imsMiniRegisterHtml(data){
     +'</tbody></table></div>';
 }
 
+function imsRenderIncidentRegister(data){
+  var el=document.getElementById('ims-register-list'); if(!el)return;
+  data=data||[];
+  var total=(imsAllData||[]).length;
+  if(!data.length){
+    el.innerHTML='<section class="imx-card imx-register-empty"><i class="ti ti-database-off"></i><h3>No matching incident records</h3><p>Change the register filters or report the first incident for this company.</p></section>';
+    return;
+  }
+  el.innerHTML='<section class="imx-register-card">'
+    +'<div class="imx-register-heading"><div><h2>Incident Register</h2><p>Complete incident records in the selected company scope. Select a reference to open the controlled record.</p></div><strong>Showing '+data.length+' of '+total+' records</strong></div>'
+    +'<div class="imx-table-wrap"><table class="imx-table imx-incident-register-table"><thead><tr>'
+    +'<th>Incident reference</th><th>Date</th><th>Type</th><th>Site / location</th><th>Business unit</th><th>Actual severity</th><th>Potential severity</th><th>Status</th><th>Investigation</th><th>Reported by</th>'
+    +'</tr></thead><tbody>'
+    +data.map(function(x){
+      var sev=IMS_SEV[(x.severity||'').toLowerCase()]||null;
+      var potential=IMS_SEV[(x.potential_severity||'').toLowerCase()]||null;
+      var st=IMS_STAT[x.status||'open']||IMS_STAT.open;
+      var severityHtml=sev?'<span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span>':'<span class="ims-pill imx-pill-muted">Not assessed</span>';
+      var potentialHtml=potential?'<span class="ims-pill" style="background:'+potential.bg+';color:'+potential.color+'">'+potential.label+'</span>':'<span class="ims-pill imx-pill-muted">Not assessed</span>';
+      var inv=x.investigation_ref||x.investigation_number||(x.investigation_required?'Required':'Not required');
+      return '<tr>'
+        +'<td><button type="button" class="imx-register-ref" data-id="'+imsEscapeAttr(x.id)+'" data-auris-generated-onclick="g0092">'+escH(imsRef(x))+'</button><small>'+escH((x.title||x.description||'No summary recorded').slice(0,90))+'</small></td>'
+        +'<td>'+imsDateLabel(x)+'</td><td>'+escH(imsTypeLabel(x.event_type||x.type))+'</td>'
+        +'<td>'+escH(imsSiteValue(x)||'-')+'</td><td>'+escH(imsDepartmentValue(x)||'-')+'</td>'
+        +'<td>'+severityHtml+'</td><td>'+potentialHtml+'</td>'
+        +'<td><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span></td>'
+        +'<td>'+escH(inv)+'</td><td>'+escH(x.reported_by_name||x.reported_by||'-')+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div></section>';
+}
+
 function imsInfoPanelsHtml(){
   return '<div class="ims-info-grid">'
     +'<div class="ims-info-card"><h3>Purpose</h3><p style="color:#475569;margin-top:0">Provide a complete, user-friendly system for capturing, investigating, analysing and managing incidents so recurrence is prevented.</p><h3>Business value</h3><ul class="ims-feature-list"><li><i class="ti ti-circle-check"></i>Faster reporting with evidence capture</li><li><i class="ti ti-circle-check"></i>Stronger investigations and root-cause analysis</li><li><i class="ti ti-circle-check"></i>Corrective actions tracked through closure</li><li><i class="ti ti-circle-check"></i>Better audit readiness and legal traceability</li></ul></div>'
@@ -14181,7 +14212,7 @@ function imsRenderIncidentDashboard(data){
 }
 
 function imsFilterList(){
-  imsRenderIncidentDashboard(imsIncidentFiltered());
+  imsRenderIncidentRegister(imsIncidentFiltered());
 }
 
 // --- REPORT FORM --------------------------------------------------------------
