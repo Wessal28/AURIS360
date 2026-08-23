@@ -10,7 +10,7 @@ const core = fs.readFileSync(path.join(root, 'auris-core.js'), 'utf8');
 const registry = fs.readFileSync(path.join(root, 'auris-generated-event-handlers.js'), 'utf8');
 
 test('generated static handlers use the precompiled delegated registry', () => {
-  assert.match(html, /src="auris-generated-event-handlers\.js\?v=20260822-2"/);
+  assert.match(html, /src="auris-generated-event-handlers\.js\?v=20260823-4"/);
   assert.match(core, /data-auris-generated-onclick="g\d{4}"/);
   assert.doesNotMatch(registry, /\beval\s*\(|new\s+Function\s*\(/);
   assert.match(registry, /handlers\[handlerId\]\.call\(node, event\)/);

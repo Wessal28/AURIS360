@@ -34,7 +34,6 @@ test('all corrected design assets use the same release cache key', () => {
       : ['auris-base.css'].includes(asset)
       ? '20260822-1'
       : asset === 'tools-equipment-upgrade.js' ? '20260822-3'
-      : asset === 'risk-assessment-upgrade.js' ? '20260822-3'
       : asset === 'tools-equipment-upgrade.css' || asset === 'contractor-management-upgrade.css' ? '20260821-4' : '20260821-3';
     assert.match(index, new RegExp(`${escaped}\\?v=${expected}`), `${asset} must be cache-versioned`);
   }
