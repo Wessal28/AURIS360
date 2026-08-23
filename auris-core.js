@@ -5838,6 +5838,8 @@ Expiring certs (30d): ${(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_d
 var aiChatHistory = [];
 var aiInsightsCache = null;
 var aiRamsHistory = [];
+var aiCurrentRams = null;
+var aiRamsHistoryLoadedCompany = null;
 var aiCurrentTab = 'insights';
 
 // -- Real callAI implementation ------------------------------------------------
@@ -5893,6 +5895,7 @@ function aiTab(tab, btn) {
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='insights' && !aiInsightsCache) genFullAI();
+  if(tab==='rams') aiLoadSavedRamsHistory();
   if(tab==='chat') document.getElementById('ai-chat-input')?.focus();
 }
 
@@ -5950,8 +5953,52 @@ async function genFullAI() {
 }
 
 // -- RAMS Generator ------------------------------------------------------------
+function aiRamsInput(){
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  return {task:g('rams-task'),industry:g('rams-industry'),location:g('rams-location'),workers:g('rams-workers'),hazards:g('rams-hazards'),conditions:g('rams-conditions'),standard:g('rams-standard')};
+}
+function aiRamsContentHtml(text){
+  var lines=String(text||'').replace(/\r/g,'').split('\n'),h='',list=false,table=false,tableHead=false;
+  var close=function(){if(list){h+='</ul>';list=false;}if(table){h+='</tbody></table></div>';table=false;tableHead=false;}};
+  lines.forEach(function(raw){
+    var line=raw.trim();
+    if(/^\|?.*\|.*\|?$/.test(line)&&line.split('|').filter(Boolean).length>1){
+      if(list){h+='</ul>';list=false;}
+      if(/^\|?[\s:|-]+\|?$/.test(line))return;
+      var cells=line.replace(/^\||\|$/g,'').split('|').map(function(x){return x.trim();});
+      if(!table){h+='<div class="ai-rams-table-wrap"><table class="ai-rams-table"><thead><tr>'+cells.map(function(x){return '<th>'+escH(x)+'</th>';}).join('')+'</tr></thead><tbody>';table=true;tableHead=true;return;}
+      h+='<tr>'+cells.map(function(x){return '<td>'+escH(x)+'</td>';}).join('')+'</tr>';return;
+    }
+    if(table){h+='</tbody></table></div>';table=false;tableHead=false;}
+    if(!line){if(list){h+='</ul>';list=false;}return;}
+    if(/^\d+\.\s+/.test(line)){if(list){h+='</ul>';list=false;}h+='<h2>'+escH(line)+'</h2>';return;}
+    if(/^[A-Z][A-Z0-9 &/(),.-]{5,}:?$/.test(line)){if(list){h+='</ul>';list=false;}h+='<h3>'+escH(line.replace(/:$/,''))+'</h3>';return;}
+    if(/^[-*•]\s+/.test(line)){if(!list){h+='<ul>';list=true;}h+='<li>'+escH(line.replace(/^[-*•]\s+/,''))+'</li>';return;}
+    if(list){h+='</ul>';list=false;}h+='<p>'+escH(line)+'</p>';
+  });
+  close();return h;
+}
+function aiRamsBuildTemplateHtml(record){
+  record=record||aiCurrentRams||{};var input=record.input||{},ref=record.ref||'RAMS-DRAFT',today=record.generatedDate||new Date().toISOString().slice(0,10);
+  var reviewer='Pending review',approver='Pending approval',author=prof?.full_name||prof?.name||prof?.email||'AURIS user';
+  return '<link rel="stylesheet" href="/auris-print-swms.css"><div class="report-page ai-rams-document">'
+    +aurisHeader('Risk Assessment & Method Statement',input.task||'Generated RAMS',ref)
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div><div class="rpt-grid-3">'
+    +fld('Reference',ref)+fld('Revision','Rev 00')+fld('Status',record.savedId?'Draft in AURIS':'Unsaved draft')
+    +fld('Generated date',today)+fld('Prepared by',author)+fld('Review due',record.reviewDate||'On approval')
+    +fld('Reviewed by',reviewer)+fld('Approved by',approver)+fld('Company',co?.name||'Selected company')
+    +'</div></div><div class="rpt-section"><div class="rpt-section-title blue">Task Summary</div><div class="rpt-grid">'
+    +fld('Task / activity',input.task||'-',true)+fld('Industry / sector',input.industry||'-')+fld('Location / environment',input.location||'-')
+    +fld('Number of workers',input.workers||'-')+fld('Regulatory standard',input.standard||'-')+fld('Key hazards supplied',input.hazards||'AI-assessed',true)
+    +fld('Special conditions',input.conditions||'None supplied',true)+'</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title red">RAMS Content — Review Before Approval</div><div class="ai-rams-body">'+aiRamsContentHtml(record.content||'')+'</div></div>'
+    +'<div class="rpt-signatures"><div class="rpt-sig-box"><div class="sig-line"></div><label>Prepared by / date</label></div><div class="rpt-sig-box"><div class="sig-line"></div><label>Reviewed by / date</label></div><div class="rpt-sig-box"><div class="sig-line"></div><label>Approved by / date</label></div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title amber">Control Notice</div><p>This AI-assisted RAMS is a draft until reviewed and approved through AURIS Document Control. The supervisor must verify site conditions, competency, permits, isolations, equipment, emergency arrangements and worker briefing before work starts.</p></div>'
+    +aurisFooter('Controlled RAMS draft')+'</div>';
+}
+function aiRamsRender(record){var out=document.getElementById('rams-output');if(out)out.innerHTML=aiRamsBuildTemplateHtml(record);var status=document.getElementById('rams-save-status');if(status)status.textContent=record&&record.savedId?'Saved in AURIS as '+record.ref:'Not yet saved in AURIS';}
 async function aiGenerateRAMS() {
-  var task = document.getElementById('rams-task')?.value?.trim();
+  var input=aiRamsInput(),task=input.task;
   if(!task){toast('Please enter the task/activity for the RAMS',false);return;}
   var outCard = document.getElementById('rams-output-card');
   var placeholder = document.getElementById('rams-placeholder-card');
@@ -5960,15 +6007,14 @@ async function aiGenerateRAMS() {
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = 'Generating RAMS for: '+task+'...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';};
   var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document aligned with a professional HSE RAMS procedure for the following:\n\n'
     + 'Task: '+task+'\n'
-    + (g('rams-industry')?'Industry: '+g('rams-industry')+'\n':'')
-    + (g('rams-location')?'Location/Environment: '+g('rams-location')+'\n':'')
-    + (g('rams-workers')?'Number of workers: '+g('rams-workers')+'\n':'')
-    + (g('rams-hazards')?'Key hazards identified: '+g('rams-hazards')+'\n':'')
-    + (g('rams-conditions')?'Special conditions: '+g('rams-conditions')+'\n':'')
-    + 'Regulatory standard: '+g('rams-standard')+'\n\n'
+    + (input.industry?'Industry: '+input.industry+'\n':'')
+    + (input.location?'Location/Environment: '+input.location+'\n':'')
+    + (input.workers?'Number of workers: '+input.workers+'\n':'')
+    + (input.hazards?'Key hazards identified: '+input.hazards+'\n':'')
+    + (input.conditions?'Special conditions: '+input.conditions+'\n':'')
+    + 'Regulatory standard: '+input.standard+'\n\n'
     + 'Follow this required RAMS structure:\n'
     + '1. DOCUMENT CONTROL (Title, SWMS/RAMS ref, date, version, prepared by, reviewed by, approved by, review date)\n'
     + '2. TASK PLANNING (activity, project/site/location, client/contractor, number of workers, tools/equipment/substances, interfaces and site conditions)\n'
@@ -5987,12 +6033,15 @@ async function aiGenerateRAMS() {
   try {
     var result = await callAI([{role:'user',content:prompt}],
       'You are a senior HSE professional with 20 years experience writing RAMS documents for Mauritius-based contractors. Follow a professional RAMS procedure. Always include inherent risk, hierarchy of controls, residual risk, approval level, toolbox/sign-on and review triggers.');
-    outEl.textContent = result;
+    aiCurrentRams={task:task,input:input,content:result,generatedDate:new Date().toISOString().slice(0,10),date:new Date().toLocaleString('en-GB')};
+    aiRamsRender(aiCurrentRams);
     // Add to history
-    aiRamsHistory.unshift({task,date:new Date().toLocaleString('en-GB'),content:result});
-    aiRamsHistory = aiRamsHistory.slice(0,5);
+    aiRamsHistory.unshift(aiCurrentRams);
+    aiRamsHistory = aiRamsHistory.slice(0,10);
     aiUpdateRamsHistory();
     toast('RAMS generated successfully');
+    var saveNow=await appConfirm({title:'Save RAMS in AURIS?',message:'The RAMS has been generated as a controlled draft template.',detail:'Save it to the SWMS and Document Control register now so it receives an AURIS reference and remains available after this session.',confirmText:'Save to AURIS',cancelText:'Review first',danger:false});
+    if(saveNow)await aiSaveRAMSToAuris();
   } catch(e) {
     outEl.textContent = aiFriendlyError(e);
     toast(aiFriendlyError(e), false);
@@ -6004,10 +6053,19 @@ function aiUpdateRamsHistory() {
   if(!aiRamsHistory.length){ el.textContent='No RAMS generated yet'; return; }
   el.innerHTML = aiRamsHistory.map(function(r,i){
     return '<div style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer" data-auris-runtime-onclick="r0022" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'">'
-      +'<div style="font-weight:600;font-size:12px">'+escH(r.task)+'</div>'
-      +'<div style="font-size:10px;color:var(--text2)">'+escH(r.date)+'</div>'
+      +'<div style="font-weight:600;font-size:12px">'+escH(r.ref?r.ref+' — '+r.task:r.task)+'</div>'
+      +'<div style="font-size:10px;color:var(--text2)">'+escH(r.date)+(r.savedId?' · Saved in AURIS':' · Unsaved draft')+'</div>'
       +'</div>';
   }).join('');
+}
+
+async function aiLoadSavedRamsHistory(){
+  var company=ccid();if(!company||aiRamsHistoryLoadedCompany===company)return;aiRamsHistoryLoadedCompany=company;
+  try{
+    var rows=await api('/documents?select=id,title,doc_ref,reference_no,created_at,revision_summary,approval_status,status'+cf()+'&category=eq.AI-generated%20RAMS&order=created_at.desc&limit=20');
+    var saved=(rows||[]).map(function(x){var payload={};var raw=String(x.revision_summary||'');if(raw.indexOf('AURIS_AI_RAMS:')===0){try{payload=JSON.parse(raw.slice(14));}catch(_){}}return {savedId:x.id,ref:x.doc_ref||x.reference_no||'RAMS',task:x.title,content:payload.content||'',input:payload.input||{task:x.title},date:new Date(x.created_at).toLocaleString('en-GB'),generatedDate:String(x.created_at||'').slice(0,10),status:x.approval_status||x.status};});
+    var unsaved=aiRamsHistory.filter(function(x){return !x.savedId;});aiRamsHistory=saved.concat(unsaved).slice(0,20);aiUpdateRamsHistory();
+  }catch(e){console.warn('RAMS history:',e.message);}
 }
 
 function aiLoadRAMS(idx) {
@@ -6015,10 +6073,29 @@ function aiLoadRAMS(idx) {
   var outEl = document.getElementById('rams-output'); if(!outEl) return;
   var outCard = document.getElementById('rams-output-card');
   var placeholder = document.getElementById('rams-placeholder-card');
-  outEl.textContent = r.content;
+  aiCurrentRams=r;aiRamsRender(r);
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
 }
+
+async function aiSaveRAMSToAuris(){
+  var r=aiCurrentRams;if(!r||!r.content){toast('Generate or select a RAMS before saving',false);return;}
+  var today=new Date().toISOString().slice(0,10),review=new Date();review.setFullYear(review.getFullYear()+1);
+  try{
+    var ref=r.ref||await nextCompanyRef('documents','doc_ref','RAMS-'+new Date().getFullYear()+'-');
+    var body={company_id:ccid(),title:r.task||r.input?.task||'Generated RAMS',doc_type:'swms',document_type:'swms',reference_no:ref,doc_ref:ref,version:'Rev 00',version_major:0,version_minor:0,issue_date:today,effective_date:null,review_date:review.toISOString().slice(0,10),review_interval_months:12,owner:prof?.full_name||prof?.name||prof?.email||null,author:prof?.full_name||prof?.name||prof?.email||null,author_id:prof?.id||null,owner_id:prof?.id||null,status:'draft',approval_status:'draft',category:'AI-generated RAMS',description:'AI-assisted RAMS draft generated in AURIS360. Review and approval required before use.',scope:r.input?.conditions||r.input?.task||null,location:r.input?.location||null,controlled_copy:true,is_latest:true,tags:['RAMS','SWMS','AI-assisted','Draft'],revision_summary:'AURIS_AI_RAMS:'+JSON.stringify({input:r.input||{},content:r.content}),updated_at:new Date().toISOString()};
+    if(r.savedId)await apiWriteWithMissingColumnFallback('/documents?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:body},'RAMS');
+    else{body.created_by=prof?.id||null;var created=await apiWriteWithMissingColumnFallback('/documents',{m:'POST',p:'return=representation',b:body},'RAMS');r.savedId=created&&created[0]?created[0].id:null;}
+    r.ref=ref;r.reviewDate=body.review_date;r.date=new Date().toLocaleString('en-GB');aiRamsRender(r);aiRamsHistoryLoadedCompany=null;await aiLoadSavedRamsHistory();toast('RAMS saved in AURIS as '+ref+' — draft pending review');
+  }catch(e){toast(actionErrorMessage('Save RAMS','AI Insights / Document Control',e),false);}
+}
+function aiDownloadRAMSWord(){
+  if(!aiCurrentRams||!aiCurrentRams.content){toast('Generate or select a RAMS first',false);return;}
+  var origin=String(window.location.origin||'https://auris360.app').replace(/\/$/,'');
+  var html='<!doctype html><html><head><meta charset="utf-8"><base href="'+escH(origin)+'/"><title>'+escH(aiCurrentRams.ref||'RAMS')+'</title><link rel="stylesheet" href="'+escH(origin)+'/auris-print-swms.css"></head><body>'+aiRamsBuildTemplateHtml(aiCurrentRams)+'</body></html>';
+  var blob=new Blob([html],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(aiCurrentRams.ref||'RAMS')+'_'+new Date().toISOString().slice(0,10)+'.doc';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);toast('Formatted RAMS Word document downloaded');
+}
+function aiPrintRAMS(){if(!aiCurrentRams||!aiCurrentRams.content){toast('Generate or select a RAMS first',false);return;}aurisPrint(aiRamsBuildTemplateHtml(aiCurrentRams),'RAMS - '+(aiCurrentRams.ref||aiCurrentRams.task||'Draft'));}
 
 // -- Toolbox Talk Generator ----------------------------------------------------
 async function aiGenerateToolboxTalk() {

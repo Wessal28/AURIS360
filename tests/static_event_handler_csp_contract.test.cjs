@@ -9,7 +9,7 @@ const registry = fs.readFileSync(path.join(root, 'auris-static-event-handlers.js
 
 test('static HTML contains no executable inline event attributes', () => {
   assert.doesNotMatch(html, /\s(on[a-z]+)=(?:"[^"]*"|'[^']*')/i);
-  assert.match(html, /src="auris-static-event-handlers\.js\?v=20260814-1"/);
+  assert.match(html, /src="auris-static-event-handlers\.js\?v=20260823-1"/);
 });
 
 test('static event registry delegates migrated event types without eval', () => {
