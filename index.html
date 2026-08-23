@@ -32,7 +32,7 @@
 <link rel="stylesheet" href="auris-runtime-state.css?v=20260815-2"/>
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
-<script src="auris-static-event-handlers.js?v=20260823-1"></script>
+<script src="auris-static-event-handlers.js?v=20260823-2"></script>
 <script src="auris-generated-event-handlers.js?v=20260822-2"></script>
 <script src="auris-runtime-event-handlers.js?v=20260822-2"></script>
 <script src="auris-module-event-handlers-batch-1.js?v=20260814-1"></script>
@@ -41,7 +41,7 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260823-2"></script>
+<script src="auris-core.js?v=20260823-3"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260821-3">
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260821-3">
@@ -91,7 +91,7 @@
 <link rel="stylesheet" href="auris-users-roles-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-administration-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-integrations-static.css?v=20260815-1">
-<link rel="stylesheet" href="auris-ai-insights-static.css?v=20260823-1">
+<link rel="stylesheet" href="auris-ai-insights-static.css?v=20260823-2">
 <link rel="stylesheet" href="auris-approval-center-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-audit-trail-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-settings-static.css?v=20260815-1">
@@ -10269,9 +10269,12 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="card-title auris-ai-insights-s-ab79ea2b85">Generated Toolbox Talk</div>
 <div class="auris-ai-insights-s-69374f356a">
 <button class="btn btn-sm" data-auris-onclick="h1159"><i class="ti ti-copy"></i>Copy</button>
-<button class="btn btn-sm btn-primary" data-auris-onclick="h1160"><i class="ti ti-download"></i>Download</button>
+<button class="btn btn-sm" data-auris-onclick="h1160s"><i class="ti ti-device-floppy"></i>Save to Toolbox Talks</button>
+<button class="btn btn-sm" data-auris-onclick="h1160p"><i class="ti ti-file-type-pdf"></i>Print / PDF</button>
+<button class="btn btn-sm btn-primary" data-auris-onclick="h1160"><i class="ti ti-file-type-doc"></i>Download Word</button>
 </div>
 </div>
+<div id="tbt-save-status" class="ai-tbt-save-status">Not yet saved in Toolbox Talks</div>
 <div id="tbt-output" class="auris-ai-insights-s-f5f69ebe9b"></div>
 </div>
 <div class="card" id="tbt-placeholder-card">

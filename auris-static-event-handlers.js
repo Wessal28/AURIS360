@@ -3485,7 +3485,13 @@ aiQuickTBT('Mental health and wellbeing at work')
 aiCopyOutput('tbt-output')
     },
     "h1160": function (event) {
-aiDownload('tbt-output','ToolboxTalk')
+aiDownloadToolboxWord()
+    },
+    "h1160s": function (event) {
+aiSaveToolboxTalkToAuris()
+    },
+    "h1160p": function (event) {
+aiPrintToolboxTalk()
     },
     "h1161": function (event) {
 aiComplianceCheck()
