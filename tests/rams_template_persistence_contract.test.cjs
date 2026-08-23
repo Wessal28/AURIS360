@@ -42,7 +42,7 @@ test('RAMS exports are formatted Word and print/PDF outputs rather than plain te
 });
 
 test('RAMS release assets are cache-busted', () => {
-  assert.match(html, /auris-core\.js\?v=20260823-2/);
-  assert.match(html, /auris-static-event-handlers\.js\?v=20260823-1/);
-  assert.match(html, /auris-ai-insights-static\.css\?v=20260823-1/);
+  assert.match(html, /auris-core\.js\?v=20260823-3/);
+  assert.match(html, /auris-static-event-handlers\.js\?v=20260823-2/);
+  assert.match(html, /auris-ai-insights-static\.css\?v=20260823-2/);
 });

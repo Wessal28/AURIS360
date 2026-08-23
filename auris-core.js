@@ -5840,6 +5840,7 @@ var aiInsightsCache = null;
 var aiRamsHistory = [];
 var aiCurrentRams = null;
 var aiRamsHistoryLoadedCompany = null;
+var aiCurrentToolboxTalk = null;
 var aiCurrentTab = 'insights';
 
 // -- Real callAI implementation ------------------------------------------------
@@ -6098,8 +6099,28 @@ function aiDownloadRAMSWord(){
 function aiPrintRAMS(){if(!aiCurrentRams||!aiCurrentRams.content){toast('Generate or select a RAMS first',false);return;}aurisPrint(aiRamsBuildTemplateHtml(aiCurrentRams),'RAMS - '+(aiCurrentRams.ref||aiCurrentRams.task||'Draft'));}
 
 // -- Toolbox Talk Generator ----------------------------------------------------
+function aiToolboxInput(){
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  return {topic:g('tbt-topic'),audience:g('tbt-audience'),duration:g('ai-tbt-duration'),style:g('tbt-style'),incident:g('tbt-incident'),context:g('tbt-context')};
+}
+function aiToolboxBuildTemplateHtml(record){
+  record=record||aiCurrentToolboxTalk||{};var input=record.input||{},ref=record.ref||'TBT-DRAFT',today=record.generatedDate||new Date().toISOString().slice(0,10),presenter=prof?.full_name||prof?.name||prof?.email||'To be assigned';
+  return '<link rel="stylesheet" href="/auris-print-toolbox-talk.css"><div class="report-page ai-toolbox-document">'
+    +aurisHeader('Toolbox Talk / Safety Briefing',input.topic||record.topic||'Generated Toolbox Talk',ref)
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Talk Control</div><div class="rpt-grid">'
+    +fld('Reference',ref)+fld('Status',record.savedId?'Draft in AURIS':'Unsaved draft')+fld('Date',today)+fld('Presenter',presenter)
+    +fld('Target audience',input.audience||'-')+fld('Duration',input.duration||'-')+fld('Site / context',input.context||'-')+fld('Language style',input.style||'-')
+    +'</div></div><div class="rpt-section"><div class="rpt-section-title blue">Toolbox Talk Content — Review Before Delivery</div><div class="ai-toolbox-body">'+aiRamsContentHtml(record.content||'')+'</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Attendance and Acknowledgement</div><table><thead><tr><th>No.</th><th>Name</th><th>Department / employer</th><th>Signature</th><th>Date / time</th></tr></thead><tbody>'
+    +[1,2,3,4,5,6].map(function(_,i){return '<tr><td>'+(i+1)+'</td><td>&nbsp;</td><td></td><td></td><td></td></tr>';}).join('')+'</tbody></table></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title amber">Questions, Concerns and Actions Raised</div><table><thead><tr><th>Question / action</th><th>Responsible person</th><th>Due date</th><th>Close-out</th></tr></thead><tbody><tr><td>&nbsp;</td><td></td><td></td><td></td></tr><tr><td>&nbsp;</td><td></td><td></td><td></td></tr></tbody></table></div>'
+    +'<div class="rpt-signatures"><div class="rpt-sig-box"><div class="sig-line"></div><label>Presented by / date</label></div><div class="rpt-sig-box"><div class="sig-line"></div><label>Supervisor verification / date</label></div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title red">Control Notice</div><p>This AI-assisted toolbox talk is a draft until reviewed by a competent person. The presenter must adapt it to current site conditions, encourage worker participation, record attendance and transfer actions into the Master Action Plan where required.</p></div>'
+    +aurisFooter('Controlled toolbox talk draft')+'</div>';
+}
+function aiToolboxRender(record){var out=document.getElementById('tbt-output');if(out)out.innerHTML=aiToolboxBuildTemplateHtml(record);var status=document.getElementById('tbt-save-status');if(status)status.textContent=record&&record.savedId?'Saved in Toolbox Talks as '+record.ref:'Not yet saved in Toolbox Talks';}
 async function aiGenerateToolboxTalk() {
-  var topic = document.getElementById('tbt-topic')?.value?.trim();
+  var input=aiToolboxInput(),topic=input.topic;
   if(!topic){toast('Please enter a toolbox talk topic',false);return;}
   var outCard = document.getElementById('tbt-output-card');
   var placeholder = document.getElementById('tbt-placeholder-card');
@@ -6108,15 +6129,14 @@ async function aiGenerateToolboxTalk() {
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = 'Generating toolbox talk on: '+topic+'...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';};
   var incidentRef = '';
-  if(g('tbt-incident')==='recent_incident') {
+  if(input.incident==='recent_incident') {
     try { var evts = await api('/events?select=description,event_type&company_id=eq.'+prof?.company_id+'&order=created_at.desc&limit=1'); if(evts?.[0]) incidentRef = '\nReference recent incident: '+escH(evts[0].description||evts[0].event_type||'a recent workplace incident')+'\n'; } catch(ex) {}
   }
-  var prompt = 'Write a '+g('ai-tbt-duration')+' toolbox talk on the topic: '+topic+'\n\n'
-    + 'Audience: '+g('tbt-audience')+'\n'
-    + 'Style: '+g('tbt-style')+'\n'
-    + (g('tbt-context')?'Context/Site: '+g('tbt-context')+'\n':'')
+  var prompt = 'Write a '+input.duration+' toolbox talk on the topic: '+topic+'\n\n'
+    + 'Audience: '+input.audience+'\n'
+    + 'Style: '+input.style+'\n'
+    + (input.context?'Context/Site: '+input.context+'\n':'')
     + incidentRef
     + '\nStructure the toolbox talk as:\n'
     + 'TOOLBOX TALK RECORD\n'
@@ -6132,13 +6152,36 @@ async function aiGenerateToolboxTalk() {
   try {
     var result = await callAI([{role:'user',content:prompt}],
       'You are an expert HSE trainer with 15 years of experience delivering safety training to frontline workers. Write engaging, practical toolbox talks that workers actually remember. Use plain language, real examples and interactive elements.');
-    outEl.textContent = result;
+    aiCurrentToolboxTalk={topic:topic,input:input,content:result,generatedDate:new Date().toISOString().slice(0,10)};
+    aiToolboxRender(aiCurrentToolboxTalk);
     toast('Toolbox talk generated');
+    var saveNow=await appConfirm({title:'Save in Toolbox Talks?',message:'The toolbox talk has been generated as a controlled draft template.',detail:'Save it in the AURIS Toolbox Talk section now so it receives a reference and remains available after this session.',confirmText:'Save to Toolbox Talks',cancelText:'Review first',danger:false});
+    if(saveNow)await aiSaveToolboxTalkToAuris();
   } catch(e) {
     outEl.textContent = aiFriendlyError(e);
     toast(aiFriendlyError(e), false);
   }
 }
+
+async function aiSaveToolboxTalkToAuris(){
+  var r=aiCurrentToolboxTalk;if(!r||!r.content){toast('Generate a toolbox talk before saving',false);return;}
+  var input=r.input||{},today=new Date().toISOString().slice(0,10),minutes=parseInt(input.duration,10)||10,ref=r.ref;
+  try{
+    if(!ref){try{ref=await nextCompanyRef('toolbox_talks','tbt_ref','TBT-'+new Date().getFullYear()+'-');}catch(_){ref='TBT-DRAFT-'+today.replace(/-/g,'');}}
+    var payload='AURIS_AI_TBT:'+JSON.stringify({input:input,content:r.content});
+    var body={company_id:ccid(),title:input.topic||r.topic||'Generated Toolbox Talk',topic:input.topic||r.topic||null,talk_date:today,conducted_by_id:prof?.id||null,conducted_by_name:prof?.full_name||prof?.name||prof?.email||null,facilitator:prof?.full_name||prof?.name||prof?.email||null,presenter:prof?.full_name||prof?.name||prof?.email||null,location:input.context||null,work_location:input.context||null,duration_minutes:minutes,duration_min:minutes,work_activity:input.topic||null,topics_covered:r.content,key_points:r.content,attendees:[],actions_raised:[],status:'draft',notes:payload,updated_at:new Date().toISOString()};
+    if(r.savedId)await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:body},'Toolbox Talk');
+    else{body.created_by=prof?.id||null;var created=await apiWriteWithMissingColumnFallback('/toolbox_talks',{m:'POST',p:'return=representation',b:body},'Toolbox Talk');r.savedId=created&&created[0]?created[0].id:null;if(r.savedId){try{await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:{tbt_ref:ref}},'Toolbox Talk reference');}catch(_){}}}
+    r.ref=ref;aiToolboxRender(r);toast('Toolbox talk saved as '+ref+' — draft pending review and delivery');
+  }catch(e){toast(actionErrorMessage('Save generated toolbox talk','Toolbox Talks',e),false);}
+}
+function aiDownloadToolboxWord(){
+  if(!aiCurrentToolboxTalk||!aiCurrentToolboxTalk.content){toast('Generate a toolbox talk first',false);return;}
+  var origin=String(window.location.origin||'https://auris360.app').replace(/\/$/,'');
+  var html='<!doctype html><html><head><meta charset="utf-8"><base href="'+escH(origin)+'/"><title>'+escH(aiCurrentToolboxTalk.ref||'Toolbox Talk')+'</title><link rel="stylesheet" href="'+escH(origin)+'/auris-print-toolbox-talk.css"></head><body>'+aiToolboxBuildTemplateHtml(aiCurrentToolboxTalk)+'</body></html>';
+  var blob=new Blob([html],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(aiCurrentToolboxTalk.ref||'ToolboxTalk')+'_'+new Date().toISOString().slice(0,10)+'.doc';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);toast('Formatted toolbox talk Word document downloaded');
+}
+function aiPrintToolboxTalk(){if(!aiCurrentToolboxTalk||!aiCurrentToolboxTalk.content){toast('Generate a toolbox talk first',false);return;}aurisPrint(aiToolboxBuildTemplateHtml(aiCurrentToolboxTalk),'Toolbox Talk - '+(aiCurrentToolboxTalk.ref||aiCurrentToolboxTalk.topic||'Draft'));}
 
 function aiQuickTBT(topic) {
   var topicEl = document.getElementById('tbt-topic'); if(topicEl) topicEl.value = topic;
