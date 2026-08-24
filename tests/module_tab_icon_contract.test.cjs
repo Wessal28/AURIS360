@@ -30,14 +30,15 @@ test('tab icons use the colourful AURIS visual language and active emphasis', ()
 });
 
 test('new icon assets are cache-busted in the application shell', () => {
-  assert.match(html, /auris-icon-system\.css\?v=20260816-1/);
-  assert.match(html, /auris-icon-system\.js\?v=20260822-3/);
+  assert.match(html, /auris-icon-system\.css\?v=20260824-1/);
+  assert.match(html, /auris-icon-system\.js\?v=20260824-1/);
 });
 
-test('dashboard indicators receive one icon before action decoration', () => {
+test('module indicators receive one icon before action decoration while the Main Dashboard is excluded', () => {
   assert.match(js, /applyTabs\(\);applyIndicators\(\);applyActions\(\)/);
   assert.match(js, /classList\.contains\('auris-indicator-icon'\)/);
-  assert.match(js, /closest\('#page-dashboard,#page-kpi'\)/);
+  assert.match(js, /closest\('#page-dashboard'\)/);
+  assert.doesNotMatch(js, /#page-dashboard,#page-kpi/);
   assert.match(js, /:scope>\[class\*="metric-icon"\],:scope>\[class\*="indicator-icon"\]/);
-  assert.match(js, /if\(!icon&&!iconShell\)/);
+  assert.match(js, /var artwork=iconShell\|\|icon/);
 });

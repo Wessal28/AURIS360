@@ -10399,7 +10399,9 @@ function mtgRenderRoadmap(){
 }
 
 function mtgClickWeek(seriesId,week){
-  // Open the meeting form for this series, pre-set to the approximate date of that week
+  var saved=(mtgMinutesData||[]).find(function(m){return String(m.series_id)===String(seriesId)&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&m.status==='completed';});
+  if(saved){mtgViewMomReadOnly(saved.id);return;}
+  // No completed minutes exist yet: open the meeting form pre-set to that week.
   var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
   if(!s)return;
   // Calculate actual date for this week
@@ -10450,20 +10452,30 @@ async function mtgLoadMinutes(){
       var statusBadge=x.status==='completed'?'<span class="badge bg">Completed</span>':x.status==='cancelled'?'<span class="badge br">Cancelled</span>':'<span class="badge ba">Draft</span>';
       h+='<tr style="border-bottom:1px solid #f3f4f6">'
         +'<td style="padding:10px 16px;font-weight:600">'+dt+'</td>'
-        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" data-auris-generated-onclick="g0063">'+(x.title||'-')+'</td>'
+        +'<td class="r5-mtg-view" style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'">'+(x.title||'-')+'</td>'
         +'<td style="padding:10px;font-size:12px;color:var(--text2)">'+(MTG_TYPES[x.meeting_type]||x.meeting_type||'-')+'</td>'
         +'<td style="padding:10px">'+(x.chaired_by||'-')+'</td>'
         +'<td style="padding:10px;text-align:center"><span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+recs+' action'+(recs!==1?'s':'')+'</span></td>'
         +'<td style="padding:10px">'+statusBadge+'</td>'
         +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0063"><i class="ti ti-edit"></i></button>'
+        +'<button class="btn btn-sm r5-mtg-view" data-id="'+x.id+'" title="View minutes"><i class="ti ti-eye"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm r5-mtg-edit" data-id="'+x.id+'" title="Edit minutes"><i class="ti ti-edit"></i></button>':'')
         +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0064"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
     h+='</tbody></table>';
-    if(el)el.innerHTML=h;
+    if(el){el.innerHTML=h;el.querySelectorAll('.r5-mtg-view').forEach(function(b){b.addEventListener('click',function(){mtgViewMomReadOnly(b.dataset.id);});});el.querySelectorAll('.r5-mtg-edit').forEach(function(b){b.addEventListener('click',function(){mtgOpenMom(b.dataset.id);});});}
   }catch(e){if(el)el.innerHTML=registerErrorHtml('HSE Meetings register',e.message);console.error(e);}
+}
+
+function mtgViewMomReadOnly(id){
+  var m=mtgMinutesData.find(function(x){return String(x.id)===String(id);});if(!m)return;
+  document.getElementById('mtg-minutes-readonly')?.remove();var modal=document.createElement('div');modal.id='mtg-minutes-readonly';modal.className='r5-record-modal';
+  var agenda=mtgSplitAgendaPayload(m.agenda_items).items||[], recommendations=mtgSplitRecommendationPayload(m.recommendations).recs||[];
+  var rows=function(items,cols){return items.length?'<div class="table-scroll"><table class="data-table"><thead><tr>'+cols.map(function(c){return '<th>'+escH(c[0])+'</th>';}).join('')+'</tr></thead><tbody>'+items.map(function(x){return '<tr>'+cols.map(function(c){return '<td>'+escH(x[c[1]]||'-')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<div class="empty">No records.</div>';};
+  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true"><header><div><div class="r5-kicker">Read-only minutes</div><h2>'+escH(m.title||'Minutes of Meeting')+'</h2><p>'+escH(m.meeting_date?new Date(m.meeting_date).toLocaleString('en-GB'):'Date not recorded')+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><div class="r5-detail-grid"><div><span>Meeting type</span><strong>'+escH(MTG_TYPES[m.meeting_type]||m.meeting_type||'-')+'</strong></div><div><span>Location</span><strong>'+escH(m.location||'-')+'</strong></div><div><span>Chaired by</span><strong>'+escH(m.chaired_by||'-')+'</strong></div><div><span>Status</span><strong>'+escH(m.status||'-')+'</strong></div></div><h3>Minutes</h3><div class="card">'+escH(m.minutes||'No narrative minutes recorded.').replace(/\n/g,'<br>')+'</div><h3>Agenda and discussion</h3>'+rows(agenda,[['Agenda item','item'],['Discussion / decision','notes']])+'<h3>Actions and recommendations</h3>'+rows(recommendations,[['Action','desc'],['Responsible','resp'],['Due','date'],['Priority','prio'],['Status','status']])+'<footer><button class="btn r5-print"><i class="ti ti-printer"></i>Print minutes</button>'+(isMgr()?'<button class="btn r5-edit"><i class="ti ti-edit"></i>Edit minutes</button>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});modal.querySelector('.r5-edit')?.addEventListener('click',function(){modal.remove();mtgOpenMom(id);});modal.querySelector('.r5-print')?.addEventListener('click',function(){printRegisterView('Minutes of Meeting - '+(m.title||''),'#mtg-minutes-readonly .r5-record-dialog');});modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
 
 async function mtgOpenMom(id){
@@ -24477,7 +24489,7 @@ async function ppeQuickReplace(issId,empName,ppeName){
 // ===== TOOLS_JS.JS =====
 
 // ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsInspectionData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLiftingData=[], toolsLastInspectionByTool={}, toolsInspectionReturnTab='inspection', toolsFormReturnTab='register', toolsCategoryLocked=false;
+let toolsAllData=[], toolsInspectionData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsRcdTests=[], toolsLiftingData=[], toolsLastInspectionByTool={}, toolsInspectionReturnTab='inspection', toolsFormReturnTab='register', toolsCategoryLocked=false;
 
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
@@ -24565,7 +24577,8 @@ function toolsInspectionIntervalDays(freq){
 function toolsIsRCD(x){
   x=x||{};
   var txt=[x.name,x.ref_number,x.model,x.notes,x.statutory_type].filter(Boolean).join(' ').toLowerCase();
-  return x.category==='electrical'&&(/\brcd\b|residual current|distribution board/.test(txt));
+  var isTestInstrument=/\brcd\s*(tester|test\s*instrument)|tester\s*for\s*rcd|test\s*instrument|megger|portable\s*appliance\s*tester/.test(txt);
+  return x.category==='electrical'&&!isTestInstrument&&(/\brcd\b|residual current|distribution board/.test(txt));
 }
 
 function toolsIsGeneralEquipment(x){
@@ -25240,6 +25253,7 @@ async function toolsLoadRCD(){
     var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
     var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)'+cf()+'&order=inspection_date.desc&limit=300&select=*');
     toolsRcdData=(tools||[]).filter(toolsIsRCD);
+    toolsRcdTests=tests||[];
     var lastByTool={};
     (tests||[]).forEach(function(t){if(t.tool_id&&!lastByTool[t.tool_id])lastByTool[t.tool_id]=t;});
     if(!toolsRcdData.length){
@@ -25256,6 +25270,7 @@ async function toolsLoadRCD(){
       +'<thead><tr>'
       +'<th>Ref</th>'
       +'<th>RCD / Distribution board</th>'
+      +'<th>Make</th>'
       +'<th>Location</th>'
       +'<th>Distribution board</th>'
       +'<th>Rating / type</th>'
@@ -25277,8 +25292,9 @@ async function toolsLoadRCD(){
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(overdue?';border-left:4px solid var(--red)':dueSoon?';border-left:4px solid #C2410C':'')+'">'
         +'<td style="padding:9px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'AUTO')+'</td>'
         +'<td style="padding:9px 12px;font-weight:700">'+escH(x.name||'RCD')+'</td>'
-        +'<td style="padding:9px 12px">'+escH(x.location||'--')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.brand||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.distribution_board_reference||'--')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.model||'--')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.description||'--')+'</td>'
         +'<td style="padding:9px 12px">'+(last?.inspection_date?new Date(last.inspection_date).toLocaleDateString('en-GB'):'--')+'</td>'
@@ -25290,10 +25306,38 @@ async function toolsLoadRCD(){
         +'</td></tr>';
     });
     h+='</tbody></table></div>';
-    el.innerHTML=h;
+    el.innerHTML='<div class="r5-rcd-printbar"><label>RCD <select id="r5-rcd-print-device"><option value="">Select one RCD...</option>'+toolsRcdData.map(function(x){return '<option value="'+escH(x.id)+'">'+escH((x.ref_number||'RCD')+' - '+(x.name||'RCD'))+'</option>';}).join('')+'</select></label><label>From <input id="r5-rcd-print-from" type="date"></label><label>To <input id="r5-rcd-print-to" type="date"></label><button class="btn btn-sm" id="r5-rcd-print-history"><i class="ti ti-printer"></i>Print RCD history</button><button class="btn btn-sm" id="r5-rcd-print-register"><i class="ti ti-printer"></i>Print whole register</button></div>'+h;
+    document.getElementById('r5-rcd-print-history')?.addEventListener('click',toolsPrintRCDHistory);
+    document.getElementById('r5-rcd-print-register')?.addEventListener('click',toolsPrintRCDRegister);
   }catch(e){
     el.innerHTML=setupFriendlyMessage('RCD register',e.message);
   }
+}
+
+function toolsRCDPrintShell(title,head,rows){
+  return '<div class="report-page">'+aurisHeader(title,'Tools & Equipment - RCD statutory records','RCD')+'<div class="rpt-section"><table><thead><tr>'+head.map(function(x){return '<th>'+escH(x)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'+aurisFooter(title)+'</div>';
+}
+
+function toolsPrintRCDRegister(){
+  if(!toolsRcdData.length){toast('There are no RCD records to print.',false);return;}
+  var rows=toolsRcdData.map(function(x){
+    var tests=toolsRcdTests.filter(function(t){return String(t.tool_id)===String(x.id);});
+    var last=tests[0]||{};
+    return '<tr><td>'+escH(x.ref_number||'-')+'</td><td>'+escH(x.name||'-')+'</td><td>'+escH(x.brand||'-')+'</td><td>'+escH(x.distribution_board_reference||'-')+'</td><td>'+escH(x.location||'-')+'</td><td>'+escH(last.inspection_date?new Date(last.inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(last.next_inspection_date?new Date(last.next_inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(last.overall_result||'Not tested')+'</td></tr>';
+  });
+  aurisPrint(toolsRCDPrintShell('RCD Register',['RCD reference','RCD / device','Make','DB reference','Location','Last test','Next test','Result'],rows),'RCD Register');
+}
+
+function toolsPrintRCDHistory(){
+  var id=document.getElementById('r5-rcd-print-device')?.value;
+  var from=document.getElementById('r5-rcd-print-from')?.value;
+  var to=document.getElementById('r5-rcd-print-to')?.value;
+  if(!id){toast('Select the RCD whose records you want to print.',false);return;}
+  var x=toolsRcdData.find(function(r){return String(r.id)===String(id);});
+  var tests=toolsRcdTests.filter(function(t){var d=String(t.inspection_date||'').slice(0,10);return String(t.tool_id)===String(id)&&(!from||d>=from)&&(!to||d<=to);});
+  var rows=tests.map(function(t){return '<tr><td>'+escH(t.inspection_date?new Date(t.inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(t.inspected_by_name||'-')+'</td><td>'+escH(t.overall_result||'-')+'</td><td>'+escH(t.next_inspection_date?new Date(t.next_inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(t.defects_found||'-')+'</td><td>'+escH(t.actions_taken||'-')+'</td></tr>';});
+  if(!rows.length)rows.push('<tr><td colspan="6">No tests found for the selected date range.</td></tr>');
+  aurisPrint(toolsRCDPrintShell('RCD Test History - '+(x?.ref_number||x?.name||'RCD'),['Test date','Tester','Result','Next test','Defects','Actions'],rows),'RCD Test History');
 }
 
 function toolsNewRCD(){
@@ -25303,7 +25347,7 @@ function toolsNewRCD(){
 function toolsOpenRCDAssetForm(record){
   record=record||{};
   var modal=document.createElement('div');modal.id='tools-rcd-asset-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:13000;display:flex;align-items:center;justify-content:center;padding:20px';
-  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="tools-rcd-asset-title" style="width:min(760px,100%);max-height:92vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 id="tools-rcd-asset-title" style="margin:0">'+(record.id?'Edit RCD':'Add RCD')+'</h2><div style="color:var(--text2);font-size:12px;margin-top:4px">Dedicated RCD and distribution-board record</div></div><button type="button" class="btn btn-sm rcd-asset-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:18px"><div class="form3group"><label class="form3label">RCD / device name *</label><input id="rcda-name" value="'+escH(record.name||'')+'"></div><div class="form3group"><label class="form3label">Distribution board reference *</label><input id="rcda-db-ref" value="'+escH(record.brand||'')+'" placeholder="e.g. DB-L1-02"></div></div><div class="form3row"><div class="form3group"><label class="form3label">RCD rating *</label><input id="rcda-rating" value="'+escH(record.model||'')+'" placeholder="e.g. 30 mA / 40 A"></div><div class="form3group"><label class="form3label">Circuit protected *</label><input id="rcda-circuit" value="'+escH(record.description||'')+'" placeholder="e.g. Workshop socket circuit"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Location</label><input id="rcda-location" value="'+escH(record.location||'')+'"></div><div class="form3group"><label class="form3label">Serial number</label><input id="rcda-serial" value="'+escH(record.serial_number||'')+'"></div><div class="form3group"><label class="form3label">Status</label><select id="rcda-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="rcda-notes">'+escH(record.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn rcd-asset-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary rcd-asset-save"><i class="ti ti-device-floppy"></i>Save RCD</button></div></div>';
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="tools-rcd-asset-title" style="width:min(760px,100%);max-height:92vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 id="tools-rcd-asset-title" style="margin:0">'+(record.id?'Edit RCD':'Add RCD')+'</h2><div style="color:var(--text2);font-size:12px;margin-top:4px">Dedicated RCD and distribution-board record</div></div><button type="button" class="btn btn-sm rcd-asset-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:18px"><div class="form3group"><label class="form3label">RCD / device name *</label><input id="rcda-name" value="'+escH(record.name||'')+'"></div><div class="form3group"><label class="form3label">Make *</label><input id="rcda-make" value="'+escH(record.brand||'')+'" placeholder="e.g. Schneider Electric"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Distribution board reference *</label><input id="rcda-db-ref" value="'+escH(record.distribution_board_reference||'')+'" placeholder="e.g. DB-L1-02"></div><div class="form3group"><label class="form3label">RCD rating *</label><input id="rcda-rating" value="'+escH(record.model||'')+'" placeholder="e.g. 30 mA / 40 A"></div></div><div class="form3group"><label class="form3label">Circuit protected *</label><input id="rcda-circuit" value="'+escH(record.description||'')+'" placeholder="e.g. Workshop socket circuit"></div><div class="form3row"><div class="form3group"><label class="form3label">Location</label><input id="rcda-location" value="'+escH(record.location||'')+'"></div><div class="form3group"><label class="form3label">Serial number</label><input id="rcda-serial" value="'+escH(record.serial_number||'')+'"></div><div class="form3group"><label class="form3label">Status</label><select id="rcda-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="rcda-notes">'+escH(record.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn rcd-asset-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary rcd-asset-save"><i class="ti ti-device-floppy"></i>Save RCD</button></div></div>';
   document.body.appendChild(modal);
   var status=modal.querySelector('#rcda-status');if(status)status.value=record.status||'active';
   var close=function(){modal.remove();};
@@ -25314,8 +25358,8 @@ function toolsOpenRCDAssetForm(record){
 
 async function toolsSaveRCDAsset(id,modal){
   var g=function(key){return modal.querySelector('#'+key)?.value?.trim()||null;};
-  if(!g('rcda-name')||!g('rcda-db-ref')||!g('rcda-rating')||!g('rcda-circuit')){toast('Name, distribution board reference, rating and circuit protected are required.',false);return;}
-  var body={company_id:ccid(),category:'electrical',name:g('rcda-name'),brand:g('rcda-db-ref'),model:g('rcda-rating'),description:g('rcda-circuit'),location:g('rcda-location'),serial_number:g('rcda-serial'),status:g('rcda-status')||'active',inspection_frequency:'monthly',requires_statutory:false,statutory_type:'RCD',is_vehicle:false,notes:g('rcda-notes')||'RCD monthly push-button testing required.',updated_at:new Date().toISOString()};
+  if(!g('rcda-name')||!g('rcda-make')||!g('rcda-db-ref')||!g('rcda-rating')||!g('rcda-circuit')){toast('Name, make, distribution board reference, rating and circuit protected are required.',false);return;}
+  var body={company_id:ccid(),category:'electrical',name:g('rcda-name'),brand:g('rcda-make'),distribution_board_reference:g('rcda-db-ref'),model:g('rcda-rating'),description:g('rcda-circuit'),location:g('rcda-location'),serial_number:g('rcda-serial'),status:g('rcda-status')||'active',inspection_frequency:'monthly',requires_statutory:false,statutory_type:'RCD',is_vehicle:false,notes:g('rcda-notes')||'RCD monthly push-button testing required.',updated_at:new Date().toISOString()};
   try{
     if(id){await api('/tools_register?id=eq.'+encodeURIComponent(id),{m:'PATCH',p:'return=minimal',b:body});toast('RCD updated!');}
     else{
@@ -25585,7 +25629,7 @@ function toolsInspectionDetailLine(label,value){
 }
 
 // ===== FLEET MANAGEMENT MODULE =====
-let fleetVehicles=[], fleetFuel=[], fleetInspections=[], fleetIncidents=[];
+let fleetVehicles=[], fleetFuel=[], fleetInspections=[], fleetIncidents=[], fleetServices=[];
 
 function fleetLabel(v){
   return (v.registration_number||v.ref_number||v.name||'Vehicle').trim();
@@ -25628,9 +25672,10 @@ async function loadFleet(){
       api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*'),
       optional(api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),'vehicle inspections'),
       optional(api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),'fuel log'),
-      optional(api('/events?select=id,event_type,vehicle_reg,created_at,event_date,description,location'+cf()+'&order=created_at.desc&limit=200'),'vehicle incidents')
+      optional(api('/events?select=id,event_type,vehicle_reg,created_at,event_date,description,location'+cf()+'&order=created_at.desc&limit=200'),'vehicle incidents'),
+      optional(api('/equipment_maintenance_events?select=*'+cf()+'&order=created_at.desc&limit=500'),'service history')
     ]);
-    fleetVehicles=res[0]||[]; fleetInspections=res[1]||[]; fleetFuel=res[2]||[]; fleetIncidents=res[3]||[];
+    fleetVehicles=res[0]||[]; fleetInspections=res[1]||[]; fleetFuel=res[2]||[]; fleetIncidents=res[3]||[]; fleetServices=res[4]||[];
     fleetRender();
   }catch(e){
     el.innerHTML=setupFriendlyMessage('Fleet module',e.message);
@@ -25701,7 +25746,7 @@ function fleetRender(){
     var incCount=fleetIncidents.filter(function(ev){return fleetIncidentMatchesVehicle(ev,v);}).length;
     var status=(v.status||'active').replace(/_/g,' ');
     var stCfg=(v.status||'active')==='active'?['#EAF3DE','#3B6D11']:(v.status==='out_of_service'?['#FCEBEB','#A32D2D']:['#FEF9EC','#854F0B']);
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':soon?';border-left:4px solid var(--amber)':'')+'">'
+    h+='<tr data-fleet-detail-id="'+escH(v.id)+'" title="Open vehicle record" style="cursor:pointer;border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':soon?';border-left:4px solid var(--amber)':'')+'">'
       +'<td style="padding:10px 12px"><div style="font-weight:800;font-size:13px">'+escH(fleetLabel(v))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((v.name||'')+(v.brand?' - '+v.brand:'')+(v.model?' '+v.model:''))+'</div></td>'
       +'<td style="padding:10px 12px"><div>'+escH(v.assigned_to_name||'General use')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(v.location||'--')+'</div></td>'
       +'<td style="padding:10px 12px"><span style="background:'+stCfg[0]+';color:'+stCfg[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(status)+'</span></td>'
@@ -25716,6 +25761,37 @@ function fleetRender(){
   });
   h+='</tbody></table></div>';
   el.innerHTML=h;
+  el.querySelectorAll('[data-fleet-detail-id]').forEach(function(row){row.addEventListener('click',function(ev){if(ev.target.closest('button'))return;fleetOpenVehicleDetail(row.dataset.fleetDetailId);});});
+}
+
+function fleetDetailRows(rows,columns){
+  if(!rows.length)return '<div class="empty">No records available.</div>';
+  return '<div class="table-scroll"><table class="data-table"><thead><tr>'+columns.map(function(c){return '<th>'+escH(c[0])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+columns.map(function(c){var v=typeof c[1]==='function'?c[1](r):r[c[1]];return '<td>'+escH(v===null||v===undefined||v===''?'-':v)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';
+}
+
+function fleetOpenVehicleDetail(id){
+  var v=fleetVehicles.find(function(x){return String(x.id)===String(id);});if(!v)return;
+  document.getElementById('fleet-detail-modal')?.remove();
+  var inspections=fleetInspections.filter(function(x){return String(x.tool_id)===String(id);});
+  var fuel=fleetFuel.filter(function(x){return fleetFuelMatchesVehicle(x,v);});
+  var services=fleetServices.filter(function(x){return String(x.equipment_id)===String(id);});
+  var modal=document.createElement('div');modal.id='fleet-detail-modal';modal.className='r5-record-modal';
+  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true" aria-label="Vehicle record"><header><div><div class="r5-kicker">Fleet record</div><h2>'+escH(fleetLabel(v))+'</h2><p>'+escH([v.name,v.brand,v.model].filter(Boolean).join(' - '))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><nav class="r5-view-tabs"><button class="active" data-tab="details">Details</button><button data-tab="inspections">Inspection records ('+inspections.length+')</button><button data-tab="fuel">Fuel consumption ('+fuel.length+')</button><button data-tab="services">Servicing records ('+services.length+')</button></nav><section data-panel="details" class="r5-view-panel"><div class="r5-detail-grid">'+[['Registration',v.registration_number],['Reference',v.ref_number],['Make',v.brand],['Model',v.model],['Location',v.location],['Assigned to',v.assigned_to_name||'General use'],['Status',String(v.status||'active').replace(/_/g,' ')],['Notes',v.notes]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div></section><section data-panel="inspections" class="r5-view-panel" hidden>'+fleetDetailRows(inspections,[['Date',function(x){return x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-';}],['Type',function(x){return String(x.inspection_type||'').replace(/_/g,' ');}],['Inspector','inspected_by_name'],['Result','overall_result'],['Defects','defects_found']])+'</section><section data-panel="fuel" class="r5-view-panel" hidden>'+fleetDetailRows(fuel,[['Date',function(x){return x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'-';}],['Quantity (L)','quantity'],['Cost','cost'],['Odometer','odometer'],['CO2 kg','carbon_kg']])+'</section><section data-panel="services" class="r5-view-panel" hidden><div class="r5-panel-actions">'+(isMgr()?'<button class="btn btn-primary r5-add-service"><i class="ti ti-plus"></i>Add servicing record</button>':'')+'</div>'+fleetDetailRows(services,[['Reference','reference'],['Type',function(x){return String(x.maintenance_type||'').replace(/_/g,' ');}],['Status',function(x){return String(x.status||'').replace(/_/g,' ');}],['Planned','planned_date'],['Completed','completed_date'],['Technician','technician'],['Cost','cost']])+'</section><footer><button class="btn" id="r5-fleet-print"><i class="ti ti-printer"></i>Print vehicle record</button>'+(isMgr()?'<button class="btn" id="r5-fleet-edit"><i class="ti ti-edit"></i>Edit vehicle</button>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
+  document.body.appendChild(modal);
+  modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelectorAll('.r5-view-tabs button').forEach(function(b){b.addEventListener('click',function(){modal.querySelectorAll('.r5-view-tabs button').forEach(function(x){x.classList.toggle('active',x===b);});modal.querySelectorAll('.r5-view-panel').forEach(function(p){p.hidden=p.dataset.panel!==b.dataset.tab;});});});
+  modal.querySelector('.r5-add-service')?.addEventListener('click',function(){modal.remove();fleetOpenServiceForm(id);});
+  modal.querySelector('#r5-fleet-edit')?.addEventListener('click',function(){modal.remove();fleetOpenVehicleForm(id);});
+  modal.querySelector('#r5-fleet-print')?.addEventListener('click',function(){printRegisterView('Vehicle record - '+fleetLabel(v),'#fleet-detail-modal .r5-record-dialog');});
+  modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+}
+
+function fleetOpenServiceForm(vehicleId){
+  var v=fleetVehicles.find(function(x){return String(x.id)===String(vehicleId);});if(!v)return;
+  var modal=document.createElement('div');modal.className='r5-record-modal';modal.id='fleet-service-modal';
+  modal.innerHTML='<div class="card r5-record-dialog r5-record-form"><header><div><div class="r5-kicker">Fleet maintenance</div><h2>Add servicing record</h2><p>'+escH(fleetLabel(v))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><div class="form3row"><div class="form3group"><label class="form3label">Reference *</label><input id="r5-svc-ref" placeholder="e.g. SVC-2026-014"></div><div class="form3group"><label class="form3label">Service type</label><select id="r5-svc-type"><option value="preventive">Preventive</option><option value="corrective">Corrective</option><option value="breakdown">Breakdown</option><option value="recall">Recall</option><option value="modification">Modification</option></select></div><div class="form3group"><label class="form3label">Status</label><select id="r5-svc-status"><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Planned date</label><input id="r5-svc-planned" type="date"></div><div class="form3group"><label class="form3label">Completed date</label><input id="r5-svc-completed" type="date"></div><div class="form3group"><label class="form3label">Technician / provider</label><input id="r5-svc-tech"></div></div><div class="form3group"><label class="form3label">Work required / problem</label><textarea id="r5-svc-problem"></textarea></div><div class="form3group"><label class="form3label">Work performed</label><textarea id="r5-svc-work"></textarea></div><div class="form3row"><div class="form3group"><label class="form3label">Cost</label><input id="r5-svc-cost" type="number" min="0" step="0.01"></div><div class="form3group"><label class="form3label">Evidence reference</label><input id="r5-svc-evidence"></div></div><footer><button class="btn r5-close">Cancel</button><button class="btn btn-primary r5-save-service"><i class="ti ti-device-floppy"></i>Save servicing record</button></footer></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelector('.r5-save-service').addEventListener('click',async function(){var ref=modal.querySelector('#r5-svc-ref').value.trim();if(!ref){toast('Service reference is required.',false);return;}var body={company_id:ccid(),equipment_id:vehicleId,reference:ref,maintenance_type:modal.querySelector('#r5-svc-type').value,status:modal.querySelector('#r5-svc-status').value,planned_date:modal.querySelector('#r5-svc-planned').value||null,completed_date:modal.querySelector('#r5-svc-completed').value||null,technician:modal.querySelector('#r5-svc-tech').value||null,problem_description:modal.querySelector('#r5-svc-problem').value||null,work_performed:modal.querySelector('#r5-svc-work').value||null,cost:parseFloat(modal.querySelector('#r5-svc-cost').value)||null,evidence_reference:modal.querySelector('#r5-svc-evidence').value||null,created_by:prof?.id||null};try{await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:body});toast('Servicing record saved.');modal.remove();await loadFleet();fleetOpenVehicleDetail(vehicleId);}catch(e){toastActionError('Save servicing record','Fleet',e);}});
 }
 
 function fleetNewVehicle(){fleetOpenVehicleForm(null);}
@@ -37502,7 +37578,7 @@ async function elcLoad(){
   var ch=document.getElementById('elc-list'), eh=document.getElementById('ele-list');if(!ch&&!eh)return;
   try{
     var courses=await api('/elearning_courses?company_id=eq.'+ccid()+'&select=*&order=title.asc');elcAllData=courses||[];
-    if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){var mandatory=x.mandatory?'<span class="pill" style="background:#FEF2F2;color:#991B1B;margin-left:6px">Mandatory</span>':'';return '<tr><td><strong>'+escH(x.title||'-')+'</strong>'+mandatory+'<div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.duration_minutes?x.duration_minutes+' min':'-')+'</td><td>'+escH(x.status||'active')+'</td><td>'+(x.course_url?'<button class="icon-btn" title="Launch course" aria-label="Launch course" data-auris-runtime-onclick="r0121" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id||x.title]))+'"><i class="ti ti-player-play"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning course" aria-label="Edit e-learning course" data-auris-runtime-onclick="r0122" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="4" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
+    if(ch)ch.innerHTML=courses.length?'<div class="lcu-course-grid">'+courses.map(function(x){var mandatory=x.mandatory?'<span class="pill" style="background:#FEF2F2;color:#991B1B">Mandatory</span>':'',url=x.thumbnail_url||'',yt=String(x.course_url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([A-Za-z0-9_-]{6,})/);if(!url&&yt)url='https://i.ytimg.com/vi/'+yt[1]+'/hqdefault.jpg';var visual=url?'<img src="'+escH(url)+'" alt="Video preview for '+escH(x.title||'course')+'" loading="lazy">':'<div class="lcu-course-fallback"><i class="ti ti-player-play-filled"></i></div>';return '<article class="lcu-course-card" data-course-card>'+visual+'<div class="lcu-course-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>'+escH(x.title||'Course')+'</h3><div class="muted">'+escH(x.course_code||x.description||'')+'</div></div>'+mandatory+'</div><div class="lcu-course-meta"><span><i class="ti ti-clock"></i> '+escH(x.duration_minutes?x.duration_minutes+' min':'Self-paced')+'</span><span class="pill">'+escH(x.status||'active')+'</span></div><div class="lcu-course-actions">'+(x.course_url?'<button class="btn btn-primary" data-auris-runtime-onclick="r0121" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id||x.title]))+'"><i class="ti ti-player-play"></i>Launch course</button>':'')+(isMgr()?'<button class="btn" data-auris-runtime-onclick="r0122" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i>Edit</button>':'')+'</div></div></article>';}).join('')+'</div>':'<div class="empty">No e-learning courses yet.</div>';
     var enrol=await api('/elearning_enrolments?company_id=eq.'+ccid()+'&select=*&order=enrolment_date.desc');
     if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Timeframe</th><th>Target</th><th>Completion</th><th>Certificate</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){var c=elcCourseById(x.course_id);var canLaunch=c&&c.course_url;var due=x.target_date||x.due_date||'-';var done=String(x.status||'').toLowerCase()==='completed';var watched=eleWatchFinished(x);var cert=eleCertificateDisplay(x);var tf=eleTimeframeState(x);return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(elcCourseLabel(x.course_id))+'</td><td>'+escH((x.status||'-').replaceAll('_',' '))+'<div class="muted" style="font-size:11px;margin-top:3px">'+escH(eleWatchLabel(x))+'</div></td><td><span class="pill" style="background:'+tf.bg+';color:'+tf.color+'">'+escH(tf.label)+'</span></td><td>'+escH(due)+'</td><td>'+escH(x.completion_date||'-')+'</td><td><span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(cert)+'</span></td><td>'+(canLaunch?'<button class="icon-btn" title="Launch course" aria-label="Launch course" data-auris-runtime-onclick="r0117" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-player-play"></i></button>':'')+(!done&&watched&&isMgr()?'<button class="icon-btn" title="Complete and issue certificate" aria-label="Complete and issue certificate" data-auris-runtime-onclick="r0123" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-certificate"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" data-auris-runtime-onclick="r0124" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
   }catch(e){if(ch)ch.innerHTML=setupFriendlyMessage('E-learning',e.message);if(eh)eh.innerHTML='';}
@@ -42024,11 +42100,16 @@ async function smCreateLinkedPlan(siteKey){
 function smOpenLinkedPlan(siteKey){
   var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteKey);});
   var marker=site?smMarkerForSite(site):null;
-  if(!marker||!marker.linked_plan_id){smSelectSite(siteKey);return;}
-  smOpenPlan(marker.linked_plan_id);
-  toast('Opened linked layout: '+(smLinkedPlanTitle(marker.linked_plan_id)||'plan'));
+  if(!site)return;
+  document.getElementById('sitemap-location-modal')?.remove();
+  var rec=smRecordsForSite(site), layout=siteMapState.layout||smLayoutEmpty(), img=layout.image_url||layout.image||'';
+  var modal=document.createElement('div');modal.id='sitemap-location-modal';modal.className='r5-record-modal';
+  modal.innerHTML='<div class="card r5-record-dialog r5-map-dialog" role="dialog" aria-modal="true"><header><div><div class="r5-kicker">Site Map location</div><h2>'+escH(smSiteName(site))+'</h2><p>'+escH([site.site_code,site.site_type,site.city].filter(Boolean).join(' - ')||'Site / area')+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><div class="r5-location-map">'+(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map')+'">':'<div class="empty">No plan image uploaded for this map.</div>')+'</div><div class="r5-detail-grid"><div><span>Incidents</span><strong>'+rec.events.length+'</strong></div><div><span>BBS observations</span><strong>'+rec.observations.length+'</strong></div><div><span>Risk assessments</span><strong>'+rec.risks.length+'</strong></div><div><span>Inspections</span><strong>'+rec.inspections.length+'</strong></div><div><span>Permits</span><strong>'+rec.permits.length+'</strong></div><div><span>Actions</span><strong>'+rec.actions.length+'</strong></div></div><footer>'+(marker&&marker.linked_plan_id?'<button class="btn btn-primary r5-open-linked"><i class="ti ti-map-share"></i>Open detailed location map</button>':'')+'<button class="btn r5-close">Close</button></footer></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelector('.r5-open-linked')?.addEventListener('click',function(){modal.remove();smOpenPlan(marker.linked_plan_id);toast('Opened linked layout: '+(smLinkedPlanTitle(marker.linked_plan_id)||'plan'));});
+  modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
-function smSelectMapEvent(id){siteMapState.selectedEvent=(siteMapState.events||[]).find(function(e){return String(e.id)===String(id);})||null;smRenderCanvas();}
+function smSelectMapEvent(id){var ev=(siteMapState.events||[]).find(function(e){return String(e.id)===String(id);})||null;if(ev&&typeof imv2OpenIncidentReadOnly==='function'){imv2OpenIncidentReadOnly(ev.id);return;}siteMapState.selectedEvent=ev;smRenderCanvas();}
 function smClearMapEvent(){siteMapState.selectedEvent=null;smRenderCanvas();}
 function smSelectMapRisk(id){siteMapState.selectedRisk=(siteMapState.risks||[]).find(function(r){return String(r.id)===String(id);})||null;smRenderCanvas();}
 function smClearMapRisk(){siteMapState.selectedRisk=null;smRenderCanvas();}
@@ -42055,6 +42136,8 @@ function smSitePosition(site,i){
   };
 }
 function smEventPosition(ev,i){
+  var manual=((siteMapState.layout||{}).markers||[]).find(function(m){return m.record_type==='event'&&String(m.record_id)===String(ev.id);});
+  if(manual)return {x:manual.x,y:manual.y,manual:true};
   var lat=smCoord(ev,['lat','latitude','gps_lat','gps_latitude']);
   var lng=smCoord(ev,['lng','lon','long','longitude','gps_lng','gps_longitude']);
   if(lat!==null&&lng!==null)return {x:Math.max(4,Math.min(96,((lng+180)/360)*100)),y:Math.max(4,Math.min(96,((90-lat)/180)*100)),gps:true};
@@ -42082,14 +42165,27 @@ function smPositionSelectedSite(){
   toast('Click on the plan/map to position '+(site?smSiteName(site):'the selected location'));
   smRenderCanvas();
 }
+function smPositionRecord(type,id){
+  if(type!=='event'){toast('Only incident positioning is available from this record list.',false);return;}
+  siteMapState.placingRecord={type:type,id:id};siteMapState.placing=null;
+  toast('Click on the plan to position this incident record.');smRenderCanvas();
+}
 async function smCanvasClick(ev){
-  if(!siteMapState.placing)return;
-  var box=ev.currentTarget.getBoundingClientRect();
+  if(!siteMapState.placing&&!siteMapState.placingRecord)return;
+  if(ev.target.closest('button'))return;
+  var canvas=ev.target.closest('[data-sitemap-canvas]')||ev.currentTarget;
+  var box=canvas.getBoundingClientRect();
   var x=Math.max(2,Math.min(98,((ev.clientX-box.left)/box.width)*100));
   var y=Math.max(2,Math.min(98,((ev.clientY-box.top)/box.height)*100));
+  var layout=siteMapState.layout||smLayoutEmpty();
+  if(siteMapState.placingRecord){
+    var rec=siteMapState.placingRecord;
+    layout.markers=(layout.markers||[]).filter(function(m){return !(m.record_type===rec.type&&String(m.record_id)===String(rec.id));});
+    layout.markers.push({id:'smr'+Date.now(),record_type:rec.type,record_id:rec.id,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
+    siteMapState.layout=layout;siteMapState.placingRecord=null;await smSaveLayout();smRenderCanvas();toast('Incident position saved on the map.');return;
+  }
   var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteMapState.placing);});
   if(!site)return;
-  var layout=siteMapState.layout||smLayoutEmpty();
   var existing=smMarkerForSite(site)||{};
   layout.markers=(layout.markers||[]).filter(function(m){return String(m.site_key||m.site_id||m.site_name)!==smSiteKey(site)&&String(m.site_name||'')!==smSiteName(site);});
   layout.markers.push(Object.assign({},existing,{id:existing.id||('sm3'+Date.now()),site_id:site.id||null,site_key:smSiteKey(site),site_name:smSiteName(site),x:Number(x.toFixed(2)),y:Number(y.toFixed(2))}));
@@ -42249,9 +42345,9 @@ function smRenderCanvas(){
   var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
   var openEvents=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
   var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
-  el.innerHTML=context+'<div data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
+  el.innerHTML=context+'<div data-sitemap-canvas="true" data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing||siteMapState.placingRecord?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
-    +(siteMapState.placing?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the selected location</div>':'')
+    +(siteMapState.placing||siteMapState.placingRecord?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the '+(siteMapState.placingRecord?'incident':'selected location')+'</div>':'')
     +sites.map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var pos=smSitePosition(s,i), x=pos.x, y=pos.y;
@@ -42284,7 +42380,7 @@ function smRecordTitle(r,keys){return displayRecordRef(r,keys,'Record');}
 function smModuleButton(page,label){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page]))+'" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
 function smSection(name,icon,page,rows,keys,meta){
   return '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:9px 11px;border-bottom:1px solid var(--border)"><div style="font-weight:900;font-size:13px"><i class="ti '+icon+'"></i> '+escH(name)+' <span class="badge badge-grey">'+rows.length+'</span></div>'+smModuleButton(page,'Open')+'</div>'
-    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page]))+'" title="Open '+escH(name)+' module" style="cursor:pointer"><td style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><i class="ti ti-chevron-right" style="color:var(--text3);margin-top:2px"></i></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
+    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr title="'+(page==='events'?'Open incident details':'Open '+escH(name)+' module')+'" style="cursor:pointer"><td class="sm-record-open" data-page="'+escH(page)+'" data-id="'+escH(r.id||'')+'" style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><div style="display:flex;gap:5px">'+(page==='events'?'<button type="button" class="btn btn-sm sm-position-record" data-id="'+escH(r.id||'')+'" title="Position incident on map"><i class="ti ti-map-pin-plus"></i></button>':'')+'<i class="ti ti-chevron-right" style="color:var(--text3);margin-top:7px"></i></div></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
 }
 function smRenderDetails(site){
   var el=document.getElementById('sitemap-details');if(!el)return;
@@ -42308,6 +42404,8 @@ function smRenderDetails(site){
     +smSection('Risk assessments','ti-shield-check','risk',rec.risks,['ra_ref','title','activity'],function(r){return [r.overall_risk_level,r.status].filter(Boolean).join(' - ');})
     +smSection('Permits','ti-key','permit',rec.permits,['permit_ref','permit_type','work_description'],function(r){return [r.status,smSafeDate(r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Actions','ti-list-check','actions',rec.actions,['title','source_ref'],function(r){return [r.priority,r.status,r.due_date||r.target_date].filter(Boolean).join(' - ');});
+  el.querySelectorAll('.sm-position-record').forEach(function(b){b.addEventListener('click',function(ev){ev.stopPropagation();smPositionRecord('event',b.dataset.id);});});
+  el.querySelectorAll('.sm-record-open').forEach(function(cell){cell.addEventListener('click',function(ev){if(ev.target.closest('button'))return;if(cell.dataset.page==='events'&&typeof imv2OpenIncidentReadOnly==='function')imv2OpenIncidentReadOnly(cell.dataset.id);else showPage(cell.dataset.page,null);});});
 }
 
 function fireCertTypeLabel(t) {

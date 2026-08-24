@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('corrected HSE design release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-08-23-hse-design-requirements-4"/);
+  assert.match(index, /name="auris-build" content="2026-08-24-hse-design-requirements-5"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
@@ -29,7 +29,9 @@ test('all corrected design assets use the same release cache key', () => {
   ];
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const expected = ['auris-core.js','kpi-module-upgrade.css','bbs-observations.css','bbs-observations.js','incident-management-upgrade.css','incident-management-upgrade.js','risk-assessment-upgrade.css','risk-assessment-upgrade.js','auris-audits-inspections-static.css'].includes(asset)
+    const expected = asset === 'auris-core.js'
+      ? '20260824-1'
+      : ['kpi-module-upgrade.css','bbs-observations.css','bbs-observations.js','incident-management-upgrade.css','incident-management-upgrade.js','risk-assessment-upgrade.css','risk-assessment-upgrade.js','auris-audits-inspections-static.css'].includes(asset)
       ? '20260823-4'
       : ['auris-base.css'].includes(asset)
       ? '20260822-1'

@@ -16,7 +16,7 @@ var sidebarHandlerKeys={h0027:'dashboard',h0028:'executive',h0029:'ai-insights',
 var queued=false;
 function navKey(el){if(el.dataset.navKey)return el.dataset.navKey;if(el.dataset.page)return el.dataset.page;var handler=el.getAttribute('data-auris-onclick')||'';if(sidebarHandlerKeys[handler])return sidebarHandlerKeys[handler];var click=el.getAttribute('onclick')||'';var m=click.match(/(?:showPage|modulesMenuNavigate|mobileNavTo)\('([^']+)'/);if(m)return m[1];var id=el.id||'';if(id.indexOf('mob-btn-')===0)return id.slice(8);if(id.indexOf('nav-')===0){var alias={ai:'ai-insights',mtg:'meetings',docs:'documents'};return alias[id.slice(4)]||id.slice(4);}return '';}
 function applyModules(){document.querySelectorAll('.sidebar .nav-item,.modules-menu-item,.mob-nav-btn,.mob-module-btn,.mob-search-result').forEach(function(el){var key=navKey(el);if(!key)return;el.dataset.navKey=key;var icon=el.querySelector('i');if(icon)icon.classList.toggle('auris-module-icon',moduleKeys.has(key));});}
-function applyActions(){document.querySelectorAll('button i.ti,.btn i.ti,a.btn i.ti').forEach(function(icon){if(icon.classList.contains('auris-module-icon')||icon.classList.contains('auris-tab-icon')||icon.classList.contains('auris-indicator-icon')||icon.closest('.kpi-x-metric'))return;var kind='';Array.prototype.some.call(icon.classList,function(c){if(actionByClass[c]){kind=actionByClass[c];return true;}return false;});icon.classList.toggle('auris-action-icon',!!kind);if(kind)icon.dataset.actionIcon=kind;else delete icon.dataset.actionIcon;});}
+function applyActions(){document.querySelectorAll('button i.ti,.btn i.ti,a.btn i.ti').forEach(function(icon){if(icon.classList.contains('auris-module-icon')||icon.classList.contains('auris-tab-icon')||icon.classList.contains('auris-indicator-icon')||icon.closest('.auris-indicator-icon,.auris-indicator-card'))return;var kind='';Array.prototype.some.call(icon.classList,function(c){if(actionByClass[c]){kind=actionByClass[c];return true;}return false;});icon.classList.toggle('auris-action-icon',!!kind);if(kind)icon.dataset.actionIcon=kind;else delete icon.dataset.actionIcon;});}
 var indicatorTones=['blue','green','amber','red','purple','cyan'];
 var tabSelector='.page .module-tabs>button,.page [class$="-tabs"]>button,.page [class*="-tabs "]>button,.page [role="tab"],.page .rax-nav>button,.page .kpi-tab,.page .mtg-tab';
 function tabGlyph(text){
@@ -70,18 +70,45 @@ function indicatorGlyph(text){
   if(/incident|spill|risk|defect|overdue|expired|blocked/.test(text))return'ti-alert-triangle';if(/score|complete|ready|valid/.test(text))return'ti-circle-check';
   return'ti-chart-bar';
 }
+function indicatorAsset(text){
+  text=String(text||'').toLowerCase();
+  if(/incident|injur|spill|near miss/.test(text))return'incident';
+  if(/action|task|corrective|return/.test(text))return'action';
+  if(/risk|hazard|hipo|critical|blocked|off track|at risk/.test(text))return'risk';
+  if(/training|competenc|certificate|learning|course/.test(text))return'training';
+  if(/permit|authorisation/.test(text))return'permit';
+  if(/inspection|audit|finding|check/.test(text))return'inspection';
+  if(/people|worker|employee|contractor|learner|attendance/.test(text))return'people';
+  if(/tool|equipment|asset|maintenance|instrument/.test(text))return'tools';
+  if(/environment|waste|water|fuel|energy|carbon|co2|emission|recycl/.test(text))return'environment';
+  if(/document|sds|file|record|published|draft|review/.test(text))return'document';
+  if(/schedule|plan|calendar|due|target|expiry|expired/.test(text))return'schedule';
+  if(/legal|compliance|assurance|approval|approved|valid|ready|complete|closed/.test(text))return'compliance';
+  return'kpi';
+}
+function indicatorTone(text,index){
+  text=String(text||'').toLowerCase();
+  if(/incident|injur|spill|hipo|critical|high risk|off track|blocked|failed/.test(text))return'red';
+  if(/action|overdue|pending|awaiting|due|review|at risk|expir/.test(text))return'amber';
+  if(/complete|closed|approved|valid|ready|on track|training|competenc/.test(text))return'green';
+  if(/environment|water|energy|carbon|waste|inspection|audit|permit/.test(text))return'cyan';
+  if(/missing|hold|draft/.test(text))return'purple';
+  return indicatorTones[index%indicatorTones.length];
+}
 function applyIndicators(){
   var cards=new Set();
   document.querySelectorAll('.page [class~="metrics"]>.card,.page [class~="metrics"]>.metric,.page [class~="metrics"]>[class*="-metric"],.page [class*="-metrics"]>[class*="-metric"]').forEach(function(el){cards.add(el);});
+  document.querySelectorAll('.page .module-metrics>.card,.page .esg-standard-metrics>.card,.page .kpi-x-metric').forEach(function(el){cards.add(el);});
   document.querySelectorAll('.page [id*="-m3"]').forEach(function(el){var card=el.closest('.card');if(card)cards.add(card);});
   cards.forEach(function(card){
-    if(card.closest('#page-dashboard,#page-kpi')||card.classList.contains('auris-indicator-card'))return;
+    if(card.closest('#page-dashboard'))return;
     var siblings=Array.prototype.filter.call(card.parentElement?card.parentElement.children:[],function(el){return el.matches('.card,.metric,[class*="-metric"]');});
-    var idx=Math.max(0,siblings.indexOf(card));card.classList.add('auris-indicator-card');card.dataset.indicatorTone=indicatorTones[idx%indicatorTones.length];
+    var idx=Math.max(0,siblings.indexOf(card)),text=card.textContent||'';card.classList.add('auris-indicator-card');card.dataset.indicatorTone=indicatorTone(text,idx);
     var icon=card.querySelector(':scope>i');
     var iconShell=card.querySelector(':scope>[class*="metric-icon"],:scope>[class*="indicator-icon"]');
-    if(!icon&&!iconShell){icon=document.createElement('i');icon.className='ti '+indicatorGlyph(card.textContent);card.insertBefore(icon,card.firstChild);}
-    if(icon)icon.classList.add('auris-indicator-icon');
+    var artwork=iconShell||icon;
+    if(!artwork){artwork=document.createElement('i');artwork.className='ti '+indicatorGlyph(text);card.insertBefore(artwork,card.firstChild);}
+    artwork.classList.add('auris-indicator-icon');artwork.dataset.indicatorIcon=indicatorAsset(text);
     var value=card.querySelector('[id*="-m3"],.metric-value,[class*="metric-value"],.value,b,strong');if(value)value.classList.add('auris-indicator-value');
   });
 }
