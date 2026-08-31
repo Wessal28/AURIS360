@@ -8,6 +8,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('staging acceptance rejects production and requires the approved staging project', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /::error title=Staging acceptance failed::/);
   assert.match(source, /APPROVED_STAGING_REF = 'beoutmqttgfyyzndcdxu'/);
   assert.match(source, /PRODUCTION_REF = 'iarfxjhahzbhncsaohbg'/);
   assert.match(source, /Production application URLs are forbidden/);

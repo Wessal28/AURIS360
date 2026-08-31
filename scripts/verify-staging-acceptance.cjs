@@ -7,7 +7,11 @@ const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
 const PRODUCTION_HOSTS = new Set(['auris360.app', 'www.auris360.app', 'auris-360.vercel.app']);
 
 function fail(message) {
-  console.error(`Staging acceptance: ${message}`);
+  const detail = `Staging acceptance: ${message}`;
+  console.error(detail);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.error(`::error title=Staging acceptance failed::${detail.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+  }
   process.exit(1);
 }
 
