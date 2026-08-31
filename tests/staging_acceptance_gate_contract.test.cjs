@@ -27,13 +27,23 @@ test('four previously blank modules verify deployed render and controlled empty-
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {
     assert.match(source, new RegExp(`${table}\\?select=id`));
   }
-  for (const asset of ['auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const asset of ['auris-module-registry.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     assert.match(source, new RegExp(asset.replace(/\./g, '\\\.')));
   }
   for (const marker of ['No open incidents', 'No KPI data is available.', 'No engagement results for', 'No documents']) {
     assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(source, /presentation_state: rows\.length \? 'populated' : 'controlled_empty'/);
+});
+
+test('deployed module navigation is verified through the canonical registry', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  for (const marker of ["key:'executive'", "loader:'loadExecutive'", "key:'kpi'", "loader:'kpiLoadAll'", "key:'engagement'", "loader:'loadSafetyEngagement'", "key:'documents'", "loader:'loadDocs'"]) {
+    assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(source, /function moduleLoaderFor\(pageKey\)/);
+  assert.match(source, /pageLoader=moduleLoaderFor\(name\)/);
+  assert.doesNotMatch(source, /executive:loadExecutive/);
 });
 
 test('staging acceptance safely proves tenant-scoped write persistence', () => {
