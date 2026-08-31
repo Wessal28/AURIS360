@@ -3281,7 +3281,7 @@ function canAccessPage(pageKey) {
   // Executive Dashboard, AI Insights) are platform functions, NOT HSE
   // modules. They bypass the launch flag (Gate 1) and the per-company
   // module list (Gate 2), and are governed by role only (Gate 3).
-  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights','approvals','audit'];
+  var ADMIN_PAGES = window.AurisModuleRegistry.list({platform:true}).map(function(module){return module.key;}).filter(function(key){return key!=='dashboard';});
   var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
   var companyModuleAccess = co && Array.isArray(co.module_access) ? co.module_access : null;
   var currentLiveModules = (typeof moduleLiveKeys === 'function') ? moduleLiveKeys() : (typeof LAUNCHED_MODULES !== 'undefined' ? LAUNCHED_MODULES : []);
@@ -3372,6 +3372,22 @@ function closeTransientOverlays(){
   if(typeof _modulesOpen!=='undefined')_modulesOpen=false;
 }
 
+function loadObservationModule(){
+  if(typeof window.loadBbsObservations==='function')return window.loadBbsObservations();
+  return loadObservation();
+}
+function loadInspectionModule(){buildChecklist();return loadInsps();}
+function loadNoiseModule(){
+  if(typeof window.loadNoiseManagement==='function')return window.loadNoiseManagement();
+  return loadNoise();
+}
+function moduleLoaderFor(pageKey){
+  var registry=window.AurisModuleRegistry;
+  var manifest=registry&&registry.get(pageKey);
+  var loaderName=manifest&&manifest.loader;
+  return loaderName&&typeof window[loaderName]==='function'?window[loaderName]:null;
+}
+
 function showPage(name,el){
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
@@ -3397,10 +3413,10 @@ const activateRoutedPage=function(){
 };
 activateRoutedPage();
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,engagement:loadSafetyEngagement,workschedule:loadWorkSchedule,events:loadEvents,observation:()=>{if(typeof window.loadBbsObservations==='function')window.loadBbsObservations();else loadObservation();},inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,sitemap:loadSiteMap,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:()=>{if(typeof window.loadNoiseManagement==='function')window.loadNoiseManagement();else loadNoise();},meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
-if(L[name]){
+var pageLoader=moduleLoaderFor(name);
+if(pageLoader){
   try{
-    var pageLoadResult=L[name]();
+    var pageLoadResult=pageLoader();
     // Some module upgrades mount or rebuild their page synchronously inside
     // the loader. Reassert the route after that work, and once more after an
     // asynchronous loader settles.
@@ -35126,78 +35142,63 @@ document.addEventListener('keydown', function(e){
 // Filters by role using canAccessPage(), same as showPage() gating.
 // -----------------------------------------------------------------------
 // Module metadata: page key, icon, label, section
-var MODULES_DIR = [
-  // Main
-  {k:'dashboard',   i:'ti-layout-dashboard',   l:'HSE Control Centre',  sec:'Main'},
-  {k:'executive',   i:'ti-chart-bar',          l:'Executive Dashboard', sec:'Main'},
-  {k:'ai-insights', i:'ti-brain',              l:'AI Insights',         sec:'Main'},
-  // HSE Modules
-  {k:'kpi',         i:'ti-target',             l:'Objectives & KPIs',   sec:'HSE Modules'},
-  {k:'workschedule',i:'ti-calendar-event',     l:'Work Schedule',       sec:'HSE Modules'},
-  {k:'events',      i:'ti-alert-triangle',     l:'Incident Management', sec:'HSE Modules'},
-  {k:'observation', i:'ti-eye',                l:'BBS Observations',    sec:'HSE Modules'},
-  {k:'inspection',  i:'ti-clipboard-check',    l:'Audits & Inspections',sec:'HSE Modules'},
-  {k:'risk',        i:'ti-shield-check',       l:'Risk Assessment',     sec:'HSE Modules'},
-  {k:'tools',       i:'ti-tools',              l:'Tools & Equipment',   sec:'HSE Modules'},
-  {k:'fleet',       i:'ti-car',                l:'Fleet Management',    sec:'HSE Modules'},
-  {k:'atex',        i:'ti-flame',              l:'ATEX Areas',          sec:'HSE Modules'},
-  {k:'sitemap',     i:'ti-map-2',              l:'Site Map',            sec:'HSE Modules'},
-  {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
-  {k:'contractor',  i:'ti-helmet',           l:'Contractors',         sec:'HSE Modules'},
-  {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
-  {k:'fire',        i:'ti-flame',              l:'Fire Certificates',   sec:'HSE Modules'},
-  {k:'chemical',    i:'ti-flask',              l:'Chemical Control',    sec:'HSE Modules'},
-  {k:'ohealth',     i:'ti-stethoscope',        l:'Occupational Health', sec:'HSE Modules'},
-  {k:'ppe',         i:'ti-shield-check',       l:'PPE',                 sec:'HSE Modules'},
-  {k:'esg',         i:'ti-leaf',               l:'Environmental / ESG', sec:'HSE Modules'},
-  {k:'noise',       i:'ti-volume',             l:'Occupational Noise Management', sec:'HSE Modules'},
-  {k:'meetings',    i:'ti-notes',              l:'HSE Meetings',        sec:'HSE Modules'},
-  {k:'training',    i:'ti-certificate',        l:'Training',            sec:'HSE Modules'},
-  // Management
-  {k:'actions',     i:'ti-list-check',         l:'Master Action Plan',  sec:'Management'},
-  {k:'moc',         i:'ti-arrows-exchange',    l:'Management of Change',sec:'Management'},
-  {k:'legal',       i:'ti-scale',              l:'Legal Compliance',    sec:'Management'},
-  {k:'sop',         i:'ti-file-description',   l:'SOP Generator',       sec:'Management'},
-  {k:'swms',        i:'ti-file-check',         l:'SWMS / Method Statements', sec:'Management'},
-  {k:'documents',   i:'ti-files',              l:'Document Control',    sec:'Management'},
-  {k:'people',      i:'ti-id-badge',           l:'People',              sec:'Management'},
-  {k:'users',       i:'ti-users',              l:'Users & Roles',       sec:'Management'},
-  {k:'admin',       i:'ti-building',           l:'Companies',           sec:'Management'},
-  {k:'integrations',i:'ti-plug',               l:'Integrations',        sec:'Management'},
-  {k:'approvals',   i:'ti-circle-check',       l:'Approval Center',     sec:'Management'},
-  {k:'audit',       i:'ti-history',            l:'Audit Trail',         sec:'Management'},
-  {k:'settings',    i:'ti-settings',           l:'Settings',            sec:'Management'},
-];
+var MODULES_DIR=window.AurisModuleRegistry.list().filter(function(module){return !module.hidden;}).map(function(module){
+  return {k:module.key,i:module.icon,l:module.name,sec:module.legacySection,category:module.category,color:module.color};
+});
 
-function modulesMenuBuild() {
-  var menu = document.getElementById('modules-menu');
-  if(!menu) return;
-  // Filter by accessibility for the current user
-  var allowed = MODULES_DIR.filter(function(m){ return canAccessPage(m.k); });
-  if(allowed.length === 0) {
-    menu.innerHTML = '<div style="padding:14px;color:var(--text2);font-size:12px">No modules available.</div>';
-    return;
-  }
-  // Group by section in original order
-  var sections = {};
-  var sectionOrder = [];
-  allowed.forEach(function(m){
-    if(!sections[m.sec]) { sections[m.sec] = []; sectionOrder.push(m.sec); }
-    sections[m.sec].push(m);
+var AURIS_APP_FAVOURITES_KEY='auris360_app_favourites';
+function appLauncherFavourites(){
+  try{
+    var saved=JSON.parse(localStorage.getItem(AURIS_APP_FAVOURITES_KEY)||'[]');
+    return Array.isArray(saved)?saved.filter(function(key){return !!window.AurisModuleRegistry.get(key);}):[];
+  }catch(e){return [];}
+}
+function appLauncherSetFavourites(keys){
+  try{localStorage.setItem(AURIS_APP_FAVOURITES_KEY,JSON.stringify(keys));}catch(e){}
+}
+function appLauncherToggleFavourite(pageKey){
+  var keys=appLauncherFavourites();
+  var index=keys.indexOf(pageKey);
+  if(index===-1)keys.push(pageKey);else keys.splice(index,1);
+  appLauncherSetFavourites(keys);
+  appLauncherRenderApps(document.getElementById('auris-app-launcher-search')?.value||'');
+}
+function appLauncherCard(module,activePage,favourites){
+  var isActive=module.k===activePage;
+  var favourite=favourites.indexOf(module.k)!==-1;
+  return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
+    +'<button type="button" class="auris-app-favourite'+(favourite?' on':'')+'" data-favourite-key="'+escapeHtml(module.k)+'" aria-label="'+(favourite?'Remove from':'Add to')+' favourites" aria-pressed="'+(favourite?'true':'false')+'"><i class="ti ti-star'+(favourite?'-filled':'')+'"></i></button>'
+    +'<span class="auris-app-card-icon" style="background:'+module.color+'"><i class="ti '+module.i+'"></i></span>'
+    +'<span class="auris-app-card-label">'+escapeHtml(module.l)+'</span></div>';
+}
+function appLauncherRenderApps(query){
+  var host=document.getElementById('auris-app-launcher-body');if(!host)return;
+  var allowed=MODULES_DIR.filter(function(module){return canAccessPage(module.k);});
+  var term=String(query||'').trim().toLowerCase();
+  if(term)allowed=allowed.filter(function(module){return (module.l+' '+module.category+' '+module.k).toLowerCase().indexOf(term)!==-1;});
+  if(!allowed.length){host.innerHTML='<div class="auris-app-launcher-empty">No apps match your access and search.</div>';return;}
+  var activePage=(document.querySelector('.page.active')||{}).id||'';
+  if(activePage.startsWith('page-'))activePage=activePage.slice(5);
+  var favourites=appLauncherFavourites();
+  var sections={};var order=[];
+  var favouriteApps=allowed.filter(function(module){return favourites.indexOf(module.k)!==-1;});
+  if(favouriteApps.length){sections.Favourites=favouriteApps;order.push('Favourites');}
+  allowed.forEach(function(module){if(!sections[module.category]){sections[module.category]=[];order.push(module.category);}sections[module.category].push(module);});
+  host.innerHTML=order.map(function(section){return '<section class="auris-app-launcher-section"><h3 class="auris-app-launcher-section-title">'+escapeHtml(section)+'</h3><div class="auris-app-launcher-grid">'+sections[section].map(function(module){return appLauncherCard(module,activePage,favourites);}).join('')+'</div></section>';}).join('');
+  host.querySelectorAll('.auris-app-card').forEach(function(card){
+    function open(){modulesMenuNavigate(card.dataset.appKey);}
+    card.addEventListener('click',function(event){if(!event.target.closest('.auris-app-favourite'))open();});
+    card.addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
   });
-  // Determine which page is currently active
-  var activePage = (document.querySelector('.page.active') || {}).id || '';
-  if(activePage.startsWith('page-')) activePage = activePage.slice(5);
-
-  var html = '';
-  sectionOrder.forEach(function(sec){
-    html += '<div class="modules-menu-section">'+sec+'</div>';
-    sections[sec].forEach(function(m){
-      var isActive = (m.k === activePage);
-      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" data-auris-runtime-onclick="r0110" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.k]))+'"><i class="ti '+m.i+'"></i>'+escapeHtml(m.l)+'</div>';
-    });
-  });
-  menu.innerHTML = html;
+  host.querySelectorAll('.auris-app-favourite').forEach(function(button){button.addEventListener('click',function(event){event.stopPropagation();appLauncherToggleFavourite(button.dataset.favouriteKey);});});
+}
+function modulesMenuBuild(){
+  var menu=document.getElementById('modules-menu');if(!menu)return;
+  menu.classList.add('auris-app-launcher');
+  menu.innerHTML='<div class="auris-app-launcher-head"><div class="auris-app-launcher-title">AURIS Apps</div><input id="auris-app-launcher-search" class="auris-app-launcher-search" type="search" placeholder="Search apps..." aria-label="Search applications"></div><div id="auris-app-launcher-body" class="auris-app-launcher-body"></div>';
+  var search=document.getElementById('auris-app-launcher-search');
+  if(search)search.addEventListener('input',function(){appLauncherRenderApps(search.value);});
+  appLauncherRenderApps('');
 }
 
 function modulesMenuToggle(evt) {
@@ -36138,37 +36139,7 @@ async function adminGroupAI(type) {
 // -- MODULE ACCESS MANAGER (per company) -------------------------------------
 // The catalogue of HSE modules a company can be granted. Admin/account pages
 // (users, settings, executive) are NOT here - company admins always get those.
-var MODULE_CATALOGUE = [
-  {k:'dashboard',    l:'HSE Control Centre'},
-  {k:'events',      l:'Incident Management'},
-  {k:'observation', l:'BBS Observations'},
-  {k:'kpi',         l:'Objectives & KPIs'},
-  {k:'workschedule',l:'Work Schedule'},
-  {k:'risk',        l:'Risk Assessments'},
-  {k:'inspection',  l:'Audits & Inspections'},
-  {k:'permit',      l:'Permit to Work'},
-  {k:'training',    l:'Training'},
-  {k:'meetings',    l:'HSE Meetings'},
-  {k:'ppe',         l:'PPE'},
-  {k:'emergency',   l:'Emergency'},
-  {k:'fire',        l:'Fire Certificates'},
-  {k:'chemical',    l:'Chemical Control'},
-  {k:'ohealth',     l:'Occupational Health'},
-  {k:'noise',       l:'Occupational Noise Management'},
-  {k:'esg',         l:'Environmental / ESG'},
-  {k:'contractor',  l:'Contractors'},
-  {k:'tools',       l:'Tools Register'},
-  {k:'fleet',       l:'Fleet Management'},
-  {k:'atex',        l:'ATEX Areas'},
-  {k:'sitemap',     l:'Site Map'},
-  {k:'legal',       l:'Legal Compliance'},
-  {k:'sop',         l:'SOP Generator'},
-  {k:'swms',        l:'SWMS / Method Statements'},
-  {k:'documents',   l:'Document Control'},
-  {k:'people',      l:'People'},
-  {k:'actions',     l:'Master Action Plan'},
-  {k:'moc',         l:'Management of Change'}
-];
+var MODULE_CATALOGUE=window.AurisModuleRegistry.list().filter(function(module){return module.companyScoped||module.key==='dashboard';}).map(function(module){return {k:module.key,l:module.name,i:module.icon,dependencies:module.dependencies};});
 // The default set granted to a client company now that AURIS360 is moving from
 // rollout mode to a full production suite. Role rules still hide sensitive pages.
 var DEFAULT_CLIENT_MODULES = (typeof LAUNCHED_MODULES !== 'undefined' && Array.isArray(LAUNCHED_MODULES))
@@ -36320,37 +36291,7 @@ function adminCloseAccessModal(){document.getElementById('adm3access-modal').sty
 // Catalog of all known client modules with friendly names and icons. Module
 // access controls availability by company; role rules still control who can
 // open sensitive areas.
-var MODULE_CATALOG = [
-  { key:'dashboard',   icon:'ti-layout-dashboard', name:'HSE Control Centre', note:'Always enabled' },
-  { key:'kpi',         icon:'ti-target',           name:'Objectives & KPIs' },
-  { key:'events',      icon:'ti-alert-triangle',   name:'Incident Management' },
-  { key:'observation', icon:'ti-eye',              name:'BBS Observations' },
-  { key:'training',    icon:'ti-school',           name:'Training' },
-  { key:'meetings',    icon:'ti-calendar',         name:'HSE Meetings' },
-  { key:'ppe',         icon:'ti-shield',           name:'PPE Management' },
-  { key:'emergency',   icon:'ti-flame',            name:'Emergency' },
-  { key:'permit',      icon:'ti-id-badge',         name:'Permit to Work' },
-  { key:'fire',        icon:'ti-flame',            name:'Fire Certificates' },
-  { key:'chemical',    icon:'ti-flask',            name:'Chemical Control' },
-  { key:'fleet',       icon:'ti-car',              name:'Fleet Management' },
-  { key:'atex',        icon:'ti-flame',            name:'ATEX Areas' },
-  { key:'sitemap',     icon:'ti-map-2',            name:'Site Map' },
-  { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
-  { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
-  { key:'tools',       icon:'ti-tool',             name:'Tools & Equipment' },
-  { key:'contractor',  icon:'ti-users',            name:'Contractors' },
-  { key:'ohealth',     icon:'ti-stethoscope',      name:'Occupational Health' },
-  { key:'noise',       icon:'ti-volume',           name:'Occupational Noise Management' },
-  { key:'legal',       icon:'ti-scale',            name:'Legal Register' },
-  { key:'workschedule',icon:'ti-calendar-week',    name:'Work Schedule' },
-  { key:'documents',   icon:'ti-file',             name:'Documents' },
-  { key:'sop',         icon:'ti-book',             name:'SOPs' },
-  { key:'swms',        icon:'ti-file-check',       name:'SWMS / Method Statements' },
-  { key:'people',      icon:'ti-id-badge',         name:'People' },
-  { key:'actions',     icon:'ti-checkbox',         name:'Action Tracker' },
-  { key:'moc',         icon:'ti-arrows-exchange',  name:'Management of Change' },
-  { key:'esg',         icon:'ti-leaf',             name:'ESG' },
-];
+var MODULE_CATALOG=window.AurisModuleRegistry.list().filter(function(module){return module.companyScoped||module.key==='dashboard';}).map(function(module){return {key:module.key,icon:module.icon,name:module.name,note:module.key==='dashboard'?'Always enabled':'',dependencies:module.dependencies};});
 
 // Module presets - for one-click setup of common configurations
 var MODULE_PRESETS = {
@@ -38183,59 +38124,8 @@ var _mobileHistory   = ['dashboard'];
 var _mobileCurrentPg = 'dashboard';
 var _modulesOpen     = false;
 
-var MOBILE_MODULES = [
-  {k:'dashboard',    l:'HSE Control Centre', i:'ti-layout-dashboard', r:['all']},
-  {k:'executive',    l:'Executive',    i:'ti-chart-bar',          r:['executive','admin','hse_manager','sephs_admin']},
-  {k:'kpi',          l:'KPIs',         i:'ti-target',             r:['all']},
-  {k:'workschedule', l:'Schedule',     i:'ti-calendar',           r:['all']},
-  {k:'events',       l:'Incidents',    i:'ti-alert-triangle',     r:['all']},
-  {k:'observation',  l:'Observations', i:'ti-eye',                r:['all']},
-  {k:'inspection',   l:'Inspections',  i:'ti-clipboard-check',    r:['all']},
-  {k:'risk',         l:'Risk',         i:'ti-shield-exclamation', r:['all']},
-  {k:'tools',        l:'Tools',        i:'ti-tool',               r:['all']},
-  {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
-  {k:'atex',         l:'ATEX',         i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
-  {k:'sitemap',      l:'Site Map',     i:'ti-map-2',              r:['admin','hse_manager','hse_officer','site_manager','supervisor','auditor','sephs_admin']},
-  {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
-  {k:'contractor',   l:'Contractors',  i:'ti-users-group',        r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
-  {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
-  {k:'fire',         l:'Fire Certs',    i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','auditor','sephs_admin']},
-  {k:'chemical',     l:'Chemicals',     i:'ti-flask',              r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
-  {k:'ohealth',      l:'OH&S',         i:'ti-stethoscope',        r:['admin','hse_manager','hr','sephs_admin']},
-  {k:'ppe',          l:'PPE',          i:'ti-shield',             r:['all']},
-  {k:'esg',          l:'ESG',          i:'ti-leaf',               r:['all']},
-  {k:'noise',        l:'Noise',        i:'ti-volume',             r:['all']},
-  {k:'meetings',     l:'Meetings',     i:'ti-users',              r:['all']},
-  {k:'training',     l:'Training',     i:'ti-school',             r:['all']},
-  {k:'actions',      l:'Actions',      i:'ti-checklist',          r:['all']},
-  {k:'moc',          l:'MOC',          i:'ti-arrows-exchange',    r:['admin','hse_manager','hse_officer','manager','site_manager','auditor','sephs_admin']},
-  {k:'legal',        l:'Legal',        i:'ti-gavel',              r:['admin','hse_manager','auditor','sephs_admin']},
-  {k:'sop',          l:'SOPs',         i:'ti-book',               r:['admin','hse_manager','supervisor','sephs_admin']},
-  {k:'swms',         l:'SWMS',         i:'ti-file-check',         r:['admin','hse_manager','hse_officer','manager','site_manager','supervisor','sephs_admin']},
-  {k:'documents',    l:'Documents',    i:'ti-files',              r:['admin','hse_manager','hr','auditor','sephs_admin']},
-  {k:'people',       l:'People',       i:'ti-users-group',        r:['admin','hse_manager','hr','sephs_admin']},
-  {k:'users',        l:'Users',        i:'ti-user-cog',           r:['admin','hse_manager','sephs_admin']},
-  {k:'admin',        l:'Company',      i:'ti-building',           r:['admin','sephs_admin']},
-  {k:'integrations', l:'Integrations', i:'ti-plug',               r:['admin','hse_manager','sephs_admin']},
-  {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','hse_officer','sephs_admin']},
-  {k:'approvals',    l:'Approvals',    i:'ti-circle-check',       r:['admin','hse_manager','hse_officer','sephs_admin']},
-  {k:'audit',        l:'Audit Trail',  i:'ti-history',            r:['admin','hse_manager','hse_officer','sephs_admin']},
-  {k:'settings',     l:'Settings',     i:'ti-settings',           r:['admin','hse_manager','sephs_admin']},
-];
-
-var MODULE_COLORS = {
-  dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
-  workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
-  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5', atex:'#C2410C', sitemap:'#0F6E56',
-  moc:'#0F6E56',
-  permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C', chemical:'#7C3AED',
-  ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
-  noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
-  actions:'#DC2626', legal:'#374151', sop:'#374151',
-  documents:'#374151', people:'#185FA5', users:'#5B21B6',
-  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6', approvals:'#1D9E75', audit:'#374151',
-  settings:'#374151'
-};
+var MOBILE_MODULES=window.AurisModuleRegistry.list().filter(function(module){return !module.hidden;}).map(function(module){return {k:module.key,l:module.shortName||module.name,i:module.icon,r:['all']};});
+var MODULE_COLORS=window.AurisModuleRegistry.list().reduce(function(colors,module){colors[module.key]=module.color;return colors;},{});
 
 function mobileApplyAccess() {
   ['dashboard','events','observation','kpi'].forEach(function(page){

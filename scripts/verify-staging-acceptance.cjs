@@ -7,7 +7,11 @@ const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
 const PRODUCTION_HOSTS = new Set(['auris360.app', 'www.auris360.app', 'auris-360.vercel.app']);
 
 function fail(message) {
-  console.error(`Staging acceptance: ${message}`);
+  const detail = `Staging acceptance: ${message}`;
+  console.error(detail);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.error(`::error title=Staging acceptance failed::${detail.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+  }
   process.exit(1);
 }
 
@@ -99,7 +103,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -114,12 +118,18 @@ async function main() {
   ];
   for (const [label, asset, markers] of functionalViews) requireMarkers(assetSources.get(asset), label, markers);
 
+  const registrySource = assetSources.get('auris-module-registry.js');
+  requireMarkers(registrySource, 'Module registry', [
+    "key:'executive'", "loader:'loadExecutive'",
+    "key:'kpi'", "loader:'kpiLoadAll'",
+    "key:'engagement'", "loader:'loadSafetyEngagement'",
+    "key:'documents'", "loader:'loadDocs'"
+  ]);
   const coreSource = assetSources.get('auris-core.js');
   requireMarkers(coreSource, 'Module navigation', [
-    'executive:loadExecutive',
-    'kpi:kpiLoadAll',
-    'engagement:loadSafetyEngagement',
-    'documents:loadDocs'
+    'function moduleLoaderFor(pageKey)',
+    'window.AurisModuleRegistry',
+    'pageLoader=moduleLoaderFor(name)'
   ]);
 
   const runtime = runtimeConfig(await responseText(new URL('/api/runtime-config', preview).href, {

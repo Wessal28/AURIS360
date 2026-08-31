@@ -1,0 +1,20 @@
+#modules-menu.auris-app-launcher{width:min(720px,calc(100vw - 40px));max-height:min(78vh,720px);padding:0;overflow:hidden;border-radius:16px;box-shadow:0 24px 70px rgba(15,23,42,.22)}
+#modules-menu .auris-app-launcher-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:16px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+#modules-menu .auris-app-launcher-title{font-size:16px;font-weight:800;color:var(--text);white-space:nowrap}
+#modules-menu .auris-app-launcher-search{flex:1;min-width:0;height:38px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:#F8FAFC;color:var(--text);font:inherit}
+#modules-menu .auris-app-launcher-search:focus{outline:2px solid #93C5FD;border-color:#2563EB;background:#fff}
+#modules-menu .auris-app-launcher-body{max-height:calc(min(78vh,720px) - 72px);overflow:auto;padding:6px 16px 18px}
+#modules-menu .auris-app-launcher-section{margin-top:14px}
+#modules-menu .auris-app-launcher-section-title{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin:0 0 8px}
+#modules-menu .auris-app-launcher-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#modules-menu .auris-app-card{position:relative;min-height:104px;padding:12px 8px 10px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);text-align:center;cursor:pointer}
+#modules-menu .auris-app-card:hover,#modules-menu .auris-app-card:focus-visible{background:#F8FAFC;border-color:#E2E8F0;outline:none}
+#modules-menu .auris-app-card.active{background:#EFF6FF;border-color:#BFDBFE}
+#modules-menu .auris-app-card-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 8px;border-radius:12px;color:#fff;box-shadow:0 8px 18px rgba(15,23,42,.13)}
+#modules-menu .auris-app-card-icon i{font-size:22px}
+#modules-menu .auris-app-card-label{display:block;font-size:11px;font-weight:700;line-height:1.25}
+#modules-menu .auris-app-favourite{position:absolute;top:5px;right:5px;width:24px;height:24px;border:0;background:transparent;color:#94A3B8;border-radius:50%;cursor:pointer}
+#modules-menu .auris-app-favourite:hover{background:#E2E8F0;color:#D97706}
+#modules-menu .auris-app-favourite.on{color:#D97706}
+#modules-menu .auris-app-launcher-empty{padding:34px 12px;text-align:center;color:var(--text2);font-size:13px}
+@media(max-width:760px){#modules-menu.auris-app-launcher{width:calc(100vw - 24px)}#modules-menu .auris-app-launcher-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}

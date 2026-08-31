@@ -30,5 +30,5 @@ test('SafetyOS degrades to a conservative live-record decision and never grants 
 });
 
 test('the repaired SafetyOS client is cache-busted for deployment', () => {
-  assert.match(html, /auris-core\.js\?v=20260824-1/);
+  assert.match(html, /auris-core\.js\?v=20260831-1/);
 });
