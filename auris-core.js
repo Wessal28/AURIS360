@@ -7081,6 +7081,9 @@ function coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus){
   var from=String(fromStatus||'').toLowerCase();
   var to=String(toStatus||'').toLowerCase();
   if(!from||from===to)return true;
+  if(typeof AurisWorkflowService!=='undefined'&&typeof AurisModuleRegistry!=='undefined'&&AurisModuleRegistry.workflowOf(moduleName)){
+    return AurisWorkflowService.canTransition(moduleName,from,to,{companyId:ccid()});
+  }
   var moduleRules=CORE_WORKFLOW_TRANSITIONS[moduleName];
   if(!moduleRules)return true;
   return Array.isArray(moduleRules[from])&&moduleRules[from].includes(to);
@@ -7096,6 +7099,15 @@ function coreWorkflowRequireTransition(moduleName,fromStatus,toStatus,label){
   if(coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus))return true;
   toast((label||'Record')+' cannot move directly from '+auditLabel(fromStatus||'unknown')+' to '+auditLabel(toStatus||'unknown')+'. Follow the workflow steps shown on the record.',false);
   return false;
+}
+
+function workflowPolicyFor(moduleName){
+  if(!window.AurisWorkflowService)return null;
+  return window.AurisWorkflowService.policy(moduleName,{companyId:ccid()});
+}
+function workflowConfigureTenant(companyId,moduleName,configuration){
+  if(!isSA()&&companyId!==ccid())throw new Error('Only SEPHS administrators may configure another company workflow.');
+  return window.AurisWorkflowService.configure(companyId,moduleName,configuration);
 }
 function coreWorkflowRequireDirectEdit(moduleName,fromStatus,toStatus,label){
   if(coreWorkflowDirectEditAllowed(moduleName,fromStatus,toStatus))return true;
