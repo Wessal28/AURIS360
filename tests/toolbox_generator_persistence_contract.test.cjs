@@ -38,7 +38,7 @@ test('toolbox talk download is formatted Word with a print/PDF option', () => {
 });
 
 test('general product release assets are cache-busted', () => {
-  assert.match(html, /auris-core\.js\?v=20260824-1/);
+  assert.match(html, /auris-core\.js\?v=20260831-1/);
   assert.match(html, /auris-static-event-handlers\.js\?v=20260823-4/);
   assert.match(html, /auris-ai-insights-static\.css\?v=20260823-4/);
 });

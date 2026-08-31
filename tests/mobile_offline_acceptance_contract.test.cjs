@@ -57,9 +57,9 @@ assert.match(functionSource('offlineSyncObservation'), /offlineUploadObservation
 
 // Mobile navigation remains role-gated and field-reporting forms expose their
 // compact mobile mode rather than a desktop-only surface.
-assert.match(html, /var MOBILE_MODULES = \[/);
+assert.match(html, /var MOBILE_MODULES=window\.AurisModuleRegistry\.list\(\)\.filter\([\s\S]*!module\.hidden[\s\S]*\.map/);
 for (const page of ['dashboard', 'events', 'observation', 'inspection', 'risk']) {
-  assert.match(html, new RegExp(`\\{k:['"]${page}['"]`), `mobile directory is missing ${page}`);
+  assert.match(html, new RegExp(`\\{key:['"]${page}['"]`), `module registry is missing ${page}`);
 }
 assert.match(functionSource('mobileApplyAccess'), /canAccessPage\(m\.k\)/);
 assert.match(functionSource('imsSetFormMode'), /mobile-form3mode/);

@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-08-24-hse-design-requirements-5"/>
+<meta name="auris-build" content="2026-08-31-modular-foundation-1"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -41,7 +41,8 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-core.js?v=20260824-1"></script>
+<script src="auris-module-registry.js?v=20260831-1"></script>
+<script src="auris-core.js?v=20260831-1"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260823-4">
 <link rel="stylesheet" href="safety-engagement.css?v=20260823-4">
 <link rel="stylesheet" href="bbs-observations.css?v=20260823-4">
@@ -59,6 +60,7 @@
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
+<link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
@@ -321,7 +323,7 @@
   <div class="modules-dropdown">
     <button class="topbar-btn" data-auris-onclick="h0066" id="modules-trigger" aria-haspopup="true">
       <i class="ti ti-apps"></i>
-      <span>Modules</span>
+      <span>Apps</span>
       <i class="ti ti-chevron-down auris-shell-s-ab19584647"></i>
     </button>
     <div class="modules-menu" id="modules-menu"></div>
