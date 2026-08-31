@@ -28,7 +28,7 @@ test('four previously blank modules verify deployed render and controlled empty-
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {
     assert.match(source, new RegExp(`${table}\\?select=id`));
   }
-  for (const asset of ['auris-module-registry.js', 'auris-module-runtime.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const asset of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     assert.match(source, new RegExp(asset.replace(/\./g, '\\\.')));
   }
   for (const marker of ['No open incidents', 'No KPI data is available.', 'No engagement results for', 'No documents']) {

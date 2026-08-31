@@ -29,7 +29,7 @@ function activate(key,options){
   var status=readiness(key,options.enabledKeys);
   if(!status.manifest)throw new Error('Unknown AURIS module: '+key);
   if(options.strictDependencies&&status.missing.length)throw new Error('Module '+key+' requires: '+status.missing.join(', '));
-  var previous=activeKey,context={key:key,previousKey:previous,manifest:status.manifest,missingDependencies:status.missing,element:options.element||null};
+  var previous=activeKey,context={key:key,previousKey:previous,manifest:status.manifest,missingDependencies:status.missing,element:options.element||null,services:root.AurisPlatformServices||null};
   if(previous&&previous!==key){
     if(emit('before-leave',context,true)===false)return {ok:false,cancelled:true,key:key};
     if(callHook(previous,'beforeLeave',context)===false)return {ok:false,cancelled:true,key:key};

@@ -35,12 +35,19 @@ The registry also supplies dependency and workflow services:
 
 Incident Management is the reference workflow manifest. Its current production record handlers remain authoritative; the declarative map documents the target states and allowed transitions without silently rewriting stored records. Later slices will move mutation enforcement behind the shared workflow service.
 
+## Foundation 3
+
+`auris-platform-services.js` is the stable service boundary for independently loaded applications. It exposes `auth`, `api`, `rbac`, `audit`, and `notifications` facades without giving modules direct access to mutable core globals. The existing production implementations are registered as compatibility adapters by `auris-core.js`, allowing modules to migrate incrementally without changing authentication, tenant isolation, role rules, audit evidence, or notification delivery.
+
+Every module lifecycle context now receives the same service container as `context.services`. New module code should use that container (or `AurisPlatformServices`) instead of calling core globals such as `api`, `prof`, `tok`, `canAccessPage`, `auditLogEvent`, or `queueNotification` directly.
+
+The service container publishes readiness through `health()`, `ready()`, `subscribe()`, and the `auris:service-ready` DOM event. This makes missing platform capabilities diagnosable before a module starts.
+
 ## Next slices
 
-1. Extract authentication, API, RBAC, audit, and notification services from `auris-core.js`.
-2. Render the shared module layout contract in Incident Management.
-3. Enforce Incident Management transitions through a tenant-configurable workflow service.
-4. Connect the reusable Approval Centre rules to the workflow service.
-5. Convert Risk Assessment, Permit to Work, Document Control, MOC, and Master Action Plan to the shared engine.
+1. Render the shared module layout contract in Incident Management.
+2. Enforce Incident Management transitions through a tenant-configurable workflow service.
+3. Connect the reusable Approval Centre rules to the workflow service.
+4. Convert Risk Assessment, Permit to Work, Document Control, MOC, and Master Action Plan to the shared engine.
 
 Every slice must preserve company isolation, role enforcement, offline field drafts, deep links, audit evidence, and release-readiness contracts.
