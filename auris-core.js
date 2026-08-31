@@ -3397,25 +3397,33 @@ function showPage(name,el){
   }
 
 closeTransientOverlays();
-// Shared page CSS owns visibility; routing only changes the active state.
-document.querySelectorAll('.page').forEach(p=>{
-  p.classList.remove('active');
-});
-document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 const activateRoutedPage=function(){
+  // Shared page CSS owns visibility; routing only changes the active state.
+  document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(item){item.classList.remove('active');});
   const target=document.getElementById('page-'+name);
   if(!target)return null;
   target.classList.add('active');
   // Dynamic/upgraded modules must not be allowed to retain a stale inline
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
+  if(el&&el.classList)el.classList.add('active');
   return target;
 };
-activateRoutedPage();
-if(el&&el.classList)el.classList.add('active');
 var pageLoader=moduleLoaderFor(name);
-if(pageLoader){
+var moduleRuntime=window.AurisModuleRuntime;
+if(moduleRuntime){
   try{
+    var enabledModules=co&&Array.isArray(co.module_access)?co.module_access:null;
+    var activationResult=moduleRuntime.activate(name,{element:el,loader:pageLoader,activateView:activateRoutedPage,enabledKeys:enabledModules,strictDependencies:false});
+    if(activationResult&&typeof activationResult.then==='function')activationResult.then(activateRoutedPage,function(error){activateRoutedPage();console.error('Module load failed ('+name+'):',error);});
+  }catch(error){
+    activateRoutedPage();
+    console.error('Module load failed ('+name+'):',error);
+  }
+}else if(pageLoader){
+  try{
+    activateRoutedPage();
     var pageLoadResult=pageLoader();
     // Some module upgrades mount or rebuild their page synchronously inside
     // the loader. Reassert the route after that work, and once more after an
@@ -3431,7 +3439,7 @@ if(pageLoader){
     activateRoutedPage();
     console.error('Module load failed ('+name+'):',error);
   }
-}
+}else activateRoutedPage();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
   if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
@@ -36169,6 +36177,11 @@ function moduleSanitizeAccess(mods,opts){
     if(opts.liveOnly&&live.indexOf(k)===-1)return;
     out.push(k);
   });
+  if(opts.includeDependencies!==false&&window.AurisModuleRegistry){
+    out=window.AurisModuleRegistry.dependencyClosure(out).filter(function(k){
+      return (!known.length||known.indexOf(k)!==-1||k==='dashboard')&&(!opts.liveOnly||live.indexOf(k)!==-1);
+    });
+  }
   if(out.indexOf('dashboard')===-1)out.unshift('dashboard');
   return out;
 }
@@ -36223,7 +36236,10 @@ async function adminModToggle(cb){
   var c=(adminCompaniesData||[]).find(function(x){return x.id===companyId;});
   var acc = c && Array.isArray(c.module_access) ? c.module_access.slice() : ['dashboard'];
   if(cb.checked){ if(acc.indexOf(mod)===-1) acc.push(mod); }
-  else { acc = acc.filter(function(m){return m!==mod;}); }
+  else {
+    var dependants=window.AurisModuleRegistry.dependantsOf(mod,{recursive:true});
+    acc = acc.filter(function(m){return m!==mod&&dependants.indexOf(m)===-1;});
+  }
   var ok = await adminModSave(companyId, acc);
   if(ok){ toast('Updated'); adminLoadModuleAccess(); }
   else { cb.checked = !cb.checked; }
@@ -36350,7 +36366,11 @@ function toggleModuleAccess(key, checked) {
   if (key === 'dashboard') return;  // always on, can't toggle
   var idx = currentModuleAccess.indexOf(key);
   if (checked && idx === -1) currentModuleAccess.push(key);
-  else if (!checked && idx !== -1) currentModuleAccess.splice(idx, 1);
+  else if (!checked && idx !== -1) {
+    var dependants=window.AurisModuleRegistry.dependantsOf(key,{recursive:true});
+    currentModuleAccess=currentModuleAccess.filter(function(moduleKey){return moduleKey!==key&&dependants.indexOf(moduleKey)===-1;});
+  }
+  currentModuleAccess=moduleSanitizeAccess(currentModuleAccess);
   renderModuleAccessList();
 }
 

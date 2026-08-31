@@ -103,7 +103,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-module-runtime.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -124,6 +124,9 @@ async function main() {
     "key:'kpi'", "loader:'kpiLoadAll'",
     "key:'engagement'", "loader:'loadSafetyEngagement'",
     "key:'documents'", "loader:'loadDocs'"
+  ]);
+  requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
+    "version:'1.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"
   ]);
   const coreSource = assetSources.get('auris-core.js');
   requireMarkers(coreSource, 'Module navigation', [

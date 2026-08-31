@@ -28,7 +28,7 @@ test('four previously blank modules verify deployed render and controlled empty-
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {
     assert.match(source, new RegExp(`${table}\\?select=id`));
   }
-  for (const asset of ['auris-module-registry.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const asset of ['auris-module-registry.js', 'auris-module-runtime.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     assert.match(source, new RegExp(asset.replace(/\./g, '\\\.')));
   }
   for (const marker of ['No open incidents', 'No KPI data is available.', 'No engagement results for', 'No documents']) {
@@ -45,6 +45,7 @@ test('deployed module navigation is verified through the canonical registry', ()
   assert.match(source, /function moduleLoaderFor\(pageKey\)/);
   assert.match(source, /pageLoader=moduleLoaderFor\(name\)/);
   assert.doesNotMatch(source, /executive:loadExecutive/);
+  for (const marker of ['activate:activate', 'readiness:readiness', "'auris:module-'+phase"]) assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
 test('staging acceptance safely proves tenant-scoped write persistence', () => {
