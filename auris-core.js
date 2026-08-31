@@ -38846,6 +38846,7 @@ var APPROVAL_SOURCE_ADAPTERS = [
   {key:'noise_map',module:'Occupational Noise Management',table:'noise_mgmt_maps',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','map_ref','reference'],title:['name','title'],approver:['reviewer_name','approver_name'],due:['review_due_date'],confidentiality:['confidentiality','privacy_level'],stage:'Noise-map review',opener:'noise_map',entity:'maps'},
   {key:'noise_report',module:'Occupational Noise Management',table:'noise_mgmt_reports',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','report_ref','reference'],title:['name','title'],approver:['approver_name','reviewer_name'],due:['review_due_date','issued_at'],confidentiality:['confidentiality','privacy_level'],stage:'Noise report approval',opener:'noise_record',entity:'reports'}
 ];
+if(window.AurisApprovalCentre)window.AurisApprovalCentre.registerAdapters(APPROVAL_SOURCE_ADAPTERS);
 
 function approvalsCanView(){
   return ['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) !== -1;
@@ -38938,6 +38939,7 @@ async function loadApprovals(){
       });
     });
     approvalCenterRows.sort(function(a,b){var ad=approvalsDate(a.due_date)||new Date('2999-12-31'),bd=approvalsDate(b.due_date)||new Date('2999-12-31');return ad-bd||(approvalsDate(b.updated_at)||0)-(approvalsDate(a.updated_at)||0);});
+    if(window.AurisApprovalCentre)approvalCenterRows=window.AurisApprovalCentre.ingest(approvalCenterRows);
     approvalsRender();
   }catch(e){
     el.innerHTML='<tr><td colspan="8" style="padding:18px">'+setupFriendlyMessage('Approval Center',e.message)+'</td></tr>';
@@ -38997,6 +38999,7 @@ function approvalsRender(){
 
 async function approvalsOpen(rowKey){
   var x=(approvalCenterRows||[]).find(function(r){return r.row_key===rowKey;});if(!x)return toast('This approval is no longer in the current queue. Refresh and try again.',false);
+  if(window.AurisApprovalCentre){try{window.AurisApprovalCentre.assertSource(x,{companyId:approvalsCompanyFilter()});}catch(error){return toast(error.message,false);}}
   if(x.page&&!canAccessPage(x.page))return toast('Your current role cannot open '+x.module+'.',false);
   try{
     if(x.opener==='contractor_document'&&typeof cmuOpenDocument==='function'){showPage('contractor',null);return setTimeout(function(){cmuOpenDocument(x.open_id);},350);}
