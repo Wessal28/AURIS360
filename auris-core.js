@@ -36204,6 +36204,10 @@ async function adminLoadModuleAccess() {
   if(!adminCompaniesData || !adminCompaniesData.length) await adminLoadAll();
   var cos = (adminCompaniesData||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
   if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No companies yet</div>'; return; }
+  if(window.AurisApplicationsAdmin){
+    window.AurisApplicationsAdmin.renderPortfolio(el,cos,{launchedKeys:moduleLiveKeys(),onRefresh:adminLoadModuleAccess,onConfigure:function(companyId){openModuleAccess(companyId);},onBlocked:function(impact){toast('Application change is blocked: '+impact.blocked.join(', '),false);},onApply:async function(company,impact){var ok=await adminModSave(company.id,impact.next);if(ok){company.module_access=impact.next.slice();toast((impact.action==='enable'?'Installed ':'Uninstalled ')+auditLabel(impact.moduleKey)+(impact.remove.length>1?' with '+(impact.remove.length-1)+' dependent application(s)':''));adminLoadModuleAccess();}}});
+    return;
+  }
   var h='';
   cos.forEach(function(c){
     var acc = moduleSanitizeAccess(c.module_access||[]);
