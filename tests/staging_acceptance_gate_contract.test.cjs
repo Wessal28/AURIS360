@@ -23,6 +23,15 @@ test('staging acceptance authenticates without exposing credentials and verifies
   assert.doesNotMatch(source, /console\.log\([^\n]*(password|access_token|anonKey)/i);
 });
 
+test('staging authentication tolerates transient cold starts without masking credential failures', () => {
+  const script = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(script, /retryableRequestError/);
+  assert.match(script, /error\.name === 'AbortError'/);
+  assert.match(script, /status === 429 \|\| status >= 500/);
+  assert.match(script, /timeoutMs: 30000/);
+  assert.match(script, /attempts: 3/);
+});
+
 test('four previously blank modules verify deployed render and controlled empty-state contracts', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {

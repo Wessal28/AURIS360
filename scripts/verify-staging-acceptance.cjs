@@ -36,14 +36,21 @@ function projectRef(value) {
 
 async function responseText(url, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const requestOptions = { ...options };
+  const timeoutMs = Number(requestOptions.timeoutMs || 15000);
+  delete requestOptions.timeoutMs;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'follow' });
+    const response = await fetch(url, { ...requestOptions, signal: controller.signal, redirect: 'follow' });
     const text = await response.text();
     if (response.url.startsWith('https://vercel.com/login') && new URL(url).hostname.endsWith('.vercel.app')) {
       throw new Error('Preview deployment protection rejected the automation bypass secret');
     }
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      const error = new Error(`${response.status} ${response.statusText}`);
+      error.status = response.status;
+      throw error;
+    }
     return text;
   } finally {
     clearTimeout(timer);
@@ -53,6 +60,27 @@ async function responseText(url, options = {}) {
 async function jsonRequest(url, options = {}) {
   const text = await responseText(url, options);
   try { return text ? JSON.parse(text) : null; } catch (_) { throw new Error('received invalid JSON'); }
+}
+
+function retryableRequestError(error) {
+  const status = Number(error && error.status || 0);
+  return error && error.name === 'AbortError' || status === 429 || status >= 500;
+}
+
+async function retryJsonRequest(url, options = {}, retry = {}) {
+  const attempts = Math.max(1, Number(retry.attempts || 3));
+  const delayMs = Math.max(0, Number(retry.delayMs || 2000));
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try { return await jsonRequest(url, options); }
+    catch (error) {
+      lastError = error;
+      if (attempt === attempts || !retryableRequestError(error)) throw error;
+      console.warn(`Staging request attempt ${attempt} failed (${error.message}); retrying.`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  throw lastError;
 }
 
 function runtimeConfig(script) {
@@ -147,11 +175,12 @@ async function main() {
   if (runtime.supabaseUrl.replace(/\/$/, '') !== configuredSupabase.href.replace(/\/$/, '')) fail('Preview and acceptance secret reference different staging URLs.');
 
   const base = configuredSupabase.href.replace(/\/$/, '');
-  const auth = await jsonRequest(`${base}/auth/v1/token?grant_type=password`, {
+  const auth = await retryJsonRequest(`${base}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  }).catch((error) => fail(`staging sign-in failed (${error.message}).`));
+    body: JSON.stringify({ email, password }),
+    timeoutMs: 30000
+  }, { attempts: 3, delayMs: 2000 }).catch((error) => fail(`staging sign-in failed (${error.message}).`));
   if (!auth || !auth.access_token || !auth.user || !auth.user.id) fail('Staging sign-in returned no authenticated identity.');
 
   const headers = { apikey: anonKey, Authorization: `Bearer ${auth.access_token}`, Accept: 'application/json' };
