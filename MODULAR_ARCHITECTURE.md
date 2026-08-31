@@ -43,11 +43,16 @@ Every module lifecycle context now receives the same service container as `conte
 
 The service container publishes readiness through `health()`, `ready()`, `subscribe()`, and the `auris:service-ready` DOM event. This makes missing platform capabilities diagnosable before a module starts.
 
+## Foundation 4
+
+`auris-module-layout.js` renders the shared application workspace declared by a module manifest. It supplies a consistent module identity header, Apps breadcrumb, dependency context, grouped view navigation, primary action, refresh action, keyboard navigation, active-view state, and responsive mobile treatment without owning module data or workflow decisions.
+
+Incident Management is the reference implementation. Its dashboard, personal work, reporting, registers, triage, investigations, actions, regulatory work, lessons, reports, and configuration now use the same layout contract while retaining the existing record handlers and tenant controls.
+
 ## Next slices
 
-1. Render the shared module layout contract in Incident Management.
-2. Enforce Incident Management transitions through a tenant-configurable workflow service.
-3. Connect the reusable Approval Centre rules to the workflow service.
-4. Convert Risk Assessment, Permit to Work, Document Control, MOC, and Master Action Plan to the shared engine.
+1. Enforce Incident Management transitions through a tenant-configurable workflow service.
+2. Connect the reusable Approval Centre rules to the workflow service.
+3. Convert Risk Assessment, Permit to Work, Document Control, MOC, and Master Action Plan to the shared engine.
 
 Every slice must preserve company isolation, role enforcement, offline field drafts, deep links, audit evidence, and release-readiness contracts.
