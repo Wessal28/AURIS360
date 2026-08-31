@@ -7,7 +7,7 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 
 function runtimeContext(){
-  const context={globalThis:{}};
+  const context={globalThis:{AurisPlatformServices:{version:'test'}}};
   vm.runInNewContext(fs.readFileSync(path.join(root,'auris-module-registry.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.join(root,'auris-module-runtime.js'),'utf8'),context);
   return context.globalThis;
@@ -26,7 +26,7 @@ test('runtime executes registered lifecycle hooks around the existing loader',as
   window.loadDash=function(){calls.push('load:dashboard');};
   window.loadEvents=async function(){calls.push('load:events');};
   window.AurisModuleRuntime.register('dashboard',{leave:function(){calls.push('leave:dashboard');}});
-  window.AurisModuleRuntime.register('events',{beforeEnter:function(){calls.push('before:events');},enter:function(){calls.push('enter:events');}});
+  window.AurisModuleRuntime.register('events',{beforeEnter:function(context){calls.push('before:events');assert.equal(context.services.version,'test');},enter:function(){calls.push('enter:events');}});
   window.AurisModuleRuntime.activate('dashboard',{activateView:function(){calls.push('view:dashboard');}});
   await window.AurisModuleRuntime.activate('events',{activateView:function(){calls.push('view:events');}});
   assert.deepEqual(calls,['view:dashboard','load:dashboard','before:events','view:events','leave:dashboard','load:events','enter:events']);

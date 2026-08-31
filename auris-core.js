@@ -42344,3 +42344,32 @@ function fireEquipStatusBadge(s) {
   var map = {operational:'badge-green',requires_service:'badge-amber',defective:'badge-red',decommissioned:'badge-grey'};
   return '<span class="badge '+(map[s]||'badge-grey')+'">'+(s||'').replace(/_/g,' ')+'</span>';
 }
+
+// Modular Foundation 3: stable service contracts for independently loaded apps.
+// Existing functions remain the compatibility implementation while modules move
+// away from direct access to core globals.
+if(window.AurisPlatformServices){
+  window.AurisPlatformServices.configure({
+    auth:{
+      current:function(){return {profile:prof,company:co,role:activeRole()};},
+      isAuthenticated:function(){return !!(tok&&prof);},
+      signIn:async function(credentials){var data=await authQ('/token?grant_type=password',credentials||{});await authOnSignIn(data);return data;},
+      signOut:function(){return doLogout();},
+      restore:function(){return authInitSession();}
+    },
+    api:{request:function(path,options){return api(path,options);},companyFilter:function(){return cf();},companyId:function(){return ccid();}},
+    rbac:{
+      role:function(){return activeRole();},
+      can:function(minimumRole){return can(minimumRole);},
+      canAccess:function(moduleKey){return canAccessPage(moduleKey);},
+      requireAccess:function(moduleKey){if(!canAccessPage(moduleKey)){var error=new Error('Access denied for AURIS module: '+moduleKey);error.code='AURIS_ACCESS_DENIED';throw error;}return true;}
+    },
+    audit:{log:function(action,moduleName,summary,details,options){return auditLogEvent(action,moduleName,summary,details,options);}},
+    notifications:{
+      queue:function(payload){return queueNotification(payload);},
+      relationship:function(payload){return notificationRelationship(payload);},
+      open:function(id){return notificationOpen(id);},
+      recipientIssue:function(email){return notificationRecipientIssue(email);}
+    }
+  });
+}

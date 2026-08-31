@@ -128,6 +128,7 @@ async function main() {
   const assetChecks = [];
   const assets = [
     ['auris-module-registry.js', ["version:'2.0.0'", 'dependencyClosure:dependencyClosure', 'canTransition:canTransition']],
+    ['auris-platform-services.js', ["version:'1.0.0'", 'configure:configure', 'notifications:facade']],
     ['auris-module-runtime.js', ["version:'1.0.0'", 'activate:activate', 'readiness:readiness']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
     ['incident-management-upgrade.js', ['async function loadAll', 'window.imv2SaveForm']],
