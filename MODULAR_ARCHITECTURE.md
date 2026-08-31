@@ -68,3 +68,9 @@ Incident Management is the first enforced module. Existing production incident s
 `auris-approval-centre.js` connects approval-gated workflow transitions to one reusable decision service. It registers the existing module adapters, retains an exact source page, table, record id, reference and company on every request, rejects cross-company queue items, records governed decisions, and supplies approved evidence back to the workflow service before a status mutation is persisted.
 
 The existing Approval Centre remains the production queue and exact-record navigation interface. Its specialised openers are preserved; the shared service adds tenant and source assertions around them rather than replacing their proven module-specific behavior.
+
+## Foundation 7
+
+Risk Assessment, Permit to Work, Document Control, Management of Change and Master Action Plan now declare their layouts, lifecycle ownership, workflow states, allowed transitions and approval gates in the canonical registry. `auris-priority-module-adapters.js` mounts the shared module shell while routing view selections and commands back to each application's established loaders and record handlers.
+
+The workflow service now reads approval gates directly from reviewed manifests. Existing record vocabularies and dedicated approve, reject, verification and closure handlers remain compatible, while new independently loaded views receive the same registry, service, navigation and tenant enforcement contracts as Incident Management.

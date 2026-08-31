@@ -132,6 +132,7 @@ async function main() {
     ['auris-module-layout.js', ["version:'1.0.0'", 'mount:mount', 'setView:setView']],
     ['auris-workflow-service.js', ["version:'1.0.0'", 'configure:configure', 'requireTransition:requireTransition']],
     ['auris-approval-centre.js', ["version:'1.0.0'", 'registerAdapters:registerAdapters', 'assertSource:assertSource']],
+    ['auris-priority-module-adapters.js', ["version:'1.0.0'", "risk:{", "documents:{", 'mount:mount']],
     ['auris-module-runtime.js', ["version:'1.0.0'", 'activate:activate', 'readiness:readiness']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
     ['incident-management-upgrade.js', ['async function loadAll', 'window.imv2SaveForm']],
