@@ -5,7 +5,7 @@ var modules = [
   {key:'dashboard',name:'HSE Control Centre',shortName:'Home',icon:'ti-layout-dashboard',color:'#185FA5',category:'Home',legacySection:'Main',order:10,platform:true,companyScoped:false,loader:'loadDash',dependencies:[]},
   {key:'executive',name:'Executive Dashboard',shortName:'Executive',icon:'ti-chart-bar',color:'#5B21B6',category:'Home',legacySection:'Main',order:20,platform:true,companyScoped:false,loader:'loadExecutive',dependencies:['dashboard']},
   {key:'ai-insights',name:'AI Insights',shortName:'AI Insights',icon:'ti-brain',color:'#5B21B6',category:'Home',legacySection:'Main',order:30,platform:true,companyScoped:false,loader:'genFullAI',dependencies:['dashboard']},
-  {key:'events',name:'Incident Management',shortName:'Incidents',icon:'ti-alert-triangle',color:'#DC2626',category:'Operations',legacySection:'HSE Modules',order:100,companyScoped:true,loader:'loadEvents',dependencies:['people','actions']},
+  {key:'events',name:'Incident Management',shortName:'Incidents',icon:'ti-alert-triangle',color:'#DC2626',category:'Operations',legacySection:'HSE Modules',order:100,companyScoped:true,loader:'loadEvents',dependencies:['people','actions'],layout:{defaultView:'dashboard',views:['dashboard','register','kanban','form','reports','activities','configuration']},lifecycle:{managed:true},workflow:{entity:'incident',initial:'draft',terminal:['closed','cancelled'],states:['draft','submitted','triage','under_investigation','verification','management_review','closed','cancelled'],transitions:[['draft','submitted'],['draft','cancelled'],['submitted','triage'],['submitted','cancelled'],['triage','under_investigation'],['triage','cancelled'],['under_investigation','verification'],['verification','under_investigation'],['verification','management_review'],['management_review','under_investigation'],['management_review','closed']]}},
   {key:'investigation',name:'Incident Investigation',shortName:'Investigations',icon:'ti-search',color:'#B91C1C',category:'Operations',legacySection:'HSE Modules',order:105,companyScoped:false,hidden:true,loader:'loadInvs',dependencies:['events','actions']},
   {key:'observation',name:'BBS Observations',shortName:'Observations',icon:'ti-eye',color:'#9A3412',category:'Operations',legacySection:'HSE Modules',order:110,companyScoped:true,loader:'loadObservationModule',dependencies:['people','actions']},
   {key:'engagement',name:'Safety Engagement',shortName:'Engagement',icon:'ti-heart-handshake',color:'#9A3412',category:'Operations',legacySection:'HSE Modules',order:115,companyScoped:false,hidden:true,loader:'loadSafetyEngagement',dependencies:['observation','people']},
@@ -44,10 +44,34 @@ var modules = [
 ];
 
 var byKey=Object.create(null);
+function freezeLayout(layout){
+  layout=layout||{};
+  var views=(layout.views||['workspace']).slice();
+  var defaultView=layout.defaultView||views[0]||'workspace';
+  if(views.indexOf(defaultView)===-1)throw new Error('Default module view must be declared: '+defaultView);
+  return Object.freeze({defaultView:defaultView,views:Object.freeze(views)});
+}
+function freezeWorkflow(workflow,moduleKey){
+  if(!workflow)return null;
+  var states=(workflow.states||[]).slice(),known=Object.create(null);
+  states.forEach(function(state){if(!state||known[state])throw new Error('Invalid workflow state '+state+' declared by '+moduleKey);known[state]=true;});
+  if(!known[workflow.initial])throw new Error('Unknown initial workflow state '+workflow.initial+' declared by '+moduleKey);
+  var transitions=(workflow.transitions||[]).map(function(transition){
+    var pair=Array.isArray(transition)?transition.slice(0,2):[transition.from,transition.to];
+    if(!known[pair[0]]||!known[pair[1]])throw new Error('Unknown workflow transition '+pair.join(' -> ')+' declared by '+moduleKey);
+    return Object.freeze(pair);
+  });
+  var terminal=(workflow.terminal||[]).slice();
+  terminal.forEach(function(state){if(!known[state])throw new Error('Unknown terminal workflow state '+state+' declared by '+moduleKey);});
+  return Object.freeze({entity:workflow.entity||moduleKey,initial:workflow.initial,terminal:Object.freeze(terminal),states:Object.freeze(states),transitions:Object.freeze(transitions)});
+}
 modules.forEach(function(module){
   if(!module.key||byKey[module.key])throw new Error('Invalid or duplicate AURIS module key: '+module.key);
-  module.version=module.version||'1.0.0';
+  module.version=module.version||'2.0.0';
   module.dependencies=Object.freeze((module.dependencies||[]).slice());
+  module.layout=freezeLayout(module.layout);
+  module.lifecycle=Object.freeze(Object.assign({managed:false},module.lifecycle||{}));
+  module.workflow=freezeWorkflow(module.workflow,module.key);
   byKey[module.key]=Object.freeze(module);
 });
 modules.forEach(function(module){module.dependencies.forEach(function(dependency){if(!byKey[dependency])throw new Error('Unknown dependency '+dependency+' declared by '+module.key);});});
@@ -65,6 +89,34 @@ function get(key){return byKey[key]||null;}
 function keys(options){return list(options).map(function(module){return module.key;});}
 function categories(){var out=[];modules.forEach(function(module){if(out.indexOf(module.category)===-1)out.push(module.category);});return out;}
 function dependenciesOf(key){var module=get(key);return module?module.dependencies.slice():[];}
+function dependencyClosure(keys){
+  var selected=Object.create(null),visiting=Object.create(null);
+  function visit(key){
+    var module=get(key);if(!module||selected[key])return;
+    if(visiting[key])throw new Error('Circular AURIS module dependency: '+key);
+    visiting[key]=true;module.dependencies.forEach(visit);visiting[key]=false;selected[key]=true;
+  }
+  (Array.isArray(keys)?keys:[keys]).forEach(visit);
+  return modules.filter(function(module){return selected[module.key];}).map(function(module){return module.key;});
+}
+function missingDependencies(key,enabledKeys){
+  var enabled=Object.create(null);(enabledKeys||[]).forEach(function(item){enabled[item]=true;});
+  return dependencyClosure(dependenciesOf(key)).filter(function(dependency){return !enabled[dependency];});
+}
+function dependantsOf(key,options){
+  options=options||{};var found=[];
+  modules.forEach(function(module){
+    var dependencies=options.recursive?dependencyClosure(module.dependencies):module.dependencies;
+    if(dependencies.indexOf(key)!==-1)found.push(module.key);
+  });
+  return found;
+}
+function workflowOf(key){return get(key)?get(key).workflow:null;}
+function nextStates(key,state){
+  var workflow=workflowOf(key);if(!workflow)return[];
+  return workflow.transitions.filter(function(pair){return pair[0]===state;}).map(function(pair){return pair[1];});
+}
+function canTransition(key,from,to){return nextStates(key,from).indexOf(to)!==-1;}
 
-root.AurisModuleRegistry=Object.freeze({version:'1.0.0',get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf});
+root.AurisModuleRegistry=Object.freeze({version:'2.0.0',get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf,dependencyClosure:dependencyClosure,missingDependencies:missingDependencies,dependantsOf:dependantsOf,workflowOf:workflowOf,nextStates:nextStates,canTransition:canTransition});
 })(typeof window!=='undefined'?window:globalThis);
