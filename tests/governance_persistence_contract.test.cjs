@@ -18,7 +18,9 @@ test('governance service versions stay aligned with deployment probes',()=>{
   const approvals=read('auris-approval-centre.js');
   const staging=read('scripts/verify-staging-acceptance.cjs');
   const production=read('scripts/verify-production-smoke.cjs');
-  for(const source of [workflow,approvals,staging,production])assert.match(source,/version:'2\.0\.0'/);
+  assert.match(workflow,/version:'3\.0\.0'/);
+  assert.match(approvals,/version:'3\.0\.0'/);
+  for(const source of [staging,production])assert.match(source,/version:'3\.0\.0'/);
 });
 
 test('persistent workflow enforcement fails closed until the selected company is hydrated',async()=>{
@@ -52,8 +54,8 @@ test('production governance adapter uses versioned policy and atomic approval RP
     if(path==='/rpc/create_workflow_policy_draft')return [{id:'p-2',company_id:'co-1',module_key:'events',version:3,status:'draft',revision:1,policy:options.b.p_policy}];
     if(path==='/rpc/publish_workflow_policy'||path==='/rpc/rollback_workflow_policy')return [{id:'p-3',company_id:'co-1',module_key:'events',version:4,status:'published',revision:2,policy:{transitions:[]}}];
     if(path.startsWith('/approval_requests'))return [];
-    if(path==='/rpc/request_workflow_approval')return [{id:'a-1',company_id:'co-1',module_name:'events',related_table:'events',source_record_id:'e-1',source_page:'events',from_state:'open',to_state:'closed',status:'pending',revision:1}];
-    if(path==='/rpc/decide_workflow_approval')return [{id:'a-1',company_id:'co-1',module_name:'events',related_table:'events',source_record_id:'e-1',source_page:'events',from_state:'open',to_state:'closed',status:'approved',revision:2}];
+    if(path==='/rpc/request_workflow_approval_v2')return [{id:'a-1',company_id:'co-1',module_name:'events',related_table:'events',source_record_id:'e-1',source_page:'events',from_state:'open',to_state:'closed',status:'pending',revision:1,policy_version:'4',approval_stages:[{role:'hse_manager'}],current_step_no:1}];
+    if(path==='/rpc/decide_workflow_approval_v2')return [{id:'a-1',company_id:'co-1',module_name:'events',related_table:'events',source_record_id:'e-1',source_page:'events',from_state:'open',to_state:'closed',status:'approved',revision:2,policy_version:'4',approval_stages:[{role:'hse_manager'}],current_step_no:1}];
     return [];
   }});
   vm.runInNewContext(read('auris-governance-persistence.js'),context);
@@ -65,7 +67,7 @@ test('production governance adapter uses versioned policy and atomic approval RP
   const pending=await persistence.approvals.create({id:'local-a',companyId:'co-1',moduleKey:'events',from:'open',to:'closed',source:{table:'events',recordId:'e-1',page:'events',companyId:'co-1'}});
   assert.equal(pending.source.recordId,'e-1');
   assert.equal((await persistence.approvals.decide({...pending,status:'approved'})).status,'approved');
-  for(const rpc of ['/rpc/create_workflow_policy_draft','/rpc/publish_workflow_policy','/rpc/rollback_workflow_policy','/rpc/request_workflow_approval','/rpc/decide_workflow_approval'])assert.ok(calls.some(call=>call.path===rpc),rpc);
+  for(const rpc of ['/rpc/create_workflow_policy_draft','/rpc/publish_workflow_policy','/rpc/rollback_workflow_policy','/rpc/request_workflow_approval_v2','/rpc/decide_workflow_approval_v2'])assert.ok(calls.some(call=>call.path===rpc),rpc);
 });
 
 test('database migration provides tenant RLS, versioning, idempotency and atomic locking',()=>{
@@ -78,11 +80,16 @@ test('database migration provides tenant RLS, versioning, idempotency and atomic
   assert.match(sql,/AURIS_WORKFLOW_REVISION_CONFLICT/);
   assert.match(sql,/AURIS_APPROVAL_ALREADY_DECIDED/);
   assert.match(sql,/security definer set search_path=public,pg_temp/i);
+  const studioSql=read('supabase/migrations/20260901020000_modular_foundation_10_workflow_studio.sql');
+  assert.match(studioSql,/request_workflow_approval_v2/i);
+  assert.match(studioSql,/decide_workflow_approval_v2/i);
+  assert.match(studioSql,/AURIS_APPROVAL_STAGE_ROLE_DENIED/);
+  assert.match(studioSql,/current_step_no=current_step_no\+1/i);
 });
 
 test('production shell hydrates governance on sign-in and company switching',()=>{
   const html=read('index.html'),core=read('auris-core.js'),manifest=read('sw-assets.js');
-  assert.ok(html.indexOf('auris-governance-persistence.js?v=20260901-9')<html.indexOf('auris-core.js'));
+  assert.ok(html.indexOf('auris-governance-persistence.js?v=20260901-10')<html.indexOf('auris-core.js'));
   assert.match(core,/AurisWorkflowService\.configurePersistence\(window\.AurisGovernancePersistence\.workflow\)/);
   assert.match(core,/AurisApprovalCentre\.configurePersistence\(window\.AurisGovernancePersistence\.approvals\)/);
   assert.match(core,/await workflowHydrateTenant\(ccid\(\)\)/);

@@ -10991,6 +10991,9 @@ var ptwCard=document.getElementById('settings-ptw-approver-card');
 if(ptwCard) ptwCard.style.display='none';
 var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
+var studioCard=document.getElementById('settings-workflow-studio-card'),studioHost=document.getElementById('workflow-studio-body'),studioAllowed=isAdm()||activeRole()==='hse_manager';
+if(studioCard)studioCard.classList.toggle('auris-workflow-studio-card-visible',studioAllowed);
+if(studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return ccid();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
 if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
 }

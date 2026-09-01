@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -163,16 +163,19 @@ async function main() {
     "version:'1.0.0'", 'mount:mount', 'setView:setView', 'normaliseViews:normaliseViews'
   ]);
   requireMarkers(assetSources.get('auris-workflow-service.js'), 'Workflow service', [
-    "version:'2.0.0'", 'configure:configure', 'requireTransition:requireTransition', 'transition:transition'
+    "version:'3.0.0'", 'review:review', 'simulate:simulate', 'requireTransition:requireTransition', 'transition:transition'
   ]);
   requireMarkers(assetSources.get('auris-approval-centre.js'), 'Approval Centre service', [
-    "version:'2.0.0'", 'registerAdapters:registerAdapters', 'assertSource:assertSource', 'decide:decide'
+    "version:'3.0.0'", 'registerAdapters:registerAdapters', 'assertSource:assertSource', 'decide:decide'
   ]);
   requireMarkers(assetSources.get('auris-priority-module-adapters.js'), 'Priority module adapters', [
     "version:'1.0.0'", "risk:{", "permit:{", "documents:{", "moc:{", "actions:{"
   ]);
   requireMarkers(assetSources.get('auris-applications-admin.js'), 'Applications administration', [
     "version:'1.0.0'", 'planEnable:planEnable', 'planDisable:planDisable', 'renderPortfolio:renderPortfolio'
+  ]);
+  requireMarkers(assetSources.get('auris-workflow-studio.js'), 'Visual Workflow Studio', [
+    "version:'1.0.0'", 'Save draft', 'Simulate transition', 'Export reviewed JSON', 'Import reviewed JSON'
   ]);
   const coreSource = assetSources.get('auris-core.js');
   requireMarkers(coreSource, 'Module navigation', [

@@ -52,7 +52,8 @@ async function request(input){
   input=input||{};var source=exactSource(input),current=assertTenant(source,input.context);
   requireReady(source.companyId||current.companyId||null);
   if(!source.recordId)throw new Error('Approval request requires an exact source record id.');
-  var created={id:identifier(),status:'pending',moduleKey:input.moduleKey||source.moduleKey,from:input.from||'',to:input.to||'',reason:input.reason||'',source:source,companyId:source.companyId||current.companyId||null,requestedBy:current.userId||null,requestedAt:new Date().toISOString()};
+  var moduleKey=input.moduleKey||source.moduleKey,effective=workflow.policy(moduleKey,{companyId:source.companyId||current.companyId||null}),rule=(effective&&effective.rules||[]).find(function(item){return item.from===input.from&&item.to===input.to;});
+  var created={id:identifier(),status:'pending',moduleKey:moduleKey,from:input.from||'',to:input.to||'',reason:input.reason||'',source:source,companyId:source.companyId||current.companyId||null,requestedBy:current.userId||null,requestedAt:new Date().toISOString(),policyVersion:effective&&effective.version||null,approvalStages:clone(rule&&rule.approvalStages||[]),currentStep:1};
   var stored=persistence?await persistence.create(clone(created)):created;requests[stored.id]=clone(stored);await audit('approval_requested',stored);emit('requested',stored);return clone(stored);
 }
 function ingest(rows){
@@ -65,8 +66,8 @@ async function decide(id,decision,options){
   requireReady(current.companyId||(current.source&&current.source.companyId)||context(options.context).companyId||null);
   if(String(current.status||'pending').toLowerCase()!=='pending'){var stateError=new Error('Approval request is no longer pending.');stateError.code='AURIS_APPROVAL_ALREADY_DECIDED';throw stateError;}
   var decided=Object.assign({},current,{status:decision,decisionReason:options.reason||'',decidedAt:new Date().toISOString(),decidedBy:context(options.context).userId||null});
-  if(persistence)decided=await persistence.decide(clone(decided));requests[id]=clone(decided);await audit('approval_'+decision,decided,{reason:decided.decisionReason});
-  if(decision==='approved'&&options.transition!==false&&decided.moduleKey&&decided.to){
+  if(persistence)decided=await persistence.decide(clone(decided));requests[id]=clone(decided);await audit(decision==='approved'&&decided.status==='pending'?'approval_stage_approved':'approval_'+decision,decided,{reason:decided.decisionReason,current_step:decided.currentStep,policy_version:decided.policyVersion});
+  if(decided.status==='approved'&&options.transition!==false&&decided.moduleKey&&decided.to){
     await workflow.transition(decided.moduleKey,options.record||{id:decided.source.recordId,status:decided.from},decided.to,{context:options.context,approval:{id:decided.id,status:'approved'},statusField:options.statusField,persist:options.persist});
   }
   emit('decided',decided);return clone(decided);
@@ -77,7 +78,7 @@ function openSource(input,opener,options){
 function emit(type,detail){if(root.document&&typeof root.CustomEvent==='function')root.document.dispatchEvent(new root.CustomEvent('auris:approval-'+type,{detail:clone(detail)}));}
 function list(filter){var values=Object.keys(requests).map(function(id){return clone(requests[id]);});if(!filter)return values;return values.filter(filter);}
 
-var api={version:'2.0.0',registerAdapter:registerAdapter,registerAdapters:registerAdapters,adapter:adapter,configurePersistence:configurePersistence,hydrate:hydrate,readiness:readiness,clearCompany:clearCompany,request:request,ingest:ingest,assertSource:assertSource,decide:decide,openSource:openSource,list:list};
+var api={version:'3.0.0',registerAdapter:registerAdapter,registerAdapters:registerAdapters,adapter:adapter,configurePersistence:configurePersistence,hydrate:hydrate,readiness:readiness,clearCompany:clearCompany,request:request,ingest:ingest,assertSource:assertSource,decide:decide,openSource:openSource,list:list};
 workflow.registerApprovalProvider(api);
 root.AurisApprovalCentre=Object.freeze(api);
 })(typeof window!=='undefined'?window:globalThis);
