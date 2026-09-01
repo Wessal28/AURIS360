@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-09-01-modular-foundation-13"/>
+<meta name="auris-build" content="2026-09-01-modular-foundation-14"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -46,6 +46,7 @@
 <script src="auris-module-runtime.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
+<script src="auris-command-centre.js?v=20260901-14"></script>
 <script src="auris-module-extraction.js?v=20260901-12"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260901-10"></script>
@@ -80,6 +81,7 @@
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1">
+<link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
@@ -347,6 +349,11 @@
     </button>
     <div class="modules-menu" id="modules-menu"></div>
   </div>
+  <button class="topbar-btn" id="auris-command-trigger" type="button" title="Search applications (Ctrl+K)" aria-label="Open AURIS Command Centre">
+    <i class="ti ti-search"></i>
+    <span>Search</span>
+    <kbd>Ctrl K</kbd>
+  </button>
   <div class="auris-shell-s-83725d2c6e"></div>
   <!-- Company context switcher - visible only to sephs_admin -->
   <div class="modules-dropdown auris-shell-s-6aa34d7432" id="sa-company-switcher">

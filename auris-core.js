@@ -3399,6 +3399,7 @@ function showPage(name,el){
     if(typeof toast === 'function') toast('You don\'t have permission to access this module.', false);
     return;
   }
+  if(window.AurisCommandCentre)window.AurisCommandCentre.recordOpen(name);
 
 closeTransientOverlays();
 const activateRoutedPage=function(){
@@ -35197,6 +35198,7 @@ var MODULES_DIR=window.AurisModuleRegistry.list().filter(function(module){return
 
 var AURIS_APP_FAVOURITES_KEY='auris360_app_favourites';
 function appLauncherFavourites(){
+  if(window.AurisCommandCentre)return window.AurisCommandCentre.favourites();
   try{
     var saved=JSON.parse(localStorage.getItem(AURIS_APP_FAVOURITES_KEY)||'[]');
     return Array.isArray(saved)?saved.filter(function(key){return !!window.AurisModuleRegistry.get(key);}):[];
@@ -35206,6 +35208,7 @@ function appLauncherSetFavourites(keys){
   try{localStorage.setItem(AURIS_APP_FAVOURITES_KEY,JSON.stringify(keys));}catch(e){}
 }
 function appLauncherToggleFavourite(pageKey){
+  if(window.AurisCommandCentre){window.AurisCommandCentre.toggleFavourite(pageKey);appLauncherRenderApps(document.getElementById('auris-app-launcher-search')?.value||'');return;}
   var keys=appLauncherFavourites();
   var index=keys.indexOf(pageKey);
   if(index===-1)keys.push(pageKey);else keys.splice(index,1);
@@ -35275,6 +35278,24 @@ function modulesMenuNavigate(pageKey) {
   modulesMenuClose();
   showPage(pageKey, null);
 }
+
+function commandCentreSetup(){
+  var centre=window.AurisCommandCentre;if(!centre)return;
+  centre.configure({
+    context:function(){return {companyId:ccid()||prof?.company_id||'no-company',userId:prof?.id||'anonymous'};},
+    canAccess:function(moduleKey){return canAccessPage(moduleKey);},
+    canOpenCompany:function(companyId){return !!(isSA()&&Array.isArray(cos)&&cos.some(function(company){return String(company.id)===String(companyId);}));},
+    readiness:function(moduleKey){var enabled=co&&Array.isArray(co.module_access)?window.AurisModuleRegistry.dependencyClosure(co.module_access):null;return window.AurisModuleRuntime?window.AurisModuleRuntime.readiness(moduleKey,enabled):{ready:true};},
+    navigate:function(request){
+      modulesMenuClose();
+      if(request.record&&typeof deepLinkStore==='function'&&typeof deepLinkNormalise==='function'&&typeof deepLinkResume==='function'){
+        deepLinkStore(deepLinkNormalise({goto:request.moduleKey,record:request.record,ref:request.ref,table:request.table,company:request.companyId||ccid()}));
+        deepLinkResume('command-centre');
+      }else showPage(request.moduleKey,null);
+    }
+  }).bind(document.getElementById('auris-command-trigger'));
+}
+commandCentreSetup();
 
 // Close the menu when clicking outside it
 document.addEventListener('click', function(e){

@@ -26,6 +26,7 @@ const testFiles = [
   'tests/migration_replay_contract.test.cjs',
   'tests/staging_acceptance_gate_contract.test.cjs',
   'tests/production_smoke_gate_contract.test.cjs'
+  ,'tests/command_centre_contract.test.cjs'
   ,'tests/application_lifecycle_contract.test.cjs'
 ];
 
