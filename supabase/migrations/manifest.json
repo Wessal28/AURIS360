@@ -51,6 +51,11 @@
       "order": 10,
       "file": "20260901050000_modular_foundation_19_automation.sql",
       "sha256": "5ec5a3e8ddfa45329abdf93dda5679bd932a50a36dcc23ffcfce3453d57d48c4"
+    },
+    {
+      "order": 11,
+      "file": "20260902010000_modular_foundation_20_integrations.sql",
+      "sha256": "f690fb729bea4c206cc6898f6468ffe0d126681e466559d999fbc6c2c4d31766"
     }
   ]
 }

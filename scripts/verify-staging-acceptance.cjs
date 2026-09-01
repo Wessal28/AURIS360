@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-integration-engine.js', 'auris-integration-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -180,6 +180,12 @@ async function main() {
   ]);
   requireMarkers(assetSources.get('auris-automation-centre.js'), 'Automation Centre', [
     "version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage'
+  ]);
+  requireMarkers(assetSources.get('auris-integration-engine.js'), 'Integration engine', [
+    "version:'1.0.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan'
+  ]);
+  requireMarkers(assetSources.get('auris-integration-centre.js'), 'Integration Centre', [
+    "version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Dry-run only'
   ]);
   requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
     "version:'2.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"
