@@ -29,6 +29,7 @@ const testFiles = [
   ,'tests/command_centre_contract.test.cjs'
   ,'tests/view_engine_contract.test.cjs'
   ,'tests/record_workspace_contract.test.cjs'
+  ,'tests/reporting_engine_contract.test.cjs'
   ,'tests/application_lifecycle_contract.test.cjs'
 ];
 
