@@ -26,6 +26,11 @@
       "order": 5,
       "file": "20260824010000_requirements_5_rcd_fleet.sql",
       "sha256": "b2cc3d98d54406e0c4c8535daf2ee5b5fcd5dd8e4f62fd1957d1a6fbb9f6bc78"
+    },
+    {
+      "order": 6,
+      "file": "20260901010000_modular_foundation_9_governance_persistence.sql",
+      "sha256": "a52b0156e2fa0663c8d8f4518fe629744537f6baaf6ee4170a079478b8e74f63"
     }
   ]
 }

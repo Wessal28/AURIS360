@@ -45,7 +45,7 @@ test('cross-company queue records and missing exact ids are controlled failures'
 
 test('deployment loads approval service before production core and retains existing adapters',()=>{
   const html=read('index.html'),core=read('auris-core.js'),manifest=read('sw-assets.js');
-  assert.ok(html.indexOf('auris-approval-centre.js?v=20260901-6')<html.indexOf('auris-core.js'));
+  assert.ok(html.indexOf('auris-approval-centre.js?v=20260901-9')<html.indexOf('auris-core.js'));
   assert.match(core,/AurisApprovalCentre\.registerAdapters\(APPROVAL_SOURCE_ADAPTERS\)/);
   assert.match(core,/AurisApprovalCentre\.assertSource/);
   assert.match(manifest,/auris-approval-centre\.js/);

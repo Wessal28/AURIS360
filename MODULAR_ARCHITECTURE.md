@@ -80,3 +80,11 @@ The workflow service now reads approval gates directly from reviewed manifests. 
 `auris-applications-admin.js` and `auris-applications-admin.css` provide an Odoo-style Applications administration layer for each company. Applications are shown as Installed, Available or Blocked with dependency, lifecycle, release and shared-service diagnostics. Install plans automatically include dependencies; uninstall plans include recursive dependants so administrators see and apply one controlled rollback impact instead of leaving broken navigation.
 
 The administration layer persists only the existing `companies.module_access` contract through the established tenant-admin path. `LAUNCHED_MODULES` remains the production release boundary, Dashboard remains mandatory, role enforcement still applies after installation, and unreleased modules cannot be enabled from the interface.
+
+## Foundation 9
+
+`auris-governance-persistence.js` supplies the production persistence adapters for the shared workflow and Approval Centre services. Published company workflow policies are hydrated after authentication and whenever a SEPHS administrator changes company context. Once persistence is configured, governed mutations fail closed until that company's policy and pending approval queue have loaded successfully.
+
+`workflow_policy_versions` stores immutable, versioned drafts and published policies with optimistic revision checks, one active policy per company and module, append-only lifecycle evidence, and rollback by creating a new published version from reviewed history. Atomic Supabase RPCs serialise draft numbering, publication, rollback, approval requests and decisions so retries cannot create duplicate pending approvals or decide a request twice.
+
+The existing `approval_requests` and `approval_decisions` tables remain authoritative. Foundation 9 extends them with exact text record identity, source page and reference, transition evidence, idempotency keys and revision numbers. Company RLS remains the first tenant boundary; security-definer functions also make explicit company and management-role checks before performing governed writes.
