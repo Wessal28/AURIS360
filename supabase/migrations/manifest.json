@@ -46,6 +46,11 @@
       "order": 9,
       "file": "20260901040000_modular_foundation_13_application_lifecycle.sql",
       "sha256": "053c3e847833aa5f46c29ad45807364aeadc8947eadd27fa9175264f33fe86a1"
+    },
+    {
+      "order": 10,
+      "file": "20260901050000_modular_foundation_19_automation.sql",
+      "sha256": "5ec5a3e8ddfa45329abdf93dda5679bd932a50a36dcc23ffcfce3453d57d48c4"
     }
   ]
 }

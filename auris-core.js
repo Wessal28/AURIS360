@@ -10997,6 +10997,9 @@ if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manage
 var studioCard=document.getElementById('settings-workflow-studio-card'),studioHost=document.getElementById('workflow-studio-body'),studioAllowed=isAdm()||activeRole()==='hse_manager';
 if(studioCard)studioCard.classList.toggle('auris-workflow-studio-card-visible',studioAllowed);
 if(studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return ccid();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
+var automationCard=document.getElementById('settings-automation-centre-card'),automationHost=document.getElementById('automation-centre-body'),automationAllowed=isAdm()||activeRole()==='hse_manager';
+if(automationCard)automationCard.style.display=automationAllowed?'block':'none';
+if(automationAllowed&&automationHost&&window.AurisAutomationCentre)window.AurisAutomationCentre.mount(automationHost,{companyId:function(){return ccid();},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(e){automationHost.innerHTML=registerErrorHtml('Automation Centre',e.message);});
 if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
 }
