@@ -135,6 +135,7 @@ async function main() {
     ['auris-priority-module-adapters.js', ["version:'1.0.0'", "risk:{", "documents:{", 'mount:mount']],
     ['auris-applications-admin.js', ["version:'1.0.0'", 'planEnable:planEnable', 'renderPortfolio:renderPortfolio']],
     ['auris-workflow-studio.js', ["version:'1.0.0'", 'Save draft', 'Simulate transition', 'Export reviewed JSON']],
+    ['auris-work-centre.js', ["version:'1.0.0'", 'Offline read-only view', 'openSource:openSource', 'addActivity:addActivity']],
     ['auris-module-runtime.js', ["version:'1.0.0'", 'activate:activate', 'readiness:readiness']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
     ['incident-management-upgrade.js', ['async function loadAll', 'window.imv2SaveForm']],
