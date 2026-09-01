@@ -62,3 +62,9 @@ Every slice must preserve company isolation, role enforcement, offline field dra
 `auris-workflow-service.js` is the tenant-aware enforcement boundary for module state changes. It resolves the effective company policy, validates tenant overrides against the module's declared state model, blocks undeclared transitions, identifies approval-gated transitions, enforces module access, and records successful transitions through the shared audit service.
 
 Incident Management is the first enforced module. Existing production incident states remain declared as compatibility states so the service centralises control without silently invalidating stored records. Tenant policy changes can narrow or route allowed transitions but cannot invent states outside the reviewed module contract.
+
+## Foundation 6
+
+`auris-approval-centre.js` connects approval-gated workflow transitions to one reusable decision service. It registers the existing module adapters, retains an exact source page, table, record id, reference and company on every request, rejects cross-company queue items, records governed decisions, and supplies approved evidence back to the workflow service before a status mutation is persisted.
+
+The existing Approval Centre remains the production queue and exact-record navigation interface. Its specialised openers are preserved; the shared service adds tenant and source assertions around them rather than replacing their proven module-specific behavior.
