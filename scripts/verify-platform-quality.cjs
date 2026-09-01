@@ -8,7 +8,8 @@ const budgets={
   'index.html':900*1024,
   'auris-core.js':3300*1024,
   'auris-module-registry.js':40*1024,
-  'auris-application-lifecycle.js':24*1024
+  'auris-application-lifecycle.js':24*1024,
+  'auris-command-centre.js':32*1024
 };
 const failures=[];
 for(const [file,budget] of Object.entries(budgets))if(size(file)>budget)failures.push(`${file} exceeds ${budget} bytes (${size(file)})`);
