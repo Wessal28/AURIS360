@@ -44,7 +44,7 @@ module.exports = function handler(req, res) {
     supabaseUrl: errors.length ? '' : supabaseUrl,
     supabaseAnonKey: errors.length ? '' : supabaseAnonKey,
     releaseSha: String(process.env.VERCEL_GIT_COMMIT_SHA || '').trim(),
-    build: '2026-09-01-modular-foundation-14',
+    build: '2026-09-01-modular-foundation-15',
     platformVersion: '2.0.0',
     moduleRegistryVersion: '2.1.0',
     error: errors.join(' ')

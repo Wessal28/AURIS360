@@ -140,6 +140,7 @@ async function main() {
     ['auris-application-lifecycle.js', ["version:'1.0.0'", 'planUpgrade:planUpgrade', 'redactError:redactError', 'renderOperations:renderOperations']],
     ['auris-application-lifecycle-persistence.js', ["version:'1.0.0'", 'begin_application_upgrade', 'rollback_application_release']],
     ['auris-command-centre.js', ["version:'1.0.0'", 'catalogue:catalogue', 'execute:execute', 'diagnostics:diagnostics']],
+    ['auris-view-engine.js', ["version:'1.0.0'", 'definition:definition', 'model:model', 'mount:mount', 'diagnostics:diagnostics']],
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
