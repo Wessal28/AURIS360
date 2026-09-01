@@ -163,10 +163,10 @@ async function main() {
     "version:'1.0.0'", 'mount:mount', 'setView:setView', 'normaliseViews:normaliseViews'
   ]);
   requireMarkers(assetSources.get('auris-workflow-service.js'), 'Workflow service', [
-    "version:'1.0.0'", 'configure:configure', 'requireTransition:requireTransition', 'transition:transition'
+    "version:'2.0.0'", 'configure:configure', 'requireTransition:requireTransition', 'transition:transition'
   ]);
   requireMarkers(assetSources.get('auris-approval-centre.js'), 'Approval Centre service', [
-    "version:'1.0.0'", 'registerAdapters:registerAdapters', 'assertSource:assertSource', 'decide:decide'
+    "version:'2.0.0'", 'registerAdapters:registerAdapters', 'assertSource:assertSource', 'decide:decide'
   ]);
   requireMarkers(assetSources.get('auris-priority-module-adapters.js'), 'Priority module adapters', [
     "version:'1.0.0'", "risk:{", "permit:{", "documents:{", "moc:{", "actions:{"

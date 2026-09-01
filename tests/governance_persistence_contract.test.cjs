@@ -13,6 +13,14 @@ function workflowRuntime(){
   return context.AurisWorkflowService;
 }
 
+test('governance service versions stay aligned with deployment probes',()=>{
+  const workflow=read('auris-workflow-service.js');
+  const approvals=read('auris-approval-centre.js');
+  const staging=read('scripts/verify-staging-acceptance.cjs');
+  const production=read('scripts/verify-production-smoke.cjs');
+  for(const source of [workflow,approvals,staging,production])assert.match(source,/version:'2\.0\.0'/);
+});
+
 test('persistent workflow enforcement fails closed until the selected company is hydrated',async()=>{
   const service=workflowRuntime();
   service.configurePersistence({
