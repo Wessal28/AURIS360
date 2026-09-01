@@ -2,9 +2,15 @@ const assert = require('assert');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const test = require('node:test');
+const fs = require('fs');
 
 const root = path.resolve(__dirname, '..');
 const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
+const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
+
+test('Phase 13 lifecycle objects are included in the reviewed replay baseline', () => {
+  assert.deepEqual(expectations, { format_version: 1, tables: 254, policies: 416, routines: 79 });
+});
 
 function run(databaseUrl) {
   return spawnSync(process.execPath, [replay, '--check', '--database-url', databaseUrl], {
