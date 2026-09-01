@@ -60,6 +60,9 @@ var extractionMap={
   ohealth:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]}
 };
 
+var platformVersion='2.0.0';
+var lifecycleMigration='20260901040000_modular_foundation_13_application_lifecycle';
+
 var byKey=Object.create(null);
 function freezeLayout(layout){
   layout=layout||{};
@@ -91,6 +94,17 @@ function freezeExtraction(extraction){
   if(!extraction)return null;
   return Object.freeze({group:extraction.group,mode:extraction.mode||'extracted',services:Object.freeze((extraction.services||[]).slice()),assets:Object.freeze((extraction.assets||[]).slice())});
 }
+function freezeCompatibility(module){
+  var dependencyVersions={};
+  module.dependencies.forEach(function(key){dependencyVersions[key]='^2.0.0';});
+  var compatibility=module.compatibility||{};
+  Object.keys(compatibility.dependencies||{}).forEach(function(key){dependencyVersions[key]=compatibility.dependencies[key];});
+  return Object.freeze({
+    platform:compatibility.platform||'^2.0.0',
+    dependencies:Object.freeze(dependencyVersions),
+    migrations:Object.freeze((compatibility.migrations||[lifecycleMigration]).slice())
+  });
+}
 modules.forEach(function(module){
   if(!module.key||byKey[module.key])throw new Error('Invalid or duplicate AURIS module key: '+module.key);
   module.version=module.version||'2.0.0';
@@ -99,6 +113,7 @@ modules.forEach(function(module){
   module.lifecycle=Object.freeze(Object.assign({managed:false},module.lifecycle||{}));
   module.workflow=freezeWorkflow(module.workflow,module.key);
   module.extraction=freezeExtraction(extractionMap[module.key]||module.extraction);
+  module.compatibility=freezeCompatibility(module);
   byKey[module.key]=Object.freeze(module);
 });
 modules.forEach(function(module){module.dependencies.forEach(function(dependency){if(!byKey[dependency])throw new Error('Unknown dependency '+dependency+' declared by '+module.key);});});
@@ -145,5 +160,5 @@ function nextStates(key,state){
 }
 function canTransition(key,from,to){return nextStates(key,from).indexOf(to)!==-1;}
 
-root.AurisModuleRegistry=Object.freeze({version:'2.0.0',get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf,dependencyClosure:dependencyClosure,missingDependencies:missingDependencies,dependantsOf:dependantsOf,workflowOf:workflowOf,nextStates:nextStates,canTransition:canTransition});
+root.AurisModuleRegistry=Object.freeze({version:'2.1.0',platformVersion:platformVersion,get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf,dependencyClosure:dependencyClosure,missingDependencies:missingDependencies,dependantsOf:dependantsOf,workflowOf:workflowOf,nextStates:nextStates,canTransition:canTransition});
 })(typeof window!=='undefined'?window:globalThis);

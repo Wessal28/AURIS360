@@ -45,9 +45,9 @@ test('service adapters can be installed together without replacing facade identi
 test('application loads services before runtime and core compatibility adapters',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const core=fs.readFileSync(path.join(root,'auris-core.js'),'utf8');
-  assert.ok(html.indexOf('auris-module-registry.js?v=20260901-12')<html.indexOf('auris-platform-services.js?v=20260831-3'));
-  assert.ok(html.indexOf('auris-platform-services.js?v=20260831-3')<html.indexOf('auris-module-runtime.js?v=20260901-12'));
-  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-12')<html.indexOf('auris-core.js?v=20260901-11'));
+  assert.ok(html.indexOf('auris-module-registry.js?v=20260901-13')<html.indexOf('auris-platform-services.js?v=20260831-3'));
+  assert.ok(html.indexOf('auris-platform-services.js?v=20260831-3')<html.indexOf('auris-module-runtime.js?v=20260901-13'));
+  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
   assert.match(core,/AurisPlatformServices\.configure\(\{/);
   for(const name of ['auth','api','rbac','audit','notifications'])assert.match(core,new RegExp('\\n    '+name+':'));
 });

@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -148,10 +148,17 @@ async function main() {
 
   const registrySource = assetSources.get('auris-module-registry.js');
   requireMarkers(registrySource, 'Module registry', [
+    "version:'2.1.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility',
     "key:'executive'", "loader:'loadExecutive'",
     "key:'kpi'", "loader:'kpiLoadAll'",
     "key:'engagement'", "loader:'loadSafetyEngagement'",
     "key:'documents'", "loader:'loadDocs'"
+  ]);
+  requireMarkers(assetSources.get('auris-application-lifecycle.js'), 'Application lifecycle', [
+    "version:'1.0.0'", 'planUpgrade:planUpgrade', 'compatibility:compatibility', 'redactError:redactError', 'renderOperations:renderOperations'
+  ]);
+  requireMarkers(assetSources.get('auris-application-lifecycle-persistence.js'), 'Application lifecycle persistence', [
+    "version:'1.0.0'", 'begin_application_upgrade', 'finish_application_upgrade', 'rollback_application_release'
   ]);
   requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
     "version:'2.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"

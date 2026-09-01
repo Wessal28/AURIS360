@@ -10980,6 +10980,7 @@ try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
 try{ loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
 try{ loadPersonIdentityReconciliation(false); }catch(e){ console.error('loadPersonIdentityReconciliation:',e); }
 try{ loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
+try{var lifecycleCard=document.getElementById('settings-application-lifecycle-card'),lifecycleHost=document.getElementById('application-lifecycle-body'),lifecycleAllowed=isSA()||isAdm()||activeRole()==='hse_manager';if(lifecycleCard)lifecycleCard.style.display=lifecycleAllowed?'block':'none';if(lifecycleAllowed&&lifecycleHost&&window.AurisApplicationLifecycle)window.AurisApplicationLifecycle.renderOperations(lifecycleHost,ccid()).catch(function(){});}catch(e){console.error('applicationLifecycle:',e);}
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
@@ -42423,4 +42424,8 @@ if(window.AurisPlatformServices){
 if(window.AurisGovernancePersistence&&window.AurisWorkflowService&&window.AurisApprovalCentre){
   window.AurisWorkflowService.configurePersistence(window.AurisGovernancePersistence.workflow);
   window.AurisApprovalCentre.configurePersistence(window.AurisGovernancePersistence.approvals);
+}
+if(window.AurisApplicationLifecycle&&window.AurisApplicationLifecyclePersistence){
+  window.AurisApplicationLifecycle.configurePersistence(window.AurisApplicationLifecyclePersistence);
+  window.addEventListener('error',function(event){try{var companyId=ccid(),active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'dashboard';if(!companyId)return;var safe=window.AurisApplicationLifecycle.redactError(event.error||event.message);window.AurisApplicationLifecycle.recordHealth({companyId:companyId,moduleKey:moduleKey,eventType:'module_failure',severity:'warning',errorCode:safe.code,safeContext:{message:safe.message},releaseSha:window.__AURIS_RUNTIME_CONFIG__&&window.__AURIS_RUNTIME_CONFIG__.releaseSha||''}).catch(function(){});}catch(_){}});
 }

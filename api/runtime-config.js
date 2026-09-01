@@ -44,6 +44,9 @@ module.exports = function handler(req, res) {
     supabaseUrl: errors.length ? '' : supabaseUrl,
     supabaseAnonKey: errors.length ? '' : supabaseAnonKey,
     releaseSha: String(process.env.VERCEL_GIT_COMMIT_SHA || '').trim(),
+    build: '2026-09-01-modular-foundation-13',
+    platformVersion: '2.0.0',
+    moduleRegistryVersion: '2.1.0',
     error: errors.join(' ')
   };
   const body = `window.__AURIS_RUNTIME_CONFIG__ = Object.freeze(${JSON.stringify(config)});\n`;

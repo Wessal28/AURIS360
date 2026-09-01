@@ -41,6 +41,11 @@
       "order": 8,
       "file": "20260901030000_modular_foundation_11_work_centre.sql",
       "sha256": "664b5cdb74c30a057be42819ba4ec78ec663ecef4a7a56a8a69c55f111159c89"
+    },
+    {
+      "order": 9,
+      "file": "20260901040000_modular_foundation_13_application_lifecycle.sql",
+      "sha256": "053c3e847833aa5f46c29ad45807364aeadc8947eadd27fa9175264f33fe86a1"
     }
   ]
 }
