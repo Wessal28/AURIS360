@@ -74,3 +74,9 @@ The existing Approval Centre remains the production queue and exact-record navig
 Risk Assessment, Permit to Work, Document Control, Management of Change and Master Action Plan now declare their layouts, lifecycle ownership, workflow states, allowed transitions and approval gates in the canonical registry. `auris-priority-module-adapters.js` mounts the shared module shell while routing view selections and commands back to each application's established loaders and record handlers.
 
 The workflow service now reads approval gates directly from reviewed manifests. Existing record vocabularies and dedicated approve, reject, verification and closure handlers remain compatible, while new independently loaded views receive the same registry, service, navigation and tenant enforcement contracts as Incident Management.
+
+## Foundation 8
+
+`auris-applications-admin.js` and `auris-applications-admin.css` provide an Odoo-style Applications administration layer for each company. Applications are shown as Installed, Available or Blocked with dependency, lifecycle, release and shared-service diagnostics. Install plans automatically include dependencies; uninstall plans include recursive dependants so administrators see and apply one controlled rollback impact instead of leaving broken navigation.
+
+The administration layer persists only the existing `companies.module_access` contract through the established tenant-admin path. `LAUNCHED_MODULES` remains the production release boundary, Dashboard remains mandatory, role enforcement still applies after installation, and unreleased modules cannot be enabled from the interface.
