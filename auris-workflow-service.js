@@ -16,7 +16,7 @@ function authContext(){
 function basePolicy(moduleKey){
   var workflow=registry.workflowOf(moduleKey);
   if(!workflow)return null;
-  return {moduleKey:moduleKey,entity:workflow.entity,initial:workflow.initial,terminal:Array.from(workflow.terminal),states:Array.from(workflow.states),transitions:Array.from(workflow.transitions,function(pair){return Array.from(pair);}),approvalTransitions:[],version:'registry',source:'registry'};
+  return {moduleKey:moduleKey,entity:workflow.entity,initial:workflow.initial,terminal:Array.from(workflow.terminal),states:Array.from(workflow.states),transitions:Array.from(workflow.transitions,function(pair){return Array.from(pair);}),approvalTransitions:Array.from(workflow.approvalTransitions||[],function(pair){return Array.from(pair);}),version:'registry',source:'registry'};
 }
 function validate(moduleKey,input){
   var base=basePolicy(moduleKey);
