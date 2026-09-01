@@ -56,3 +56,9 @@ Incident Management is the reference implementation. Its dashboard, personal wor
 3. Convert Risk Assessment, Permit to Work, Document Control, MOC, and Master Action Plan to the shared engine.
 
 Every slice must preserve company isolation, role enforcement, offline field drafts, deep links, audit evidence, and release-readiness contracts.
+
+## Foundation 5
+
+`auris-workflow-service.js` is the tenant-aware enforcement boundary for module state changes. It resolves the effective company policy, validates tenant overrides against the module's declared state model, blocks undeclared transitions, identifies approval-gated transitions, enforces module access, and records successful transitions through the shared audit service.
+
+Incident Management is the first enforced module. Existing production incident states remain declared as compatibility states so the service centralises control without silently invalidating stored records. Tenant policy changes can narrow or route allowed transitions but cannot invent states outside the reviewed module contract.

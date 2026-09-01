@@ -7,6 +7,7 @@ module.exports=function applicationSource(root=path.resolve(__dirname,'..')){
     fs.readFileSync(path.join(root,'auris-platform-services.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-runtime.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-layout.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-workflow-service.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-static-event-handlers.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-generated-event-handlers.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-runtime-event-handlers.js'),'utf8')+'\n'+
