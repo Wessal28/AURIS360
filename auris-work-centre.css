@@ -2,3 +2,4 @@
 @media(max-width:800px){.awc-shell{padding:14px}.awc-shell header{flex-direction:column}.awc-metrics{grid-template-columns:repeat(2,1fr)}.awc-filters{grid-template-columns:1fr 1fr}.awc-item{align-items:flex-start;flex-direction:column}.awc-item-meta{width:100%;flex-wrap:wrap}.awc-item-meta button{margin-left:auto}.awc-shell nav{overflow-x:auto}.awc-shell nav button{white-space:nowrap}}
 @media(max-width:480px){.awc-filters{grid-template-columns:1fr}.awc-metrics{gap:8px}.awc-item-meta button{width:100%;margin:0}}
 .awc-header-actions{display:flex;gap:8px;flex-wrap:wrap}.awc-item-main{flex:1;min-width:180px}.awc-check{width:18px;height:18px;flex:0 0 auto}
+.awc-insight-switch{display:flex;gap:7px;margin:16px 0}.awc-insight-switch button.active{border-color:#185fa5;background:#e6f0fa;color:#124b7a}
