@@ -15,6 +15,7 @@ module.exports=function applicationSource(root=path.resolve(__dirname,'..')){
     fs.readFileSync(path.join(root,'auris-workflow-service.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-approval-centre.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-record-workspace.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-reporting-engine.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-priority-module-adapters.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-extracted-module-adapters.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-applications-admin.js'),'utf8')+'\n'+
