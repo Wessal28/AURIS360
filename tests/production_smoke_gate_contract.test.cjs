@@ -31,7 +31,7 @@ test('production smoke verifies release identity, runtime boundary, headers and 
   for (const marker of ['EXPECTED_DEPLOYMENT_SHA', 'releaseSha', "runtime.environment !== 'production'", 'X-Content-Type-Options', 'X-Frame-Options', 'frame-ancestors']) {
     assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
   }
-  for (const asset of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-core.js', 'incident-management-upgrade.js', 'risk-assessment-upgrade.js', 'sw.js']) {
+  for (const asset of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-core.js', 'incident-management-upgrade.js', 'risk-assessment-upgrade.js', 'sw.js']) {
     assert.match(source, new RegExp(asset.replace(/\./g, '\\.')));
   }
   assert.match(source, /status: 'passed'/);
