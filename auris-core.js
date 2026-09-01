@@ -2393,6 +2393,7 @@ async function authOnSignIn(authData) {
   sidebarApplyState(sidebarGetState());
   devModeUpdateUI();
   await saCompanyInit();
+  await workflowHydrateTenant(ccid());
   sbInitRoleSelect();
   await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
   await loadDash({initial:true,attempt:0});
@@ -2404,6 +2405,8 @@ async function authOnSignIn(authData) {
 // -- doLogout ------------------------------------------------------------------
 function doLogout() {
   auditLogEvent('logout','auth','User signed out',{email:prof?.email||null});
+  if(window.AurisWorkflowService&&typeof window.AurisWorkflowService.clearCompany==='function')window.AurisWorkflowService.clearCompany(ccid());
+  if(window.AurisApprovalCentre&&typeof window.AurisApprovalCentre.clearCompany==='function')window.AurisApprovalCentre.clearCompany(ccid());
   if(typeof notificationCentreReset==='function')notificationCentreReset();
   // Log logout
   if(tok && prof?.id) {
@@ -7105,9 +7108,29 @@ function workflowPolicyFor(moduleName){
   if(!window.AurisWorkflowService)return null;
   return window.AurisWorkflowService.policy(moduleName,{companyId:ccid()});
 }
-function workflowConfigureTenant(companyId,moduleName,configuration){
+async function workflowConfigureTenant(companyId,moduleName,configuration,options){
   if(!isSA()&&companyId!==ccid())throw new Error('Only SEPHS administrators may configure another company workflow.');
-  return window.AurisWorkflowService.configure(companyId,moduleName,configuration);
+  return window.AurisWorkflowService.saveDraft(companyId,moduleName,configuration,options||{});
+}
+async function workflowPublishTenant(companyId,moduleName,policyId,options){
+  if(!isSA()&&companyId!==ccid())throw new Error('Only SEPHS administrators may publish another company workflow.');
+  return window.AurisWorkflowService.publish(companyId,moduleName,policyId,options||{});
+}
+async function workflowRollbackTenant(companyId,moduleName,policyId,options){
+  if(!isSA()&&companyId!==ccid())throw new Error('Only SEPHS administrators may roll back another company workflow.');
+  return window.AurisWorkflowService.rollback(companyId,moduleName,policyId,options||{});
+}
+async function workflowHydrateTenant(companyId){
+  if(!companyId||!window.AurisWorkflowService||!window.AurisApprovalCentre)return false;
+  try{
+    await Promise.all([window.AurisWorkflowService.hydrate(companyId),window.AurisApprovalCentre.hydrate(companyId)]);
+    return true;
+  }catch(error){
+    console.error('AURIS governance persistence unavailable:',error);
+    try{await auditLogEvent('governance_persistence_unavailable','workflow','Governance configuration could not be loaded',{company_id:companyId,error:String(error&&error.message||error)},{companyId:companyId});}catch(_){}
+    if(typeof toast==='function')toast('Workflow and approval changes are temporarily unavailable. Existing records remain read-only until governance configuration loads.',false);
+    return false;
+  }
 }
 function coreWorkflowRequireDirectEdit(moduleName,fromStatus,toStatus,label){
   if(coreWorkflowDirectEditAllowed(moduleName,fromStatus,toStatus))return true;
@@ -35030,6 +35053,7 @@ async function saCompanyPick(companyId) {
   saCompanyMenuClose();
   saCompanySetContext(companyId);
   await loadRolloutRuntimeConfig();
+  await workflowHydrateTenant(companyId);
   applyRoles();
 
   // Reload the current page's data with the new filter context.
@@ -42391,4 +42415,8 @@ if(window.AurisPlatformServices){
       recipientIssue:function(email){return notificationRecipientIssue(email);}
     }
   });
+}
+if(window.AurisGovernancePersistence&&window.AurisWorkflowService&&window.AurisApprovalCentre){
+  window.AurisWorkflowService.configurePersistence(window.AurisGovernancePersistence.workflow);
+  window.AurisApprovalCentre.configurePersistence(window.AurisGovernancePersistence.approvals);
 }
