@@ -2407,6 +2407,7 @@ function doLogout() {
   auditLogEvent('logout','auth','User signed out',{email:prof?.email||null});
   if(window.AurisWorkflowService&&typeof window.AurisWorkflowService.clearCompany==='function')window.AurisWorkflowService.clearCompany(ccid());
   if(window.AurisApprovalCentre&&typeof window.AurisApprovalCentre.clearCompany==='function')window.AurisApprovalCentre.clearCompany(ccid());
+  if(window.AurisWorkCentre&&typeof window.AurisWorkCentre.reset==='function')window.AurisWorkCentre.reset();
   if(typeof notificationCentreReset==='function')notificationCentreReset();
   // Log logout
   if(tok && prof?.id) {
@@ -3215,36 +3216,36 @@ function ppeInspPersonSelect(){
 var ROLE_ALLOWED = {
   'sephs_admin': null,
   'admin':       null,
-  'hse_manager': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
+  'hse_manager': ['dashboard','work','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people','users','settings','integrations','approvals','audit'],
-  'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
+  'hse_officer': ['dashboard','work','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people','approvals','audit'],
-  'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
+  'executive':   ['dashboard','work','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people'],
-  'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
+  'manager':     ['dashboard','work','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people'],
-  'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
+  'site_manager':['dashboard','work','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','sitemap','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
                   'meetings','training','actions','moc','sop','swms','people'],
-  'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
+  'supervisor':  ['dashboard','work','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','sitemap','permit','contractor','emergency','fire','chemical','ppe','noise',
                   'meetings','training','actions','sop','swms'],
-  'auditor':     ['dashboard','events','observation','inspection','risk','legal',
+  'auditor':     ['dashboard','work','events','observation','inspection','risk','legal',
                   'fire','documents','meetings','actions','moc'],
-  'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
-  'inspector':   ['dashboard','events','observation','inspection','risk','permit',
+  'hr':          ['dashboard','work','kpi','training','people','documents','ohealth','meetings'],
+  'inspector':   ['dashboard','work','events','observation','inspection','risk','permit',
                   'tools','fleet','atex','ppe','meetings'],
-  'employee':    ['dashboard','kpi','events','observation'],
-  'contractor':  ['dashboard','events','observation','permit','tools','fleet','atex','ppe','emergency','meetings'],
-  'user':        ['dashboard','kpi','events','observation'],
+  'employee':    ['dashboard','work','kpi','events','observation'],
+  'contractor':  ['dashboard','work','events','observation','permit','tools','fleet','atex','ppe','emergency','meetings'],
+  'user':        ['dashboard','work','kpi','events','observation'],
 };
 
 // Controlled rollout cohorts (AP-062). No saved rows means compatibility mode:

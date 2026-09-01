@@ -36,6 +36,11 @@
       "order": 7,
       "file": "20260901020000_modular_foundation_10_workflow_studio.sql",
       "sha256": "2366e766c57699d099dbfdc98fa8c0aebd9c7865d5d51b5f1544d8b0e0bd4995"
+    },
+    {
+      "order": 8,
+      "file": "20260901030000_modular_foundation_11_work_centre.sql",
+      "sha256": "664b5cdb74c30a057be42819ba4ec78ec663ecef4a7a56a8a69c55f111159c89"
     }
   ]
 }

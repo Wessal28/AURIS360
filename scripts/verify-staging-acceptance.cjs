@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -176,6 +176,9 @@ async function main() {
   ]);
   requireMarkers(assetSources.get('auris-workflow-studio.js'), 'Visual Workflow Studio', [
     "version:'1.0.0'", 'Save draft', 'Simulate transition', 'Export reviewed JSON', 'Import reviewed JSON'
+  ]);
+  requireMarkers(assetSources.get('auris-work-centre.js'), 'Unified Work and Activity Centre', [
+    "version:'1.0.0'", 'Offline read-only view', 'addActivity:addActivity', 'delegate:delegate', 'openSource:openSource'
   ]);
   const coreSource = assetSources.get('auris-core.js');
   requireMarkers(coreSource, 'Module navigation', [
