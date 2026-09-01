@@ -91,6 +91,9 @@
     "api/process-integrations.js": {
       "maxDuration": 30
     },
+    "api/process-imports.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -129,6 +132,10 @@
     },
     {
       "path": "/api/process-integrations",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/process-imports",
       "schedule": "*/5 * * * *"
     }
   ]

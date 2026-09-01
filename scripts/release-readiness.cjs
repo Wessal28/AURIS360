@@ -33,6 +33,7 @@ const testFiles = [
   ,'tests/dashboard_designer_contract.test.cjs'
   ,'tests/automation_engine_contract.test.cjs'
   ,'tests/integration_engine_contract.test.cjs'
+  ,'tests/governed_import_contract.test.cjs'
   ,'tests/application_lifecycle_contract.test.cjs'
 ];
 

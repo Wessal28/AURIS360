@@ -36932,7 +36932,7 @@ function integShowCustom() {
 function integRenderAPIView() {
   var centreHost=document.getElementById('integration-centre-body');
   if(centreHost&&window.AurisIntegrationCentre){
-    window.AurisIntegrationCentre.mount(centreHost,{companyId:function(){return ccid();},role:function(){return activeRole();},environment:function(){return String(AURIS_RUNTIME_CONFIG.environment||'unconfigured');},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(error){centreHost.innerHTML=registerErrorHtml('Integration Centre',error.message);});
+    window.AurisIntegrationCentre.mount(centreHost,{companyId:function(){return ccid();},userId:function(){return prof&&prof.id||'';},role:function(){return activeRole();},environment:function(){return String(AURIS_RUNTIME_CONFIG.environment||'unconfigured');},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(error){centreHost.innerHTML=registerErrorHtml('Integration Centre',error.message);});
   }
 }
 
