@@ -41,13 +41,15 @@ function activate(key,options){
   activeKey=key;
   var loader=typeof options.loader==='function'?options.loader:root[status.manifest.loader];
   function complete(){callHook(key,'enter',context);emit('enter',context,false);return {ok:true,key:key,previousKey:previous,missingDependencies:status.missing};}
-  function failed(error){context.error=error;emit('error',context,false);throw error;}
+  function failed(error){activeKey=previous;context.error=error;emit('error',context,false);if(root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.isolateFailure==='function'){root.AurisModuleExtraction.isolateFailure(key,error,context);return {ok:false,key:key,previousKey:previous,recoverable:true,error:error};}throw error;}
   try{
+    var preparation=root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.prepare==='function'?root.AurisModuleExtraction.prepare(key,context):null;
+    if(preparation&&typeof preparation.then==='function')return preparation.then(function(){loader=root[status.manifest.loader]||loader;var loaded=typeof loader==='function'?loader(context):undefined;return loaded&&typeof loaded.then==='function'?loaded.then(complete,failed):complete();},failed);
     var result=typeof loader==='function'?loader(context):undefined;
     return result&&typeof result.then==='function'?result.then(complete,failed):complete();
   }catch(error){return failed(error);}
 }
 function current(){return activeKey;}
 
-root.AurisModuleRuntime=Object.freeze({version:'1.0.0',activate:activate,current:current,readiness:readiness,register:register});
+root.AurisModuleRuntime=Object.freeze({version:'2.0.0',activate:activate,current:current,readiness:readiness,register:register});
 })(typeof window!=='undefined'?window:globalThis);

@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -154,7 +154,13 @@ async function main() {
     "key:'documents'", "loader:'loadDocs'"
   ]);
   requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
-    "version:'1.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"
+    "version:'2.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"
+  ]);
+  requireMarkers(assetSources.get('auris-module-extraction.js'), 'Module extraction boundary', [
+    "version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure', 'safeAsset:safeAsset'
+  ]);
+  requireMarkers(assetSources.get('auris-extracted-module-adapters.js'), 'Extracted module adapters', [
+    "version:'1.0.0'", 'contextFor:contextFor', 'auris:extracted-module-ready'
   ]);
   requireMarkers(assetSources.get('auris-platform-services.js'), 'Platform services', [
     "version:'1.0.0'", 'configure:configure', 'notifications:facade'

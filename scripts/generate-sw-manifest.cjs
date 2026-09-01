@@ -63,6 +63,12 @@ const dynamicPrintAssets = [
   'auris-print-fire-layout.css', 'auris-print-site-map.css'
 ];
 for (const asset of dynamicPrintAssets) assetSet.add(asset);
+const lazyModuleAssets = [
+  'learning-competency-upgrade.js', 'elearning-course-path.js',
+  'contractor-management-upgrade.js', 'chemical-control-upgrade.js',
+  'tools-equipment-upgrade.js', 'legal-compliance-upgrade.js'
+];
+for (const asset of lazyModuleAssets) assetSet.add(asset);
 
 for (const reference of collectTagReferences(html)) assetSet.add(reference);
 for (const icon of manifest.icons || []) {

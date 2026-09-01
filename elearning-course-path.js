@@ -96,5 +96,6 @@
     window._eleCourseGo=function(i){if(i<0||i>lessons.length)return;if(i===lessons.length){index=i;renderQuiz();outline();return;}if(!preview&&i>0&&!progress[lessons[i-1].id]?.completed){toast('Complete the previous video first.',false);return;}index=i;renderVideo();outline();};
     renderVideo();outline();
   };
-  document.addEventListener('DOMContentLoaded',ensureBuilder);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureBuilder);
+  else ensureBuilder();
 })();
