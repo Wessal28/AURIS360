@@ -88,3 +88,9 @@ The administration layer persists only the existing `companies.module_access` co
 `workflow_policy_versions` stores immutable, versioned drafts and published policies with optimistic revision checks, one active policy per company and module, append-only lifecycle evidence, and rollback by creating a new published version from reviewed history. Atomic Supabase RPCs serialise draft numbering, publication, rollback, approval requests and decisions so retries cannot create duplicate pending approvals or decide a request twice.
 
 The existing `approval_requests` and `approval_decisions` tables remain authoritative. Foundation 9 extends them with exact text record identity, source page and reference, transition evidence, idempotency keys and revision numbers. Company RLS remains the first tenant boundary; security-definer functions also make explicit company and management-role checks before performing governed writes.
+
+## Foundation 10
+
+`auris-workflow-studio.js` and `auris-workflow-studio.css` provide a tenant-aware Visual Workflow Studio inside Settings. Company administrators and HSE managers can start from reviewed Incident, Permit, Risk, Document and MOC templates; configure transition roles, required fields, ordered approval stages, SLA targets and escalation roles; simulate access; review active-record impact; save drafts; publish; clone; export/import reviewed JSON; and restore historical policy versions.
+
+The Studio stores declarative JSON only. The shared workflow service rejects executable expressions and undeclared states, validates graph reachability and terminal states, and enforces roles, required fields and approval gates during transitions rather than relying on hidden UI controls. Publication and rollback continue through the Phase 9 atomic persistence functions, retaining tenant RLS, optimistic locking and append-only lifecycle evidence.

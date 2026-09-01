@@ -31,6 +31,11 @@
       "order": 6,
       "file": "20260901010000_modular_foundation_9_governance_persistence.sql",
       "sha256": "a52b0156e2fa0663c8d8f4518fe629744537f6baaf6ee4170a079478b8e74f63"
+    },
+    {
+      "order": 7,
+      "file": "20260901020000_modular_foundation_10_workflow_studio.sql",
+      "sha256": "2366e766c57699d099dbfdc98fa8c0aebd9c7865d5d51b5f1544d8b0e0bd4995"
     }
   ]
 }

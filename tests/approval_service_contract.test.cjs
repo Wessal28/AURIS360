@@ -36,6 +36,26 @@ test('approval decisions resume workflow only with approved evidence',async()=>{
   assert.equal(persisted,'closed');
 });
 
+test('multi-stage approvals advance atomically before resuming source workflow',async()=>{
+  const ctx=runtime(),workflow=ctx.AurisWorkflowService,approvals=ctx.AurisApprovalCentre;
+  approvals.registerAdapter({key:'incident',table:'incidents',page:'events'});
+  workflow.configure('co-1','events',{version:'7',transitions:[['open','closed']],rules:[{from:'open',to:'closed',approvalStages:[{role:'hse_manager'},{role:'admin'}]}]});
+  let step=1;
+  approvals.configurePersistence({
+    load:async()=>[],
+    create:async item=>Object.assign({},item,{revision:1,currentStep:1}),
+    decide:async item=>step++===1?Object.assign({},item,{status:'pending',revision:2,currentStep:2}):Object.assign({},item,{status:'approved',revision:3,currentStep:2})
+  });
+  await approvals.hydrate('co-1');
+  const pending=(await workflow.transition('events',{id:'inc-4',company_id:'co-1',status:'open'},'closed',{context:{companyId:'co-1'}})).request;
+  assert.equal(pending.approvalStages.length,2);
+  let persisted='';
+  const first=await approvals.decide(pending.id,'approved',{context:{companyId:'co-1'},record:{id:'inc-4',status:'open'},persist:async to=>{persisted=to;}});
+  assert.equal(first.status,'pending');assert.equal(first.currentStep,2);assert.equal(persisted,'');
+  const second=await approvals.decide(pending.id,'approved',{context:{companyId:'co-1'},record:{id:'inc-4',status:'open'},persist:async to=>{persisted=to;return {status:to};}});
+  assert.equal(second.status,'approved');assert.equal(persisted,'closed');
+});
+
 test('cross-company queue records and missing exact ids are controlled failures',()=>{
   const approvals=runtime().AurisApprovalCentre;
   approvals.registerAdapter({key:'incident',table:'incidents',page:'events'});
@@ -45,7 +65,7 @@ test('cross-company queue records and missing exact ids are controlled failures'
 
 test('deployment loads approval service before production core and retains existing adapters',()=>{
   const html=read('index.html'),core=read('auris-core.js'),manifest=read('sw-assets.js');
-  assert.ok(html.indexOf('auris-approval-centre.js?v=20260901-9')<html.indexOf('auris-core.js'));
+  assert.ok(html.indexOf('auris-approval-centre.js?v=20260901-10')<html.indexOf('auris-core.js'));
   assert.match(core,/AurisApprovalCentre\.registerAdapters\(APPROVAL_SOURCE_ADAPTERS\)/);
   assert.match(core,/AurisApprovalCentre\.assertSource/);
   assert.match(manifest,/auris-approval-centre\.js/);

@@ -15,13 +15,18 @@ function mapPolicy(row){
 }
 function mapApproval(row){
   row=row||{};var recordId=row.source_record_id||row.related_id||'';
-  return {id:row.id,status:row.status||'pending',moduleKey:row.module_name||'',from:row.from_state||'',to:row.to_state||'',reason:row.request_reason||'',companyId:row.company_id||null,requestedBy:row.requested_by||row.submitted_by||null,requestedAt:row.requested_at||row.submitted_at||row.created_at||null,decidedBy:row.decided_by||null,decidedAt:row.decided_at||row.completed_at||null,decisionReason:row.decision_reason||row.release_reason||'',revision:row.revision||1,source:{adapterKey:row.source_adapter_key||row.module_name||'',moduleKey:row.module_name||'',page:row.source_page||row.module_name||'',table:row.related_table||'',recordId:String(recordId),ref:row.source_ref||'',companyId:row.company_id||null}};
+  return {id:row.id,status:row.status||'pending',moduleKey:row.module_name||'',from:row.from_state||'',to:row.to_state||'',reason:row.request_reason||'',companyId:row.company_id||null,requestedBy:row.requested_by||row.submitted_by||null,requestedAt:row.requested_at||row.submitted_at||row.created_at||null,decidedBy:row.decided_by||null,decidedAt:row.decided_at||row.completed_at||null,decisionReason:row.decision_reason||row.release_reason||'',revision:row.revision||1,policyVersion:row.policy_version||null,approvalStages:clone(row.approval_stages||[]),currentStep:Number(row.current_step_no||1),source:{adapterKey:row.source_adapter_key||row.module_name||'',moduleKey:row.module_name||'',page:row.source_page||row.module_name||'',table:row.related_table||'',recordId:String(recordId),ref:row.source_ref||'',companyId:row.company_id||null}};
 }
 
 var workflowAdapter={
   load:async function(companyId){
     companyId=requiredCompany(companyId);
     var rows=await request('/workflow_policy_versions?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&status=eq.published&order=module_key.asc,version.desc');
+    return (rows||[]).map(mapPolicy);
+  },
+  history:async function(companyId,moduleKey){
+    companyId=requiredCompany(companyId);
+    var rows=await request('/workflow_policy_versions?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&module_key=eq.'+encodeURIComponent(String(moduleKey||''))+'&order=version.desc&limit=100');
     return (rows||[]).map(mapPolicy);
   },
   saveDraft:async function(companyId,moduleKey,policy,options){
@@ -49,11 +54,11 @@ var approvalAdapter={
   },
   create:async function(item){
     item=item||{};var source=item.source||{},companyId=requiredCompany(item.companyId||source.companyId);
-    var row=first(await request('/rpc/request_workflow_approval',{m:'POST',p:'return=representation',b:{p_company_id:companyId,p_module_name:String(item.moduleKey||source.moduleKey||''),p_related_table:String(source.table||''),p_source_record_id:String(source.recordId||''),p_source_page:String(source.page||''),p_source_ref:String(source.ref||''),p_source_adapter_key:String(source.adapterKey||''),p_from_state:String(item.from||''),p_to_state:String(item.to||''),p_reason:String(item.reason||''),p_idempotency_key:String(item.id||'')}}));
+    var row=first(await request('/rpc/request_workflow_approval_v2',{m:'POST',p:'return=representation',b:{p_company_id:companyId,p_module_name:String(item.moduleKey||source.moduleKey||''),p_related_table:String(source.table||''),p_source_record_id:String(source.recordId||''),p_source_page:String(source.page||''),p_source_ref:String(source.ref||''),p_source_adapter_key:String(source.adapterKey||''),p_from_state:String(item.from||''),p_to_state:String(item.to||''),p_reason:String(item.reason||''),p_idempotency_key:String(item.id||''),p_policy_version:String(item.policyVersion||''),p_approval_stages:clone(item.approvalStages||[])}}));
     if(!row)throw new Error('Approval request was not returned by persistence.');return mapApproval(row);
   },
   decide:async function(item){
-    item=item||{};var row=first(await request('/rpc/decide_workflow_approval',{m:'POST',p:'return=representation',b:{p_request_id:item.id,p_decision:String(item.status||''),p_reason:String(item.decisionReason||''),p_expected_revision:item.revision==null?null:Number(item.revision)}}));
+    item=item||{};var row=first(await request('/rpc/decide_workflow_approval_v2',{m:'POST',p:'return=representation',b:{p_request_id:item.id,p_decision:String(item.status||''),p_reason:String(item.decisionReason||''),p_expected_revision:item.revision==null?null:Number(item.revision)}}));
     if(!row)throw new Error('Approval decision was not returned by persistence.');return mapApproval(row);
   }
 };
