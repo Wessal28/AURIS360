@@ -44,12 +44,8 @@
 .auris-integrations-s-e2c857d54b{overflow:auto}
 .auris-integrations-s-e56ce903a9{font-size:18px;font-weight:800}
 .auris-integrations-s-eb99a4c193{white-space:nowrap}
-.auris-integrations-s-ef883586d4{background:#1a1a2e;border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#a8d8f0;overflow-x:auto;white-space:pre}
 .auris-integrations-s-f54c4d1dcf{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
 .auris-integrations-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
-/* Preserve former inline precedence over existing ID selectors. */
-#api-base-url.auris-integrations-s-b38c056345{background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all}
-#api-curl-example.auris-integrations-s-ef883586d4{background:#1a1a2e;border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#a8d8f0;overflow-x:auto;white-space:pre}
 #integ-add-btn.auris-integrations-s-6aa34d7432{display:none}
 #integ-api-view.auris-integrations-s-6aa34d7432{display:none}
 #integ-config-modal.auris-integrations-s-ba18353cfd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px}

@@ -33,9 +33,9 @@ test('tenant lifecycle migration is RLS-protected, idempotent and rollback-capab
 
 test('operations UI and deployment expose version, health and release identity',()=>{
   const html=read('index.html'),core=read('auris-core.js'),api=read('api/runtime-config.js'),admin=read('auris-applications-admin.js'),manifest=read('sw-assets.js');
-  assert.match(html,/modular-foundation-19/);assert.match(html,/settings-application-lifecycle-card/);assert.ok(html.indexOf('auris-application-lifecycle.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
+  assert.match(html,/modular-foundation-20/);assert.match(html,/settings-application-lifecycle-card/);assert.ok(html.indexOf('auris-application-lifecycle.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
   assert.match(core,/AurisApplicationLifecycle\.configurePersistence/);assert.match(core,/AurisApplicationLifecycle\.renderOperations/);assert.match(admin,/platformRange/);
-  for(const marker of ["build: '2026-09-01-modular-foundation-19'","platformVersion: '2.0.0'","moduleRegistryVersion: '2.1.0'"])assert.match(api,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ["build: '2026-09-02-modular-foundation-20'","platformVersion: '2.0.0'","moduleRegistryVersion: '2.1.0'"])assert.match(api,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(manifest,/auris-application-lifecycle\.js/);assert.match(manifest,/auris-application-lifecycle-persistence\.js/);
 });
 

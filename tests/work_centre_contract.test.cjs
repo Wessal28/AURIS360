@@ -34,7 +34,7 @@ test('work centre blocks governed mutations offline and requires exact sources',
 test('phase 11 is registered, cache-versioned, responsive and release-verifiable',()=>{
   const html=read('index.html'),registry=read('auris-module-registry.js'),css=read('auris-work-centre.css'),manifest=read('sw-assets.js');
   assert.match(registry,/key:'work'.*loader:'loadWorkCentre'/);
-  assert.match(html,/id="page-work"/);assert.match(html,/auris-work-centre\.js\?v=20260901-11/);assert.match(html,/modular-foundation-(?:11|12|13|14|15|16|17|18|19)/);
+  assert.match(html,/id="page-work"/);assert.match(html,/auris-work-centre\.js\?v=20260901-11/);assert.match(html,/modular-foundation-(?:11|12|13|14|15|16|17|18|19|20)/);
   assert.match(css,/@media\(max-width:800px\)/);assert.match(css,/@media\(max-width:480px\)/);
   assert.match(manifest,/auris-work-centre\.js/);assert.match(manifest,/auris-work-centre\.css/);
 });

@@ -13,18 +13,19 @@ const section = index.slice(start, end);
 test('Integrations has no inline style attributes', () => {
   assert.match(index, /<link rel="stylesheet" href="auris-integrations-static\.css\?v=\d+-\d+">/);
   assert.equal((section.match(/\sstyle=(?:"[^"]*"|'[^']*')/gi) || []).length, 0);
-  assert.ok((section.match(/auris-integrations-s-[a-f0-9]{10}/g) || []).length >= 67);
-  assert.ok((css.match(/^\.auris-integrations-s-[a-f0-9]{10}\{/gm) || []).length >= 47);
+  assert.ok((section.match(/auris-integrations-s-[a-f0-9]{10}/g) || []).length >= 51);
+  assert.ok((css.match(/^\.auris-integrations-s-[a-f0-9]{10}\{/gm) || []).length >= 46);
 });
 
-test('Connector, testing, sync, mapping and API states remain runtime-controlled', () => {
+test('Connector, testing, sync, mapping and governed API states remain runtime-controlled', () => {
   for (const id of ['integ-status-banner', 'itab-all', 'itab-erp', 'itab-hr', 'itab-iot', 'itab-security', 'itab-bi', 'itab-productivity', 'itab-api', 'integ-config-modal', 'integ-modal-status-row', 'integ-disconnect-btn', 'integ-sync-options', 'integ-sync-log-section', 'integ-data-mapping', 'integ-api-view']) {
     assert.match(section, new RegExp(`<[^>]*id="${id}"[^>]*class="[^"]*auris-integrations-s-|<[^>]*class="[^"]*auris-integrations-s-[^"]*"[^>]*id="${id}"`));
     assert.match(css, new RegExp(`#${id}\\.auris-integrations-s-[a-f0-9]{10}\\{`));
   }
-  for (const id of ['integ-grid', 'integ-modal-fields', 'integ-test-btn', 'integ-connect-btn', 'integ-sync-freq', 'integ-webhook-url', 'api-base-url', 'api-endpoints-table', 'api-curl-example']) {
+  for (const id of ['integ-grid', 'integ-modal-fields', 'integ-test-btn', 'integ-connect-btn', 'integ-sync-freq', 'integ-webhook-url', 'integration-centre-body']) {
     assert.match(section, new RegExp(`id="${id}"`));
   }
+  assert.doesNotMatch(section, /id="api-base-url"|id="api-endpoints-table"|id="api-curl-example"/);
   assert.match(css, /display:none/);
   assert.doesNotMatch(css, /!important/i);
 });

@@ -3343,9 +3343,6 @@ integSave()
     "h1114": function (event) {
 integDisconnect()
     },
-    "h1115": function (event) {
-integCopyBaseUrl()
-    },
     "h1116": function (event) {
 genFullAI()
     },

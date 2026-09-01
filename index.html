@@ -10,7 +10,8 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-09-01-modular-foundation-19"/>
+<meta name="auris-canonical-origin" content="https://auris360.app"/>
+<meta name="auris-build" content="2026-09-02-modular-foundation-20"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -57,6 +58,8 @@
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
 <script src="auris-automation-centre.js?v=20260901-19"></script>
+<script src="auris-integration-engine.js?v=20260902-20"></script>
+<script src="auris-integration-centre.js?v=20260902-20"></script>
 <script src="auris-governance-persistence.js?v=20260901-10"></script>
 <script src="auris-workflow-studio.js?v=20260901-10"></script>
 <script src="auris-work-centre.js?v=20260901-11"></script>
@@ -93,6 +96,7 @@
 <link rel="stylesheet" href="auris-reporting-engine.css?v=20260901-17">
 <link rel="stylesheet" href="auris-dashboard-designer.css?v=20260901-18">
 <link rel="stylesheet" href="auris-automation-centre.css?v=20260901-19">
+<link rel="stylesheet" href="auris-integration-centre.css?v=20260902-20">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
@@ -10044,43 +10048,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 
 <!-- API & Webhooks tab content (shown inline, not modal) -->
 <div id="integ-api-view" class="auris-integrations-s-6aa34d7432">
-<div class="auris-integrations-s-03826b79d9">
-<div class="card">
-<div class="card-title">API Access</div>
-<div class="auris-integrations-s-5faab67eef">Use the AURIS360 API to push/pull data from any external system</div>
-<div class="form3group"><label class="form3label">Base URL</label>
-<div id="api-base-url" class="auris-integrations-s-b38c056345">https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1</div></div>
-<div class="form3group"><label class="form3label">Authentication</label>
-<div class="auris-integrations-s-a6a60facc3">Header: <strong>apikey</strong>: [your API key]</div></div>
-<button class="btn btn-sm" data-auris-onclick="h1115"><i class="ti ti-copy"></i>Copy base URL</button>
-</div>
-<div class="card">
-<div class="card-title">Webhook Receiver</div>
-<div class="auris-integrations-s-5faab67eef">Receive events from external systems into AURIS360</div>
-<div class="form3group"><label class="form3label">Inbound webhook URL</label>
-<div class="auris-integrations-s-b38c056345">https://auris360.app/api/webhook</div></div>
-<div class="form3group"><label class="form3label">Supported events</label>
-<div class="auris-integrations-s-027bec3c19">incident.created - inspection.completed - action.overdue - permit.expired - sensor.alert - access.denied</div></div>
-</div>
-</div>
-<div class="card auris-integrations-s-42a6ced8b6">
-<div class="card-title">API Endpoints</div>
-<div class="auris-integrations-s-e2c857d54b">
-<table class="auris-integrations-s-5d3a367254">
-<thead><tr class="auris-integrations-s-933cd425ec">
-<th class="auris-integrations-s-0ca6aa9c54">Method</th>
-<th class="auris-integrations-s-0ca6aa9c54">Endpoint</th>
-<th class="auris-integrations-s-0ca6aa9c54">Description</th>
-<th class="auris-integrations-s-0ca6aa9c54">Data</th>
-</tr></thead>
-<tbody id="api-endpoints-table"></tbody>
-</table>
-</div>
-</div>
-<div class="card">
-<div class="card-title">Quick start - cURL example</div>
-<div id="api-curl-example" class="auris-integrations-s-ef883586d4"></div>
-</div>
+<div id="integration-centre-body"><div class="loading">Loading governed Integration Centre...</div></div>
 </div>
 
 </div><!-- end page-integrations -->

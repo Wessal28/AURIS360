@@ -19,6 +19,8 @@ module.exports=function applicationSource(root=path.resolve(__dirname,'..')){
     fs.readFileSync(path.join(root,'auris-dashboard-designer.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-automation-engine.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-automation-centre.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-integration-engine.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-integration-centre.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-priority-module-adapters.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-extracted-module-adapters.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-applications-admin.js'),'utf8')+'\n'+

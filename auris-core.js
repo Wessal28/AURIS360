@@ -2037,8 +2037,6 @@ function authUpdateStrength() {
 document.addEventListener('DOMContentLoaded', function() {
   var regPw=document.getElementById('reg-pw');
   if(regPw) regPw.addEventListener('input', authUpdateStrength);
-  var apiBaseUrl=document.getElementById('api-base-url');
-  if(apiBaseUrl&&SB)apiBaseUrl.textContent=SB+'/rest/v1';
   enhanceIconOnlyButtons(document);
   if(window.MutationObserver) {
     var iconButtonObserver = new MutationObserver(function(mutations) {
@@ -36932,40 +36930,10 @@ function integShowCustom() {
 
 // -- API & Webhooks view -------------------------------------------------------
 function integRenderAPIView() {
-  // API endpoints table
-  var tbody = document.getElementById('api-endpoints-table');
-  var endpoints = [
-    {method:'GET',    endpoint:'/events',        desc:'List all incidents',              data:'id, event_type, severity, status, date'},
-    {method:'POST',   endpoint:'/events',        desc:'Create new incident',             data:'event_type, description, severity, location'},
-    {method:'GET',    endpoint:'/inspections',   desc:'List inspections/audits',         data:'id, inspection_type, site, status, score'},
-    {method:'POST',   endpoint:'/inspections',   desc:'Create inspection record',        data:'inspection_type, site, items, inspector'},
-    {method:'GET',    endpoint:'/action_tracker',desc:'List corrective actions',         data:'id, title, status, assigned_to, due_date'},
-    {method:'PATCH',  endpoint:'/action_tracker',desc:'Update action status',            data:'status, completed_date, notes'},
-    {method:'GET',    endpoint:'/training_followup',desc:'List training records',       data:'person_name, training_topic, expiry_date'},
-    {method:'GET',    endpoint:'/authorisations',desc:'List licences/certificates',      data:'person_name, auth_type, expiry_date, status'},
-    {method:'GET',    endpoint:'/people',        desc:'List workforce (active)',          data:'first_name, last_name, department, status'},
-    {method:'POST',   endpoint:'/noise_surveys', desc:'Create noise survey record',      data:'location, leq_db, peak_db, survey_date'},
-    {method:'GET',    endpoint:'/kpi_monthly_data',desc:'KPI performance data',          data:'indicator_id, year, month, actual, target'},
-    {method:'POST',   endpoint:'/audit_findings',desc:'Submit audit finding',            data:'inspection_id, finding_type, description, clause'},
-  ];
-  var mColors = {GET:'#1D9E75',POST:'#185FA5',PATCH:'#EF9F27',DELETE:'#DC2626',PUT:'#5B21B6'};
-  tbody.innerHTML = endpoints.map(function(e,i){
-    var bg=i%2===0?'#fff':'#f9fafb';
-    return '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-      +'<td style="padding:6px 12px"><span style="background:'+(mColors[e.method]||'#6B7280')+'20;color:'+(mColors[e.method]||'#6B7280')+';padding:2px 7px;border-radius:4px;font-weight:700;font-family:monospace;font-size:10px">'+e.method+'</span></td>'
-      +'<td style="padding:6px 12px;font-family:monospace;font-size:11px;color:#185FA5">'+escH(e.endpoint)+'</td>'
-      +'<td style="padding:6px 12px;font-size:11px">'+escH(e.desc)+'</td>'
-      +'<td style="padding:6px 12px;font-size:10px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escH(e.data)+'">'+escH(e.data)+'</td>'
-      +'</tr>';
-  }).join('');
-  // cURL example
-  var curlEl = document.getElementById('api-curl-example');
-  if(curlEl) curlEl.textContent = '# Get all open incidents\ncurl -X GET \\\n  \'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1/events?status=eq.open\' \\\n  -H \'apikey: YOUR_API_KEY\' \\\n  -H \'Authorization: Bearer YOUR_API_KEY\' \\\n  -H \'Content-Type: application/json\'\n\n# Create a new incident\ncurl -X POST \\\n  \'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1/events\' \\\n  -H \'apikey: YOUR_API_KEY\' \\\n  -H \'Authorization: Bearer YOUR_API_KEY\' \\\n  -H \'Content-Type: application/json\' \\\n  -H \'Prefer: return=representation\' \\\n  -d \'{"event_type":"near_miss","description":"Example incident","severity":"low","location":"Site A"}\'';
-}
-
-function integCopyBaseUrl() {
-  var url = 'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1';
-  navigator.clipboard?.writeText(url).then(function(){toast('API base URL copied!');});
+  var centreHost=document.getElementById('integration-centre-body');
+  if(centreHost&&window.AurisIntegrationCentre){
+    window.AurisIntegrationCentre.mount(centreHost,{companyId:function(){return ccid();},role:function(){return activeRole();},environment:function(){return String(AURIS_RUNTIME_CONFIG.environment||'unconfigured');},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(error){centreHost.innerHTML=registerErrorHtml('Integration Centre',error.message);});
+  }
 }
 
 
