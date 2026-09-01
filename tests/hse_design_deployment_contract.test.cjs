@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('modular foundation release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-09-01-modular-foundation-11"/);
+  assert.match(index, /name="auris-build" content="2026-09-01-modular-foundation-12"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
@@ -24,8 +24,7 @@ test('all corrected design assets use the same release cache key', () => {
     'risk-assessment-upgrade.js',
     'auris-audits-inspections-static.css',
     'contractor-management-upgrade.css',
-    'tools-equipment-upgrade.css',
-    'tools-equipment-upgrade.js'
+    'tools-equipment-upgrade.css'
   ];
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -35,7 +34,6 @@ test('all corrected design assets use the same release cache key', () => {
       ? (asset.startsWith('incident-management-upgrade.') ? '20260831-4' : '20260823-4')
       : ['auris-base.css'].includes(asset)
       ? '20260822-1'
-      : asset === 'tools-equipment-upgrade.js' ? '20260822-3'
       : asset === 'tools-equipment-upgrade.css' || asset === 'contractor-management-upgrade.css' ? '20260821-4' : '20260821-3';
     assert.match(index, new RegExp(`${escaped}\\?v=${expected}`), `${asset} must be cache-versioned`);
   }

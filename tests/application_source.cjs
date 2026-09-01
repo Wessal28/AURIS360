@@ -6,10 +6,12 @@ module.exports=function applicationSource(root=path.resolve(__dirname,'..')){
     fs.readFileSync(path.join(root,'auris-module-registry.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-platform-services.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-runtime.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-module-extraction.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-layout.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-workflow-service.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-approval-centre.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-priority-module-adapters.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-extracted-module-adapters.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-applications-admin.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-workflow-studio.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-work-centre.js'),'utf8')+'\n'+

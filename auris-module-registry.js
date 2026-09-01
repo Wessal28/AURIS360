@@ -44,6 +44,22 @@ var modules = [
   {key:'settings',name:'Settings',shortName:'Settings',icon:'ti-settings',color:'#374151',category:'Administration',legacySection:'Management',order:650,platform:true,companyScoped:false,loader:'loadSettings',dependencies:[]}
 ];
 
+var extractionMap={
+  inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js']},
+  contractor:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['contractor-management-upgrade.js']},
+  people:{group:'people',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  chemical:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['chemical-control-upgrade.js']},
+  tools:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['tools-equipment-upgrade.js']},
+  atex:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  emergency:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]},
+  fire:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  esg:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  legal:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['legal-compliance-upgrade.js']},
+  fleet:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
+  ohealth:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]}
+};
+
 var byKey=Object.create(null);
 function freezeLayout(layout){
   layout=layout||{};
@@ -71,6 +87,10 @@ function freezeWorkflow(workflow,moduleKey){
   });
   return Object.freeze({entity:workflow.entity||moduleKey,initial:workflow.initial,terminal:Object.freeze(terminal),states:Object.freeze(states),transitions:Object.freeze(transitions),approvalTransitions:Object.freeze(approvalTransitions)});
 }
+function freezeExtraction(extraction){
+  if(!extraction)return null;
+  return Object.freeze({group:extraction.group,mode:extraction.mode||'extracted',services:Object.freeze((extraction.services||[]).slice()),assets:Object.freeze((extraction.assets||[]).slice())});
+}
 modules.forEach(function(module){
   if(!module.key||byKey[module.key])throw new Error('Invalid or duplicate AURIS module key: '+module.key);
   module.version=module.version||'2.0.0';
@@ -78,6 +98,7 @@ modules.forEach(function(module){
   module.layout=freezeLayout(module.layout);
   module.lifecycle=Object.freeze(Object.assign({managed:false},module.lifecycle||{}));
   module.workflow=freezeWorkflow(module.workflow,module.key);
+  module.extraction=freezeExtraction(extractionMap[module.key]||module.extraction);
   byKey[module.key]=Object.freeze(module);
 });
 modules.forEach(function(module){module.dependencies.forEach(function(dependency){if(!byKey[dependency])throw new Error('Unknown dependency '+dependency+' declared by '+module.key);});});
