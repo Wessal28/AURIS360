@@ -13,7 +13,9 @@ const budgets={
   'auris-view-engine.js':36*1024,
   'auris-record-workspace.js':40*1024,
   'auris-reporting-engine.js':40*1024,
-  'auris-dashboard-designer.js':48*1024
+  'auris-dashboard-designer.js':48*1024,
+  'auris-automation-engine.js':32*1024,
+  'auris-automation-centre.js':48*1024
 };
 const failures=[];
 for(const [file,budget] of Object.entries(budgets))if(size(file)>budget)failures.push(`${file} exceeds ${budget} bytes (${size(file)})`);

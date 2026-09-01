@@ -144,6 +144,8 @@ async function main() {
     ['auris-record-workspace.js', ["version:'1.0.0'", 'registerAdapter:registerAdapter', 'exactSource:exactSource', 'model:model', 'open:open', 'diagnostics:diagnostics']],
     ['auris-reporting-engine.js', ["version:'1.0.0'", 'definition:definition', 'aggregate:aggregate', 'csv:csv', 'mount:mount', 'diagnostics:diagnostics']],
     ['auris-dashboard-designer.js', ["version:'1.0.0'", 'configuration:configuration', 'mount:mount', 'diagnostics:diagnostics']],
+    ['auris-automation-engine.js', ["version:'1.0.0'", 'definition:definition', 'plan:plan', 'execute:execute', 'diagnostics:diagnostics']],
+    ['auris-automation-centre.js', ["version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage']],
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],

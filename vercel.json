@@ -85,6 +85,9 @@
     "api/process-acknowledgements.js": {
       "maxDuration": 30
     },
+    "api/process-automations.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -115,6 +118,10 @@
     },
     {
       "path": "/api/process-acknowledgements",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/process-automations",
       "schedule": "*/5 * * * *"
     }
   ]
