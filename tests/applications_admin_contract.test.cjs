@@ -42,7 +42,7 @@ test('production administration uses existing company access persistence and dir
   assert.match(source,/addEventListener\('click'/);
   assert.doesNotMatch(source,/onclick=/);
   assert.ok(html.indexOf('auris-applications-admin.js?v=20260901-8')<html.indexOf('auris-core.js'));
-  assert.match(html,/auris-applications-admin\.css\?v=20260901-8/);
+  assert.match(html,/auris-applications-admin\.css\?v=20260901-13/);
   assert.match(css,/@media\(max-width:760px\)/);
   assert.match(manifest,/auris-applications-admin\.js/);
   assert.match(manifest,/auris-applications-admin\.css/);

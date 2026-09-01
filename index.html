@@ -10,7 +10,7 @@
 <meta name="application-name" content="AURIS360"/>
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
-<meta name="auris-build" content="2026-09-01-modular-foundation-12"/>
+<meta name="auris-build" content="2026-09-01-modular-foundation-13"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -41,9 +41,11 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260814-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-module-registry.js?v=20260901-12"></script>
+<script src="auris-module-registry.js?v=20260901-13"></script>
 <script src="auris-platform-services.js?v=20260831-3"></script>
-<script src="auris-module-runtime.js?v=20260901-12"></script>
+<script src="auris-module-runtime.js?v=20260901-13"></script>
+<script src="auris-application-lifecycle.js?v=20260901-13"></script>
+<script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-module-extraction.js?v=20260901-12"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260901-10"></script>
@@ -62,7 +64,7 @@
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
 <link rel="stylesheet" href="auris-module-layout.css?v=20260831-4">
 <link rel="stylesheet" href="auris-module-extraction.css?v=20260901-12">
-<link rel="stylesheet" href="auris-applications-admin.css?v=20260901-8">
+<link rel="stylesheet" href="auris-applications-admin.css?v=20260901-13">
 <link rel="stylesheet" href="auris-workflow-studio.css?v=20260901-10">
 <link rel="stylesheet" href="auris-work-centre.css?v=20260901-11">
 <link rel="stylesheet" href="incident-management-upgrade.css?v=20260831-4">
@@ -10883,6 +10885,12 @@ I can help you:<br>
     </div>
   </div>
   <div id="client-demo-command-body"><div class="loading">Loading go-live readiness center...</div></div>
+</div>
+
+<div class="card auris-settings-s-6aa34d7432" id="settings-application-lifecycle-card">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-versions auris-settings-s-ca32b871b2"></i>Application Lifecycle &amp; Operations</div>
+  <div class="auris-settings-s-934634063f">Installed versions, migration readiness, pilot activation, operational health and safe rollback evidence for the selected company.</div>
+  <div id="application-lifecycle-body"><div class="loading">Loading application lifecycle evidence...</div></div>
 </div>
 
 <div class="card" id="settings-security-readiness-card">

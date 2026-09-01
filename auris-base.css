@@ -26,6 +26,7 @@ input[type=radio] {
   flex: 0 0 16px;
   cursor: pointer;
 }
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #185fa5;outline-offset:2px}
 
 .prestart-check-grid {
   display: grid;

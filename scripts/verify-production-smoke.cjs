@@ -127,7 +127,7 @@ async function main() {
 
   const assetChecks = [];
   const assets = [
-    ['auris-module-registry.js', ["version:'2.0.0'", 'dependencyClosure:dependencyClosure', 'canTransition:canTransition']],
+    ['auris-module-registry.js', ["version:'2.1.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility']],
     ['auris-platform-services.js', ["version:'1.0.0'", 'configure:configure', 'notifications:facade']],
     ['auris-module-layout.js', ["version:'1.0.0'", 'mount:mount', 'setView:setView']],
     ['auris-workflow-service.js', ["version:'3.0.0'", 'review:review', 'simulate:simulate', 'requireTransition:requireTransition']],
@@ -137,6 +137,8 @@ async function main() {
     ['auris-workflow-studio.js', ["version:'1.0.0'", 'Save draft', 'Simulate transition', 'Export reviewed JSON']],
     ['auris-work-centre.js', ["version:'1.0.0'", 'Offline read-only view', 'openSource:openSource', 'addActivity:addActivity']],
     ['auris-module-runtime.js', ["version:'2.0.0'", 'activate:activate', 'readiness:readiness']],
+    ['auris-application-lifecycle.js', ["version:'1.0.0'", 'planUpgrade:planUpgrade', 'redactError:redactError', 'renderOperations:renderOperations']],
+    ['auris-application-lifecycle-persistence.js', ["version:'1.0.0'", 'begin_application_upgrade', 'rollback_application_release']],
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],

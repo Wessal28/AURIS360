@@ -12,7 +12,7 @@ const registry=context.globalThis.AurisModuleRegistry;
 
 test('module registry exposes one canonical dependency-valid application catalogue',()=>{
   assert.ok(registry);
-  assert.equal(registry.version,'2.0.0');
+  assert.equal(registry.version,'2.1.0');
   const modules=registry.list();
   assert.ok(modules.length>=35);
   assert.equal(new Set(modules.map(module=>module.key)).size,modules.length);
@@ -56,8 +56,8 @@ test('incident workflow publishes governed states and allowed transitions',()=>{
 
 test('application loads registry before the core and includes the app launcher assets',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.ok(html.indexOf('auris-module-registry.js?v=20260901-12')<html.indexOf('auris-module-runtime.js?v=20260901-12'));
-  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-12')<html.indexOf('auris-core.js?v=20260901-11'));
+  assert.ok(html.indexOf('auris-module-registry.js?v=20260901-13')<html.indexOf('auris-module-runtime.js?v=20260901-13'));
+  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
   assert.match(html,/auris-app-launcher\.css\?v=20260831-1/);
   assert.match(html,/<span>Apps<\/span>/);
 });
