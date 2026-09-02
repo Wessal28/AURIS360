@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('modular foundation release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-09-02-modular-foundation-22"/);
+  assert.match(index, /name="auris-build" content="2026-09-02-modular-foundation-23"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
