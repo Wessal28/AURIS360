@@ -56,6 +56,11 @@
       "order": 11,
       "file": "20260902010000_modular_foundation_20_integrations.sql",
       "sha256": "f690fb729bea4c206cc6898f6468ffe0d126681e466559d999fbc6c2c4d31766"
+    },
+    {
+      "order": 12,
+      "file": "20260902020000_modular_foundation_21_governed_imports.sql",
+      "sha256": "a42a675ef4b202b8a1491f665630b682e8bdb36857dd9c9b6c1c918dc258738c"
     }
   ]
 }
