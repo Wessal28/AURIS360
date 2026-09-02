@@ -123,6 +123,8 @@
 #page-kpi .kpi-x-workflow .active {color:#087252;font-weight:750}
 #page-kpi .kpi-x-workflow .active i {background:#0f8a64;color:#fff;border-color:#0f8a64}
 #page-kpi .kpi-x-empty {padding:30px;text-align:center;color:#64748b;font-size:12px}
+#page-kpi .kpi-x-empty>strong,#page-kpi .kpi-x-empty>span{display:block;margin-bottom:8px}
+#page-kpi .kpi-x-btn:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
 #page-kpi .kpi-x-config {display:grid;grid-template-columns:220px 1fr 260px;gap:12px}
 #page-kpi .kpi-x-config-nav button {width:100%;height:38px;border:0;background:transparent;text-align:left;padding:0 10px;color:#475569;font-size:11px;border-radius:7px}
 #page-kpi .kpi-x-config-nav button.active {background:#eaf7f2;color:#087252;font-weight:750;border-left:3px solid #0f8a64}
