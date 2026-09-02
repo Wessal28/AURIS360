@@ -32,7 +32,7 @@ kpiXExportCsv()
 kpiLoadAll()
     },
     "d0011": function (event, args) {
-openKpiAddModal()
+kpiXOpenNewKpi()
     },
     "d0012": function (event, args) {
 kpiXSubmitMonth()
@@ -228,6 +228,9 @@ teuSaveMaintenance(args[0])
     },
     "d0076": function (event, args) {
 teuSaveDefect(args[0])
+    },
+    "d0077": function (event, args) {
+kpiXOpenNewObjective()
     }
   };
   var eventTypes = ["change","click","input"];
