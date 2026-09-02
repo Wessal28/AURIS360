@@ -182,10 +182,10 @@ async function main() {
     "version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage'
   ]);
   requireMarkers(assetSources.get('auris-integration-engine.js'), 'Integration engine', [
-    "version:'1.1.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport'
+    "version:'1.2.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation'
   ]);
   requireMarkers(assetSources.get('auris-integration-centre.js'), 'Integration Centre', [
-    "version:'1.1.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Stage reviewed import', 'Safe rollback'
+    "version:'1.2.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Stage reviewed import', 'Stage reviewed update', 'Safe rollback'
   ]);
   requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
     "version:'2.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"
