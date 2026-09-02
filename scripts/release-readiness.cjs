@@ -37,6 +37,7 @@ const testFiles = [
   ,'tests/governed_reconciliation_contract.test.cjs'
   ,'tests/governed_import_mapping_contract.test.cjs'
   ,'tests/scheduled_exchange_contract.test.cjs'
+  ,'tests/master_data_contract.test.cjs'
   ,'tests/application_lifecycle_contract.test.cjs'
 ];
 

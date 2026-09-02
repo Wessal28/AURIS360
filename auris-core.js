@@ -3217,7 +3217,7 @@ var ROLE_ALLOWED = {
   'hse_manager': ['dashboard','work','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'moc','legal','sop','swms','documents','people','users','settings','integrations','approvals','audit'],
+                  'moc','legal','sop','swms','documents','people','users','settings','integrations','master-data','approvals','audit'],
   'hse_officer': ['dashboard','work','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
@@ -36650,6 +36650,14 @@ async function loadIntegrations() {
   integTab('all', document.getElementById('itab-all'));
 }
 
+async function loadMasterDataCentre() {
+  var host=document.getElementById('master-data-centre-body');
+  if(!host||!window.AurisMasterDataCentre)return;
+  try{
+    await window.AurisMasterDataCentre.mount(host,{companyId:function(){return ccid();},userId:function(){return prof&&prof.id||'';},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}});
+  }catch(error){host.innerHTML=registerErrorHtml('Shared Master Data',error.message);}
+}
+
 async function integRefresh() {
   var icon = document.querySelector('#itab-all .ti-refresh');
   await integLoadData();
@@ -37761,7 +37769,7 @@ var DEEP_LINK_DEFAULT_TABLES={
   events:'events',event:'events',investigation:'investigations',observation:'safety_observations',inspection:'inspections',
   risk:'risk_assessments',permit:'permits',meetings:'toolbox_talks',legal:'legal_requirements',chemical:'chemical_register',fire:'fire_equipment',ppe:'ppe_catalogue',
   tools:'tools_register',atex:'atex_areas',contractor:'contractors',noise:'noise_surveys',training:'training_followup',
-  actions:'action_tracker',action:'action_tracker',moc:'moc_change_requests',documents:'documents',sop:'sop_video_projects',swms:'documents'
+  actions:'action_tracker',action:'action_tracker',moc:'moc_change_requests',documents:'documents',sop:'sop_video_projects',swms:'documents','master-data':'master_data_records'
 };
 function deepLinkNormalise(raw){
   raw=raw||{};
@@ -37838,6 +37846,7 @@ async function deepLinkResume(reason){
     await new Promise(function(resolve){setTimeout(resolve,360);});
     var opened=false;
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
+    else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
     else{
       var source={source_module:req.goto,source_type:req.goto,source_table:req.table||DEEP_LINK_DEFAULT_TABLES[req.goto]||'',source_id:req.record,source_ref:req.ref||req.record};
       var adapter=mapSourceAdapter(source);

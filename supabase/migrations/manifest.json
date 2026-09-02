@@ -76,6 +76,11 @@
       "order": 15,
       "file": "20260902050000_modular_foundation_24_scheduled_exchange.sql",
       "sha256": "6e53fd402a744673b207630309393b868139418c48692d1a4c87b3d101bf2d08"
+    },
+    {
+      "order": 16,
+      "file": "20260902060000_modular_foundation_25_master_data.sql",
+      "sha256": "b7f4118d823c87f872c8adaf19d3f1510c9a29d613f8a3d830b3c7caf38b5b13"
     }
   ]
 }
