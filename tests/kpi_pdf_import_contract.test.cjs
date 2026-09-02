@@ -1,0 +1,10 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(root,file),'utf8');
+
+test('KPI module exposes a governed PDF import action and review workflow',()=>{const module=read('kpi-module-upgrade.js'),feature=read('kpi-pdf-import.js'),html=read('index.html');assert.match(module,/id="kpi-x-import-pdf"[\s\S]*Import PDF/);assert.match(feature,/PDF only · maximum 4 MB/);assert.match(feature,/Nothing is created until you review and confirm it/);assert.match(feature,/appConfirmAction/);assert.match(html,/kpi-pdf-import\.css\?v=20260902-1/);assert.match(html,/kpi-pdf-import\.js\?v=20260902-1/);});
+
+test('PDF import uses authenticated extraction and conservative structured AI',()=>{const feature=read('kpi-pdf-import.js');assert.match(feature,/KPI_PDF_MAX_BYTES=4\*1024\*1024/);assert.match(feature,/fetch\('\/api\/extract-document'/);assert.match(feature,/'Authorization':'Bearer '/);assert.match(feature,/response_schema:\{name:'kpi_document_import',schema:KPI_PDF_SCHEMA\}/);assert.match(feature,/Never invent an owner, target, unit, measurement method, or KPI/);assert.match(feature,/DOCUMENT PART/);assert.match(feature,/Scanned image PDFs need OCR/);});
+
+test('reviewed records remain tenant bound and duplicates are controlled',()=>{const feature=read('kpi-pdf-import.js');assert.match(feature,/function companyId\(\)/);assert.match(feature,/company_id:cid/);assert.match(feature,/api\('\/objectives'/);assert.match(feature,/api\('\/kpis_v2'/);assert.match(feature,/api\('\/kpi_indicators'/);assert.match(feature,/status:'not_started'/);assert.match(feature,/exact duplicate KPI\(s\) skipped/);assert.match(feature,/partial_import/);assert.doesNotMatch(feature,/data:data[^}]*auditLogEvent/);});
+
+test('PDF review is usable in tablet portrait and phone layouts',()=>{const css=read('kpi-pdf-import.css');assert.match(css,/@media\(max-width:900px\)/);assert.match(css,/height:100dvh/);assert.match(css,/@media\(max-width:600px\)/);assert.match(css,/min-height:42px/);});
