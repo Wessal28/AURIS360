@@ -182,10 +182,10 @@ async function main() {
     "version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage'
   ]);
   requireMarkers(assetSources.get('auris-integration-engine.js'), 'Integration engine', [
-    "version:'1.3.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport'
+    "version:'1.4.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport', 'exchangeSchedule:exchangeSchedule', 'scheduledMappedImport:scheduledMappedImport'
   ]);
   requireMarkers(assetSources.get('auris-integration-centre.js'), 'Integration Centre', [
-    "version:'1.3.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Reusable CSV mapping profiles', 'Validate with ', 'stage_mapped_action_batch', 'Safe rollback'
+    "version:'1.4.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Governed recurring data intake', 'queue_data_exchange_run', 'Save schedule draft', 'Safe rollback'
   ]);
   requireMarkers(assetSources.get('auris-module-runtime.js'), 'Module runtime', [
     "version:'2.0.0'", 'activate:activate', 'readiness:readiness', "'auris:module-'+phase"

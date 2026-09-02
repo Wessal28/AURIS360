@@ -71,6 +71,11 @@
       "order": 14,
       "file": "20260902040000_modular_foundation_23_import_mappings.sql",
       "sha256": "21ecdb0219e3573b917a59c382f18dfc6427956c7a8cd27fc8d799f2beba27e5"
+    },
+    {
+      "order": 15,
+      "file": "20260902050000_modular_foundation_24_scheduled_exchange.sql",
+      "sha256": "6e53fd402a744673b207630309393b868139418c48692d1a4c87b3d101bf2d08"
     }
   ]
 }
