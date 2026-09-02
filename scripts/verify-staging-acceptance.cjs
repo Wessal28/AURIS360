@@ -148,7 +148,7 @@ async function main() {
 
   const registrySource = assetSources.get('auris-module-registry.js');
   requireMarkers(registrySource, 'Module registry', [
-    "version:'2.1.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility',
+    "version:'2.2.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility',
     "key:'executive'", "loader:'loadExecutive'",
     "key:'kpi'", "loader:'kpiLoadAll'",
     "key:'engagement'", "loader:'loadSafetyEngagement'",

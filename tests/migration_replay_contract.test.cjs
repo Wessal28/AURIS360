@@ -8,8 +8,8 @@ const root = path.resolve(__dirname, '..');
 const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
 const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
 
-test('reviewed migration replay inventory includes Phase 24 scheduled exchange objects', () => {
-  assert.deepEqual(expectations, { format_version: 1, tables: 264, policies: 426, routines: 111 });
+test('reviewed migration replay inventory includes Phase 25 shared master-data objects', () => {
+  assert.deepEqual(expectations, { format_version: 1, tables: 269, policies: 431, routines: 118 });
 });
 
 function run(databaseUrl) {

@@ -39,6 +39,7 @@ var modules = [
   {key:'approvals',name:'Approval Centre',shortName:'Approvals',icon:'ti-circle-check',color:'#1D9E75',category:'Administration',legacySection:'Management',order:600,platform:true,companyScoped:false,loader:'loadApprovals',dependencies:[]},
   {key:'audit',name:'Audit Trail',shortName:'Audit Trail',icon:'ti-history',color:'#374151',category:'Administration',legacySection:'Management',order:610,platform:true,companyScoped:false,loader:'loadAudit',dependencies:[]},
   {key:'users',name:'Users & Roles',shortName:'Users',icon:'ti-users',color:'#5B21B6',category:'Administration',legacySection:'Management',order:620,platform:true,companyScoped:false,loader:'loadUsers',dependencies:['people']},
+  {key:'master-data',name:'Shared Master Data',shortName:'Master Data',icon:'ti-database',color:'#0F6E56',category:'Administration',legacySection:'Management',order:625,platform:true,companyScoped:false,loader:'loadMasterDataCentre',dependencies:[]},
   {key:'integrations',name:'Integrations',shortName:'Integrations',icon:'ti-plug',color:'#0891B2',category:'Administration',legacySection:'Management',order:630,platform:true,companyScoped:false,loader:'loadIntegrations',dependencies:[]},
   {key:'admin',name:'Companies',shortName:'Companies',icon:'ti-building',color:'#185FA5',category:'Administration',legacySection:'Management',order:640,platform:true,companyScoped:false,loader:'loadAdmin',dependencies:[]},
   {key:'settings',name:'Settings',shortName:'Settings',icon:'ti-settings',color:'#374151',category:'Administration',legacySection:'Management',order:650,platform:true,companyScoped:false,loader:'loadSettings',dependencies:[]}
@@ -160,5 +161,5 @@ function nextStates(key,state){
 }
 function canTransition(key,from,to){return nextStates(key,from).indexOf(to)!==-1;}
 
-root.AurisModuleRegistry=Object.freeze({version:'2.1.0',platformVersion:platformVersion,get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf,dependencyClosure:dependencyClosure,missingDependencies:missingDependencies,dependantsOf:dependantsOf,workflowOf:workflowOf,nextStates:nextStates,canTransition:canTransition});
+root.AurisModuleRegistry=Object.freeze({version:'2.2.0',platformVersion:platformVersion,get:get,list:list,keys:keys,categories:categories,dependenciesOf:dependenciesOf,dependencyClosure:dependencyClosure,missingDependencies:missingDependencies,dependantsOf:dependantsOf,workflowOf:workflowOf,nextStates:nextStates,canTransition:canTransition});
 })(typeof window!=='undefined'?window:globalThis);

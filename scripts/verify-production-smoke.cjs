@@ -127,7 +127,7 @@ async function main() {
 
   const assetChecks = [];
   const assets = [
-    ['auris-module-registry.js', ["version:'2.1.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility']],
+    ['auris-module-registry.js', ["version:'2.2.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility']],
     ['auris-platform-services.js', ["version:'1.0.0'", 'configure:configure', 'notifications:facade']],
     ['auris-module-layout.js', ["version:'1.0.0'", 'mount:mount', 'setView:setView']],
     ['auris-workflow-service.js', ["version:'3.0.0'", 'review:review', 'simulate:simulate', 'requireTransition:requireTransition']],

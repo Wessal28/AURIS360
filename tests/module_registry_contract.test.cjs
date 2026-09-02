@@ -12,7 +12,7 @@ const registry=context.globalThis.AurisModuleRegistry;
 
 test('module registry exposes one canonical dependency-valid application catalogue',()=>{
   assert.ok(registry);
-  assert.equal(registry.version,'2.1.0');
+  assert.equal(registry.version,'2.2.0');
   const modules=registry.list();
   assert.ok(modules.length>=35);
   assert.equal(new Set(modules.map(module=>module.key)).size,modules.length);

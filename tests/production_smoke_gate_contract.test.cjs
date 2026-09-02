@@ -42,7 +42,7 @@ test('runtime configuration exposes only the public deployment SHA as release id
   const runtime = read('api/runtime-config.js');
   assert.match(runtime, /releaseSha: String\(process\.env\.VERCEL_GIT_COMMIT_SHA/);
   assert.match(runtime, /platformVersion: '2\.0\.0'/);
-  assert.match(runtime, /moduleRegistryVersion: '2\.1\.0'/);
+  assert.match(runtime, /moduleRegistryVersion: '2\.2\.0'/);
   assert.doesNotMatch(runtime, /VERCEL_(TOKEN|ACCESS_TOKEN)/);
 });
 

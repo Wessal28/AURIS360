@@ -11,7 +11,7 @@ function context(){const c={globalThis:null,console,Date};c.globalThis=c;vm.runI
 
 test('manifests publish semantic lifecycle compatibility contracts',()=>{
   const c=context(),registry=c.AurisModuleRegistry;
-  assert.equal(registry.version,'2.1.0');assert.equal(registry.platformVersion,'2.0.0');
+  assert.equal(registry.version,'2.2.0');assert.equal(registry.platformVersion,'2.0.0');
   for(const manifest of registry.list()){assert.match(manifest.version,/^\d+\.\d+\.\d+$/);assert.equal(Object.isFrozen(manifest.compatibility),true);assert.equal(manifest.compatibility.platform,'^2.0.0');assert.ok(manifest.compatibility.migrations.includes('20260901040000_modular_foundation_13_application_lifecycle'));for(const dependency of manifest.dependencies)assert.equal(manifest.compatibility.dependencies[dependency],'^2.0.0');}
 });
 
@@ -33,9 +33,9 @@ test('tenant lifecycle migration is RLS-protected, idempotent and rollback-capab
 
 test('operations UI and deployment expose version, health and release identity',()=>{
   const html=read('index.html'),core=read('auris-core.js'),api=read('api/runtime-config.js'),admin=read('auris-applications-admin.js'),manifest=read('sw-assets.js');
-  assert.match(html,/modular-foundation-24/);assert.match(html,/settings-application-lifecycle-card/);assert.ok(html.indexOf('auris-application-lifecycle.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
+  assert.match(html,/modular-foundation-25/);assert.match(html,/settings-application-lifecycle-card/);assert.ok(html.indexOf('auris-application-lifecycle.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260901-11'));
   assert.match(core,/AurisApplicationLifecycle\.configurePersistence/);assert.match(core,/AurisApplicationLifecycle\.renderOperations/);assert.match(admin,/platformRange/);
-  for(const marker of ["build: '2026-09-02-modular-foundation-24'","platformVersion: '2.0.0'","moduleRegistryVersion: '2.1.0'"])assert.match(api,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  for(const marker of ["build: '2026-09-02-modular-foundation-25'","platformVersion: '2.0.0'","moduleRegistryVersion: '2.2.0'"])assert.match(api,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.match(manifest,/auris-application-lifecycle\.js/);assert.match(manifest,/auris-application-lifecycle-persistence\.js/);
 });
 
