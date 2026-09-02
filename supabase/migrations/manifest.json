@@ -61,6 +61,11 @@
       "order": 12,
       "file": "20260902020000_modular_foundation_21_governed_imports.sql",
       "sha256": "a42a675ef4b202b8a1491f665630b682e8bdb36857dd9c9b6c1c918dc258738c"
+    },
+    {
+      "order": 13,
+      "file": "20260902030000_modular_foundation_22_reconciliation.sql",
+      "sha256": "40e339a7a761d71d5490bfc453526e5ce6188bccb0daf7c8e1b6e416582a591f"
     }
   ]
 }

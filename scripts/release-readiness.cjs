@@ -34,6 +34,7 @@ const testFiles = [
   ,'tests/automation_engine_contract.test.cjs'
   ,'tests/integration_engine_contract.test.cjs'
   ,'tests/governed_import_contract.test.cjs'
+  ,'tests/governed_reconciliation_contract.test.cjs'
   ,'tests/application_lifecycle_contract.test.cjs'
 ];
 
