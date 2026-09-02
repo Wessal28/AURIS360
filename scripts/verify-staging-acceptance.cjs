@@ -182,7 +182,7 @@ async function main() {
     "version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage'
   ]);
   requireMarkers(assetSources.get('auris-integration-engine.js'), 'Integration engine', [
-    "version:'1.4.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport', 'exchangeSchedule:exchangeSchedule', 'scheduledMappedImport:scheduledMappedImport'
+    "version:'1.5.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport', 'exchangeSchedule:exchangeSchedule', 'scheduledMappedImport:scheduledMappedImport', 'genericMappedRows:genericMappedRows'
   ]);
   requireMarkers(assetSources.get('auris-integration-centre.js'), 'Integration Centre', [
     "version:'1.4.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Governed recurring data intake', 'queue_data_exchange_run', 'Save schedule draft', 'Safe rollback'

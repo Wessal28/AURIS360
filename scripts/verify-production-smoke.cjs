@@ -146,7 +146,7 @@ async function main() {
     ['auris-dashboard-designer.js', ["version:'1.0.0'", 'configuration:configuration', 'mount:mount', 'diagnostics:diagnostics']],
     ['auris-automation-engine.js', ["version:'1.0.0'", 'definition:definition', 'plan:plan', 'execute:execute', 'diagnostics:diagnostics']],
     ['auris-automation-centre.js', ["version:'1.0.0'", 'mount:mount', 'load:load', 'canManage:canManage']],
-    ['auris-integration-engine.js', ["version:'1.4.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport', 'exchangeSchedule:exchangeSchedule', 'scheduledMappedImport:scheduledMappedImport']],
+    ['auris-integration-engine.js', ["version:'1.5.0'", 'connection:connection', 'event:event', 'delivery:delivery', 'exportCsv:exportCsv', 'parseCsv:parseCsv', 'importPlan:importPlan', 'stagedImport:stagedImport', 'stagedReconciliation:stagedReconciliation', 'mappingProfile:mappingProfile', 'mappedImport:mappedImport', 'stagedMappedImport:stagedMappedImport', 'exchangeSchedule:exchangeSchedule', 'scheduledMappedImport:scheduledMappedImport', 'genericMappedRows:genericMappedRows']],
     ['auris-integration-centre.js', ["version:'1.4.0'", 'mount:mount', 'load:load', 'canManage:canManage', 'Governed recurring data intake', 'queue_data_exchange_run', 'Save schedule draft', 'Safe rollback']],
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
