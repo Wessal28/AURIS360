@@ -66,6 +66,11 @@
       "order": 13,
       "file": "20260902030000_modular_foundation_22_reconciliation.sql",
       "sha256": "40e339a7a761d71d5490bfc453526e5ce6188bccb0daf7c8e1b6e416582a591f"
+    },
+    {
+      "order": 14,
+      "file": "20260902040000_modular_foundation_23_import_mappings.sql",
+      "sha256": "21ecdb0219e3573b917a59c382f18dfc6427956c7a8cd27fc8d799f2beba27e5"
     }
   ]
 }
