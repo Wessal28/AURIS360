@@ -104,7 +104,7 @@ function ensureUi(){
     button.innerHTML='<i class="ti ti-bell"></i><span class="nc-badge" id="nc-desktop-badge">0</span>';extras.insertBefore(button,extras.firstChild);
   }
   if(!panel()){
-    var el=document.createElement('section');el.id='nc-panel';el.className='nc-panel';el.setAttribute('role','dialog');el.setAttribute('aria-label','Personal notifications');el.onclick=function(event){event.stopPropagation();};document.body.appendChild(el);
+    var el=document.createElement('section');el.id='nc-panel';el.className='nc-panel';el.setAttribute('role','dialog');el.setAttribute('aria-label','Personal notifications');document.body.appendChild(el);
   }
 }
 async function refresh(force){
@@ -217,7 +217,13 @@ window.notificationCentreOpen=async function(id){
   if(typeof window.deepLinkResume==='function')await deepLinkResume('personal-notification-centre');
 };
 
-document.addEventListener('click',function(event){if(NC.open&&!event.target.closest('#nc-panel')&&!event.target.closest('#nc-desktop-trigger')&&!event.target.closest('#nc-mobile-trigger'))notificationCentreClose();});
+document.addEventListener('click',function(event){
+  if(!NC.open)return;
+  var path=typeof event.composedPath==='function'?event.composedPath():[];
+  var insidePanel=path.indexOf(panel())!==-1||event.target.closest('#nc-panel');
+  var insideTrigger=event.target.closest('#nc-desktop-trigger')||event.target.closest('#nc-mobile-trigger');
+  if(!insidePanel&&!insideTrigger)notificationCentreClose();
+});
 document.addEventListener('keydown',function(event){if(event.key==='Escape'&&NC.open)notificationCentreClose();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&profile())refresh(true);});
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',function(event){if(event.data&&event.data.type==='PUSH_SUBSCRIPTION_CHANGED'&&profile())loadPushState();});
