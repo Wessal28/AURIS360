@@ -59,3 +59,11 @@ test('desktop and mobile application chrome mount the personal inbox', () => {
   assert.match(app, /id='nc-desktop-trigger'/);
   assert.match(css, /@media\(max-width:768px\)/);
 });
+
+test('notification controls remain interactive and touch-sized in tablet portrait', () => {
+  assert.doesNotMatch(app, /el\.onclick=function\(event\)\{event\.stopPropagation\(\);\}/);
+  assert.match(app, /event\.composedPath/);
+  assert.match(app, /path\.indexOf\(panel\(\)\)!==-1/);
+  assert.match(css, /min-width:769px[\s\S]*max-width:1024px[\s\S]*orientation:portrait/);
+  assert.match(css, /\.nc-icon-btn,[\s\S]*\.nc-filter,[\s\S]*\.nc-action[\s\S]*min-height:\s*44px/);
+});
