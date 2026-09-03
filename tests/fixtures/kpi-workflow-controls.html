@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>KPI workflow controls fixture</title>
-  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=20260903-29">
+  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=20260903-29-3">
+  <style>body{margin:0}</style>
 </head>
 <body>
   <button id="open-kpi" type="button">Open KPI</button>
@@ -14,13 +15,13 @@
     window.ccid=function(){return 'company-1';};
     window.activeRole=function(){return 'sephs_admin';};
     window.kpiKPIs=[{id:'kpi-1',code:'1.1',name:'Complete toolbox talks',approval_status:'draft',reviewer:'AURIS Administrator',approver:'AURIS Administrator',data_provider:'AURIS Administrator',data_source:'Manual',lifecycle_revision:1}];
-    window.kpiXOpenDrawer=function(){document.getElementById('fixture-root').innerHTML='<aside id="kpi-x-drawer"><div class="kpi-x-drawer-card"><div class="kpi-x-drawer-body"><h2>Complete toolbox talks</h2></div><footer class="kpi-x-drawer-actions"><button type="button" class="kpi-x-btn" data-kpi-edit-kpi>Edit KPI</button></footer></div></aside>';};
+    window.kpiXOpenDrawer=function(){document.getElementById('fixture-root').innerHTML='<aside id="kpi-x-drawer" class="kpi-x-drawer"><div class="kpi-x-drawer-card"><div class="kpi-x-drawer-body"><h2>Complete toolbox talks</h2></div><footer class="kpi-x-drawer-actions"><button type="button" class="kpi-x-btn" data-kpi-edit-kpi>Edit KPI</button><button type="button" class="kpi-x-btn">Open Monthly Data</button></footer></div></aside>';};
     window.kpiLoadAll=async function(){};
     window.appConfirmAction=async function(){return false;};
     window.toast=function(message){document.body.dataset.toast=message;};
     document.getElementById('open-kpi').addEventListener('click',function(){window.kpiXOpenDrawer('kpi-1');});
   </script>
-  <script src="../../kpi-workflow.js?v=20260903-29-2"></script>
+  <script src="../../kpi-workflow.js?v=20260903-29-3"></script>
   <script>
     setTimeout(function(){
       var ready=false;
