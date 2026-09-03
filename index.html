@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#1D9E75"/>
 <meta name="description" content="HSE Management Platform by SEPHS Consulting - Incidents, Inspections, Risk, AI Safety"/>
 <meta name="auris-canonical-origin" content="https://auris360.app"/>
-<meta name="auris-build" content="2026-09-02-modular-foundation-25"/>
+<meta name="auris-build" content="2026-09-03-modular-foundation-26"/>
 <meta name="msapplication-TileColor" content="#1D9E75"/>
 <meta name="msapplication-tap-highlight" content="no"/>
 <!-- PWA Manifest (inline) -->
@@ -61,7 +61,9 @@
 <script src="auris-integration-engine.js?v=20260902-24"></script>
 <script src="auris-integration-centre.js?v=20260902-24"></script>
 <script src="auris-master-data-service.js?v=20260902-25"></script>
+<script src="auris-master-data-adoption.js?v=20260903-26"></script>
 <script src="auris-master-data-centre.js?v=20260902-25"></script>
+<script src="auris-master-data-adoption-centre.js?v=20260903-26"></script>
 <script src="auris-governance-persistence.js?v=20260901-10"></script>
 <script src="auris-workflow-studio.js?v=20260901-10"></script>
 <script src="auris-work-centre.js?v=20260901-11"></script>
@@ -101,6 +103,7 @@
 <link rel="stylesheet" href="auris-automation-centre.css?v=20260901-19">
 <link rel="stylesheet" href="auris-integration-centre.css?v=20260902-24">
 <link rel="stylesheet" href="auris-master-data-centre.css?v=20260902-25">
+<link rel="stylesheet" href="auris-master-data-adoption.css?v=20260903-26">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
@@ -10062,6 +10065,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
   <div><div class="page-title">Shared Master Data</div><div>Canonical company reference data for every AURIS application</div></div>
 </div>
 <div id="master-data-centre-body"><div class="loading">Loading governed master data...</div></div>
+<div id="master-data-adoption-body"><div class="loading">Loading operational adoption diagnostics...</div></div>
 </div><!-- end page-master-data -->
 
 <div id="page-ai-insights" class="page">

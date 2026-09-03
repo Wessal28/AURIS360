@@ -48,5 +48,5 @@ test('deployment loads an accessible responsive command centre before core',()=>
   assert.ok(html.indexOf('auris-command-centre.js?v=20260901-14')<html.indexOf('auris-core.js?v=20260901-11'));
   assert.match(html,/id="auris-command-trigger"/);assert.match(html,/auris-command-centre\.css\?v=20260901-14/);
   assert.match(core,/commandCentreSetup/);assert.match(core,/deepLinkResume\('command-centre'\)/);assert.match(core,/AurisCommandCentre\.recordOpen\(name\)/);
-  assert.match(css,/@media\(max-width:600px\)/);assert.match(css,/focus-visible/);assert.match(runtime,/modular-foundation-25/);
+  assert.match(css,/@media\(max-width:600px\)/);assert.match(css,/focus-visible/);assert.match(runtime,/modular-foundation-26/);
 });
