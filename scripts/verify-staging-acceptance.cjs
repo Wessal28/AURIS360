@@ -149,7 +149,7 @@ async function main() {
     "version:'1.0.0'", 'configure_kpi_indicator_source', 'refresh_kpi_indicator_month', 'override_kpi_monthly_result', 'function showFailure('
   ]);
   requireMarkers(assetSources.get('kpi-workflow.js'), 'Governed KPI workflow controls', [
-    "version:'1.0.1'", 'Submit for verification', 'Retry workflow', 'function enhanceDrawer(', 'function retryWorkflow('
+    "version:'1.1.0'", 'Submit for verification', 'Retry workflow', 'function enhanceDrawer(', 'function retryWorkflow('
   ]);
 
   const registrySource = assetSources.get('auris-module-registry.js');
