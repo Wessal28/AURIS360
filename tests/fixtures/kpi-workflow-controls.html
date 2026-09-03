@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KPI workflow controls fixture</title>
+  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=20260903-29">
+</head>
+<body>
+  <button id="open-kpi" type="button">Open KPI</button>
+  <div id="fixture-root"></div>
+  <script>
+    window.prof={id:'user-1',company_id:'company-1',role:'sephs_admin',full_name:'AURIS Administrator'};
+    window.ccid=function(){return 'company-1';};
+    window.activeRole=function(){return 'sephs_admin';};
+    window.kpiKPIs=[{id:'kpi-1',code:'1.1',name:'Complete toolbox talks',approval_status:'draft',reviewer:'AURIS Administrator',approver:'AURIS Administrator',data_provider:'AURIS Administrator',data_source:'Manual',lifecycle_revision:1}];
+    window.kpiXOpenDrawer=function(){document.getElementById('fixture-root').innerHTML='<aside id="kpi-x-drawer"><div class="kpi-x-drawer-card"><div class="kpi-x-drawer-body"><h2>Complete toolbox talks</h2></div><footer class="kpi-x-drawer-actions"><button type="button" class="kpi-x-btn" data-kpi-edit-kpi>Edit KPI</button></footer></div></aside>';};
+    window.kpiLoadAll=async function(){};
+    window.appConfirmAction=async function(){return false;};
+    window.toast=function(message){document.body.dataset.toast=message;};
+    document.getElementById('open-kpi').addEventListener('click',function(){window.kpiXOpenDrawer('kpi-1');});
+  </script>
+  <script src="../../kpi-workflow.js?v=20260903-29-2"></script>
+  <script>
+    setTimeout(function(){
+      var ready=false;
+      window.AurisWorkflowService={
+        explain:function(){return ready?{allowed:true,reason:'allowed'}:{allowed:false,reason:'persistence_unavailable'};},
+        hydrate:async function(){ready=true;},
+        transition:async function(){return {status:'complete'};}
+      };
+      window.AurisApprovalCentre={
+        adapter:function(){return {};},registerAdapter:function(){},list:function(){return [];},hydrate:async function(){}
+      };
+    },50);
+  </script>
+</body>
+</html>

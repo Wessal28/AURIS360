@@ -32,6 +32,14 @@ test('staging authentication tolerates transient cold starts without masking cre
   assert.match(script, /attempts: 3/);
 });
 
+test('staging acceptance verifies governed KPI workflow UI and persistence dependencies', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /Governed KPI workflow controls/);
+  assert.match(source, /kpi-workflow\.js/);
+  assert.match(source, /workflow_policy_versions\?select=id,module_key,status,version,revision/);
+  assert.match(source, /approval_requests\?select=id,module_name,source_record_id,source_page,source_adapter_key,from_state,to_state,status,revision/);
+});
+
 test('four previously blank modules verify deployed render and controlled empty-state contracts', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   for (const table of ['events', 'kpi_monthly_data', 'engagement_configuration_versions', 'documents']) {
@@ -71,6 +79,7 @@ test('staging acceptance safely proves tenant-scoped write persistence', () => {
 
 test('staging acceptance verifies the governed KPI migration without requiring schema-document access', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /kpis_v2\?select=id,description,data_provider,data_source,reviewer,approver,approval_status,lifecycle_revision,lifecycle_reason,submitted_by,submitted_at,verified_by,verified_at,approved_by,approved_at,locked_by,locked_at/);
   assert.match(source, /kpi_indicators\?select=id,source_mode,source_metric,source_revision/);
   assert.doesNotMatch(source, /application\/openapi\+json/);
   assert.doesNotMatch(source, /PostgREST schema verification/);
