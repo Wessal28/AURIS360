@@ -31,8 +31,11 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(feature,/Retry workflow/);assert.match(feature,/function retryWorkflow\(/);
   assert.match(feature,/setTimeout\(function\(\)\{enhanceDrawer\(kpiId\);\},0\)/);
   assert.match(css,/\.kpi-w-progress/);assert.match(css,/\.kpi-w-awaiting\.locked/);assert.match(css,/@media \(max-width:900px\)[\s\S]*min-height:44px/);
-  assert.match(html,/kpi-workflow\.js\?v=20260903-29-2/);
-  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29')<html.indexOf('kpi-workflow.js?v=20260903-29-2'));
+  assert.match(css,/@media \(max-width:760px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.kpi-x-drawer-actions \.kpi-w-awaiting\{grid-column:1\/-1/);
+  assert.match(css,/\.kpi-x-drawer-actions \.kpi-x-btn\{[^}]*height:44px/);
+  assert.match(html,/kpi-workflow\.js\?v=20260903-29-3/);
+  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29')<html.indexOf('kpi-workflow.js?v=20260903-29-3'));
 });
 
 test('Approval Centre reopens the exact KPI source record',()=>{
@@ -53,7 +56,8 @@ test('database lifecycle is tenant-scoped, atomic, revision-safe and frozen afte
 test('current build markers and cache keys are published',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js'),manifest=read('sw-assets.js');
   assert.match(html,/modular-foundation-29/);assert.match(runtime,/modular-foundation-29/);
-  for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.css','kpi-module-upgrade.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
-  assert.match(html,/kpi-workflow\.js\?v=20260903-29-2/);
+  for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260903-29-3/);
+  assert.match(html,/kpi-workflow\.js\?v=20260903-29-3/);
   assert.match(manifest,/kpi-workflow\.js/);
 });
