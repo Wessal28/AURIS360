@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="../../kpi-pdf-import.css">
+  <title>KPI PDF import interaction fixture</title>
+</head>
+<body>
+  <select id="year-sel" aria-label="Reporting year"><option selected>2026</option></select>
+  <button id="kpi-x-import-pdf" type="button">Import PDF</button>
+  <script>
+    var prof={id:'fixture-user',company_id:'fixture-company'},kpiObjectives=[],kpiKPIs=[],tok='fixture-token',confirmCalls=0;
+    function ccid(){return 'fixture-company';}
+    function isMgr(){return true;}
+    function toast(){}
+    async function appConfirmAction(){confirmCalls++;return false;}
+  </script>
+  <script src="../../kpi-pdf-import.js"></script>
+</body>
+</html>
