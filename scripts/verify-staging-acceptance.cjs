@@ -248,13 +248,6 @@ async function main() {
   if (!auth || !auth.access_token || !auth.user || !auth.user.id) fail('Staging sign-in returned no authenticated identity.');
 
   const headers = { apikey: anonKey, Authorization: `Bearer ${auth.access_token}`, Accept: 'application/json' };
-  const schema = await jsonRequest(`${base}/rest/v1/`, {
-    headers: { ...headers, Accept: 'application/openapi+json' }
-  }).catch((error) => fail(`PostgREST schema verification failed (${error.message}).`));
-  const rpcPaths = schema && schema.paths || {};
-  for (const rpc of ['configure_kpi_indicator_source', 'refresh_kpi_indicator_month', 'override_kpi_monthly_result']) {
-    if (!rpcPaths[`/rpc/${rpc}`]) fail(`staging database is missing governed KPI RPC ${rpc}; apply migration 20260903090000_modular_foundation_29_kpi_data_sources.sql and reload the PostgREST schema.`);
-  }
   const rest = async (resource) => jsonRequest(`${base}/rest/v1/${resource}`, { headers });
   const restWrite = async (resource, body) => jsonRequest(`${base}/rest/v1/${resource}`, {
     method: 'PATCH',

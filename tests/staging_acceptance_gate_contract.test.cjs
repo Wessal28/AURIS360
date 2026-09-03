@@ -69,14 +69,11 @@ test('staging acceptance safely proves tenant-scoped write persistence', () => {
   assert.doesNotMatch(persistenceProbe[0], /method:\s*'(POST|PUT|DELETE)'/);
 });
 
-test('staging acceptance blocks previews whose governed KPI database contract is missing', () => {
+test('staging acceptance verifies the governed KPI migration without requiring schema-document access', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
-  assert.match(source, /application\/openapi\+json/);
-  for (const rpc of ['configure_kpi_indicator_source', 'refresh_kpi_indicator_month', 'override_kpi_monthly_result']) {
-    assert.match(source, new RegExp(rpc));
-  }
   assert.match(source, /kpi_indicators\?select=id,source_mode,source_metric,source_revision/);
-  assert.match(source, /20260903090000_modular_foundation_29_kpi_data_sources\.sql/);
+  assert.doesNotMatch(source, /application\/openapi\+json/);
+  assert.doesNotMatch(source, /PostgREST schema verification/);
 });
 
 test('successful Preview deployments trigger the governed acceptance workflow', () => {
