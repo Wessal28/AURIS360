@@ -26,10 +26,11 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(feature,/assigned\(kpi\.reviewer\)/);assert.match(feature,/assigned\(kpi\.approver\)/);
   assert.match(feature,/decide_kpi_workflow_approval/);assert.match(feature,/transition_kpi_lifecycle/);
   assert.match(feature,/if\(edit&&!canEdit\(kpi\)\)edit\.remove\(\)/);
-  assert.match(feature,/version:'1\.1\.0'/);
+  assert.match(feature,/version:'1\.1\.1'/);
   assert.match(feature,/services_loading/);assert.match(feature,/persistence_unavailable/);
   assert.match(feature,/Retry workflow/);assert.match(feature,/function retryWorkflow\(/);
   assert.match(feature,/Retry approval request/);assert.match(feature,/function retryApproval\(/);
+  assert.match(feature,/function retryApproval\([\s\S]*workflow\.hydrate[\s\S]*approvals\.hydrate[\s\S]*await queue\(/);
   assert.match(feature,/request_workflow_approval_v2[\s\S]*Phase 10 workflow migration/);
   assert.match(feature,/setTimeout\(function\(\)\{enhanceDrawer\(kpiId\);\},0\)/);
   assert.match(css,/\.kpi-w-progress/);assert.match(css,/\.kpi-w-awaiting\.locked/);
@@ -39,8 +40,8 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(css,/@media \(max-width:760px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-w-awaiting\{grid-column:1\/-1/);
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-x-btn\{[^}]*height:44px/);
-  assert.match(html,/kpi-workflow\.js\?v=20260904-approval-routing-1/);
-  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29-5')<html.indexOf('kpi-workflow.js?v=20260904-approval-routing-1'));
+  assert.match(html,/kpi-workflow\.js\?v=20260904-approval-routing-2/);
+  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29-5')<html.indexOf('kpi-workflow.js?v=20260904-approval-routing-2'));
 });
 
 test('Approval Centre reopens the exact KPI source record',()=>{
@@ -63,6 +64,6 @@ test('current build markers and cache keys are published',()=>{
   assert.match(html,/modular-foundation-29/);assert.match(runtime,/modular-foundation-29/);
   for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
   assert.match(html,/kpi-module-upgrade\.css\?v=20260904-approval-routing-1/);
-  assert.match(html,/kpi-workflow\.js\?v=20260904-approval-routing-1/);
+  assert.match(html,/kpi-workflow\.js\?v=20260904-approval-routing-2/);
   assert.match(manifest,/kpi-workflow\.js/);
 });
