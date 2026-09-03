@@ -32,7 +32,7 @@ test('approval gates and blocked transitions return controlled evidence',()=>{
 
 test('deployment loads workflow enforcement before production core',()=>{
   const html=read('index.html'),manifest=read('sw-assets.js'),core=read('auris-core.js');
-  assert.ok(html.indexOf('auris-workflow-service.js?v=20260903-28')<html.indexOf('auris-core.js'));
+  assert.ok(html.indexOf('auris-workflow-service.js?v=20260903-29')<html.indexOf('auris-core.js'));
   assert.match(manifest,/auris-workflow-service\.js/);
   assert.match(core,/AurisWorkflowService\.canTransition/);
   assert.match(core,/function workflowConfigureTenant/);

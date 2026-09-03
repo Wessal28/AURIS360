@@ -56,8 +56,8 @@ test('incident workflow publishes governed states and allowed transitions',()=>{
 
 test('application loads registry before the core and includes the app launcher assets',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.ok(html.indexOf('auris-module-registry.js?v=20260903-28')<html.indexOf('auris-module-runtime.js?v=20260901-13'));
-  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260903-28'));
+  assert.ok(html.indexOf('auris-module-registry.js?v=20260903-29')<html.indexOf('auris-module-runtime.js?v=20260901-13'));
+  assert.ok(html.indexOf('auris-module-runtime.js?v=20260901-13')<html.indexOf('auris-core.js?v=20260903-29'));
   assert.match(html,/auris-app-launcher\.css\?v=20260831-1/);
   assert.match(html,/<span>Apps<\/span>/);
 });
