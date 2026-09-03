@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KPI approval routing fixture</title>
+  <link rel="stylesheet" href="../../auris-base.css">
+  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=approval-routing-1">
+</head>
+<body>
+  <main id="page-kpi"><div id="kpi-x-config-view"></div></main>
+  <script>
+    window.prof={id:'admin-1',company_id:'company-1',role:'sephs_admin',full_name:'AURIS Administrator'};
+    window.ccid=function(){return 'company-1';};
+    window.activeRole=function(){return 'sephs_admin';};
+    window.tenantPeople=function(){return [
+      {id:'p1',company_id:'company-1',first_name:'Gerard Wesley',last_name:'Salomon',job_title:'HSE Consultant'},
+      {id:'p2',company_id:'company-1',first_name:'Leila',last_name:'Manager',job_title:'HSE Manager'}
+    ];};
+    window.api=async function(){return [];};
+    window.toast=function(){};
+  </script>
+  <script src="../../kpi-configuration.js?v=approval-routing-1"></script>
+  <script>
+    document.getElementById('kpi-x-config-view').addEventListener('change',function(event){if(event.target.dataset.cfg)window.kpiConfigChange(event.target);});
+    window.kpiConfigSection('workflow');
+    window.kpiConfigLoad();
+  </script>
+</body>
+</html>
