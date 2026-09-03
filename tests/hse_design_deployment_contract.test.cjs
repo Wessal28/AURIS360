@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('modular foundation release has a verifiable build marker', () => {
-  assert.match(index, /name="auris-build" content="2026-09-03-modular-foundation-26"/);
+  assert.match(index, /name="auris-build" content="2026-09-03-modular-foundation-27"/);
 });
 
 test('all corrected design assets use the same release cache key', () => {
@@ -31,7 +31,7 @@ test('all corrected design assets use the same release cache key', () => {
     const expected = asset === 'auris-core.js'
       ? '20260901-11'
       : ['kpi-module-upgrade.css','kpi-module-upgrade.js'].includes(asset)
-      ? '20260903-26'
+      ? '20260903-27'
       : ['bbs-observations.css','bbs-observations.js','incident-management-upgrade.css','incident-management-upgrade.js','risk-assessment-upgrade.css','risk-assessment-upgrade.js','auris-audits-inspections-static.css'].includes(asset)
       ? (asset.startsWith('incident-management-upgrade.') ? '20260831-4' : '20260823-4')
       : ['auris-base.css'].includes(asset)

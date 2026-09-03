@@ -30,5 +30,5 @@ test('scorecard column chooser persists only display preferences per company and
   assert.match(js,/localStorage\.setItem\(kpiXColumnStorageKey\(\),JSON\.stringify\(preferences\)\)/);
   assert.match(js,/columnCount=columns\.length\+1/);
   assert.match(css,/\.kpi-x-column-menu/);
-  assert.match(css,/@media \(max-width:760px\)[\s\S]*\.kpi-x-column-button\{min-width:44px;min-height:44px\}/);
+  assert.match(css,/@media \(max-width:760px\)[\s\S]*\.kpi-x-column-button\{width:44px;min-width:44px;height:44px\}/);
 });
