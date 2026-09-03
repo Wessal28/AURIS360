@@ -86,6 +86,11 @@
       "order": 17,
       "file": "20260903060000_modular_foundation_26_master_data_adoption.sql",
       "sha256": "10464165acbb153704669eb227d9076b3a01e342a88ab53747862db8cd9e48dd"
+    },
+    {
+      "order": 18,
+      "file": "20260903070000_modular_foundation_27_kpi_reliability.sql",
+      "sha256": "ee659f5c9dda94affb4e8bb22fe5820210d65ff2b168a41311c7d922a8ad9dd5"
     }
   ]
 }

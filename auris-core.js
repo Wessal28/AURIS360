@@ -2990,7 +2990,7 @@ var dropdownPeople=tenantPeople();
 const opts='<option value="">Select person...</option>'+dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+dropdownPeople.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom3chaired-by','mom3sign-chair','mom3sign-approver','sop-video-author','sop-author','sop-approver','adm3site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name','atex-resp','cpaf-assessor','eif-inspector','iso-verified-by'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','kpi-data-provider','kpi-reviewer','kpi-approver','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom3chaired-by','mom3sign-chair','mom3sign-approver','sop-video-author','sop-author','sop-approver','adm3site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name','atex-resp','cpaf-assessor','eif-inspector','iso-verified-by'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 if(typeof ptwPopulatePeopleFields==='function')ptwPopulatePeopleFields();
@@ -12700,14 +12700,21 @@ document.getElementById('kpi-name').value=k.name||'';
 document.getElementById('kpi-freq').value=k.frequency||'monthly';
 document.getElementById('kpi-resp').value=k.responsible||'';
 document.getElementById('kpi-status').value=k.status||'not_started';
+document.getElementById('kpi-description').value=k.description||'';
+setSelectValueWithFallback('kpi-data-provider',k.data_provider||'');
+document.getElementById('kpi-data-source').value=k.data_source||'';
+setSelectValueWithFallback('kpi-reviewer',k.reviewer||'');
+setSelectValueWithFallback('kpi-approver',k.approver||'');
+document.getElementById('kpi-approval-status').value=k.approval_status||'draft';
 sel.value=k.objective_id||objId||'';
 const inds=kpiIndicators.filter(i=>i.kpi_id===kpiId);
 if(inds.length){inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?i.target_value:'',i.target_operator||'gte',i.unit||'',i.ytd_method||'sum'));}else{kpiAddIndicatorRow();}
 }
 }else{
-['kpi-name','kpi-resp'].forEach(id=>document.getElementById(id).value='');
+['kpi-name','kpi-resp','kpi-description','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('kpi-freq').value='monthly';
 document.getElementById('kpi-status').value='not_started';
+document.getElementById('kpi-approval-status').value='draft';
 if(objId){
 sel.value=objId;
 const obj=kpiObjectives.find(o=>o.id===objId);
@@ -12722,6 +12729,9 @@ if(obj){const ex=kpiKPIs.filter(k=>k.objective_id===this.value);document.getElem
 }
 };
 openKpiModal('kpi-edit-modal');
+}
+function kpiStorageStatus(value){
+return ['not_started','on_track','at_risk','off_track','archived'].includes(String(value||''))?String(value):'not_started';
 }
 async function kpiSaveKPI(){
 const name=document.getElementById('kpi-name').value.trim();
@@ -12751,7 +12761,8 @@ if(!indicators.length){toast('Please enter at least one indicator name',false);r
 // (BuildCo) even when viewing/working on another client's data.
 const effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
 const kpiYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
-const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:kpiYear,created_by:prof?.id};
+const existingKpi=kpiEditKpiId?kpiKPIs.find(k=>k.id===kpiEditKpiId):null;
+const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,description:document.getElementById('kpi-description').value.trim()||null,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,data_provider:document.getElementById('kpi-data-provider').value.trim()||null,data_source:document.getElementById('kpi-data-source').value.trim()||null,reviewer:document.getElementById('kpi-reviewer').value.trim()||null,approver:document.getElementById('kpi-approver').value.trim()||null,approval_status:existingKpi?.approval_status||'draft',status:kpiStorageStatus(existingKpi?.status||document.getElementById('kpi-status').value),year:kpiYear,created_by:prof?.id};
 try{
 let kpiId=kpiEditKpiId;
 if(kpiId){
@@ -12790,7 +12801,11 @@ await kpiRecalcAllYTD(ex.id,kpiYear);
 }
 }
 toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
-}catch(e){toastActionError('Save KPI','Objectives & KPIs',e);}
+}catch(e){
+const modal=document.getElementById('kpi-edit-modal');if(modal)modal.dataset.saveFailed='true';
+if(String(e?.message||e).includes('kpis_v2_status_check'))toast('KPI not saved: the calculated display status cannot be stored. Your entered information is still open; refresh the KPI status and try again.',false);
+else toastActionError('Save KPI','Objectives & KPIs',e);
+}
 }
 async function kpiDeleteKPI(){
 if(!kpiEditKpiId)return;
