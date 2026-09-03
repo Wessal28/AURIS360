@@ -4,17 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="../../kpi-pdf-import.css">
+  <link rel="stylesheet" href="../../auris-settings-static.css">
   <title>KPI PDF import interaction fixture</title>
 </head>
 <body>
   <select id="year-sel" aria-label="Reporting year"><option selected>2026</option></select>
   <button id="kpi-x-import-pdf" type="button">Import PDF</button>
+  <div id="app-confirm3modal" class="auris-settings-s-ddcbc6274a">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="app-confirm3title">
+      <h2 id="app-confirm3title">Please confirm</h2>
+      <p id="app-confirm3message"></p><p id="app-confirm3detail"></p>
+      <button id="app-confirm3cancel" type="button">Continue reviewing</button>
+      <button id="app-confirm3ok" type="button">Create records</button>
+    </div>
+  </div>
   <script>
-    var prof={id:'fixture-user',company_id:'fixture-company'},kpiObjectives=[],kpiKPIs=[],tok='fixture-token',confirmCalls=0;
+    var prof={id:'fixture-user',company_id:'fixture-company'},kpiObjectives=[],kpiKPIs=[],kpiIndicators=[],tok='fixture-token',confirmCalls=0,apiCalls=[];
     function ccid(){return 'fixture-company';}
     function isMgr(){return true;}
     function toast(){}
-    async function appConfirmAction(){confirmCalls++;return false;}
+    function auditLogEvent(){}
+    async function kpiLoadAll(){}
+    async function fetch(){return {ok:true,json:async function(){return {text:'Objective: Reduce injuries. KPI: LTIFR monthly target less than or equal to 1.',characters:79};}};}
+    async function callAI(){return JSON.stringify({document_title:'Fixture plan',reporting_year:2026,confidence:.96,warnings:[],objectives:[{source_ref:'Section 1',code:'OBJ-1',name:'Reduce injuries',confidence:.96,kpis:[{source_ref:'Section 1.1',code:'KPI-1',name:'LTIFR',frequency:'monthly',responsible:'HSE Manager',confidence:.95,indicators:[{name:'LTIFR',target_value:1,target_operator:'lte',unit:'rate',ytd_method:'average',source_text:'target <= 1',confidence:.95}]}]}]});}
+    async function api(path,options){apiCalls.push({path:path,options:options});if(path==='/objectives')return [{id:'fixture-objective'}];if(path==='/kpis_v2')return [{id:'fixture-kpi'}];return [];}
+    function appConfirmAction(opts){confirmCalls++;var modal=document.getElementById('app-confirm3modal'),cancel=document.getElementById('app-confirm3cancel'),ok=document.getElementById('app-confirm3ok');document.getElementById('app-confirm3title').textContent=opts.title;document.getElementById('app-confirm3message').textContent=opts.message;modal.style.display='flex';return new Promise(function(resolve){cancel.onclick=function(){modal.style.display='none';resolve(false);};ok.onclick=function(){modal.style.display='none';resolve(true);};});}
   </script>
   <script src="../../kpi-pdf-import.js"></script>
 </body>
