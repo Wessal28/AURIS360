@@ -2,7 +2,7 @@
 'use strict';
 
 var KPI_PDF_MAX_BYTES=4*1024*1024;
-var kpiPdfState={file:null,analysis:null,busy:false};
+var kpiPdfState={file:null,analysis:null,busy:false,completed:false};
 var KPI_PDF_SCHEMA={
   type:'object',additionalProperties:false,
   required:['document_title','reporting_year','confidence','warnings','objectives'],
@@ -34,7 +34,18 @@ function companyId(){return typeof ccid==='function'?ccid():((typeof prof!=='und
 function selectedYear(){var el=document.getElementById('year-sel');return parseInt(el&&el.value,10)||new Date().getFullYear();}
 function canImport(){return typeof isMgr==='function'&&isMgr()&&companyId();}
 function message(text,ok){if(typeof toast==='function')toast(text,ok!==false);}
-function close(){var modal=document.getElementById('kpi-pdf-modal');if(modal)modal.remove();kpiPdfState={file:null,analysis:null,busy:false};}
+function close(){var modal=document.getElementById('kpi-pdf-modal');if(modal)modal.remove();kpiPdfState={file:null,analysis:null,busy:false,completed:false};}
+async function requestClose(){
+  if(kpiPdfState.busy)return;
+  var hasWork=!kpiPdfState.completed&&(kpiPdfState.file||kpiPdfState.analysis);
+  if(hasWork){
+    var confirmed=typeof appConfirmAction==='function'
+      ?await appConfirmAction({title:'Discard PDF import?',message:'Your selected document and reviewed objective/KPI draft have not been created.',detail:'Choose Continue reviewing to keep this window and all current entries.',confirmText:'Discard import',cancelText:'Continue reviewing',danger:true})
+      :window.confirm('Discard this PDF import and all reviewed entries?');
+    if(!confirmed)return;
+  }
+  close();
+}
 function setBusy(busy,label){kpiPdfState.busy=busy;var button=document.getElementById('kpi-pdf-analyse');if(button){button.disabled=busy;button.innerHTML=busy?'<i class="ti ti-loader-2 kpi-pdf-spin"></i>'+esc(label||'Working...'):'<i class="ti ti-sparkles"></i>Analyse PDF';}}
 function confidence(value){var n=Math.round(Number(value)*100);if(!Number.isFinite(n))n=0;return Math.max(0,Math.min(100,n));}
 function exactObjective(obj){var rows=typeof kpiObjectives!=='undefined'?kpiObjectives:[];return rows.find(function(row){return norm(row.code)&&norm(row.code)===norm(obj.code)||norm(row.name)===norm(obj.name);});}
@@ -61,7 +72,8 @@ function onChange(event){
 }
 
 function onClick(event){
-  if(event.target===event.currentTarget||event.target.closest('[data-kpi-pdf-close]')){if(!kpiPdfState.busy)close();return;}
+  if(event.target===event.currentTarget)return;
+  if(event.target.closest('[data-kpi-pdf-close]')){requestClose();return;}
   if(event.target.closest('#kpi-pdf-analyse'))analyse();
   if(event.target.closest('#kpi-pdf-create'))createRecords();
   var remove=event.target.closest('[data-kpi-pdf-remove-objective]');if(remove)remove.closest('.kpi-pdf-objective').remove();
@@ -115,7 +127,7 @@ async function createRecords(){
     if(typeof kpiLoadAll==='function')await kpiLoadAll();renderOutcome(result);
   }catch(error){result.failures.push(error.message||String(error));renderOutcome(result);}finally{kpiPdfState.busy=false;}
 }
-function renderOutcome(result){var root=document.getElementById('kpi-pdf-result');root.innerHTML='<section class="kpi-pdf-outcome '+(result.failures.length?'partial':'success')+'"><i class="ti '+(result.failures.length?'ti-alert-triangle':'ti-circle-check')+'"></i><div><h3>'+(result.failures.length?'Import completed with issues':'Import completed')+'</h3><p>'+result.objectives+' new objective(s), '+result.reused+' existing objective(s) reused, '+result.kpis+' KPI(s), and '+result.indicators+' indicator(s) created. '+result.duplicates+' exact duplicate KPI(s) skipped.</p>'+(result.failures.length?'<details open><summary>'+result.failures.length+' item(s) need attention</summary><ul>'+result.failures.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul></details>':'')+'<button type="button" class="kpi-pdf-primary" data-kpi-pdf-close>Close and view KPIs</button></div></section>';}
+function renderOutcome(result){kpiPdfState.completed=true;var root=document.getElementById('kpi-pdf-result');root.innerHTML='<section class="kpi-pdf-outcome '+(result.failures.length?'partial':'success')+'"><i class="ti '+(result.failures.length?'ti-alert-triangle':'ti-circle-check')+'"></i><div><h3>'+(result.failures.length?'Import completed with issues':'Import completed')+'</h3><p>'+result.objectives+' new objective(s), '+result.reused+' existing objective(s) reused, '+result.kpis+' KPI(s), and '+result.indicators+' indicator(s) created. '+result.duplicates+' exact duplicate KPI(s) skipped.</p>'+(result.failures.length?'<details open><summary>'+result.failures.length+' item(s) need attention</summary><ul>'+result.failures.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul></details>':'')+'<button type="button" class="kpi-pdf-primary" data-kpi-pdf-close>Close and view KPIs</button></div></section>';}
 function bind(){var button=document.getElementById('kpi-x-import-pdf');if(!button)return;if(!button.dataset.kpiPdfBound){button.dataset.kpiPdfBound='1';button.addEventListener('click',open);}button.hidden=!(typeof isMgr==='function'&&isMgr());}
 function boot(){bind();var observer=new MutationObserver(bind);observer.observe(document.body,{childList:true,subtree:true});}
 
