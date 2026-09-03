@@ -22,6 +22,6 @@ test('Dashboard remains separate and the register defaults to all dates', () => 
   assert.match(upgrade, /\['dashboard','Dashboard'\][\s\S]*\['register','Incident Register'\]/);
   assert.match(upgrade, /function dashboardView\(\)/);
   assert.match(html, /<select id="ev-filter-range"[^>]*>\s*<option value="all">All dates<\/option>/);
-  assert.match(html, /auris-core\.js\?v=20260901-11/);
+  assert.match(html, /auris-core\.js\?v=20260903-28/);
   assert.match(html, /incident-management-upgrade\.css\?v=20260831-4/);
 });

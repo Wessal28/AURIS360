@@ -91,6 +91,11 @@
       "order": 18,
       "file": "20260903070000_modular_foundation_27_kpi_reliability.sql",
       "sha256": "ee659f5c9dda94affb4e8bb22fe5820210d65ff2b168a41311c7d922a8ad9dd5"
+    },
+    {
+      "order": 19,
+      "file": "20260903080000_modular_foundation_28_kpi_governance.sql",
+      "sha256": "c33798e03d159564876e9f65530b4dae058756122f914ddb0dcd7bc463f757ed"
     }
   ]
 }

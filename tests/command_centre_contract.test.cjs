@@ -45,8 +45,8 @@ test('deep links fail closed across company boundaries',()=>{
 
 test('deployment loads an accessible responsive command centre before core',()=>{
   const html=read('index.html'),core=read('auris-core.js'),css=read('auris-command-centre.css'),runtime=read('api/runtime-config.js');
-  assert.ok(html.indexOf('auris-command-centre.js?v=20260901-14')<html.indexOf('auris-core.js?v=20260901-11'));
+  assert.ok(html.indexOf('auris-command-centre.js?v=20260901-14')<html.indexOf('auris-core.js?v=20260903-28'));
   assert.match(html,/id="auris-command-trigger"/);assert.match(html,/auris-command-centre\.css\?v=20260901-14/);
   assert.match(core,/commandCentreSetup/);assert.match(core,/deepLinkResume\('command-centre'\)/);assert.match(core,/AurisCommandCentre\.recordOpen\(name\)/);
-  assert.match(css,/@media\(max-width:600px\)/);assert.match(css,/focus-visible/);assert.match(runtime,/modular-foundation-27/);
+  assert.match(css,/@media\(max-width:600px\)/);assert.match(css,/focus-visible/);assert.match(runtime,/modular-foundation-28/);
 });
