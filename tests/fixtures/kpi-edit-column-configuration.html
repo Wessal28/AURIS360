@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KPI edit and column configuration fixture</title>
+  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=20260903-26">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>body{margin:0;background:#f4f7f6;font-family:Arial,sans-serif;color:#17324a}.test-shell{padding:16px}.card{background:#fff;border-radius:10px;padding:10px}button{font-family:inherit}</style>
+</head>
+<body>
+  <main id="page-kpi" class="active test-shell">
+    <header class="kpi-page-header"><h1>Objectives &amp; KPIs</h1></header>
+    <nav><button class="kpi-tab">Overview</button></nav>
+    <div id="kpi-metrics"></div>
+    <section id="kpi-tab-overview"><div id="kpi-objectives-container"></div></section>
+    <section id="kpi-tab-monthly"><div class="card"><div>Legacy header</div><table id="kpi-monthly-table"><thead></thead><tbody id="kpi-monthly-body"></tbody></table></div></section>
+  </main>
+  <script>
+    window.prof={id:'user-1',company_id:'company-1'};
+    window.ccid=function(){return 'company-1';};
+    window.isMgr=function(){return true;};
+    window.escH=function(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+    window.openObjModal=function(id){document.body.dataset.editedObjective=id;};
+    window.openKpiAddModal=function(id){document.body.dataset.editedKpi=id||'new';};
+    window.kpiObjectives=[{id:'objective-1',code:'1',name:'Strengthen safety culture',year:2026}];
+    window.kpiKPIs=[{id:'kpi-1',objective_id:'objective-1',code:'1.1',name:'Complete toolbox talks',frequency:'monthly',kpi_owner:'HSE Manager',description:'Track scheduled toolbox talks',status:'on_track'}];
+    window.kpiIndicators=[{id:'indicator-1',kpi_id:'kpi-1',code:'1.1.1',name:'Toolbox talks completed',unit:'talks',target_operator:'gte',target_value:4}];
+    window.kpiMonthlyData={'indicator-1':{1:{month:1,actual:4,ytd:4}}};
+  </script>
+  <script src="../../kpi-module-upgrade.js?v=20260903-26"></script>
+  <script>document.addEventListener('click',function(event){if(event.target.closest('.kpi-row,.kpi-x-indicator-row'))window.kpiXOpenDrawer('kpi-1');});</script>
+</body>
+</html>
