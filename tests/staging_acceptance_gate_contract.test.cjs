@@ -71,6 +71,7 @@ test('staging acceptance safely proves tenant-scoped write persistence', () => {
 
 test('staging acceptance verifies the governed KPI migration without requiring schema-document access', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /kpis_v2\?select=id,description,data_provider,data_source,reviewer,approver,approval_status,lifecycle_revision,lifecycle_reason,submitted_by,submitted_at,verified_by,verified_at,approved_by,approved_at,locked_by,locked_at/);
   assert.match(source, /kpi_indicators\?select=id,source_mode,source_metric,source_revision/);
   assert.doesNotMatch(source, /application\/openapi\+json/);
   assert.doesNotMatch(source, /PostgREST schema verification/);
