@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KPI editor source fixture</title>
+  <link rel="stylesheet" href="../../auris-base.css">
+  <link rel="stylesheet" href="../../auris-kpi-legacy.css">
+  <link rel="stylesheet" href="../../kpi-module-upgrade.css?v=20260903-29-5">
+</head>
+<body>
+  <main id="page-kpi" hidden>
+    <header class="kpi-page-header"><span>Objectives &amp; KPIs</span></header>
+    <nav><button class="kpi-tab">Overview</button></nav>
+    <div id="kpi-metrics"></div>
+    <section id="kpi-tab-overview"><div id="kpi-objectives-container"></div></section>
+    <section id="kpi-tab-monthly"><div class="card"><div>Monthly</div><table><tbody id="kpi-monthly-body"></tbody></table></div></section>
+  </main>
+  <div id="kpi-edit-modal" class="auris-kpilegacy-s-612123a942" style="display:flex">
+    <div class="auris-kpilegacy-s-53b26c74f5">
+      <div class="auris-kpilegacy-s-30db984a08"><span id="kpi-modal-title">Edit KPI</span></div>
+      <div class="form3row">
+        <div class="form3group"><label class="form3label">Code (auto)</label><input id="kpi-code" value="1.1" readonly></div>
+        <div class="form3group"><label class="form3label">Objective</label><select id="kpi-obj-sel"><option>Enhance HSE Culture</option></select></div>
+      </div>
+      <div class="form3row">
+        <div class="form3group"><label class="form3label">KPI name</label><input id="kpi-name" value="Complete toolbox talks"></div>
+        <div class="form3group"><label class="form3label">Frequency</label><select id="kpi-freq"><option>Monthly</option></select></div>
+      </div>
+      <div class="form3row">
+        <div class="form3group"><label class="form3label">Responsible</label><select id="kpi-resp"><option>HSE Manager</option></select></div>
+        <div class="form3group"><label class="form3label">Status</label><select id="kpi-status"><option>Not started</option></select></div>
+      </div>
+      <div><strong>Measurement indicators</strong><div id="kpi-indicators-list"></div></div>
+    </div>
+  </div>
+  <script src="../../kpi-module-upgrade.js?v=20260903-29-5"></script>
+</body>
+</html>
