@@ -17,6 +17,8 @@ test('KPI editor exposes metadata, restores browser drafts and keeps approval st
   const upgrade=read('kpi-module-upgrade.js');
   for(const id of ['kpi-description','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver','kpi-approval-status'])assert.match(upgrade,new RegExp(id));
   assert.match(upgrade,/kpi-approval-status" value="draft" readonly/);
+  assert.match(upgrade,/Data source<select id="kpi-data-source" required>/);
+  for(const option of ['Manual entry','AURIS module','Evidence / document'])assert.match(upgrade,new RegExp(option));
   assert.match(upgrade,/function kpiXCaptureEditorDraft\(\)/);
   assert.match(upgrade,/function kpiXRestoreEditorDraft\(kpiId\)/);
   assert.match(upgrade,/sessionStorage\.setItem\(kpiXEditorDraftKey/);
@@ -32,6 +34,7 @@ test('scorecard management controls are compact, labelled icon buttons',()=>{
   assert.match(css,/\.kpi-x-column-button \{width:38px;min-width:38px;height:38px/);
   assert.match(css,/\.kpi-x-row-edit \{width:34px;min-width:34px;height:34px;margin-left:auto/);
   assert.match(css,/\.kpi-x-editor-meta \{display:grid;grid-template-columns:1fr 1fr/);
+  assert.match(css,/\.kpi-x-editor-meta input,\.kpi-x-editor-meta select,\.kpi-x-editor-meta textarea[^}]*font-size:13px;font-weight:400/);
 });
 
 test('Phase 27 migration adds KPI metadata and permits controlled archiving',()=>{

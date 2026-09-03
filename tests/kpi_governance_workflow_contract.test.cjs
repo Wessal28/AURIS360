@@ -37,8 +37,8 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(css,/@media \(max-width:760px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-w-awaiting\{grid-column:1\/-1/);
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-x-btn\{[^}]*height:44px/);
-  assert.match(html,/kpi-workflow\.js\?v=20260903-29-3/);
-  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29')<html.indexOf('kpi-workflow.js?v=20260903-29-3'));
+  assert.match(html,/kpi-workflow\.js\?v=20260903-29-5/);
+  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29-5')<html.indexOf('kpi-workflow.js?v=20260903-29-5'));
 });
 
 test('Approval Centre reopens the exact KPI source record',()=>{
@@ -60,7 +60,7 @@ test('current build markers and cache keys are published',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js'),manifest=read('sw-assets.js');
   assert.match(html,/modular-foundation-29/);assert.match(runtime,/modular-foundation-29/);
   for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
-  assert.match(html,/kpi-module-upgrade\.css\?v=20260903-29-4/);
-  assert.match(html,/kpi-workflow\.js\?v=20260903-29-3/);
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260903-29-5/);
+  assert.match(html,/kpi-workflow\.js\?v=20260903-29-5/);
   assert.match(manifest,/kpi-workflow\.js/);
 });
