@@ -53,7 +53,7 @@ test('adoption centre exposes controlled diagnostics and deliberate confirmation
   for(const marker of ['non-destructive adoption','Confirmed references','Exact suggestions','Ambiguous','Unresolved','Controlled failures','Select an active canonical value','set_master_data_source_binding','without rewriting the source record'])assert.match(centre,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'));
   assert.match(css,/@media\(max-width:600px\)/);
   assert.match(css,/focus-visible/);
-  assert.match(html,/modular-foundation-28/);
+  assert.match(html,/modular-foundation-29/);
   assert.match(html,/id="master-data-adoption-body"/);
   assert.match(manifest,/auris-master-data-adoption\.js/);
 });

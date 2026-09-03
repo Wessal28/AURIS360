@@ -27,8 +27,8 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(feature,/decide_kpi_workflow_approval/);assert.match(feature,/transition_kpi_lifecycle/);
   assert.match(feature,/if\(edit&&!canEdit\(kpi\)\)edit\.remove\(\)/);
   assert.match(css,/\.kpi-w-progress/);assert.match(css,/\.kpi-w-awaiting\.locked/);assert.match(css,/@media \(max-width:900px\)[\s\S]*min-height:44px/);
-  assert.match(html,/kpi-workflow\.js\?v=20260903-28/);
-  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-28')<html.indexOf('kpi-workflow.js?v=20260903-28'));
+  assert.match(html,/kpi-workflow\.js\?v=20260903-29/);
+  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29')<html.indexOf('kpi-workflow.js?v=20260903-29'));
 });
 
 test('Approval Centre reopens the exact KPI source record',()=>{
@@ -46,9 +46,9 @@ test('database lifecycle is tenant-scoped, atomic, revision-safe and frozen afte
   assert.match(sql,/grant execute on function public\.transition_kpi_lifecycle[\s\S]*to authenticated/);
 });
 
-test('Phase 28 build markers and cache keys are published',()=>{
+test('current build markers and cache keys are published',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js'),manifest=read('sw-assets.js');
-  assert.match(html,/modular-foundation-28/);assert.match(runtime,/modular-foundation-28/);
-  for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.css','kpi-module-upgrade.js','kpi-workflow.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-28'));
+  assert.match(html,/modular-foundation-29/);assert.match(runtime,/modular-foundation-29/);
+  for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js','kpi-module-upgrade.css','kpi-module-upgrade.js','kpi-workflow.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
   assert.match(manifest,/kpi-workflow\.js/);
 });

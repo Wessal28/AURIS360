@@ -43,8 +43,8 @@ test('lazy preparation loads each local asset once and reports readiness',async(
 
 test('deployment loads extraction before adapters and preserves responsive recovery',()=>{
   const html=read('index.html'),css=read('auris-module-extraction.css'),manifest=read('sw-assets.js');
-  assert.match(html,/modular-foundation-(?:12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28)/);
+  assert.match(html,/modular-foundation-(?:12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29)/);
   assert.ok(html.indexOf('auris-module-extraction.js?v=20260901-12')<html.indexOf('auris-extracted-module-adapters.js?v=20260901-12'));
-  assert.ok(html.indexOf('auris-extracted-module-adapters.js?v=20260901-12')<html.indexOf('auris-core.js?v=20260903-28'));
+  assert.ok(html.indexOf('auris-extracted-module-adapters.js?v=20260901-12')<html.indexOf('auris-core.js?v=20260903-29'));
   assert.match(css,/@media\(max-width:600px\)/);assert.match(manifest,/auris-module-extraction\.js/);assert.match(manifest,/contractor-management-upgrade\.js/);
 });

@@ -58,7 +58,7 @@ test('simulation and impact explain policy effects without changing runtime poli
 
 test('production shell exposes the admin-only Studio and governed version operations',()=>{
   const html=read('index.html'),core=read('auris-core.js'),studio=read('auris-workflow-studio.js'),manifest=read('sw-assets.js');
-  assert.ok(html.indexOf('auris-workflow-service.js?v=20260903-28')<html.indexOf('auris-workflow-studio.js?v=20260901-10'));
+  assert.ok(html.indexOf('auris-workflow-service.js?v=20260903-29')<html.indexOf('auris-workflow-studio.js?v=20260901-10'));
   assert.ok(html.indexOf('auris-workflow-studio.js?v=20260901-10')<html.indexOf('auris-core.js'));
   assert.match(html,/id="settings-workflow-studio-card"/);
   assert.match(core,/studioAllowed=isAdm\(\)\|\|activeRole\(\)==='hse_manager'/);

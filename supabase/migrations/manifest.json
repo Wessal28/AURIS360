@@ -96,6 +96,11 @@
       "order": 19,
       "file": "20260903080000_modular_foundation_28_kpi_governance.sql",
       "sha256": "c33798e03d159564876e9f65530b4dae058756122f914ddb0dcd7bc463f757ed"
+    },
+    {
+      "order": 20,
+      "file": "20260903090000_modular_foundation_29_kpi_data_sources.sql",
+      "sha256": "6cb67a0d1b361156c774543b987454ff63ce3de9b8b3e75b74f643b4189f95d1"
     }
   ]
 }

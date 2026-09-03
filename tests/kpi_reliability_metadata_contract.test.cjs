@@ -43,8 +43,8 @@ test('Phase 27 migration adds KPI metadata and permits controlled archiving',()=
 
 test('KPI assets are cache-busted and identify the current build',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js');
-  assert.match(html,/modular-foundation-28/);
-  assert.match(runtime,/modular-foundation-28/);
-  assert.match(html,/kpi-module-upgrade\.js\?v=20260903-28/);
-  assert.match(html,/kpi-module-upgrade\.css\?v=20260903-28/);
+  assert.match(html,/modular-foundation-29/);
+  assert.match(runtime,/modular-foundation-29/);
+  assert.match(html,/kpi-module-upgrade\.js\?v=20260903-29/);
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260903-29/);
 });
