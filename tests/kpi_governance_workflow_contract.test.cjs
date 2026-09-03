@@ -41,7 +41,7 @@ test('KPI drawer exposes assigned review, approval, rejection, revision and lock
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-w-awaiting\{grid-column:1\/-1/);
   assert.match(css,/\.kpi-x-drawer-actions \.kpi-x-btn\{[^}]*height:44px/);
   assert.match(html,/kpi-workflow\.js\?v=20260904-approval-routing-2/);
-  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29-5')<html.indexOf('kpi-workflow.js?v=20260904-approval-routing-2'));
+  assert.ok(html.indexOf('kpi-module-upgrade.js?v=20260903-29-6')<html.indexOf('kpi-workflow.js?v=20260904-approval-routing-2'));
 });
 
 test('Approval Centre reopens the exact KPI source record',()=>{

@@ -118,6 +118,8 @@
 #page-kpi .kpi-x-period {display:inline-flex;border:1px solid #d9e1ea;border-radius:8px;overflow:hidden}
 #page-kpi .kpi-x-period button {height:32px;border:0;background:#fff;color:#64748b;padding:0 12px;font-size:11px;cursor:pointer}
 #page-kpi .kpi-x-period button.active {background:#0f8a64;color:#fff}
+#page-kpi .kpi-x-month-scroll {box-sizing:border-box;width:100%;height:clamp(360px,calc(100dvh - 330px),720px);overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable both-edges;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0}
+#page-kpi .kpi-x-month-scroll:focus-visible {outline:2px solid #0f8a64;outline-offset:-2px}
 #page-kpi #kpi-monthly-table {min-width:1500px!important;border-collapse:separate!important;border-spacing:0!important}
 #page-kpi #kpi-monthly-table th {position:sticky!important;top:0!important;z-index:5!important;background:#f8fafc!important;white-space:nowrap}
 #page-kpi #kpi-monthly-table td {white-space:nowrap}
@@ -125,7 +127,9 @@
 #page-kpi #kpi-monthly-table .kpi-x-sticky-2 {position:sticky;left:64px;z-index:3;background:#fff!important;min-width:160px}
 #page-kpi #kpi-monthly-table .kpi-x-sticky-3 {position:sticky;left:224px;z-index:3;background:#fff!important;min-width:190px;box-shadow:5px 0 8px rgba(15,23,42,.05)}
 #page-kpi #kpi-monthly-table thead .kpi-x-sticky-1,#page-kpi #kpi-monthly-table thead .kpi-x-sticky-2,#page-kpi #kpi-monthly-table thead .kpi-x-sticky-3 {z-index:8!important;background:#f8fafc!important}
-#page-kpi .kpi-x-cell {min-width:62px;text-align:center!important;cursor:pointer}
+#page-kpi .kpi-x-cell {min-width:62px;text-align:center!important;cursor:default}
+#page-kpi .kpi-x-cell.editable {cursor:pointer;touch-action:manipulation}
+#page-kpi .kpi-x-cell.editable:hover,#page-kpi .kpi-x-cell.editable:focus-visible {box-shadow:inset 0 0 0 2px #0f8a64;outline:0}
 #page-kpi .kpi-x-cell.on_track {background:#eef9e9!important;color:#347210!important;font-weight:700}
 #page-kpi .kpi-x-cell.at_risk {background:#fff8e7!important;color:#a15800!important;font-weight:700}
 #page-kpi .kpi-x-cell.off_track {background:#fff0f0!important;color:#b91c1c!important;font-weight:700}
