@@ -12712,6 +12712,15 @@ if(inds.length){inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?
 }
 }else{
 ['kpi-name','kpi-resp','kpi-description','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver'].forEach(id=>document.getElementById(id).value='');
+const publishedWorkflow=(window.kpiConfigPublished&&window.kpiConfigPublished.workflow)||{};
+const publishedSources=(window.kpiConfigPublished&&window.kpiConfigPublished.sources)||{};
+setSelectValueWithFallback('kpi-resp',publishedWorkflow.stage1||'');
+setSelectValueWithFallback('kpi-data-provider',publishedWorkflow.stage1||'');
+setSelectValueWithFallback('kpi-reviewer',publishedWorkflow.stage2||'');
+setSelectValueWithFallback('kpi-approver',publishedWorkflow.stage3||'');
+if(publishedSources.default_source==='manual')document.getElementById('kpi-data-source').value='Manual';
+else if(publishedSources.default_source==='module')document.getElementById('kpi-data-source').value='AURIS module';
+else if(publishedSources.default_source==='integration')document.getElementById('kpi-data-source').value='Evidence / document';
 document.getElementById('kpi-freq').value='monthly';
 document.getElementById('kpi-status').value='not_started';
 document.getElementById('kpi-approval-status').value='draft';
