@@ -36653,9 +36653,12 @@ async function loadIntegrations() {
 async function loadMasterDataCentre() {
   var host=document.getElementById('master-data-centre-body');
   if(!host||!window.AurisMasterDataCentre)return;
+  var options={companyId:function(){return ccid();},userId:function(){return prof&&prof.id||'';},role:function(){return activeRole();},request:function(path,requestOptions){return api(path,requestOptions);},notify:function(message,ok){toast(message,ok);}};
   try{
-    await window.AurisMasterDataCentre.mount(host,{companyId:function(){return ccid();},userId:function(){return prof&&prof.id||'';},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}});
+    await window.AurisMasterDataCentre.mount(host,options);
   }catch(error){host.innerHTML=registerErrorHtml('Shared Master Data',error.message);}
+  var adoptionHost=document.getElementById('master-data-adoption-body');
+  if(adoptionHost&&window.AurisMasterDataAdoptionCentre)try{await window.AurisMasterDataAdoptionCentre.mount(adoptionHost,options);}catch(error){adoptionHost.innerHTML=registerErrorHtml('Master Data Adoption',error.message);}
 }
 
 async function integRefresh() {
