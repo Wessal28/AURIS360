@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-integration-engine.js', 'auris-integration-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+  for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-integration-engine.js', 'auris-integration-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'kpi-data-source.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -145,6 +145,9 @@ async function main() {
     ['Document Control', 'document-control-upgrade.js', ['Loading Document Control', 'No documents']]
   ];
   for (const [label, asset, markers] of functionalViews) requireMarkers(assetSources.get(asset), label, markers);
+  requireMarkers(assetSources.get('kpi-data-source.js'), 'Governed KPI data sources', [
+    "version:'1.0.0'", 'configure_kpi_indicator_source', 'refresh_kpi_indicator_month', 'override_kpi_monthly_result', 'function showFailure('
+  ]);
 
   const registrySource = assetSources.get('auris-module-registry.js');
   requireMarkers(registrySource, 'Module registry', [
@@ -268,6 +271,7 @@ async function main() {
     ['Executive Dashboard', `events?select=id&${companyFilter}&limit=1`],
     ['Executive Dashboard actions', `action_tracker?select=id&${companyFilter}&limit=1`],
     ['Monthly KPI Follow-up', `kpi_monthly_data?select=id&${companyFilter}&limit=1`],
+    ['Governed KPI sources', `kpi_indicators?select=id,source_mode,source_metric,source_revision&${companyFilter}&limit=1`],
     ['Safety Engagement', `engagement_configuration_versions?select=id&${companyFilter}&limit=1`],
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]

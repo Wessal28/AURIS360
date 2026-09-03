@@ -69,6 +69,13 @@ test('staging acceptance safely proves tenant-scoped write persistence', () => {
   assert.doesNotMatch(persistenceProbe[0], /method:\s*'(POST|PUT|DELETE)'/);
 });
 
+test('staging acceptance verifies the governed KPI migration without requiring schema-document access', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source, /kpi_indicators\?select=id,source_mode,source_metric,source_revision/);
+  assert.doesNotMatch(source, /application\/openapi\+json/);
+  assert.doesNotMatch(source, /PostgREST schema verification/);
+});
+
 test('successful Preview deployments trigger the governed acceptance workflow', () => {
   const workflow = read('.github/workflows/staging-acceptance.yml');
   assert.match(workflow, /deployment_status:/);
