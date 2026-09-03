@@ -9,7 +9,7 @@ const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
 const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
 
 test('reviewed migration replay inventory includes Phase 26 operational adoption objects', () => {
-  assert.deepEqual(expectations, { format_version: 1, tables: 270, policies: 432, routines: 119 });
+  assert.deepEqual(expectations, { format_version: 1, tables: 270, policies: 432, routines: 123 });
 });
 
 function run(databaseUrl) {

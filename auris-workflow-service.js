@@ -17,9 +17,9 @@ function authContext(){
 function basePolicy(moduleKey){
   var workflow=registry.workflowOf(moduleKey);
   if(!workflow)return null;
-  var transitions=Array.from(workflow.transitions,function(pair){return Array.from(pair);}),incoming=Object.create(null);transitions.forEach(function(pair){incoming[pair[1]]=true;});
+  var transitions=Array.from(workflow.transitions,function(pair){return Array.from(pair);}),incoming=Object.create(null),allowed=Object.create(null);transitions.forEach(function(pair){incoming[pair[1]]=true;allowed[pair.join('>')]=true;});
   var entryStates=Array.from(workflow.states).filter(function(state){return state===workflow.initial||!incoming[state];});
-  return {moduleKey:moduleKey,entity:workflow.entity,initial:workflow.initial,entryStates:entryStates,terminal:Array.from(workflow.terminal),states:Array.from(workflow.states),transitions:transitions,approvalTransitions:Array.from(workflow.approvalTransitions||[],function(pair){return Array.from(pair);}),rules:[],title:workflow.entity+' workflow',description:'',studioVersion:1,version:'registry',source:'registry'};
+  return {moduleKey:moduleKey,entity:workflow.entity,initial:workflow.initial,entryStates:entryStates,terminal:Array.from(workflow.terminal),states:Array.from(workflow.states),transitions:transitions,approvalTransitions:Array.from(workflow.approvalTransitions||[],function(pair){return Array.from(pair);}),rules:Array.from(workflow.rules||[],function(rule){return normaliseRule(rule,allowed);}),title:workflow.entity+' workflow',description:'',studioVersion:1,version:'registry',source:'registry'};
 }
 function unsafeConfiguration(value,path){
   path=path||'policy';

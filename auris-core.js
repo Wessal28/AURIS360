@@ -38873,6 +38873,7 @@ var approvalCenterRows = [];
 var APPROVAL_SOURCE_ADAPTERS = [
   {key:'permit',module:'Permit to Work',table:'permits',page:'permit',statuses:['pending_approval'],status:['status'],ref:['permit_number'],title:['work_description','work_location'],approver:['current_approver_name','approver_name'],due:['approval_due_date','valid_from'],confidentiality:['confidentiality'],stage:'Permit approval'},
   {key:'swms',module:'SWMS / Method Statements',table:'documents',page:'swms',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Method statement review',opener:'swms',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')!==-1||t.indexOf('safe work method')!==-1||t.indexOf('method statement')!==-1;}},
+  {key:'kpi',module:'Objectives & KPIs',table:'kpis_v2',page:'kpi',statuses:['submitted','verified'],status:['approval_status'],ref:['code'],title:['name'],approver:['reviewer','approver'],due:[],confidentiality:[],stage:'KPI governance review',opener:'kpi'},
   {key:'documents',module:'Document Control',table:'documents',page:'documents',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Document review',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')===-1&&t.indexOf('safe work method')===-1&&t.indexOf('method statement')===-1;}},
   {key:'risk',module:'Risk Assessment',table:'risk_assessments',page:'risk',statuses:['pending_review','under_review','pending_approval','review','submitted'],status:['status'],ref:['ra_ref','reference_no'],title:['title','activity'],approver:['reviewer_name','approver_name'],due:['review_date','next_review_date'],confidentiality:['confidentiality'],stage:'Risk review'},
   {key:'incident',module:'Incident Management',table:'investigations',page:'events',statuses:['submitted','pending_review','under_review','pending_approval','review'],status:['approval_status','status','workflow_status'],ref:['investigation_ref','reference_no','incident_ref'],title:['title','investigation_title','summary'],approver:['reviewer_name','approver_name','lead_investigator_name'],due:['review_due_date','target_date','due_date'],confidentiality:['confidentiality','privacy_level'],stage:'Investigation review'},
@@ -38946,11 +38947,11 @@ function approvalsAdapterStatus(row,adapter){
 function approvalsAdapterRow(adapter,row){
   var status=approvalsAdapterStatus(row,adapter);if(!status||adapter.filter&&!adapter.filter(row))return null;
   var id=row.id||row.record_id||row.related_id;if(!id)return null;
-  var openId=approvalsPick(row,adapter.openId)||id;
+  var openId=approvalsPick(row,adapter.openId)||id,queueApprover=adapter.key==='kpi'?(status==='submitted'?row.reviewer:row.approver):approvalsPick(row,adapter.approver),queueStage=adapter.key==='kpi'?(status==='submitted'?'KPI verification':'KPI approval'):(adapter.stage||approvalsStatusLabel(status));
   return {row_key:adapter.table+':'+id,adapter_key:adapter.key,source:adapter.key,module:adapter.module,table:adapter.table,record_id:id,id:id,
     ref:String(approvalsPick(row,adapter.ref)||displayRecordRef(row,['reference_no','reference','code'],'REVIEW-DRAFT')),
-    title:String(approvalsPick(row,adapter.title)||adapter.module+' record awaiting review'),status:status,stage:adapter.stage||approvalsStatusLabel(status),step:adapter.stage||approvalsStatusLabel(status),
-    approver:String(approvalsPick(row,adapter.approver)||'Role-based queue'),due_date:approvalsPick(row,adapter.due)||'',
+    title:String(approvalsPick(row,adapter.title)||adapter.module+' record awaiting review'),status:status,stage:queueStage,step:queueStage,
+    approver:String(queueApprover||'Role-based queue'),due_date:approvalsPick(row,adapter.due)||'',
     confidentiality:String(approvalsPick(row,adapter.confidentiality)||adapter.defaultConfidentiality||'Standard'),updated_at:row.updated_at||row.created_at||approvalsPick(row,adapter.due)||'',
     page:adapter.page,opener:adapter.opener||'',entity:adapter.entity||'',open_id:openId,open_table:adapter.openTable||adapter.table,company_id:row.company_id||approvalsCompanyFilter()};
 }
@@ -39056,6 +39057,7 @@ async function approvalsOpen(rowKey){
   try{
     if(x.opener==='contractor_document'&&typeof cmuOpenDocument==='function'){showPage('contractor',null);return setTimeout(function(){cmuOpenDocument(x.open_id);},350);}
     if(x.opener==='swms'&&typeof swmsOpen==='function'){showPage('swms',null);return setTimeout(function(){swmsOpen(x.open_id);},350);}
+    if(x.opener==='kpi'&&typeof kpiXOpenDrawer==='function'){showPage('kpi',null);return setTimeout(function(){kpiXOpenDrawer(x.open_id);},350);}
     if(x.opener==='contractor_profile'&&typeof conOpenDetail==='function'){showPage('contractor',null);return setTimeout(function(){conOpenDetail(x.open_id);},350);}
     if(x.opener==='tools_profile'&&typeof teuOpenProfile==='function'){showPage('tools',null);return setTimeout(function(){teuOpenProfile(x.open_id);},350);}
     if(x.opener==='tools_assurance'&&typeof teuOpenAssurance==='function'){showPage('tools',null);return setTimeout(function(){teuOpenAssurance(x.open_id);},350);}
