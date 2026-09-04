@@ -2947,8 +2947,8 @@ try{ Brand.paintFromCache(); }catch(_){}
 async function loadPeopleCache(){
 try{
 const d=await api('/people?select=id,company_id,first_name,last_name,job_title,department,employee_number,id_number,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
-people=d||[];fillPplDrops();
-}catch(e){people=[];}
+people=d||[];fillPplDrops();return people;
+}catch(e){console.warn('Could not refresh active people:',e);if(!Array.isArray(people))people=[];return people;}
 }
 var locationSites=[];
 async function loadLocationSitesCache(){
@@ -35085,6 +35085,7 @@ async function saCompanyPick(companyId) {
   saCompanySetContext(companyId);
   await loadRolloutRuntimeConfig();
   await workflowHydrateTenant(companyId);
+  await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
   applyRoles();
 
   // Reload the current page's data with the new filter context.
