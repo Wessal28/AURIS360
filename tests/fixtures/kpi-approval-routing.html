@@ -23,6 +23,7 @@
   <script src="../../kpi-configuration.js?v=approval-routing-1"></script>
   <script>
     document.getElementById('kpi-x-config-view').addEventListener('change',function(event){if(event.target.dataset.cfg)window.kpiConfigChange(event.target);});
+    document.getElementById('kpi-x-config-view').addEventListener('click',function(event){var button=event.target.closest('.kpi-cfg-nav button');if(!button)return;var args=JSON.parse(decodeURIComponent(button.dataset.aurisModuleArgs||'%5B%5D'));if(args[0])window.kpiConfigSection(args[0]);});
     window.kpiConfigSection('workflow');
     window.kpiConfigLoad();
   </script>
