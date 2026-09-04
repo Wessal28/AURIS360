@@ -35,6 +35,7 @@ test('staging authentication tolerates transient cold starts without masking cre
 test('staging acceptance verifies governed KPI workflow UI and persistence dependencies', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   assert.match(source, /Governed KPI workflow controls/);
+  assert.match(source, /version:'1\.1\.2'/);
   assert.match(source, /kpi-workflow\.js/);
   assert.match(source, /workflow_policy_versions\?select=id,module_key,status,version,revision/);
   assert.match(source, /approval_requests\?select=id,module_name,source_record_id,source_page,source_adapter_key,from_state,to_state,status,revision/);
