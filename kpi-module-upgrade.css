@@ -191,6 +191,8 @@
 #page-kpi .kpi-cfg-version.draft{background:#eff6ff;color:#1d4ed8}#page-kpi .kpi-cfg-version.validated{background:#fff7ed;color:#b45309}#page-kpi .kpi-cfg-version.published{background:#ecfdf5;color:#087252}
 #page-kpi .kpi-cfg-schema{display:flex;gap:10px;align-items:center;padding:11px 13px;margin-bottom:12px;border:1px solid #fdba74;border-radius:10px;background:#fff7ed;color:#9a4d05}
 #page-kpi .kpi-cfg-schema i{font-size:20px}#page-kpi .kpi-cfg-schema strong,#page-kpi .kpi-cfg-schema span{display:block}#page-kpi .kpi-cfg-schema span{font-size:11px;margin-top:2px}
+#page-kpi .kpi-cfg-operational{display:flex;gap:10px;align-items:center;padding:11px 13px;margin-bottom:12px;border:1px solid #a7f3d0;border-radius:10px;background:#ecfdf5;color:#086247}
+#page-kpi .kpi-cfg-operational i{font-size:20px;flex:0 0 auto}#page-kpi .kpi-cfg-operational strong,#page-kpi .kpi-cfg-operational span{display:block}#page-kpi .kpi-cfg-operational span{font-size:11px;line-height:1.45;margin-top:2px;color:#3c6f61}
 #page-kpi .kpi-cfg-layout{display:grid;grid-template-columns:210px minmax(480px,1fr) 250px;gap:12px;align-items:start}
 #page-kpi .kpi-cfg-nav{position:sticky;top:8px;background:#fff;border:1px solid #dce4ed;border-radius:11px;padding:6px;box-shadow:0 8px 22px rgba(15,23,42,.035)}
 #page-kpi .kpi-cfg-nav button{width:100%;min-height:37px;display:flex;align-items:center;gap:9px;padding:7px 9px;border:0;border-left:3px solid transparent;border-radius:7px;background:transparent;color:#475569;text-align:left;font-size:10.5px;cursor:pointer}
