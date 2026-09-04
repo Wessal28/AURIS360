@@ -17,7 +17,7 @@ test('Phase 29 exposes a fixed AURIS module metric catalog and clear result cont
   assert.match(feature,/function showFailure\(/);assert.match(feature,/20260901010000_modular_foundation_9_governance_persistence\.sql/);assert.match(feature,/KPI migrations 27–29/);assert.match(feature,/Source not saved/);
   assert.doesNotMatch(feature,/notify\('Source not saved:/);
   assert.match(html,/kpi-data-source\.css\?v=20260903-29-1/);assert.match(html,/kpi-data-source\.js\?v=20260903-29-5/);
-  assert.ok(html.indexOf('kpi-workflow.js?v=20260904-approval-routing-2')<html.indexOf('kpi-data-source.js?v=20260903-29-5'));
+  assert.ok(html.indexOf('kpi-workflow.js?v=20260904-locked-monthly-1')<html.indexOf('kpi-data-source.js?v=20260903-29-5'));
 });
 
 test('database calculations are tenant-scoped, fixed-catalog, revision-safe and audited',()=>{

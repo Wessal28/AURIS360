@@ -101,6 +101,11 @@
       "order": 20,
       "file": "20260903090000_modular_foundation_29_kpi_data_sources.sql",
       "sha256": "6cb67a0d1b361156c774543b987454ff63ce3de9b8b3e75b74f643b4189f95d1"
+    },
+    {
+      "order": 21,
+      "file": "20260904010000_kpi_locked_monthly_reporting.sql",
+      "sha256": "56aae4375b46ba7cd1f37a48531eaf5e50eb0e31c71138b76eb8486b587706b7"
     }
   ]
 }
