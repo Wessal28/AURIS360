@@ -163,6 +163,10 @@
 .kpi-x-indicator-card {padding:10px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px}.kpi-x-indicator-card>strong{font-size:12px}
 #kpi-entry-modal {align-items:stretch!important;justify-content:flex-end!important;background:rgba(15,23,42,.3)!important}
 #kpi-entry-modal > div {width:min(460px,96vw)!important;height:100%!important;max-height:100%!important;border-radius:0!important;padding:22px!important;overflow-y:auto!important;box-sizing:border-box!important}
+.kpi-x-annual-period {margin:12px 0;padding:12px;border:1px solid #a7d9cc;border-radius:9px;background:#effaf7}
+.kpi-x-annual-period select {display:block;width:100%;box-sizing:border-box;margin-top:6px;border:1px solid #b8cdc8;border-radius:8px;padding:10px;background:#fff;color:#173b46;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+.kpi-x-annual-period small {display:block;margin-top:7px;color:#456775;font-size:10px;font-weight:600;line-height:1.4}
+.kpi-x-annual-period small.late {color:#9a4d05}
 .kpi-x-exception-fields {display:grid;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0}
 .kpi-x-exception-fields textarea,.kpi-x-exception-fields input {width:100%;box-sizing:border-box;border:1px solid #d9e1ea;border-radius:8px;padding:9px;font-size:12px}
 .kpi-x-editor-meta {display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid #dce4ed}
