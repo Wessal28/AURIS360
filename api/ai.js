@@ -138,12 +138,13 @@ async function callOpenAI(input, messages) {
     });
   });
 
+  const responseFormat = getResponseFormat(input);
+  const requestedTokens = Number(input.max_tokens || (responseFormat ? 8000 : 2000));
   const payload = {
     model: model,
-    max_output_tokens: Math.min(Number(input.max_tokens || 2000), 4000),
+    max_output_tokens: Math.min(Number.isFinite(requestedTokens) ? Math.max(requestedTokens, 1) : 2000, responseFormat ? 12000 : 4000),
     input: inputItems
   };
-  const responseFormat = getResponseFormat(input);
   if (responseFormat) payload.text = { format: responseFormat };
   if (/^gpt-5(?:[.-]|$)/i.test(model)) payload.reasoning = { effort: 'low' };
 
@@ -164,9 +165,20 @@ async function callOpenAI(input, messages) {
     };
   }
 
+  const incompleteReason = data && data.incomplete_details && data.incomplete_details.reason;
+  if (incompleteReason) {
+    return {
+      status: 422,
+      body: {
+        error: incompleteReason === 'max_output_tokens'
+          ? 'AI structured response exceeded its output limit. Please retry the analysis or use a smaller document.'
+          : 'AI returned an incomplete response: ' + incompleteReason
+      }
+    };
+  }
+
   const outputText = getOutputText(data);
   if (!outputText.trim()) {
-    const incompleteReason = data && data.incomplete_details && data.incomplete_details.reason;
     return {
       status: 502,
       body: {
@@ -206,9 +218,10 @@ async function callAnthropic(input, messages) {
     };
   }
 
+  const requestedTokens = Number(input.max_tokens || (input.response_schema ? 8000 : 2000));
   const payload = {
     model: model,
-    max_tokens: Math.min(Number(input.max_tokens || 2000), 4000),
+    max_tokens: Math.min(Number.isFinite(requestedTokens) ? Math.max(requestedTokens, 1) : 2000, input.response_schema ? 12000 : 4000),
     messages: messages
   };
   if (input.system) payload.system = String(input.system).slice(0, 4000);
@@ -228,6 +241,13 @@ async function callAnthropic(input, messages) {
     return {
       status: aiRes.status,
       body: data || { error: 'Claude request failed' }
+    };
+  }
+
+  if (data && data.stop_reason === 'max_tokens') {
+    return {
+      status: 422,
+      body: { error: 'AI structured response exceeded its output limit. Please retry the analysis or use a smaller document.' }
     };
   }
 
