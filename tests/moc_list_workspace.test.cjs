@@ -77,8 +77,8 @@ test('superseded, switched-company or revoked-session responses cannot update ca
 });
 test('editor handoff rejects stale load generations and wrong storage identity',()=>{
   const core=read('auris-core.js'),elements={};let options,opened;
-  const context={mocData:[rows[0]],mocLegacyMode:false,mocListLoadGeneration:1,mocListContext:{...current,generation:1},ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,mocCanonicalStatus:x=>x||'draft',mocRef:x=>x.moc_ref,mocEdit:id=>{opened=id;},document:{getElementById:id=>elements[id]||(elements[id]={value:''})},window:{AurisMocListWorkspace:{mount:(_,data,value)=>{options=value;}}}};
-  vm.runInNewContext(core.slice(core.indexOf('function mocRender(){'),core.indexOf('function mocShowForm(')),context);context.mocRender();
+  const context={mocData:[rows[0]],mocLegacyMode:false,mocListLoadGeneration:1,mocListContext:{...current,generation:1},ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,mocCanonicalStatus:x=>x||'draft',mocRef:x=>x.moc_ref,mocOpenOverview:id=>{opened=id;},document:{getElementById:id=>elements[id]||(elements[id]={value:''})},window:{AurisMocListWorkspace:{mount:(_,data,value)=>{options=value;}}}};
+  vm.runInNewContext(core.slice(core.indexOf('function mocRender(){'),core.indexOf('function mocOpenOverview(')),context);context.mocRender();
   options.openRecord('a','moc_change_requests',current);assert.equal(opened,'a');assert.throws(()=>options.openRecord('a','action_tracker',current),/changed/);
   context.mocListLoadGeneration=2;assert.throws(()=>options.openRecord('a','moc_change_requests',current),/changed/);
 });

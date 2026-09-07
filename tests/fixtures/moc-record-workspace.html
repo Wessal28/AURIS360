@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOC record workspace verification</title><link rel="stylesheet" href="../../auris-record-workspace.css">
+<style>body{margin:0;padding:24px;font:14px Arial,sans-serif;background:#f4f7fa}#controls{display:flex;gap:10px;flex-wrap:wrap}#controls button{min-height:44px;font:inherit}</style></head>
+<body><h1>MOC record workspace verification</h1><p>Local synthetic records. No database is contacted and no business data is changed.</p>
+<div id="controls"><button id="open">Open change overview</button><button id="legacy">Open legacy change</button><button id="history">Open with unavailable history</button><button id="fail">Open with form failure</button><button id="stale">Open with changed session</button></div><p id="result" role="status"></p>
+<script>
+let unavailable=false,fail=false,legacyMode=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'manager'};
+const record={id:'change-1',company_id:'fixture-company',moc_ref:'MOC-2026-001',title:'Replace solvent and review chemical handling controls',change_type:'chemical',lifecycle_status:'pending_approval',owner_name:'Fixture reviewer',priority:'high',location:'Factory',target_date:'2026-09-18',reason:'Reduce exposure during cleaning.',current_situation:'Operators use the existing solvent.',proposed_change:'Introduce the reviewed alternative after controls are implemented.',impacted_areas:['Risk assessment','Training','Chemical / SDS'],risk_review:'Confirm compatibility and ventilation requirements.',pre_implementation_actions:'Train operators and update the relevant procedure.',post_change_verification:'Review control effectiveness after implementation.'};
+const oldRecord={id:'change-1',company_id:'fixture-company',source_module:'moc',source_id:'change-1',source_ref:'MOC-OLD-001',title:'Legacy process change',status:'open',assigned_to_name:'Legacy owner',description:'Change type: Process change\nReason: Reduce handling risk\nProposed change: Improve controls\nPre-implementation actions: Train operators'};
+window.AurisPlatformServices={ready:()=>true,auth:{isReady:()=>true,isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}},api:{request:async url=>{
+  if(url.startsWith('/moc_change_requests?'))return [record];if(url.startsWith('/action_tracker?'))return [oldRecord];
+  if(unavailable)throw Error('History unavailable');
+  const table=legacyMode?'action_tracker':'moc_change_requests';
+  if(url.startsWith('/work_activities?'))return [{id:'activity-1',company_id:'fixture-company',source_module:'moc',source_table:table,source_record_id:'change-1',activity_type:'comment',body:'Review note <script text>',created_at:'2026-09-08',evidence:[{label:'Control review',url:'https://example.invalid/review'}]}];
+  if(url.startsWith('/approval_requests?'))return [{id:'request-1',company_id:'fixture-company',module_name:'moc',related_table:table,related_id:'change-1',source_record_id:'change-1',status:'pending',request_reason:'Verify the proposed controls'}];
+  if(url.startsWith('/approval_decisions?'))return [{id:'decision-1',request_id:'request-1',decision:'changes_requested',comments:'Provide the updated control review',decided_at:'2026-09-08'}];
+  return [];
+}}};
+window.AurisWorkflowService={policy:()=>({title:'MOC lifecycle',statusField:'lifecycle_status',transitions:[['pending_approval','approved']]}),explain:()=>({allowed:true})};
+</script><script src="../../auris-record-workspace.js"></script><script src="../../auris-moc-list-workspace.js"></script><script src="../../auris-moc-record-workspace.js"></script>
+<script>
+async function launch(mode){
+  identity.company.id='fixture-company';unavailable=mode==='history';fail=mode==='fail';legacyMode=mode==='legacy';document.getElementById('result').textContent='';
+  await AurisMocRecordWorkspace.open('change-1',{table:legacyMode?'action_tracker':'moc_change_requests',reference:legacyMode?'MOC-OLD-001':'MOC-2026-001',openEditor:async(row,table,context)=>{
+    if(fail)throw Error('Change form could not open. No changes were saved.');
+    document.getElementById('result').textContent='Form handoff: '+table+'/'+row.id+' / '+context.companyId+' / '+row.title;
+  }}).catch(error=>{document.getElementById('result').textContent=error.message;});
+  if(mode==='stale')identity.company.id='another-company';
+}
+['open','legacy','history','fail','stale'].forEach(id=>document.getElementById(id).addEventListener('click',()=>launch(id)));
+</script></body></html>
