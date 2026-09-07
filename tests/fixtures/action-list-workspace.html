@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Master Action shared list verification</title><link rel="stylesheet" href="../../auris-view-engine.css">
+<style>:root{--card:#fff;--text:#17213a;--text2:#64748b;--border:#d9e0ea}body{margin:0;padding:20px;font:14px Arial,sans-serif;background:#f4f7fa}h1{font-size:24px}#controls{display:flex;gap:8px;flex-wrap:wrap}#controls button,#controls input{min-height:44px;font:inherit}#controls input{min-width:0;max-width:100%}#list{margin-top:20px}</style></head>
+<body><h1>Master Action Plan — shared views</h1><p>Local synthetic data. No database requests or business writes.</p>
+<div id="controls"><label>Search actions <input id="search"></label><button id="switch">Switch company without reload</button><button id="refresh">Refresh register</button><button id="fail">Toggle opening failure</button></div>
+<p id="result" role="status"></p><div id="list"></div>
+<script>
+let fail=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user',full_name:'Fixture reviewer'},role:'manager'};
+const data=Array.from({length:30},(_,index)=>({id:'action-'+index,company_id:'fixture-company',action_ref:'MAP-CA-2026-'+String(index+1).padStart(3,'0'),title:index===0?'Inspect machine guards and verify corrective action completion':'Review action '+(index+1),source_type:index%2?'manual':'incident',source_ref:index%2?'':'INC-'+index,assigned_to_name:'Fixture reviewer',target_date:'2026-09-'+String(index%28+1).padStart(2,'0'),status:index%3?'open':'pending_verification',priority:index%2?'medium':'high',progress_pct:50,action_type:'corrective',department:'Operations'}));
+data.push({id:'secret',company_id:'other-company',title:'Must never appear'});
+window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}}};
+</script><script src="../../auris-view-engine.js"></script><script src="../../auris-action-list-workspace.js"></script><script>
+function render(){AurisActionListWorkspace.mount(document.getElementById('list'),data,{
+ filters:{search:document.getElementById('search').value},
+ sources:{incident:{label:'Incident'},manual:{label:'Manual'}},priorities:{high:{label:'High'},medium:{label:'Medium'}},statuses:{open:{label:'Open'},pending_verification:{label:'Pending Verification'}},
+ onApplyFilters:filters=>{document.getElementById('search').value=filters.search;render();},
+ openRecord:async(id)=>{if(fail)throw Error('Fixture opening failed. No records changed.');document.getElementById('result').textContent='Open exact action: '+id;},
+ openSource:async(id)=>{document.getElementById('result').textContent='Open source for exact action: '+id;}
+});}
+document.getElementById('search').addEventListener('input',render);
+document.getElementById('switch').addEventListener('click',()=>{identity.company.id=identity.company.id==='fixture-company'?'empty-company':'fixture-company';document.getElementById('result').textContent='Current company: '+identity.company.id;});
+document.getElementById('refresh').addEventListener('click',render);
+document.getElementById('fail').addEventListener('click',()=>{fail=!fail;document.getElementById('result').textContent='Opening failure: '+fail;});
+render();
+</script></body></html>

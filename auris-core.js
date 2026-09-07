@@ -26337,7 +26337,7 @@ function mocAIApplyReview(){
 // Sources: Incidents - Audits - Inspections - Complaints - RA - TBT
 // ===================================================================
 
-let mapAllData=[], mapEditingId=null, mapCurrentView='all';
+let mapAllData=[], mapEditingId=null, mapCurrentView='all', mapListLoadGeneration=0;
 
 const MAP_STATUS_CFG={
   open:                 {bg:'#FEF9EC',tc:'#854F0B',    label:'Open'},
@@ -26399,6 +26399,7 @@ function mapShowList(){
 
 function mapSetView(view, btn){
   mapCurrentView=view;
+  if(window.AurisModuleLayout)window.AurisModuleLayout.setView('actions',view);
   document.querySelectorAll('[id^="map-tab-"]').forEach(t=>t.classList.remove('active'));
   if(btn)btn.classList.add('active');
   mapRenderList();
@@ -26407,9 +26408,15 @@ function mapSetView(view, btn){
 // -- Load & render list --------------------------------------------------------
 async function mapLoadList(){
   var el=document.getElementById('actions-list');if(!el)return;
+  var generation=++mapListLoadGeneration,companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
+  function current(){return generation===mapListLoadGeneration&&companyId===String(ccid()||'')&&userId===String(prof?.id||'')&&role===activeRole()&&canAccessPage('actions');}
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
+    if(!companyId||!userId||!canAccessPage('actions'))throw new Error('Sign in and select a company to view actions.');
     var d=await api('/action_tracker?select=*'+cf()+'&order=target_date.asc,created_at.desc');
+    if(!current())return;
+    if(!Array.isArray(d))throw new Error('The action register returned an invalid response. Reload to retry.');
+    d=d.filter(function(row){return row&&String(row.company_id||'')===companyId;});
     mapAllData=d||[];
     // Metrics
     var now=new Date();
@@ -26441,6 +26448,7 @@ async function mapLoadList(){
     mapQueueRefBackfill();
     mapRenderList();
   }catch(e){
+    if(generation!==mapListLoadGeneration||companyId!==String(ccid()||'')||userId!==String(prof?.id||'')||role!==activeRole())return;
     var el2=document.getElementById('actions-list');
     var msg=typeof actionErrorMessage==='function'?actionErrorMessage('Load action plan','Master Action Plan',e.message):toastMessageForUser(e.message,false);
     if(el2)el2.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b">'
@@ -26758,8 +26766,11 @@ async function mapOpenExactSource(adapter,x){
   return false;
 }
 
-async function mapOpenSourceRecord(id){
+async function mapOpenSourceRecord(id,expected){
+  function assertSourceSession(){if(expected&&(String(ccid())!==expected.companyId||String(prof?.id||'')!==expected.userId||String(activeRole())!==expected.role||!canAccessPage('actions')))throw new Error('Your account or company changed. Reopen the action register.');}
+  assertSourceSession();
   var x=(mapAllData||[]).find(function(r){return r.id===id;});
+  if(x&&String(x.company_id||'')!==String(ccid()||''))throw new Error('This action is outside the selected company.');
   if(!x||!x.source_ref){if(typeof toast==='function')toast('No linked source record available for this action.',false);return;}
   var adapter=mapSourceAdapter(x);
   var pageKey=adapter&&adapter.page;
@@ -26768,13 +26779,16 @@ async function mapOpenSourceRecord(id){
   if(typeof showPage==='function')showPage(pageKey);
   if(adapter.key==='investigation'){
     await new Promise(function(resolve){setTimeout(resolve,250);});
+    assertSourceSession();
     if(typeof imsSwitchTab==='function')imsSwitchTab('investigate',document.getElementById('ims-tab-investigate'));
     mapApplySourceSearch('investigation',x.source_ref);
     if(typeof toast==='function')toast('Opened '+x.source_ref+' in Investigations.');
     return;
   }
   await new Promise(function(resolve){setTimeout(resolve,120);});
+  assertSourceSession();
   var opened=await mapOpenExactSource(adapter,x);
+  assertSourceSession();
   if(!opened)mapApplySourceSearch(pageKey,x.source_ref);
   if(typeof toast==='function')toast(opened?'Opened the linked source record.':'Opened '+x.source_ref+' in the related module.');
 }
@@ -26992,6 +27006,22 @@ function mapRenderList(){
 // -- Workflow bar ---------------------------------------------------------------
 function mapRenderTableList(){
   var el=document.getElementById('actions-list');if(!el)return;
+  if(window.AurisActionListWorkspace){
+    try{
+      return window.AurisActionListWorkspace.mount(el,mapAllData,{
+        reference:mapDisplayRef,sources:MAP_SOURCE_CFG,priorities:MAP_PRIORITY_CFG,statuses:MAP_STATUS_CFG,types:MAP_TYPE_CFG,
+        filters:{scope:mapCurrentView,search:document.getElementById('map-search')?.value||'',source:document.getElementById('map-filter-source')?.value||'',priority:document.getElementById('filter-priority')?.value||'',status:document.getElementById('filter-status')?.value||'',type:document.getElementById('map-filter-type')?.value||''},
+        onApplyFilters:function(filters){
+          [['map-search','search'],['map-filter-source','source'],['filter-priority','priority'],['filter-status','status'],['map-filter-type','type']].forEach(function(pair){
+            var control=document.getElementById(pair[0]);if(control)control.value=filters[pair[1]]||'';
+          });
+          mapSetView(filters.scope,document.getElementById('map-tab-'+filters.scope));
+        },
+        openRecord:function(id){return mapOpenDetail(id);},
+        openSource:function(id,expected){return mapOpenSourceRecord(id,expected);}
+      });
+    }catch(error){el.textContent=error.message||'The action register is unavailable. Reload to retry.';return;}
+  }
   var now=new Date();
   var q=(document.getElementById('map-search')?.value||'').toLowerCase();
   var fsrc=document.getElementById('map-filter-source')?.value||'';
