@@ -18,6 +18,7 @@ const testFiles = [
   'tests/audit_contract.test.cjs',
   'tests/moc_separation_contract.test.cjs',
   'tests/person_identity_contract.test.cjs',
+  'tests/toolbox_save_recovery.test.cjs',
   'tests/person_identity_reconciliation_contract.test.cjs',
   'tests/location_identity_contract.test.cjs',
   'tests/verified_operational_references_contract.test.cjs',

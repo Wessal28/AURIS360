@@ -19,7 +19,7 @@ test('AI toolbox talks render in the governed toolbox-talk template', () => {
 test('generator asks to save and persists a draft in the Toolbox Talks register', () => {
   assert.match(core, /Save in Toolbox Talks\?/);
   assert.match(core, /async function aiSaveToolboxTalkToAuris\(\)/);
-  assert.match(core, /apiWriteWithMissingColumnFallback\('\/toolbox_talks'/);
+  assert.match(core, /body\.tbt_ref=ref;[\s\S]*api\('\/toolbox_talks'/);
   assert.match(core, /status:'draft'/);
   assert.match(core, /AURIS_AI_TBT:/);
   assert.match(html, /Save to Toolbox Talks/);
