@@ -263,7 +263,7 @@ ppeQuickReplace(args[0],args[1],args[2])
 toolsStartPersonalCheck(args[0])
     },
     "r0088": function (event, args) {
-mapEdit(args[0])
+mapOpenDetail(args[0])
     },
     "r0089": function (event, args) {
 event.stopPropagation();mapOpenSourceRecord(args[0])
@@ -275,7 +275,7 @@ this.style.background=args[0]
 this.style.background=args[0]
     },
     "r0092": function (event, args) {
-event.stopPropagation();mapEdit(args[0])
+event.stopPropagation();mapOpenDetail(args[0])
     },
     "r0093": function (event, args) {
 mapSetEffectiveness(args[0])

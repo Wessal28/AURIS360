@@ -27141,15 +27141,34 @@ function mapNew(){
   mapFormTab('details', document.getElementById('map-ftab-details'));
 }
 
-function mapOpenDetail(id){
+async function mapOpenDetail(id){
+  if(window.AurisActionRecordWorkspace){
+    var listed=(mapAllData||[]).find(function(row){return String(row.id)===String(id)&&String(row.company_id)===String(ccid());});
+    try{
+      return await window.AurisActionRecordWorkspace.open(id,{reference:listed?mapDisplayRef(listed):'',openEditor:async function(record,tab,expected){
+        if(String(ccid())!==expected.companyId||String(prof?.id||'')!==expected.userId||String(activeRole())!==expected.role||!canAccessPage('actions'))throw new Error('Your account or company changed. Reopen the action.');
+        var index=mapAllData.findIndex(function(row){return String(row.id)===String(record.id);});
+        if(index===-1)mapAllData.push(record);else mapAllData[index]=record;
+        await mapEdit(record.id,expected);
+        mapFormTab(tab,document.getElementById('map-ftab-'+tab));
+      }});
+    }catch(error){toastActionError('Open action','Master Action Plan',error);return;}
+  }
   var record=(mapAllData||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
+  if(!canAccessPage('actions')||String(record.company_id)!==String(ccid()))return;
   aurisReadOnlyRecordModal('Master Action Plan record',record.title||record.description||mapDisplayRef(record),record,aurisReadableRecordFields(record));
 }
 
-async function mapEdit(id){
+async function mapEdit(id,expected){
+  var editorCompany=String(ccid()),editorUser=String(prof?.id||''),editorRole=String(activeRole());
+  if(expected&&(expected.companyId!==editorCompany||expected.userId!==editorUser||expected.role!==editorRole))throw new Error('Your account or company changed. Reopen the action.');
   var x=mapAllData.find(r=>r.id===id);
   if(!x){try{var d=await api('/action_tracker?id=eq.'+id+cf());x=d?.[0];}catch(ex){}}
-  if(!x)return;
+  if(!x){if(expected)throw new Error('The action is no longer available.');return;}
+  await mapPopulatePeopleSelects();
+  if(String(ccid())!==editorCompany||String(prof?.id||'')!==editorUser||String(activeRole())!==editorRole||String(x.company_id)!==editorCompany||!canAccessPage('actions')){
+    if(expected)throw new Error('Your account or company changed. Reopen the action.');return;
+  }
   mapEditingId=id;
   var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
   var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
@@ -27185,7 +27204,6 @@ async function mapEdit(id){
   var eff=parseInt(x.effectiveness_rating)||0;document.getElementById('mf-effectiveness').value=eff;mapUpdateEffectivenessStars(eff);
   // Recurrence
   var recEl=document.getElementById('mf-recurrence');if(recEl)recEl.value=x.recurrence_prevented==null?'':(x.recurrence_prevented?'true':'false');
-  await mapPopulatePeopleSelects();
   fillPersonSelect('mf-assigned-by',x.assigned_by||x.issuer);
   var assSel=document.getElementById('mf-assigned-to');
   if(assSel&&x.assigned_to_id)assSel.value=x.assigned_to_id;
