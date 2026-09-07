@@ -26142,7 +26142,7 @@ async function atexOpenLinkedRecord(kind,sourceId){
 }
 
 // ===== MANAGEMENT OF CHANGE (MOC) =====
-let mocData=[], mocEditId=null, mocLegacyMode=false;
+let mocData=[], mocEditId=null, mocLegacyMode=false, mocListLoadGeneration=0, mocListContext=null;
 const MOC_TYPE_LABELS={process:'Process change',equipment:'Equipment / machinery',chemical:'Chemical / substance',layout:'Layout / premises',people:'Organisation / people',supplier:'Supplier / contractor',legal:'Legal / permit condition',temporary:'Temporary change',emergency:'Emergency change',other:'Other change'};
 const MOC_STATUS_LABELS={draft:'Draft',screening:'Screening',impact_assessment:'Impact assessment',pending_approval:'Pending approval',approved:'Approved',implementation:'Implementation',verification:'Post-change verification',closed:'Closed',rejected:'Rejected',cancelled:'Cancelled',open:'Screening',in_progress:'Implementation',pending_verification:'Post-change verification'};
 const MOC_STATUS_COLORS={draft:['#F1F5F9','#475569'],screening:['#E6F1FB','#185FA5'],impact_assessment:['#FEF9EC','#854F0B'],pending_approval:['#F3E8FF','#7E22CE'],approved:['#ECFDF5','#047857'],implementation:['#DBEAFE','#1D4ED8'],verification:['#EDE9FE','#6D28D9'],closed:['#EAF3DE','#3B6D11'],rejected:['#FCEBEB','#A32D2D'],cancelled:['#F3F4F6','#6B7280']};
@@ -26166,20 +26166,37 @@ function mocBuildDescription(){
   ].join('\n');
 }
 async function loadMOC(){
+  var generation=++mocListLoadGeneration,companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
+  function sameSession(){return generation===mocListLoadGeneration&&companyId===String(ccid()||'')&&userId===String(prof?.id||'')&&role===activeRole();}
+  function current(){return sameSession()&&canAccessPage('moc');}
+  mocData=[];mocListContext=null;
+  ['moc-m3total','moc-m3open','moc-m3review','moc-m3closed'].forEach(function(id){var metric=document.getElementById(id);if(metric)metric.textContent='0';});
   var list=document.getElementById('moc-list');if(list)list.innerHTML='<div class="loading-msg">Loading MOC register...</div>';
+  var notice=document.getElementById('moc-register-notice');if(notice){notice.hidden=true;notice.textContent='';}
   try{
-    mocData=await api('/moc_change_requests?select=*'+cf()+'&order=created_at.desc')||[];
-    mocLegacyMode=false;
+    if(!companyId||!userId||!canAccessPage('moc'))throw new Error('Sign in and select a company to view change requests.');
+    var data,legacy=false;
+    try{
+      data=await api('/moc_change_requests?select=*'+cf()+'&order=created_at.desc');
+    }catch(e){
+      if(!current())return;
+      if(!/Could not find the table ['"](?:public\.)?moc_change_requests['"] in the schema cache|relation ['"](?:public\.)?moc_change_requests['"] does not exist/i.test(String(e.message||'')))throw e;
+      data=await api('/action_tracker?select=*'+cf()+'&source_module=eq.moc&order=created_at.desc');legacy=true;
+    }
+    if(!current())return;
+    if(!Array.isArray(data))throw new Error('The change register returned an invalid response. Reload to retry.');
+    mocData=data.filter(function(row){return row&&row.id&&String(row.company_id||'')===companyId&&(!legacy||row.source_module==='moc'&&(!row.source_table||row.source_table==='action_tracker')&&(!row.source_id||String(row.source_id)===String(row.id)));});
+    if(legacy)mocLegacyMode=true;else mocLegacyMode=false;
+    mocListContext={companyId:companyId,userId:userId,role:role,generation:generation};
     mocRender();
   }catch(e){
-    try{
-      mocData=await api('/action_tracker?select=*'+cf()+'&source_module=eq.moc&order=created_at.desc')||[];
-      mocLegacyMode=true;mocRender();
-      if(list)list.insertAdjacentHTML('afterbegin','<div class="card" style="border-left:4px solid #EF9F27;background:#FFFBEB;font-size:12px;color:#854F0B"><b>Database upgrade pending.</b> Existing MOC records are shown safely. Run <b>moc_change_requests_upgrade.sql</b> to enable the dedicated lifecycle, approvals and linked actions.</div>');
-    }catch(legacyError){if(list)list.innerHTML=setupFriendlyMessage('Management of Change register',legacyError.message);}
+    if(!sameSession())return;
+    mocData=[];mocListContext=null;
+    if(list)list.innerHTML=setupFriendlyMessage('Management of Change register',e.message);
   }
 }
 function mocRender(){
+  if(!mocListContext||mocListContext.companyId!==String(ccid()||'')||mocListContext.userId!==String(prof?.id||'')||mocListContext.role!==activeRole()||!canAccessPage('moc'))return;
   var statusOf=function(x){return mocCanonicalStatus(x.lifecycle_status||x.status);};
   var total=mocData.length, open=mocData.filter(x=>['draft','screening','impact_assessment','pending_approval','approved','implementation'].includes(statusOf(x))).length, review=mocData.filter(x=>statusOf(x)==='verification').length, closed=mocData.filter(x=>statusOf(x)==='closed').length;
   [['moc-m3total',total],['moc-m3open',open],['moc-m3review',review],['moc-m3closed',closed]].forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1];});
@@ -26187,6 +26204,19 @@ function mocRender(){
   var fs=document.getElementById('moc-filter-status')?.value||'';
   var rows=mocData.filter(function(x){var status=statusOf(x),hay=[mocRef(x),x.title,x.description,x.owner_name,x.responsible,x.location,x.priority,status].join(' ').toLowerCase();return (!q||hay.includes(q))&&(!fs||status===fs);});
   var el=document.getElementById('moc-list');if(!el)return;
+  var notice=document.getElementById('moc-register-notice');
+  if(notice){notice.hidden=!mocLegacyMode;notice.textContent=mocLegacyMode?'Legacy change register: the dedicated MOC table is not installed. Only legacy change requests are shown; linked corrective actions remain in Master Action Plan. Contact your administrator before upgrading the database.':'';}
+  if(window.AurisMocListWorkspace){
+    var listGeneration=mocListContext.generation;
+    window.AurisMocListWorkspace.mount(el,mocData,{legacy:mocLegacyMode,reference:mocRef,filters:{search:q,status:fs},
+      onApplyFilters:function(filters){document.getElementById('moc-search').value=filters.search;document.getElementById('moc-filter-status').value=filters.status;mocRender();},
+      openRecord:function(id,table,expected){
+        if(!mocListContext||listGeneration!==mocListContext.generation||listGeneration!==mocListLoadGeneration||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('moc')||table!==(mocLegacyMode?'action_tracker':'moc_change_requests')||!mocData.some(function(row){return String(row.id)===id&&String(row.company_id||'')===expected.companyId;}))throw new Error('The change register changed. Reload and open the request again.');
+        return mocEdit(id);
+      }
+    });
+    return;
+  }
   if(!rows.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-switch-3"></i></div>'

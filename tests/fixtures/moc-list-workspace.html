@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Management of Change shared list verification</title><link rel="stylesheet" href="../../auris-view-engine.css">
+<style>:root{--card:#fff;--text:#17213a;--text2:#64748b;--border:#d9e0ea}body{margin:0;padding:20px;font:14px Arial,sans-serif;background:#f4f7fa}h1{font-size:24px}#controls{display:flex;gap:8px;flex-wrap:wrap}#controls button,#controls input,#controls select{min-height:44px;font:inherit}#controls input{min-width:0;max-width:100%}#list{margin-top:20px}</style></head>
+<body><h1>Management of Change — shared views</h1><p>Local synthetic data. No database requests or business writes. Board groups describe existing lifecycle stages; they do not approve changes.</p>
+<div id="controls"><label>Search changes <input id="search"></label><label>Lifecycle filter <select id="stage"><option value="">All statuses</option><option value="screening">Screening</option><option value="pending_approval">Pending approval</option><option value="implementation">Implementation</option><option value="closed">Closed</option></select></label><button id="switch">Switch company without reload</button><button id="refresh">Refresh register</button><button id="legacy">Toggle legacy register</button><button id="fail">Toggle opening failure</button></div>
+<p id="result" role="status"></p><p id="notice" hidden>Legacy change requests only. Corrective actions remain in Master Action Plan.</p><div id="list"></div>
+<script>
+let legacy=false,fail=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'manager'};
+const data=Array.from({length:30},(_,index)=>({id:'change-'+index,company_id:'fixture-company',moc_ref:'MOC-2026-'+String(index+1).padStart(3,'0'),title:index===0?'Replace solvent and review chemical handling controls':'Review change '+(index+1),change_type:index%2?'equipment':'chemical',owner_name:'Fixture reviewer',target_date:'2026-09-'+String(index%28+1).padStart(2,'0'),lifecycle_status:['screening','pending_approval','implementation'][index%3],priority:index%2?'medium':'high',location:'Factory',impacted_areas:['Training','Risk assessment']}));
+const legacyData=[{id:'old-change',company_id:'fixture-company',source_module:'moc',source_id:'old-change',source_ref:'MOC-OLD-001',title:'Legacy process change',status:'open',description:'Change type: Process change',responsible:'Legacy owner'},{id:'linked-action',company_id:'fixture-company',source_module:'moc',source_table:'moc_change_requests',source_id:'change-0',title:'Must never appear: linked corrective action'}];
+data.push({id:'secret',company_id:'other-company',title:'Must never appear: other company'});
+window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}}};
+</script><script src="../../auris-view-engine.js"></script><script src="../../auris-moc-list-workspace.js"></script><script>
+function render(){document.getElementById('notice').hidden=!legacy;AurisMocListWorkspace.mount(document.getElementById('list'),legacy?legacyData:data,{
+ legacy,filters:{search:document.getElementById('search').value,status:document.getElementById('stage').value},
+ onApplyFilters:filters=>{document.getElementById('search').value=filters.search;document.getElementById('stage').value=filters.status;render();},
+ openRecord:async(id,table)=>{if(fail)throw Error('Fixture opening failed. No records changed.');document.getElementById('result').textContent='Open exact change request: '+table+'/'+id;}
+});}
+document.getElementById('search').addEventListener('input',render);document.getElementById('stage').addEventListener('change',render);
+document.getElementById('switch').addEventListener('click',()=>{identity.company.id=identity.company.id==='fixture-company'?'empty-company':'fixture-company';document.getElementById('result').textContent='Current company: '+identity.company.id;});
+document.getElementById('refresh').addEventListener('click',render);document.getElementById('legacy').addEventListener('click',()=>{legacy=!legacy;render();});
+document.getElementById('fail').addEventListener('click',()=>{fail=!fail;document.getElementById('result').textContent='Opening failure: '+fail;});render();
+</script></body></html>
