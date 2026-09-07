@@ -69,7 +69,8 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.status, 'passed');
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
-  assert.equal(result.assets.length, 30);
+  assert.equal(result.assets.length, 31);
+  assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-action-record-workspace.js'));
   assert.ok(response.requests.includes('/incident-management-upgrade.js'));

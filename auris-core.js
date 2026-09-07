@@ -26212,7 +26212,7 @@ function mocRender(){
       onApplyFilters:function(filters){document.getElementById('moc-search').value=filters.search;document.getElementById('moc-filter-status').value=filters.status;mocRender();},
       openRecord:function(id,table,expected){
         if(!mocListContext||listGeneration!==mocListContext.generation||listGeneration!==mocListLoadGeneration||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('moc')||table!==(mocLegacyMode?'action_tracker':'moc_change_requests')||!mocData.some(function(row){return String(row.id)===id&&String(row.company_id||'')===expected.companyId;}))throw new Error('The change register changed. Reload and open the request again.');
-        return mocEdit(id);
+        return mocOpenOverview(id,table,expected,listGeneration);
       }
     });
     return;
@@ -26243,6 +26243,22 @@ function mocRender(){
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
+}
+function mocOpenOverview(id,table,expected,generation){
+  function assertCurrent(){
+    if(!mocListContext||generation!==mocListContext.generation||generation!==mocListLoadGeneration||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('moc')||table!==(mocLegacyMode?'action_tracker':'moc_change_requests'))throw new Error('The change register changed. Close this panel, reload and open the request again.');
+  }
+  assertCurrent();
+  var row=mocData.find(function(item){return String(item.id)===String(id)&&String(item.company_id||'')===expected.companyId;});
+  if(!row)throw new Error('This change request is outside the current register.');
+  if(!window.AurisMocRecordWorkspace)throw new Error('The MOC record panel is unavailable. Reload the application.');
+  return window.AurisMocRecordWorkspace.open(id,{table:table,reference:mocRef(row),openEditor:function(fresh,sourceTable,current){
+    assertCurrent();
+    if(sourceTable!==table||current.companyId!==expected.companyId||current.userId!==expected.userId||current.role!==expected.role||String(fresh.id)!==String(id)||String(fresh.company_id||'')!==expected.companyId||table==='action_tracker'&&(!window.AurisMocListWorkspace||!window.AurisMocListWorkspace.legacyRecord(fresh)))throw new Error('The change request identity changed. Reopen the register.');
+    if(navigator.onLine===false)throw new Error('Reconnect before opening the change form.');
+    mocData=mocData.map(function(item){return String(item.id)===String(id)?Object.assign({},fresh):item;});
+    return mocEdit(id);
+  }});
 }
 function mocShowForm(show){document.getElementById('moc-register-view').style.display=show?'none':'block';document.getElementById('moc-form3view').style.display=show?'block':'none';var ai=document.getElementById('moc-ai-btn');if(ai)ai.style.display=(show&&typeof canUseAI==='function'&&canUseAI())?'inline-flex':'none';}
 function mocNew(){
