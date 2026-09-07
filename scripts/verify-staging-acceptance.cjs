@@ -173,7 +173,7 @@ async function main() {
     "version:'1.0.0'", 'definition:definition', 'model:model', 'mount:mount', 'diagnostics:diagnostics'
   ]);
   requireMarkers(assetSources.get('auris-record-workspace.js'), 'Record workspace engine', [
-    "version:'1.0.0'", 'registerAdapter:registerAdapter', 'exactSource:exactSource', 'model:model', 'open:open', 'diagnostics:diagnostics'
+    "version:'1.1.0'", 'registerAdapter:registerAdapter', 'exactSource:exactSource', 'model:model', 'open:open', 'diagnostics:diagnostics', 'assertCurrentSession', 'data-record-feedback'
   ]);
   requireMarkers(assetSources.get('auris-reporting-engine.js'), 'Reporting and analysis engine', [
     "version:'1.0.0'", 'definition:definition', 'aggregate:aggregate', 'csv:csv', 'mount:mount', 'diagnostics:diagnostics'

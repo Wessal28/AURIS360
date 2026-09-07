@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shared record workspace interaction fixture</title>
+<link rel="stylesheet" href="../../auris-record-workspace.css">
+<style>body{margin:0;padding:24px;font-family:Arial,sans-serif;background:#f4f7fa}button{min-height:44px}#controls{display:flex;gap:12px;flex-wrap:wrap}</style>
+</head><body><h1>Record workspace verification</h1><p>Local test records only. No API or database calls.</p>
+<div id="controls"><button id="open">Open record</button><button id="offline">Open offline record</button><button id="race">Test competing loads</button></div>
+<p id="result" role="status"></p>
+<script>window.AurisPlatformServices={auth:{isReady:()=>true,current:()=>({company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'hse_manager'})}};
+window.AurisWorkflowService={policy:()=>({title:'Action workflow',transitions:[['open','closed']]}),explain:()=>({allowed:true})};</script>
+<script src="../../auris-record-workspace.js"></script>
+<script>
+const source={module:'actions',table:'action_tracker',id:'fixture-1',ref:'ACT-001',company_id:'fixture-company'};
+const record={id:'fixture-1',company_id:'fixture-company',title:'Inspect safety controls and verify corrective action completion',status:'open',description:'Shared panel test. The background must not dismiss this record. Action failures must be shown inside the panel.'};
+AurisRecordWorkspace.registerAdapter({key:'actions',module:'actions',table:'action_tracker',fields:[{key:'description',label:'Description'},{key:'status',label:'Status'}],canEdit:()=>true,actions:[{key:'long-action',label:'A longer custom action label for portrait screens'}]});
+function open(offline){return AurisRecordWorkspace.open({source,record,offline,onAction:async action=>{if(action==='open'||action==='edit'){AurisRecordWorkspace.close();document.getElementById('result').textContent='Exact-source navigation requested: '+source.id;return;}if(action==='comment'){await new Promise(resolve=>setTimeout(resolve,150));throw new Error('Example save error: data was not saved. Please retry.');}return {message:'Completed '+action};},onTransition:()=>({message:'Use the source application for governed approval.'})});}
+document.getElementById('open').addEventListener('click',()=>open(false));
+document.getElementById('offline').addEventListener('click',()=>open(true));
+document.getElementById('race').addEventListener('click',async()=>{AurisRecordWorkspace.registerAdapter({key:'race',module:'events',table:'incident_events',load:s=>new Promise(resolve=>setTimeout(()=>resolve({record:{id:s.id,title:s.id,status:'open',company_id:s.company_id}}),s.id==='Old response'?700:30))});const first=AurisRecordWorkspace.open({source:{...source,module:'events',table:'incident_events',id:'Old response'}});const second=AurisRecordWorkspace.open({source:{...source,module:'events',table:'incident_events',id:'Latest record'}});await Promise.all([first,second]);document.getElementById('result').textContent='Latest record remains: '+AurisRecordWorkspace.diagnostics().source.id;});
+</script></body></html>
