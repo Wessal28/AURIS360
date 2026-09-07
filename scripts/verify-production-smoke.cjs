@@ -5,14 +5,20 @@ const root = path.resolve(__dirname, '..');
 const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
 const PRODUCTION_HOSTS = new Set(['auris360.app', 'www.auris360.app']);
 const REQUEST_TIMEOUT_MS = 15000;
+const PRODUCTION_SHELL_MARKERS = Object.freeze([
+  'name="auris-build"',
+  'id="login-screen"',
+  'id="page-dashboard"',
+  'id="page-events"',
+  'id="page-risk"'
+]);
 
 function fail(message) {
-  console.error(`Production smoke: ${message}`);
-  process.exit(1);
+  throw new Error(message);
 }
 
-function required(name) {
-  const value = String(process.env[name] || '').trim();
+function required(name, env = process.env) {
+  const value = String(env[name] || '').trim();
   if (!value) fail(`${name} is required.`);
   return value;
 }
@@ -29,22 +35,22 @@ function productionUrl(value) {
   return url;
 }
 
-function reportPathFromArgs() {
-  const index = process.argv.indexOf('--report');
+function reportPathFromArgs(args = process.argv) {
+  const index = args.indexOf('--report');
   if (index === -1) return '';
-  const requested = process.argv[index + 1];
+  const requested = args[index + 1];
   if (!requested) fail('--report requires a file path.');
   const resolved = path.resolve(root, requested);
   if (!resolved.startsWith(root + path.sep)) fail('Report path must stay inside the repository.');
   return resolved;
 }
 
-async function request(url, label) {
+async function request(url, label, fetchImpl = fetch) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const startedAt = Date.now();
   try {
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       signal: controller.signal,
       redirect: 'follow',
       headers: { 'User-Agent': 'AURIS360-production-smoke/1.0' }
@@ -96,36 +102,41 @@ function expectedReleaseMatches(actual, expected) {
     (cleanActual === cleanExpected || cleanActual.startsWith(cleanExpected) || cleanExpected.startsWith(cleanActual));
 }
 
-async function main() {
-  const base = productionUrl(required('PRODUCTION_APP_URL'));
-  const expectedSha = required('EXPECTED_DEPLOYMENT_SHA');
+async function verifyProduction(options, evidence) {
+  const env = options.env || process.env;
+  const requestAsset = (url, label) => request(url, label, options.fetchImpl);
+  const base = productionUrl(required('PRODUCTION_APP_URL', env));
+  const expectedSha = required('EXPECTED_DEPLOYMENT_SHA', env);
   if (!/^[a-f0-9]{7,40}$/i.test(expectedSha)) fail('EXPECTED_DEPLOYMENT_SHA must be a Git commit SHA.');
+  evidence.production_host = base.hostname;
+  evidence.expected_release_sha = expectedSha;
 
-  const shell = await request(base.href, 'production shell');
-  requireMarkers(shell.text, 'Production shell', [
-    'name="auris-build"',
-    'id="login-screen"',
-    'id="page-dashboard"',
-    'id="page-incidents"',
-    'id="page-risk"'
-  ]);
+  evidence.stage = 'shell';
+  const shell = await requestAsset(base.href, 'production shell');
+  evidence.shell_duration_ms = shell.duration_ms;
+  requireMarkers(shell.text, 'Production shell', PRODUCTION_SHELL_MARKERS);
 
+  evidence.stage = 'security_headers';
   const headers = Object.fromEntries([...shell.response.headers].map(([name, value]) => [name.toLowerCase(), value]));
   if (!/^no-store\b/i.test(headers['cache-control'] || '')) fail('Production shell must be served with no-store cache control.');
   if ((headers['x-content-type-options'] || '').toLowerCase() !== 'nosniff') fail('Production shell is missing X-Content-Type-Options: nosniff.');
   if ((headers['x-frame-options'] || '').toUpperCase() !== 'DENY') fail('Production shell is missing X-Frame-Options: DENY.');
   if (!/frame-ancestors\s+'none'/i.test(headers['content-security-policy'] || '')) fail('Production shell is missing its enforced frame-ancestors policy.');
 
-  const runtimeResponse = await request(new URL('/api/runtime-config', base).href, 'runtime configuration');
+  evidence.stage = 'runtime';
+  const runtimeResponse = await requestAsset(new URL('/api/runtime-config', base).href, 'runtime configuration');
   const runtime = runtimeConfig(runtimeResponse.text);
+  evidence.runtime_duration_ms = runtimeResponse.duration_ms;
   if (runtime.error) fail(`Production runtime rejected its configuration: ${runtime.error}`);
   if (runtime.environment !== 'production') fail(`Expected the production runtime, received ${runtime.environment || 'unknown'}.`);
   if (projectRef(runtime.supabaseUrl) !== PRODUCTION_REF) fail('Production is not connected to the approved Supabase project.');
+  evidence.stage = 'release_identity';
+  evidence.deployed_release_sha = runtime.releaseSha;
   if (!expectedReleaseMatches(runtime.releaseSha, expectedSha)) {
     fail(`Canonical production is serving ${runtime.releaseSha || 'an unidentified release'}, expected ${expectedSha}.`);
   }
 
-  const assetChecks = [];
+  const assetChecks = evidence.assets;
   const assets = [
     ['auris-module-registry.js', ["version:'2.2.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility']],
     ['auris-platform-services.js', ["version:'1.0.0'", 'configure:configure', 'notifications:facade']],
@@ -156,15 +167,17 @@ async function main() {
     ['sw.js', ['AURIS_SW_ASSET_MANIFEST']]
   ];
   for (const [fileName, markers] of assets) {
+    evidence.stage = 'critical_assets';
+    evidence.checking_asset = fileName;
     const url = fileName === 'sw.js' ? new URL('/sw.js', base).href : deployedAssetUrl(shell.text, base, fileName);
-    const result = await request(url, fileName);
+    const result = await requestAsset(url, fileName);
     if (result.text.length < 100) fail(`${fileName} was returned without usable application code.`);
     requireMarkers(result.text, fileName, markers);
     assetChecks.push({ asset: fileName, duration_ms: result.duration_ms, bytes: Buffer.byteLength(result.text) });
   }
 
   const buildMarker = (shell.text.match(/name="auris-build"\s+content="([^"]+)"/) || [])[1] || '';
-  const evidence = {
+  Object.assign(evidence, {
     generated_at: new Date().toISOString(),
     status: 'passed',
     production_host: base.hostname,
@@ -181,19 +194,37 @@ async function main() {
       frame_ancestors_none: true
     },
     assets: assetChecks
-  };
-
-  const reportPath = reportPathFromArgs();
-  if (reportPath) {
-    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-    fs.writeFileSync(reportPath, `${JSON.stringify(evidence, null, 2)}\n`);
-    console.log(`Production smoke evidence written to ${path.relative(root, reportPath)}.`);
-  }
-  console.log(`Production smoke passed: ${runtime.releaseSha.slice(0, 12)} is live on ${base.hostname}; ${assetChecks.length} critical assets verified.`);
+  });
+  evidence.stage = 'complete';
+  delete evidence.checking_asset;
+  return evidence;
 }
 
-module.exports = { expectedReleaseMatches, productionUrl };
+async function main(options = {}) {
+  const reportPath = reportPathFromArgs(options.args || process.argv);
+  const logger = options.logger || console;
+  const evidence = { generated_at: new Date().toISOString(), status: 'failed', stage: 'configuration', assets: [] };
+  try {
+    await verifyProduction(options, evidence);
+    logger.log(`Production smoke passed: ${evidence.deployed_release_sha.slice(0, 12)} is live on ${evidence.production_host}; ${evidence.assets.length} critical assets verified.`);
+    return evidence;
+  } catch (error) {
+    evidence.error = error && error.message ? error.message : 'unexpected verification failure.';
+    throw error;
+  } finally {
+    if (reportPath) {
+      fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+      fs.writeFileSync(reportPath, `${JSON.stringify(evidence, null, 2)}\n`);
+      logger.log(`Production smoke evidence written to ${path.relative(root, reportPath)}.`);
+    }
+  }
+}
+
+module.exports = { expectedReleaseMatches, productionUrl, PRODUCTION_SHELL_MARKERS, main };
 
 if (require.main === module) {
-  main().catch((error) => fail(error && error.message ? error.message : 'unexpected verification failure.'));
+  main().catch((error) => {
+    console.error(`Production smoke: ${error && error.message ? error.message : 'unexpected verification failure.'}`);
+    process.exitCode = 1;
+  });
 }

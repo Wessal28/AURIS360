@@ -41,6 +41,8 @@ Keep these environment boundaries:
 
 The production smoke gate is deliberately read-only. It verifies that the canonical domain serves the expected Git commit, the approved production runtime and Supabase project, enforced browser-security headers, the service worker and critical Core Control assets. It never signs in or writes production data.
 
+The Incident Management shell uses the registry's `events` route (`page-events`). The smoke gate tests the checked-in application shell and all critical assets in its regression suite, including negative cases for missing modules and stale releases. When `--report` is supplied, unsuccessful runs retain a `status: failed` report with the failure stage and any completed asset checks; a failed report is diagnostic evidence, never release approval.
+
 To repeat it manually from GitHub Actions, run **Production smoke** with the canonical production URL and the full commit SHA expected to be live. A release-identity mismatch is a stop signal: confirm the Vercel promotion rather than accepting evidence from an older deployment.
 
 ## Local release checks
