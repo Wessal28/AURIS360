@@ -6196,15 +6196,19 @@ async function aiGenerateToolboxTalk() {
 
 async function aiSaveToolboxTalkToAuris(){
   var r=aiCurrentToolboxTalk;if(!r||!r.content){toast('Generate a toolbox talk before saving',false);return;}
+  if(r.saving)return;
   var input=r.input||{},today=new Date().toISOString().slice(0,10),minutes=parseInt(input.duration,10)||10,ref=r.ref;
+  r.saving=true;
   try{
-    if(!ref){try{ref=await nextCompanyRef('toolbox_talks','tbt_ref','TBT-'+new Date().getFullYear()+'-');}catch(_){ref='TBT-DRAFT-'+today.replace(/-/g,'');}}
+    if(!ref)ref=await nextCompanyRef('toolbox_talks','tbt_ref','TBT-'+new Date().getFullYear()+'-');
     var payload='AURIS_AI_TBT:'+JSON.stringify({input:input,content:r.content});
     var body={company_id:ccid(),title:input.topic||r.topic||'Generated Toolbox Talk',topic:input.topic||r.topic||null,talk_date:today,conducted_by_id:prof?.id||null,conducted_by_name:prof?.full_name||prof?.name||prof?.email||null,facilitator:prof?.full_name||prof?.name||prof?.email||null,presenter:prof?.full_name||prof?.name||prof?.email||null,location:input.context||null,work_location:input.context||null,duration_minutes:minutes,duration_min:minutes,work_activity:input.topic||null,topics_covered:r.content,key_points:r.content,attendees:[],actions_raised:[],status:'draft',notes:payload,updated_at:new Date().toISOString()};
-    if(r.savedId)await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:body},'Toolbox Talk');
-    else{body.created_by=prof?.id||null;var created=await apiWriteWithMissingColumnFallback('/toolbox_talks',{m:'POST',p:'return=representation',b:body},'Toolbox Talk');r.savedId=created&&created[0]?created[0].id:null;if(r.savedId){try{await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:{tbt_ref:ref}},'Toolbox Talk reference');}catch(_){}}}
+    body.tbt_ref=ref;
+    if(r.savedId)await api('/toolbox_talks?id=eq.'+encodeURIComponent(r.savedId),{m:'PATCH',p:'return=minimal',b:body});
+    else{body.created_by=prof?.id||null;var created=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});r.savedId=created&&created[0]?created[0].id:null;if(!r.savedId)throw new Error('Save confirmation was incomplete. Check the Toolbox Talks register before retrying.');}
     r.ref=ref;aiToolboxRender(r);toast('Toolbox talk saved as '+ref+' — draft pending review and delivery');
   }catch(e){toast(actionErrorMessage('Save generated toolbox talk','Toolbox Talks',e),false);}
+  finally{r.saving=false;}
 }
 function aiDownloadToolboxWord(){
   if(!aiCurrentToolboxTalk||!aiCurrentToolboxTalk.content){toast('Generate a toolbox talk first',false);return;}
@@ -31199,7 +31203,9 @@ function tbtUpdateCount(){
   if(titleEl)titleEl.textContent=document.getElementById('tbtf-title')?.value||'Toolbox Talk';
 }
 
+var tbtSavePending=false;
 async function tbtSave(){
+  if(tbtSavePending)return;
   var title=document.getElementById('tbtf-title')?.value?.trim();if(!title){toast('Please enter TBT title',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   // Collect attendees
@@ -31222,9 +31228,10 @@ async function tbtSave(){
   var linkedWork=tbtSelectedWork();
   var cleanNotes=tbtStripLinkedWork(g('tbtf-notes')||'');
   var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),presenter_person_id:personFromValue(g('tbtf-presenter'))?.id||null,attendee_person_ids:attendees.map(function(a){return a.person_id;}).filter(Boolean),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  tbtSavePending=true;
   try{
     if(tbtEditId){
-      await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body},'Toolbox Talk');
+      await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
       toast('TBT updated!');
       // Auto-create MAP actions for any new action items
       for(var act of actions_raised){
@@ -31234,21 +31241,15 @@ async function tbtSave(){
       }
     }else{
       body.created_by=prof?.id;
-      var res=await apiWriteWithMissingColumnFallback('/toolbox_talks',{m:'POST',p:'return=representation',b:body},'Toolbox Talk');
+      // Persist the reference with the talk: a schema error must not leave a
+      // created record behind and invite a duplicate on the next Save click.
+      var ref=await nextCompanyRef('toolbox_talks','tbt_ref','TBT-'+new Date().getFullYear()+'-');
+      body.tbt_ref=ref;
+      var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+      if(!res?.[0]?.id)throw new Error('Save confirmation was incomplete. Check the Toolbox Talks register before retrying.');
       if(res?.[0]?.id){
-        var yr=new Date().getFullYear();
-        var seq=1;
-        try{
-          var prefix='TBT-'+yr+'-';
-          var existing=await api('/toolbox_talks?select=tbt_ref&company_id=eq.'+ccid()+'&tbt_ref=like.'+encodeURIComponent(prefix+'*')+'&order=tbt_ref.desc&limit=1');
-          var last=(existing&&existing[0]&&existing[0].tbt_ref)||'';
-          var m=String(last).match(/-(\d+)$/);
-          seq=m?parseInt(m[1],10)+1:1;
-        }catch(refErr){
-          seq=(tbtAllData||[]).filter(function(x){return String(x.tbt_ref||'').indexOf('TBT-'+yr+'-')===0;}).length+1;
-        }
-        var ref='TBT-'+yr+'-'+String(seq).padStart(3,'0');
-        await api('/toolbox_talks?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{tbt_ref:ref}});
+        tbtEditId=res[0].id;
+        document.getElementById('tbt-form3ref').textContent=ref;
         toast('TBT saved! Ref: '+ref);
         // Auto-create MAP actions
         for(var act2 of actions_raised){
@@ -31260,6 +31261,7 @@ async function tbtSave(){
     }
     tbtBack();
   }catch(e){toastActionError('Save toolbox talk','Toolbox Talk',e);}
+  finally{tbtSavePending=false;}
 }
 
 function tbtCurrentFormData(){

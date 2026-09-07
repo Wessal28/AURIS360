@@ -106,6 +106,11 @@
       "order": 21,
       "file": "20260904010000_kpi_locked_monthly_reporting.sql",
       "sha256": "56aae4375b46ba7cd1f37a48531eaf5e50eb0e31c71138b76eb8486b587706b7"
+    },
+    {
+      "order": 22,
+      "file": "20260907010000_toolbox_talk_save_fields.sql",
+      "sha256": "0c9c477f8c5d5f25fe631341e6e12719be55b0b183852d3fe7e89d45a858bc6e"
     }
   ]
 }

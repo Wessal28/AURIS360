@@ -273,6 +273,7 @@ async function main() {
   const sources = [
     ['Executive Dashboard', `events?select=id&${companyFilter}&limit=1`],
     ['Executive Dashboard actions', `action_tracker?select=id&${companyFilter}&limit=1`],
+    ['Toolbox Talks (apply 20260907010000_toolbox_talk_save_fields.sql if missing)', `toolbox_talks?select=id,tbt_ref,topic_category,presenter,duration_mins,incidents_referenced&${companyFilter}&limit=1`],
     ['Monthly KPI Follow-up', `kpi_monthly_data?select=id&${companyFilter}&limit=1`],
     ['Governed KPI definitions', `kpis_v2?select=id,description,data_provider,data_source,reviewer,approver,approval_status,lifecycle_revision,lifecycle_reason,submitted_by,submitted_at,verified_by,verified_at,approved_by,approved_at,locked_by,locked_at&${companyFilter}&limit=1`],
     ['Governed KPI sources', `kpi_indicators?select=id,source_mode,source_metric,source_revision&${companyFilter}&limit=1`],
