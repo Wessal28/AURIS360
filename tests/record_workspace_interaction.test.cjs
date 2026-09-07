@@ -59,6 +59,34 @@ function runtime() {
   return { window, document, launcher, host, identity, api, adapter, open, click, listeners };
 }
 
+test('explicit-only adapters cannot silently replace a different integration', async () => {
+  const r = runtime(); let loads = 0;
+  r.adapter(() => { loads++; return { record }; }, { explicitOnly: true });
+  await r.open(); assert.equal(loads, 0);
+  await r.open({ adapterKey: 'action' }); assert.equal(loads, 1);
+});
+
+test('adapter notices and handoff guidance are escaped and only supported actions are shown', async () => {
+  const r = runtime(); r.adapter(() => ({ record, notices: ['History unavailable <script>'] }));
+  await r.open({ availableActions: ['copy', 'edit', 'open'], actionLabels: { open: 'Manage action' }, workflowHelp: 'Use Manage action <help>', onAction: () => {} });
+  assert.match(r.host.innerHTML, /History unavailable &lt;script&gt;/); assert.match(r.host.innerHTML, /Manage action/);
+  for (const key of ['comment', 'evidence', 'delegate']) assert.equal(r.host.querySelector(`[data-record-action="${key}"]`), null);
+  await r.click('[data-record-tab="governance"]');
+  assert.match(r.host.innerHTML, /Use Manage action &lt;help&gt;/); assert.equal(r.host.querySelector('[data-record-transition="closed"]'), null);
+  assert.match(r.host.innerHTML, /No approval entries could be displayed/);
+  assert.doesNotMatch(r.host.innerHTML, /No approval request is linked/);
+  await r.click('[data-record-tab="activity"]');
+  assert.match(r.host.innerHTML, /No entries could be displayed/);
+});
+
+test('successful editor handoff closes the active panel but late handoff cannot close a newer one', async () => {
+  const r = runtime(); await r.open({ onAction: () => ({ close: true }) });
+  await r.click('[data-record-action="open"]'); assert.equal(r.api.diagnostics().open, false);
+  const pending = deferred(); await r.open({ onAction: () => pending.promise });
+  const handingOff = r.click('[data-record-action="open"]'); await r.open({ source: { ...source, id: 'action-2' } });
+  pending.resolve({ close: true }); await handingOff; assert.equal(r.api.diagnostics().source.id, 'action-2');
+});
+
 test('rejects wrong tenant or adapter before calling a record loader', async () => {
   const r = runtime(); let loads = 0; r.adapter(() => { loads++; return { record }; });
   await assert.rejects(r.open({ source: { ...source, company_id: 'co-b' } }), /another company/);

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Master Action record workspace verification</title>
+<link rel="stylesheet" href="../../auris-record-workspace.css">
+<style>body{margin:0;padding:24px;font-family:Arial,sans-serif;background:#f4f7fa}button{min-height:44px}#controls{display:flex;gap:12px;flex-wrap:wrap}</style>
+</head><body><h1>Master Action record workspace</h1><p>Local synthetic records. Requests are stubbed; no database is contacted.</p>
+<div id="controls"><button id="open">Open action</button><button id="missing">Open with unavailable history</button><button id="fail">Open with editor failure</button></div>
+<p id="result" role="status"></p>
+<script>
+let unavailable=false,failEditor=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'hse_manager'};
+const record={id:'fixture-action',company_id:'fixture-company',action_ref:'MAP-001',title:'Inspect safety controls and verify corrective action completion',description:'Check machine guards and record the verification evidence.',priority:'high',action_type:'corrective',status:'pending_verification',assigned_to_name:'Fixture reviewer',target_date:'2026-09-12',progress_pct:100,verification_status:'pending',evidence:'Photo evidence retained with the action'};
+window.AurisPlatformServices={ready:()=>true,auth:{isReady:()=>true,isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}},api:{request:async url=>{
+  if(url.startsWith('/action_tracker?'))return [record];
+  if(unavailable)throw new Error('History unavailable');
+  if(url.startsWith('/map_activity_log?'))return [{id:'log-1',company_id:record.company_id,action_id:record.id,activity_type:'Progress updated',performed_by:'Fixture reporter',performed_at:'2026-09-08',notes:'Guard checked',old_value:'0',new_value:'100'}];
+  if(url.startsWith('/approval_requests?'))return [{id:'request-1',company_id:record.company_id,related_table:'action_tracker',related_id:record.id,module_name:'actions',status:'pending',request_reason:'Verify completion'}];
+  if(url.startsWith('/approval_decisions?'))return [{id:'decision-1',request_id:'request-1',decision:'approved',comments:'Prior review <script text>',decided_at:'2026-09-07'}];
+  return [];
+}}};
+window.AurisWorkflowService={policy:()=>({title:'Action workflow',transitions:[['pending_verification','pending_closure']]}),explain:()=>({allowed:true})};
+</script>
+<script src="../../auris-record-workspace.js"></script><script src="../../auris-action-record-workspace.js"></script>
+<script>
+function launch(missing,fail){unavailable=missing;failEditor=fail;document.getElementById('result').textContent='';return AurisActionRecordWorkspace.open(record.id,{reference:'MAP-001',openEditor:async(row,tab,session)=>{if(failEditor)throw new Error('Editor could not open. No changes were saved.');document.getElementById('result').textContent='Editor handoff: '+row.id+' / '+tab+' / '+session.companyId;}}).catch(error=>{document.getElementById('result').textContent=error.message;});}
+document.getElementById('open').addEventListener('click',()=>launch(false,false));
+document.getElementById('missing').addEventListener('click',()=>launch(true,false));
+document.getElementById('fail').addEventListener('click',()=>launch(false,true));
+</script></body></html>
