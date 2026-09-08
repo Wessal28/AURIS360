@@ -529,6 +529,7 @@ function kpiXInstallHooks(){
     window.kpiSaveEntry=async function(){
       var modal=document.getElementById('kpi-entry-modal');
       if(!modal||modal._kpiXEntryBusy)return {saved:false,complete:false};
+      if(modal._kpiEntryCleared){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return {saved:false,complete:false};}
       if(modal._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
       modal.querySelector('[data-kpi-entry-message]')?.remove();
       var context=modal._kpiEntryContext,comment=document.getElementById('entry-comment'),original=comment.value;
