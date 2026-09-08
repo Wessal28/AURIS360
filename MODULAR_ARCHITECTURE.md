@@ -1,5 +1,15 @@
 # AURIS 360 Modular Architecture
 
+## Toolbox Talk shared record overview
+
+`auris-toolbox-record-workspace.js` adds an explicit-only, read-only overview for `meetings/toolbox_talks`. Opening a register row reads the exact current company/record before displaying talk content, topic/date/presenter, zero or missing duration, attendance names and recorded confirmation times/methods, recorded linked-work/action snapshots and timestamps. Names/counts are not treated as confirmation. Linked work/action snapshots are not presented as current progress or proof of Master Action creation. Malformed or conflicting metadata is disclosed and original notes retained.
+
+Shared activity/evidence and approval requests/decisions are tenant/source-scoped, bounded to 100 entries per source and marked unavailable or truncated where appropriate. Legacy/unlinked history is explicitly outside this overview. No approval transition or attendance confirmation is introduced here. Only Copy talk reference and Open talk form are available.
+
+The form handoff re-fetches the exact record and checks current company/account/role/access, list/view generations, connectivity and attendance/action structure before calling the established editor. Successful navigation intentionally changes the view generation; identity/access are rechecked afterwards without wrongly treating that successful navigation as an error. Failures stay visible in the common panel. Existing talk forms, deep links, drafts, confirmation, print, save/delete and generated-action handlers remain authoritative and unchanged.
+
+No SQL migration is required. `tests/toolbox_record_workspace.test.cjs` covers record projection, source isolation, history availability, read-only controls and the real guarded core bridge. The local-only `tests/fixtures/toolbox-record-workspace.html` covers portrait layouts, keyboard focus, outside-click persistence, errors and successful form handoff. Release readiness, isolated staging and canonical production smoke require this adapter; these synthetic checks do not exercise authenticated production saves.
+
 ## Toolbox Talks shared register adoption
 
 `auris-toolbox-list-workspace.js` adopts the common List, Card and read-only Board views for the HSE Meetings Toolbox Talks register. Topic, search and status filters combine, and saved personal views restore all three controls. Reference and Toolbox talk remain required columns; presenter, location, recorded attendees/actions, talk date and status are visible by default, with duration and department optional. Preferences are scoped by company, user and this specific register, not the whole Meetings module. Unknown or missing statuses are not relabelled Completed; named attendees take precedence over a legacy stored count, and unavailable/malformed counts remain explicitly unrecorded.
