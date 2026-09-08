@@ -388,9 +388,75 @@ function kpiXOpenDrawer(kpiId){
   document.body.appendChild(drawer);
 }
 function kpiXCreateAction(kpiId){
-  var k=kpiKPIs.find(function(x){return String(x.id)===String(kpiId);}),drawer=document.getElementById('kpi-x-drawer');if(drawer)drawer.remove();var existing=document.getElementById('kpi-x-action-modal');if(existing)existing.remove();var due=new Date();due.setDate(due.getDate()+30);var modal=document.createElement('div');modal.id='kpi-x-action-modal';modal.className='kpi-x-drawer';modal.innerHTML='<section class="kpi-x-action-card"><header class="kpi-x-drawer-head"><div><small>KPI RECOVERY ACTION</small><h3>Create action</h3><p>'+(k?kpiXEsc((k.code||'')+' · '+k.name):kpiXEsc(kpiId))+'</p></div><button type="button" class="kpi-x-icon-btn" data-kpi-action-close><i class="ti ti-x"></i></button></header><div class="kpi-x-drawer-body"><div class="kpi-x-action-form"><label>Action title<input id="kpi-x-action-title" value="'+kpiXEsc('Recover KPI '+(k?((k.code||'')+' - '+k.name):kpiId))+'"></label><label>Priority<select id="kpi-x-action-priority"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label class="full">Required action<textarea id="kpi-x-action-description" placeholder="Describe the corrective or improvement action required"></textarea></label><label>Owner<input id="kpi-x-action-owner" value="'+kpiXEsc(k?kpiXOwner(k):'')+'"></label><label>Target date<input id="kpi-x-action-due" type="date" value="'+due.toISOString().slice(0,10)+'"></label></div><div class="kpi-x-action-note"><i class="ti ti-link"></i>This action will be saved in the Master Action Plan and linked to the KPI, while you remain in Objectives &amp; KPIs.</div></div><footer class="kpi-x-drawer-actions"><button type="button" class="kpi-x-btn" data-kpi-action-close><i class="ti ti-arrow-left"></i>Back</button><button type="button" class="kpi-x-btn primary" data-kpi-action-save><i class="ti ti-device-floppy"></i>Save action</button></footer></section>';modal.addEventListener('click',function(e){if(e.target===modal||e.target.closest('[data-kpi-action-close]'))modal.remove();var save=e.target.closest('[data-kpi-action-save]');if(save)kpiXSaveAction(kpiId,modal,save);});document.body.appendChild(modal);
+  var existing=document.getElementById('kpi-x-action-modal');
+  if(existing){kpiXActionMessage(existing,'A recovery action window is already open. Finish or close it before opening another.');return;}
+  var k=kpiKPIs.find(function(x){return String(x.id)===String(kpiId);}),context=kpiXActionContext(),drawer=document.getElementById('kpi-x-drawer'),launcher=document.activeElement;
+  if(!k||!context.company||!context.user||(k.company_id&&String(k.company_id)!==context.company)){
+    kpiXMonthlyNavigationError(drawer,'This KPI is unavailable for the selected company or account. Refresh the scorecard before creating an action.');return;
+  }
+  if(drawer)drawer.remove();
+  var due=new Date();due.setDate(due.getDate()+30);var modal=document.createElement('div');modal.id='kpi-x-action-modal';modal.className='kpi-x-drawer';modal.innerHTML='<section class="kpi-x-action-card" role="dialog" aria-modal="true" aria-label="Create KPI recovery action"><header class="kpi-x-drawer-head"><div><small>KPI RECOVERY ACTION</small><h3>Create action</h3><p>'+(k?kpiXEsc((k.code||'')+' · '+k.name):kpiXEsc(kpiId))+'</p></div><button type="button" class="kpi-x-icon-btn" data-kpi-action-close aria-label="Close recovery action"><i class="ti ti-x"></i></button></header><div class="kpi-x-drawer-body"><div class="kpi-x-action-form"><label>Action title<input id="kpi-x-action-title" value="'+kpiXEsc('Recover KPI '+(k?((k.code||'')+' - '+k.name):kpiId))+'"></label><label>Priority<select id="kpi-x-action-priority"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label class="full">Required action<textarea id="kpi-x-action-description" placeholder="Describe the corrective or improvement action required"></textarea></label><label>Owner<input id="kpi-x-action-owner" value="'+kpiXEsc(k?kpiXOwner(k):'')+'"></label><label>Target date<input id="kpi-x-action-due" type="date" value="'+due.toISOString().slice(0,10)+'"></label></div><div class="kpi-x-action-note"><i class="ti ti-link"></i>This action will be saved in the Master Action Plan and linked to the KPI, while you remain in Objectives &amp; KPIs.</div></div><footer class="kpi-x-drawer-actions"><button type="button" class="kpi-x-btn" data-kpi-action-close><i class="ti ti-arrow-left"></i>Close</button><button type="button" class="kpi-x-btn primary" data-kpi-action-save><i class="ti ti-device-floppy"></i>Save action</button></footer></section>';
+  modal._kpiAction={company:context.company,user:context.user,kpiId:String(k.id),sourceRef:(k.code||'')+' - '+k.name,launcher:launcher,busy:false,saved:null};
+  modal.addEventListener('click',function(event){
+    if(event.target.closest('[data-kpi-action-close]')){event.preventDefault();kpiXCloseAction(modal);return;}
+    var save=event.target.closest('[data-kpi-action-save]');if(save){event.preventDefault();kpiXSaveAction(kpiId,modal,save);}
+  });
+  document.body.appendChild(modal);
+  modal.querySelector('#kpi-x-action-title').focus();
 }
-async function kpiXSaveAction(kpiId,modal,save){var k=kpiKPIs.find(function(x){return String(x.id)===String(kpiId);}),title=document.getElementById('kpi-x-action-title').value.trim(),description=document.getElementById('kpi-x-action-description').value.trim(),due=document.getElementById('kpi-x-action-due').value,owner=document.getElementById('kpi-x-action-owner').value.trim();if(!title||!description||!due){if(typeof toast==='function')toast('Title, required action and target date are required',false);return;}save.disabled=true;save.innerHTML='<i class="ti ti-loader-2"></i>Saving...';try{var yr=new Date().getFullYear(),ref=typeof nextCompanyRef==='function'?await nextCompanyRef('action_tracker','action_ref','MAP-KPI-'+yr+'-'):'MAP-KPI-'+yr+'-'+String(Date.now()).slice(-6),body={company_id:typeof ccid==='function'?ccid():(prof&&prof.company_id),action_ref:ref,title:title,description:description,action_type:'corrective',priority:document.getElementById('kpi-x-action-priority').value,status:'open',source_type:'kpi',source_module:'kpi',source_table:'kpis',source_id:String(kpiId),source_ref:k?((k.code||'')+' - '+k.name):String(kpiId),start_date:new Date().toISOString().slice(0,10),target_date:due,assigned_to_name:owner||null,responsible:owner||null,requires_verification:true,created_by:prof&&prof.id,updated_at:new Date().toISOString()},out=await api('/action_tracker',{m:'POST',p:'return=representation',b:body}),saved=out&&out[0];if(!saved)throw new Error('The action service returned no record');if(typeof relationshipCreate==='function')try{await relationshipCreate({module:'kpi',table:'kpis',id:String(kpiId),ref:body.source_ref},{module:'action',table:'action_tracker',id:String(saved.id),ref:saved.action_ref||ref},'action_for',{company_id:body.company_id});}catch(linkError){console.warn('KPI relationship link pending',linkError);}modal.remove();kpiXRenderActions();if(typeof toast==='function')toast('Action '+(saved.action_ref||ref)+' created and linked to the KPI');}catch(e){save.disabled=false;save.innerHTML='<i class="ti ti-device-floppy"></i>Save action';if(typeof toast==='function')toast('Action not saved: '+(e.message||e),false);}}
+function kpiXActionContext(){
+  var company='',user='';try{company=String((typeof ccid==='function'?ccid():(typeof prof!=='undefined'&&prof&&prof.company_id))||'');user=String((typeof prof!=='undefined'&&prof&&prof.id)||'');}catch(error){}
+  return {company:company,user:user};
+}
+function kpiXActionIsCurrent(modal){
+  var state=modal&&modal._kpiAction,current=kpiXActionContext();
+  return !!state&&document.getElementById('kpi-x-action-modal')===modal&&state.company===current.company&&state.user===current.user&&
+    kpiKPIs.some(function(k){return String(k.id)===state.kpiId&&(!k.company_id||String(k.company_id)===state.company);});
+}
+function kpiXActionMessage(modal,text){
+  var message=modal.querySelector('[data-kpi-action-message]');
+  if(!message){message=document.createElement('p');message.className='kpi-x-action-message';message.setAttribute('data-kpi-action-message','true');message.setAttribute('role','alert');message.setAttribute('tabindex','-1');modal.querySelector('.kpi-x-drawer-body').prepend(message);}
+  message.textContent=text;message.focus();
+}
+function kpiXActionBusy(modal,busy){
+  var state=modal._kpiAction;state.busy=busy;modal.setAttribute('aria-busy',String(busy));
+  modal.querySelectorAll('input,select,textarea,button').forEach(function(control){control.disabled=busy||!!state.saved&&!control.closest('[data-kpi-action-close]');});
+  var save=modal.querySelector('[data-kpi-action-save]');save.innerHTML=busy?'<i class="ti ti-loader-2"></i>Saving...':state.saved?'<i class="ti ti-check"></i>Action saved':'<i class="ti ti-device-floppy"></i>Save action';
+}
+function kpiXCloseAction(modal){
+  var state=modal._kpiAction;if(state.busy)return;
+  var launcher=state.launcher,current=kpiXActionIsCurrent(modal);modal.remove();
+  if(current&&launcher&&launcher.isConnected)launcher.focus();
+}
+async function kpiXSaveAction(kpiId,modal,save){
+  var state=modal&&modal._kpiAction;if(!state||state.busy||state.saved)return;
+  if(String(kpiId)!==state.kpiId||!kpiXActionIsCurrent(modal)){kpiXActionMessage(modal,'The company, account or KPI has changed. Close this window and reopen the KPI before saving.');return;}
+  function value(id){return modal.querySelector('#kpi-x-action-'+id).value.trim();}
+  var title=value('title'),description=value('description'),due=value('due'),owner=value('owner'),priority=value('priority');
+  if(!title||!description||!due){kpiXActionMessage(modal,'Action title, required action and target date are required. Your entries have been retained.');return;}
+  kpiXActionBusy(modal,true);var posted=false;
+  try{
+    var yr=new Date().getFullYear(),ref=typeof nextCompanyRef==='function'?await nextCompanyRef('action_tracker','action_ref','MAP-KPI-'+yr+'-'):'MAP-KPI-'+yr+'-'+String(Date.now()).slice(-6);
+    if(!kpiXActionIsCurrent(modal))throw new Error('The company, account or KPI has changed. Close this window and reopen the KPI before saving.');
+    var body={company_id:state.company,action_ref:ref,title:title,description:description,action_type:'corrective',priority:priority,status:'open',source_type:'kpi',source_module:'kpi',source_table:'kpis',source_id:state.kpiId,source_ref:state.sourceRef,start_date:new Date().toISOString().slice(0,10),target_date:due,assigned_to_name:owner||null,responsible:owner||null,requires_verification:true,created_by:state.user,updated_at:new Date().toISOString()};
+    posted=true;
+    var out=await api('/action_tracker',{m:'POST',p:'return=representation',b:body}),saved=out&&out[0];
+    if(!saved||!saved.id)throw new Error('The action service returned no confirmed record.');
+    // Persistence has succeeded. Optional links or display failures must never enable a second POST.
+    state.saved={id:saved.id,ref:saved.action_ref||ref};
+    if(!kpiXActionIsCurrent(modal)){kpiXActionMessage(modal,'Action '+state.saved.ref+' saved for the original company. Close this window and reopen that company to review it.');return;}
+    if(typeof relationshipCreate==='function'){
+      try{await relationshipCreate({module:'kpi',table:'kpis',id:state.kpiId,ref:body.source_ref},{module:'action',table:'action_tracker',id:String(saved.id),ref:state.saved.ref},'action_for',{company_id:state.company});}
+      catch(linkError){kpiXActionMessage(modal,'Action '+state.saved.ref+' was saved with its KPI source reference, but the additional relationship link could not be confirmed. Do not create it again; review it in Master Action Plan.');return;}
+    }
+    if(!kpiXActionIsCurrent(modal)){kpiXActionMessage(modal,'Action '+state.saved.ref+' saved for the original company. Close this window and reopen that company to review it.');return;}
+    kpiXActionBusy(modal,false);kpiXCloseAction(modal);
+    try{kpiXRenderActions();}catch(renderError){if(typeof toast==='function')toast('Action '+state.saved.ref+' saved. Refresh Action Plans to view it.');return;}
+    if(typeof toast==='function')toast('Action '+state.saved.ref+' created with its KPI source reference.');
+  }catch(error){
+    kpiXActionMessage(modal,(posted?'Save could not be confirmed. Check Master Action Plan for this action before retrying. ':'Action not saved: ')+(error.message||error));
+  }finally{kpiXActionBusy(modal,false);}
+}
 function kpiXMonthlyNavigationError(drawer,text){
   var host=drawer&&drawer.querySelector('.kpi-x-drawer-body');
   if(!host){if(typeof toast==='function')toast(text,false);return false;}
