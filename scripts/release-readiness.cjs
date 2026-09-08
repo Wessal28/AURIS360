@@ -28,6 +28,7 @@ const testFiles = [
   'tests/kpi_monthly_save_outcome.test.cjs',
   'tests/kpi_entry_accessibility.test.cjs',
   'tests/kpi_clear_entry_safety.test.cjs',
+  'tests/kpi_objective_save_reliability.test.cjs',
   'tests/toolbox_save_recovery.test.cjs',
   'tests/person_identity_reconciliation_contract.test.cjs',
   'tests/location_identity_contract.test.cjs',

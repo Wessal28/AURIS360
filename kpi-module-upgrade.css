@@ -252,3 +252,12 @@
 #kpi-entry-modal textarea,#kpi-entry-modal #entry-comment{min-height:100px!important;resize:vertical}
 #kpi-entry-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
 #kpi-entry-modal :focus-visible{outline:2px solid #0f8a64;outline-offset:2px}
+/* Objective save feedback stays inside its retained, touch-friendly editor. */
+#obj-modal .auris-kpilegacy-s-0e271dda2d{box-sizing:border-box;width:520px;max-width:calc(100vw - 24px);max-height:90dvh;min-width:0}
+#obj-modal .kpi-objective-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-family:inherit;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#obj-modal input,#obj-modal select,#obj-modal button{box-sizing:border-box;min-height:44px!important;font-family:inherit;font-size:14px;line-height:1.4}
+#obj-modal label{font-family:inherit;font-size:12px;font-weight:600}
+#obj-modal .auris-kpilegacy-s-de071442a1{flex-wrap:wrap}
+#obj-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
+#obj-modal :focus-visible,#obj-modal .kpi-objective-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
+#obj-modal [disabled]{cursor:not-allowed;opacity:.6}
