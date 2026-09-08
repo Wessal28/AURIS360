@@ -69,14 +69,6 @@ function openObjModal(objId) {
   var yearEl  = document.getElementById('obj-year');
   var titleEl = document.getElementById('obj-modal-title');
   var delBtn  = document.getElementById('obj-delete-btn');
-  var picker  = document.getElementById('kpi-color-picker');
-
-  // Reset all colour dots to unselected state, then pick green by default
-  if (picker) {
-    picker.querySelectorAll('.kpi-color-dot').forEach(function(d){
-      d.style.border = '2px solid transparent';
-    });
-  }
 
   if (objId && typeof kpiObjectives !== 'undefined') {
     // -- EDIT MODE -------------------------------------------------
@@ -95,16 +87,6 @@ function openObjModal(objId) {
     if (typeof kpiSelectedColor !== 'undefined') {
       kpiSelectedColor = obj.color || '#1D9E75';
     }
-    if (picker) {
-      picker.querySelectorAll('.kpi-color-dot').forEach(function(d){
-        // Each dot has its hex set inline via background:#XXXXXX in the onclick
-        var onclickStr = d.getAttribute('onclick') || '';
-        var match = onclickStr.match(/kpiSelectColor\('([^']+)'/);
-        if (match && match[1] === obj.color) {
-          d.style.border = '3px solid var(--text)';
-        }
-      });
-    }
 
     // Set edit mode markers
     m.dataset.editId = objId;
@@ -122,10 +104,6 @@ function openObjModal(objId) {
     if (typeof kpiSelectedColor !== 'undefined') {
       kpiSelectedColor = '#1D9E75';
     }
-    if (picker) {
-      var firstDot = picker.querySelector('.kpi-color-dot');
-      if (firstDot) firstDot.style.border = '3px solid var(--text)';
-    }
 
     // Clear edit mode markers
     delete m.dataset.editId;
@@ -134,6 +112,7 @@ function openObjModal(objId) {
     if (delBtn) delBtn.style.display = 'none';
   }
 
+  kpiRenderObjectiveColour();
   // Show the modal
   m._kpiObjectiveContext={companyId:kpiObjectiveCompany(),actorId:prof.id,viewYear:kpiObjectiveViewYear(),editId:kpiEditObjId||null};
   m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-labelledby','obj-modal-title');
@@ -217,12 +196,25 @@ async function kpiSaveObjective() {
   }
 }
 
+function kpiRenderObjectiveColour(){
+  const picker=document.getElementById('kpi-color-picker');if(!picker)return;
+  let name='';
+  picker.querySelectorAll('[data-objective-color]').forEach(button=>{
+    const selected=button.getAttribute('data-objective-color').toLowerCase()===String(kpiSelectedColor||'').toLowerCase();
+    button.setAttribute('aria-pressed',String(selected));
+    if(selected)name=button.getAttribute('aria-label');
+  });
+  const status=document.getElementById('kpi-color-selection');
+  if(status)status.textContent=name?'Selected colour: '+name:'Saved colour is not in this palette. Choose a colour to replace it.';
+}
 function kpiSelectColor(color,el){
-const modal=document.getElementById('obj-modal');if(modal?._kpiObjectiveBusy||modal?._kpiObjectiveSaved||modal?._kpiObjectiveUncertain)return;
-kpiSelectedColor=color;
-document.querySelectorAll('.kpi-color-dot').forEach(d=>d.style.border='2px solid transparent');
-if(el)el.style.border='3px solid var(--text)';
-else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.background===color)d.style.border='3px solid var(--text)';});
+  const modal=document.getElementById('obj-modal');
+  if(!modal||modal.style.display==='none'||modal._kpiObjectiveBusy||modal._kpiObjectiveSaved||modal._kpiObjectiveUncertain)return false;
+  const picker=document.getElementById('kpi-color-picker');
+  const button=Array.from(picker?.querySelectorAll('[data-objective-color]')||[]).find(node=>node.getAttribute('data-objective-color').toLowerCase()===String(color).toLowerCase());
+  if(!button||button.disabled||(el&&el!==button))return false;
+  kpiSelectedColor=button.getAttribute('data-objective-color');
+  kpiRenderObjectiveColour();return true;
 }
 
 function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum',indicatorId=''){

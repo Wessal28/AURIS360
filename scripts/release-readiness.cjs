@@ -33,6 +33,7 @@ const testFiles = [
   'tests/kpi_editor_extraction.test.cjs',
   'tests/kpi_archive_safety.test.cjs',
   'tests/kpi_editor_focus.test.cjs',
+  'tests/kpi_objective_colour.test.cjs',
   'tests/toolbox_save_recovery.test.cjs',
   'tests/person_identity_reconciliation_contract.test.cjs',
   'tests/location_identity_contract.test.cjs',
