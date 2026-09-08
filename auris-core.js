@@ -12311,7 +12311,7 @@ async function loadCoDrop(){
 loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
 async function kpiLoadAll(entryContext){
-// A monthly save needs an all-or-error refresh; legacy loaders intentionally swallow errors.
+// A monthly save or clear needs an all-or-error refresh; legacy loaders intentionally swallow errors.
 if(entryContext&&entryContext.indicatorId){
   await kpiReloadEntryData(entryContext);
   kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
@@ -12898,7 +12898,10 @@ const [objectives,kpis,indicators,monthly]=await Promise.all([
 ]);
 kpiEntryCheckContext(context);
 if(![objectives,kpis,indicators,monthly].every(Array.isArray))throw new Error('The saved value could not be reloaded.');
-if(!monthly.some(row=>row.indicator_id===context.indicatorId&&Number(row.month)===context.month))throw new Error('The saved monthly result is not visible in the refreshed data.');
+const entryPresent=monthly.some(row=>row.indicator_id===context.indicatorId&&Number(row.month)===context.month);
+if(context.operation==='clear'){
+  if(entryPresent)throw new Error('The cleared monthly result is still present in the refreshed data.');
+}else if(!entryPresent)throw new Error('The saved monthly result is not visible in the refreshed data.');
 const activeKpis=kpis.filter(k=>String(k.status||'').toLowerCase()!=='archived'),ids=new Set(activeKpis.map(k=>k.id));
 const activeIndicators=indicators.filter(ind=>ids.has(ind.kpi_id));
 if(!ids.has(context.kpiId)||!activeIndicators.some(ind=>ind.id===context.indicatorId))throw new Error('The KPI or indicator is no longer available in the refreshed data.');
@@ -12908,6 +12911,7 @@ kpiObjectives=objectives.filter(o=>!/^\[Archived/i.test(String(o.name||'')));kpi
 function kpiOpenEntry(indicatorId,kpiId,month){
 const modal=document.getElementById('kpi-entry-modal');
 if(modal?._kpiXEntryBusy)return false;
+if(modal?._kpiEntryCleared&&modal.style.display!=='none'){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return false;}
 if(modal?._kpiEntrySaved&&modal.style.display!=='none'){kpiEntryFeedback('This value is already saved. Close this form and reload before opening another entry.');return false;}
 if(!kpiCanEdit()){toast('Only managers can enter KPI monthly values.',false);return false;}
 const ind=kpiIndicators.find(x=>x.id===indicatorId&&x.kpi_id===kpiId);
@@ -12917,7 +12921,7 @@ if(modal){
   if(!modal.contains(document.activeElement))modal._kpiEntryReturnFocus=document.activeElement;
   kpiEntryBindDialog(modal);
   (modal._kpiEntryDisabled||[]).forEach(item=>{item.node.disabled=item.disabled;});
-  modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;
+  modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;modal._kpiEntryCleared=false;
   modal.querySelector('[data-kpi-entry-message]')?.remove();
 }
 kpiEntryIndicatorId=indicatorId;
@@ -12948,6 +12952,8 @@ document.getElementById('entry-modal-title').focus();
 }
 async function kpiSaveEntry(options){
 const modal=document.getElementById('kpi-entry-modal'),context=modal?._kpiEntryContext;
+if(modal?._kpiEntryClearing)return {saved:false,complete:false};
+if(modal?._kpiEntryCleared){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return {saved:false,complete:false};}
 let saved=false,writeStarted=false;
 try{
 if(modal?._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
@@ -13013,7 +13019,9 @@ async function kpiRecalcAllYTD(indicatorId,year,entryContext){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return;
 try{
-const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month');
+if(entryContext)kpiEntryCheckContext(entryContext);
+const scope=entryContext?'&company_id=eq.'+encodeURIComponent(entryContext.companyId):'';
+const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month'+scope);
 if(entryContext)kpiEntryCheckContext(entryContext);
 if(!fresh||!fresh.length)return;
 for(var mi=0;mi<fresh.length;mi++){
@@ -13022,7 +13030,7 @@ for(var mi=0;mi<fresh.length;mi++){
   if(newYTD===null)continue;
   var entry=fresh[mi];
   if(Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
-    await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
+    await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m+scope,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
     if(entryContext)kpiEntryCheckContext(entryContext);
   }
 }
@@ -13031,15 +13039,59 @@ for(var mi=0;mi<fresh.length;mi++){
 
 
 async function kpiClearEntry(){
-if(!kpiCanEdit()){toast('Only managers can clear KPI monthly values.',false);return;}
-if(!(await appConfirmAction({title:'Clear KPI data',message:"Clear this month's data?",detail:'This cannot be undone.',confirmText:'Clear data',cancelText:'Keep data'})))return;
+const modal=document.getElementById('kpi-entry-modal');
+if(!modal||modal.style.display==='none'||modal._kpiXEntryBusy)return {cleared:false,complete:false};
+if(modal._kpiEntrySaved||modal._kpiEntryCleared){
+  kpiEntryFeedback('This entry already has a completed write. Close this form and reload before clearing or entering another result.');
+  return {cleared:!!modal._kpiEntryCleared,complete:false};
+}
+const context={...modal._kpiEntryContext,operation:'clear'};
+let cleared=false,writeStarted=false,cancelled=false,controls=null;
+function checkClear(){
+  kpiEntryCheckContext(context);
+  if(modal.style.display==='none')throw new Error('The entry form was closed. Reopen the intended month before clearing data.');
+  if(!kpiCanEdit())throw new Error('Only managers can clear KPI monthly values.');
+  const k=kpiKPIs.find(item=>item.id===context.kpiId),ind=kpiIndicators.find(item=>item.id===context.indicatorId&&item.kpi_id===context.kpiId);
+  if(!k||!ind||(k.company_id&&k.company_id!==context.companyId))throw new Error('The selected KPI is unavailable. Close and reload before clearing data.');
+  if(typeof KpiGovernedWorkflow!=='undefined'&&!KpiGovernedWorkflow.canEnterMonthly(k))throw new Error('Monthly reporting is frozen by the KPI workflow. Complete the definition review before clearing data.');
+  return {k,ind};
+}
 try{
-await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'DELETE'});
-toast('Data cleared!');
-closeKpiModal('kpi-entry-modal');
-kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
-await kpiLoadAll();
-}catch(e){toastActionError('Clear KPI value','Objectives & KPIs',e);}
+  const {k,ind}=checkClear(),existing=kpiMonthlyData[context.indicatorId]?.[context.month];
+  if(!existing)throw new Error('There is no stored monthly result to clear.');
+  if((existing.company_id&&existing.company_id!==context.companyId)||(existing.year&&Number(existing.year)!==context.year))throw new Error('The stored result does not match this company or year. Close and reload.');
+  modal.querySelector('[data-kpi-entry-message]')?.remove();
+  controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
+  modal._kpiXEntryBusy=true;modal._kpiEntryClearing=true;modal._kpiEntryDisabled=controls;
+  controls.forEach(item=>{item.node.disabled=true;});
+  document.getElementById('entry-modal-title').focus();
+  const confirmed=await appConfirmAction({title:'Clear KPI data',message:'Clear '+KPI_MONTHS[context.month-1]+' '+context.year+' data for '+k.name+' — '+ind.name+'?',detail:'This removes the stored monthly result and its explanation/evidence reference. This cannot be undone.',confirmText:'Clear data',cancelText:'Keep data'});
+  if(!confirmed){cancelled=true;return {cleared:false,complete:false,cancelled:true};}
+  checkClear();
+  document.getElementById('entry-modal-title').focus();
+  writeStarted=true;
+  await api('/kpi_monthly_data?indicator_id=eq.'+encodeURIComponent(context.indicatorId)+'&year=eq.'+context.year+'&month=eq.'+context.month+'&company_id=eq.'+encodeURIComponent(context.companyId),{m:'DELETE'});
+  cleared=true;modal._kpiEntryCleared=true;
+  kpiEntryCheckContext(context);
+  if(kpiMonthlyData[context.indicatorId])delete kpiMonthlyData[context.indicatorId][context.month];
+  await kpiRecalcAllYTD(context.indicatorId,context.year,context);
+  kpiEntryCheckContext(context);
+  await kpiLoadAll(context);
+  kpiEntryCheckContext(context);
+  toast('Data cleared!');closeKpiModal('kpi-entry-modal');
+  return {cleared:true,complete:true};
+}catch(error){
+  kpiEntryFeedback((cleared?'Data cleared, but the summary or refresh could not be completed. Close this form and reload to check the result; do not clear or enter it again. ':writeStarted?'Clear could not be confirmed. Check the existing monthly result before retrying. ':'')+String(error?.message||error));
+  return {cleared,complete:false};
+}finally{
+  if(controls){
+    modal._kpiXEntryBusy=false;modal._kpiEntryClearing=false;
+    controls.forEach(item=>{item.node.disabled=cleared&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+    if(!cleared)modal._kpiEntryDisabled=null;
+    const clearButton=document.getElementById('kpi-clear-btn');
+    if(cancelled&&kpiEntryContextMatches(context)&&modal.style.display!=='none'&&clearButton?.isConnected&&!clearButton.disabled)clearButton.focus();
+  }
+}
 }
 
 // -- SOP MODULE HELPERS --------------------------------------------------------
