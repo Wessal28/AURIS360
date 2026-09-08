@@ -246,3 +246,9 @@
 #kpi-entry-modal .kpi-entry-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-family:inherit;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
 #kpi-entry-modal .kpi-entry-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
 #kpi-entry-modal [disabled]{cursor:not-allowed;opacity:.6}
+/* Named, keyboard-contained monthly entry uses the same readable, touch-sized fields. */
+#kpi-entry-modal input,#kpi-entry-modal select,#kpi-entry-modal textarea,#kpi-entry-modal button{box-sizing:border-box;min-height:44px!important;font-family:inherit;font-size:14px;line-height:1.4}
+#kpi-entry-modal label{font-family:inherit;font-size:12px;font-weight:600}
+#kpi-entry-modal textarea,#kpi-entry-modal #entry-comment{min-height:100px!important;resize:vertical}
+#kpi-entry-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
+#kpi-entry-modal :focus-visible{outline:2px solid #0f8a64;outline-offset:2px}
