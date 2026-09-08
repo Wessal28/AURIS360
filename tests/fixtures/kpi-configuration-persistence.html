@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI configuration persistence — synthetic QA</title>
+<link rel="stylesheet" href="/kpi-module-upgrade.css">
+<style>body{margin:0;background:#f4f7f9;font-family:Arial,sans-serif;color:#17324a}main{padding:16px}button,input,select{font-family:inherit}#qa-tools{display:flex;flex-wrap:wrap;gap:8px;padding:16px}#qa-tools button{min-height:44px}#qa-summary{padding:16px;font-size:14px}</style></head>
+<body><div id="qa-tools"><button id="qa-fail">Fail next save</button><button id="qa-switch">Switch test company</button><button id="qa-reload">Reload configuration</button></div><div id="qa-summary" role="status">Synthetic data only; no external API calls.</div><main id="page-kpi"><div id="kpi-x-config-view"></div></main>
+<script>
+window.prof={id:'qa-admin',full_name:'Synthetic Administrator',role:'admin'};
+let company='qa-a',failNext=false,counter=0;
+const records=[{id:'published-a',company_id:'qa-a',version_no:1,status:'published',configuration:{}},{id:'published-b',company_id:'qa-b',version_no:1,status:'published',configuration:{}}];
+const history=[];
+window.ccid=()=>company;window.activeRole=()=>prof.role;window.toast=()=>{};
+window.tenantPeople=()=>[{first_name:'Casey',last_name:'Reviewer',job_title:'QA'},{first_name:'Alex',last_name:'Owner',job_title:'QA'}];
+window.kpiKPIs=[];
+const copy=value=>JSON.parse(JSON.stringify(value));
+function summary(){document.getElementById('qa-summary').textContent='Synthetic company '+company+' · live threshold '+(window.kpiConfigPublished?.targets?.on_track_percent??95)+' · recorded writes '+counter;}
+window.api=async(url,options={})=>{
+  await new Promise(resolve=>setTimeout(resolve,120));
+  if(options.m&&failNext){failNext=false;throw new Error('Synthetic save failure. Your edits are retained.');}
+  if(url.startsWith('/kpi_config_audit')){if(options.m){history.push({...copy(options.b),created_at:new Date().toISOString()});counter++;return [];}return copy(history.filter(row=>row.company_id===company));}
+  if(url.startsWith('/rpc/')){const row=records.find(row=>row.id===options.b.p_config_id&&row.company_id===company);if(!row)return {};records.filter(row=>row.company_id===company&&row.status==='published').forEach(row=>row.status='archived');row.status='published';counter++;return copy(row);}
+  if(!options.m)return copy(records.filter(row=>row.company_id===company).sort((a,b)=>b.version_no-a.version_no));
+  counter++;
+  if(options.m==='POST'){const row={id:'draft-'+counter,...copy(options.b)};records.push(row);return [copy(row)];}
+  const id=decodeURIComponent(url.match(/id=eq\.([^&]+)/)[1]);const row=records.find(row=>row.id===id&&row.company_id===company);
+  if(!row||row.status==='published'||row.status==='archived')return [];
+  Object.assign(row,copy(options.b));return [copy(row)];
+};
+</script><script src="/kpi-configuration.js"></script><script>
+document.addEventListener('input',event=>{if(event.target.dataset.aurisModuleOninput)kpiConfigChange(event.target);});
+document.addEventListener('change',event=>{if(event.target.dataset.aurisModuleOnchange)kpiConfigChange(event.target);});
+document.addEventListener('click',async event=>{
+  const button=event.target.closest('button');if(!button)return;
+  if(button.id==='qa-fail'){failNext=true;button.textContent='Next save will fail';return;}
+  if(button.id==='qa-switch'){company=company==='qa-a'?'qa-b':'qa-a';await kpiConfigLoad();summary();return;}
+  if(button.id==='qa-reload'){await kpiConfigLoad();summary();return;}
+  const action=button.dataset.aurisModuleOnclick;
+  if(action==='b0003')kpiConfigDiscard();
+  if(action==='b0004')await kpiConfigSave();
+  if(action==='b0005')await kpiConfigValidate();
+  if(action==='b0006')await kpiConfigPublish();
+  if(action==='b0007')kpiConfigSection(JSON.parse(decodeURIComponent(button.dataset.aurisModuleArgs))[0]);
+  summary();
+});
+kpiConfigLoad().then(summary);
+</script></body></html>
