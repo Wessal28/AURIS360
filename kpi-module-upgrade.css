@@ -96,6 +96,9 @@
 #page-kpi .kpi-x-column-menu input {width:16px;height:16px;accent-color:#0f8a64}
 #page-kpi .kpi-x-objective-heading {display:flex;align-items:center;justify-content:flex-start;gap:12px}
 #page-kpi .kpi-x-objective-score {margin-left:7px}
+#page-kpi .kpi-x-objective-score.no-data {display:block;color:#64748b;float:none;font-weight:600;white-space:normal;margin:4px 0 0 35px}
+#page-kpi .kpi-x-objective-empty {grid-column:2/4;color:#64748b;overflow-wrap:anywhere}
+#page-kpi .kpi-x-objective-row>strong {min-width:0;overflow-wrap:anywhere}
 #page-kpi .kpi-x-row-edit {width:34px;min-width:34px;height:34px;margin-left:auto;padding:0;border:1px solid #9bd8c3;border-radius:7px;background:#fff;color:#087252;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-weight:750;cursor:pointer;white-space:nowrap}
 #page-kpi .kpi-x-row-edit:hover {background:#e4f5ef}
 #page-kpi .kpi-x-direction {white-space:nowrap;font-size:10px;color:#475569}
