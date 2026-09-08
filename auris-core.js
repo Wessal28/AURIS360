@@ -19124,6 +19124,7 @@ function raFormTab_withBowtie(tab, btn){
 
 // ===== PERMIT TO WORK - FULL DIGITAL SYSTEM =====
 let ptwAllData=[], ptwEditingId=null, ptwCurrentId=null, ptwActiveFilter='active';
+let ptwListLoadGeneration=0, ptwListViewGeneration=0, ptwListContext=null;
 let ptwGasTests=[], ptwIsolations=[];
 const PTW_FAILED_GAS_BLOCK='Failed gas test - stop work and re-assess atmosphere';
 
@@ -19447,7 +19448,8 @@ function ptwSetView(view){
 }
 
 function ptwFilterSet(filter, btn){
-  ptwActiveFilter=filter;
+  ptwActiveFilter=filter==='all'?'all':'active';
+  if(window.AurisModuleLayout)window.AurisModuleLayout.setView('permit',ptwActiveFilter);
   document.querySelectorAll('[id^="ptw-btn-"]').forEach(function(b){
     b.style.background='';b.style.color='';b.style.borderColor='';
   });
@@ -19456,9 +19458,21 @@ function ptwFilterSet(filter, btn){
 }
 
 async function ptwLoadList(){
+  var generation=++ptwListLoadGeneration,companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
+  function sameSession(){return generation===ptwListLoadGeneration&&companyId===String(ccid()||'')&&userId===String(prof?.id||'')&&role===activeRole();}
+  function current(){return sameSession()&&canAccessPage('permit');}
+  ptwAllData=[];ptwListContext=null;
+  ['ptw-m3active','ptw-m3pending','ptw-m3suspended','ptw-m3completed','ptw-m3total','ptw-m3overdue'].forEach(function(id){var metric=document.getElementById(id);if(metric)metric.textContent='0';});
+  var list=document.getElementById('ptw-list');if(list)list.innerHTML='<div class="loading-msg">Loading permit register...</div>';
+  var banner=document.getElementById('ptw-simops-banner');if(banner)banner.style.display='none';
+  var simops=document.getElementById('ptw-simops-details');if(simops)simops.textContent='';
   try{
-    var d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
-    ptwAllData=d||[];
+    if(!companyId||!userId||!canAccessPage('permit'))throw new Error('Sign in and select a company to view permits.');
+    var d=await api('/permits?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&order=created_at.desc');
+    if(!current())return;
+    if(!Array.isArray(d))throw new Error('The permit register returned an invalid response. Reload to retry.');
+    ptwAllData=d.filter(function(row){return row&&row.id&&String(row.company_id||'')===companyId;});
+    ptwListContext={companyId:companyId,userId:userId,role:role,generation:generation};
     // Update metrics
     var now=new Date();
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
@@ -19473,6 +19487,8 @@ async function ptwLoadList(){
     ptwCheckSimops();
     ptwRenderList();
   }catch(e){
+    if(!sameSession())return;
+    ptwAllData=[];ptwListContext=null;
     var el=document.getElementById('ptw-list');
     if(el)el.innerHTML=registerErrorHtml('register',e.message);
     console.error(e);
@@ -19481,10 +19497,22 @@ async function ptwLoadList(){
 
 function ptwRenderList(){
   var el=document.getElementById('ptw-list');if(!el)return;
+  if(!ptwListContext||ptwListContext.companyId!==String(ccid()||'')||ptwListContext.userId!==String(prof?.id||'')||ptwListContext.role!==activeRole()||!canAccessPage('permit'))return;
+  var viewGeneration=++ptwListViewGeneration;
+  if(window.AurisModuleLayout)window.AurisModuleLayout.setView('permit',ptwActiveFilter);
   var search=(document.getElementById('ptw-search')?.value||'').toLowerCase();
   var ftype=document.getElementById('ptw-filter-type')?.value||'';
   var fstatus=document.getElementById('ptw-filter-status')?.value||'';
   var now=new Date();
+
+  if(window.AurisPermitListWorkspace){
+    var generation=ptwListContext.generation;
+    window.AurisPermitListWorkspace.mount(el,ptwAllData,{types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,filters:{scope:ptwActiveFilter,search:search,type:ftype,status:fstatus},
+      onApplyFilters:function(filters){document.getElementById('ptw-search').value=filters.search;document.getElementById('ptw-filter-type').value=filters.type;document.getElementById('ptw-filter-status').value=filters.status;ptwFilterSet(filters.scope,document.getElementById('ptw-btn-'+filters.scope));},
+      openRecord:function(id,expected){return ptwOpenFromRegister(id,expected,generation,viewGeneration);}
+    });
+    return;
+  }
 
   var filtered=ptwAllData.filter(function(x){
     var mFilter=ptwActiveFilter==='active'?['active','pending_approval','approved','suspended'].includes(x.status):true;
@@ -19543,6 +19571,20 @@ function ptwRenderList(){
 function ptwShowList(){
   ptwSetView('list');
   ptwRenderList();
+}
+
+async function ptwOpenFromRegister(id,expected,generation,viewGeneration){
+  function assertCurrent(){
+    if(!ptwListContext||generation!==ptwListLoadGeneration||generation!==ptwListContext.generation||viewGeneration!==ptwListViewGeneration||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('permit'))throw new Error('The permit register changed. Reload and open the permit again.');
+    if(navigator.onLine===false)throw new Error('Reconnect before opening the permit controls.');
+  }
+  assertCurrent();
+  if(!/^[a-zA-Z0-9_-]{1,100}$/.test(String(id))||!ptwAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This permit is outside the current register.');
+  var data=await api('/permits?select=*&company_id=eq.'+encodeURIComponent(expected.companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
+  assertCurrent();
+  if(!Array.isArray(data)||data.length!==1||!data[0]||String(data[0].id)!==String(id)||String(data[0].company_id||'')!==expected.companyId)throw new Error('This permit is unavailable or outside your company access. Reload the register.');
+  ptwAllData=ptwAllData.map(function(row){return String(row.id)===String(id)?data[0]:row;});
+  return ptwShowDetail(data[0].id);
 }
 
 // -- DETAIL VIEW ---------------------------------------------------------------
@@ -40127,6 +40169,7 @@ function printRegisterView(title, selector) {
   var node = document.querySelector(selector);
   if (!node) { toast('Nothing to print yet', false); return; }
   var clone = node.cloneNode(true);
+  if(window.AurisViewEngine&&typeof window.AurisViewEngine.preparePrint==='function')window.AurisViewEngine.preparePrint(clone);
   clone.querySelectorAll('.loading-msg').forEach(function(el) {
     el.className = 'rpt-empty';
     el.textContent = 'This view was still loading when the report was generated. Please refresh the module and print again if records are missing.';

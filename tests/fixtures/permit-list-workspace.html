@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Permit to Work shared list verification</title><link rel="stylesheet" href="../../auris-view-engine.css">
+<style>:root{--card:#fff;--text:#17213a;--text2:#64748b;--border:#d9e0ea}body{margin:0;padding:20px;font:14px Arial,sans-serif;background:#f4f7fa}h1{font-size:24px}#controls{display:flex;gap:8px;flex-wrap:wrap}#controls button,#controls input,#controls select{min-height:44px;font:inherit}#controls input{min-width:0;max-width:100%}#list{margin-top:20px}</style></head>
+<body><h1>Permit to Work — shared views</h1><p>Local synthetic permits. No database requests or business writes. Board groups show recorded states only; they cannot approve, activate or suspend permits.</p>
+<div id="controls"><label>Register scope <select id="scope"><option value="active">Active permits</option><option value="all">All permits</option></select></label><label>Search permits <input id="search"></label><label>Type filter <select id="type"><option value="">All types</option><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option></select></label><label>Status filter <select id="stage"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option></select></label><button id="switch">Switch company without reload</button><button id="refresh">Refresh register</button><button id="fail">Toggle opening failure</button></div>
+<p id="result" role="status"></p><button id="print-test">Prepare print snapshot</button><div id="list"></div><div id="print-preview" hidden></div>
+<script>
+let fail=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'manager'};
+const types={hot_work:{label:'Hot Work'},confined_space:{label:'Confined Space'}},statuses={draft:['','','Draft'],pending_approval:['','','Pending Approval'],approved:['','','Approved'],active:['','','Active'],suspended:['','','Suspended'],completed:['','','Completed'],cancelled:['','','Cancelled'],rejected:['','','Rejected']};
+const data=Array.from({length:32},(_,index)=>({id:'permit-'+index,company_id:'fixture-company',permit_number:'PTW-2026-'+String(index+1).padStart(3,'0'),work_description:index===3?'Weld pipe with controlled hot work precautions':'Review permit '+(index+1),permit_type_v2:index%2?'hot_work':'confined_space',permit_issuer_name:'Fixture issuer',permit_receiver_name:'Fixture receiver',planned_start:'2026-09-'+String(index%28+1).padStart(2,'0')+'T08:30:00+04:00',planned_end:'2026-09-'+String(index%28+1).padStart(2,'0')+'T12:45:00+04:00',status:Object.keys(statuses)[index%8],risk_level:index%2?'high':'critical',work_location:index%2?'Factory':'Tank'}));
+data.push({id:'secret',company_id:'other-company',work_description:'Must never appear: other company'});
+window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}}};
+</script><script src="../../auris-view-engine.js"></script><script src="../../auris-permit-list-workspace.js"></script><script>
+function render(){AurisPermitListWorkspace.mount(document.getElementById('list'),data,{
+ types,statuses,filters:{scope:document.getElementById('scope').value,search:document.getElementById('search').value,type:document.getElementById('type').value,status:document.getElementById('stage').value},
+ onApplyFilters:filters=>{document.getElementById('scope').value=filters.scope;document.getElementById('search').value=filters.search;document.getElementById('type').value=filters.type;document.getElementById('stage').value=filters.status;render();},
+ openRecord:async(id,context)=>{if(fail)throw Error('Permit could not be opened. No records changed.');document.getElementById('result').textContent='Open exact permit: permits/'+id+' / '+context.companyId;}
+});}
+['search','scope','type','stage'].forEach(id=>document.getElementById(id).addEventListener(id==='search'?'input':'change',render));
+document.getElementById('switch').addEventListener('click',()=>{identity.company.id=identity.company.id==='fixture-company'?'empty-company':'fixture-company';document.getElementById('result').textContent='Current company: '+identity.company.id;});
+document.getElementById('refresh').addEventListener('click',render);document.getElementById('fail').addEventListener('click',()=>{fail=!fail;document.getElementById('result').textContent='Opening failure: '+fail;});render();
+document.getElementById('print-test').addEventListener('click',()=>{const copy=AurisViewEngine.preparePrint(document.getElementById('list').cloneNode(true));copy.removeAttribute('id');document.getElementById('print-preview').replaceChildren(copy);document.getElementById('print-preview').hidden=false;document.getElementById('result').textContent='Print snapshot prepared from current visible columns.';});
+</script></body></html>

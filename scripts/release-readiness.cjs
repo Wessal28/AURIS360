@@ -36,6 +36,7 @@ const testFiles = [
   ,'tests/action_list_workspace.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'
+  ,'tests/permit_list_workspace.test.cjs'
   ,'tests/reporting_engine_contract.test.cjs'
   ,'tests/dashboard_designer_contract.test.cjs'
   ,'tests/automation_engine_contract.test.cjs'

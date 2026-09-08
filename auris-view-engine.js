@@ -23,7 +23,7 @@ function definition(input){
   var keys=fields.map(function(field){return field.key;}),fallback=fields[0].key;
   if(new Set(keys).size!==keys.length)throw new Error('View field keys must be unique.');
   function declared(key,defaultKey){key=key||defaultKey;if(keys.indexOf(key)===-1)throw new Error('View field is not declared: '+key);return key;}
-  var date=fields.find(function(field){return field.type==='date';});
+  var date=fields.find(function(field){return field.type==='date'||field.type==='datetime';});
   return Object.freeze({fields:Object.freeze(fields),views:Object.freeze(views),defaultView:views.indexOf(input.defaultView)!==-1?input.defaultView:views[0],
     titleField:declared(input.titleField,fallback),subtitleField:declared(input.subtitleField,fields[1]&&fields[1].key||fallback),
     groupField:declared(input.groupField,keys.indexOf('status')!==-1?'status':fallback),dateField:declared(input.dateField,date&&date.key||fallback),
@@ -74,6 +74,10 @@ function model(rows,input,state,context){
 function value(row,field){
   var raw=row[field.key];if(raw==null||raw==='')return '—';
   if(field.type==='date'){var parsed=/^\d{4}-\d{2}-\d{2}$/.test(String(raw))?new Date(raw+'T12:00:00'):new Date(raw);return Number.isNaN(parsed.getTime())?String(raw):parsed.toLocaleDateString();}
+  if(field.type==='datetime'){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(String(raw)))return String(raw)+' (time not recorded)';
+    var timestamp=new Date(raw);return Number.isNaN(timestamp.getTime())?String(raw):timestamp.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+  }
   if(field.type==='percent')return Math.max(0,Math.min(100,Number(raw)||0))+'%';
   return String(raw);
 }
@@ -179,10 +183,21 @@ function bind(host,rows,options,moduleKey,context,state,ticket){
     finally{ticket.busy=false;if(renders.get(host)===ticket)host.querySelectorAll('[data-view-action]').forEach(function(el){el.disabled=false;});}
   });});
 }
+function preparePrint(clone){
+  if(!clone||!clone.querySelectorAll)return clone;
+  var workspaces=Array.from(clone.querySelectorAll('.auris-view-engine'));
+  if(clone.classList&&clone.classList.contains('auris-view-engine'))workspaces.unshift(clone);
+  workspaces.forEach(function(workspace){
+    workspace.querySelectorAll('.ave-link').forEach(function(button){var text=(clone.ownerDocument||root.document).createElement('span');text.textContent=button.textContent;button.replaceWith(text);});
+    workspace.querySelectorAll('.ave-toolbar,.ave-actions,[data-view-feedback],.ave-count').forEach(function(control){control.remove();});
+    workspace.querySelectorAll('.ave-table-wrap,.ave-board').forEach(function(region){region.style.maxHeight='none';region.style.overflow='visible';region.style.display='block';});
+  });
+  return clone;
+}
 function diagnostics(rows,input,options){
   var context=currentContext(options||{}),def=definition(input),state=read((options&&options.moduleKey)||'records',def,context),view=model(rows,def,state,context);
   return {scope:context,records:view.rows.length,excluded:(rows||[]).length-view.rows.length,mode:state.mode,savedViews:state.saved.length,groups:Object.keys(view.groups).length,columns:state.columns.slice()};
 }
-var api={version:'1.1.0',configure:configure,definition:definition,model:model,mount:mount,diagnostics:diagnostics};
+var api={version:'1.2.0',configure:configure,definition:definition,model:model,mount:mount,preparePrint:preparePrint,diagnostics:diagnostics};
 root.AurisViewEngine=Object.freeze(api);
 })(typeof window!=='undefined'?window:globalThis);
