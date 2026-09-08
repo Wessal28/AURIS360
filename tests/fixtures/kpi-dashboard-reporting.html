@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI dashboard reporting — synthetic QA</title><link rel="stylesheet" href="/kpi-module-upgrade.css"><style>body{font:15px Arial,sans-serif;margin:0;background:#f4f7f9;color:#17324a}main{padding:16px}nav{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}button,select{font:inherit;min-height:44px}h1{font-size:24px}#year-sel{display:none}</style></head><body><main id="page-kpi" data-kpi-x-installed="1"><h1>KPI dashboard reporting</h1><p>Synthetic results only. No external API calls.</p><label for="scenario">Scenario</label> <select id="scenario"><option value="missing">Missing results</option><option value="zero">Measured zero</option><option value="partial">Partial reporting</option><option value="future">Future year</option><option value="setup">No indicators</option><option value="empty">Empty register</option></select><select id="year-sel"><option selected>2025</option><option>2027</option></select><nav><button data-view="dashboard">Dashboard</button><button data-view="reports">Reports</button></nav><div id="kpi-objectives-container" class="kpi-x-view" data-kpi-view="scorecard"></div><div id="kpi-x-dashboard" class="kpi-x-view" data-kpi-view="dashboard"></div><div id="kpi-x-reports-view" class="kpi-x-view" data-kpi-view="reports"></div></main><script>
+window.kpiObjectives=[];window.kpiKPIs=[];window.kpiIndicators=[];window.kpiMonthlyData={};window.kpiConfigPublished={targets:{critical_override:true},calculations:{aggregation:'average'}};window.isMgr=()=>false;
+let fixtureView='dashboard';
+function fixtureScenario(){
+  const mode=document.getElementById('scenario').value,year=new Date().getFullYear()+(mode==='future'?1:-1);
+  document.getElementById('year-sel').innerHTML='<option selected>'+year+'</option>';
+  window.kpiObjectives=mode==='empty'?[]:[{id:'o',code:'1',name:'Reporting completeness'}];
+  window.kpiKPIs=mode==='empty'?[]:[{id:'k1',code:'1.1',objective_id:'o',name:'Toolbox talk coverage',frequency:'monthly'}];
+  if(mode==='partial')window.kpiKPIs.push({id:'k2',code:'1.2',objective_id:'o',name:'Pending inspection coverage',frequency:'monthly'});
+  window.kpiIndicators=mode==='setup'?[]:window.kpiKPIs.map(k=>({id:'i'+k.id,kpi_id:k.id,name:'Completed records',target_operator:'gte',target_value:100}));
+  window.kpiMonthlyData=mode==='zero'?{ik1:{12:{month:12,actual:0}}}:mode==='partial'?{ik1:{12:{month:12,actual:100}}}:{};
+  kpiXSwitchTab(fixtureView);
+}
+</script><script src="/kpi-module-upgrade.js"></script><script>
+document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{fixtureView=button.dataset.view;kpiXSwitchTab(fixtureView);}));
+document.getElementById('scenario').addEventListener('change',fixtureScenario);
+document.addEventListener('DOMContentLoaded',fixtureScenario);
+</script></body></html>
