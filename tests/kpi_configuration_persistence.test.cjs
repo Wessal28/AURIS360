@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'kpi-configuration.js'
 const copy = value => JSON.parse(JSON.stringify(value));
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 
-function harness({ draft = true, validated = false, intercept } = {}) {
+function harness({ draft = true, validated = false, intercept, lexicalProfile = false } = {}) {
   const calls = [], messages = [], host = { innerHTML: '' };
   const published = { id: 'published-a', company_id: 'company-a', version_no: 1, status: 'published', configuration: {} };
   const saved = { id: 'draft-a', company_id: 'company-a', version_no: 2, status: validated ? 'validated' : 'draft', configuration: {}, validation: { valid: validated } };
@@ -30,7 +30,9 @@ function harness({ draft = true, validated = false, intercept } = {}) {
     }
   };
   ctx.window = ctx;
-  vm.createContext(ctx); vm.runInContext(source, ctx);
+  vm.createContext(ctx);
+  if (lexicalProfile) vm.runInContext('let prof = window.prof; delete window.prof; window.activeRole = () => prof.role;', ctx);
+  vm.runInContext(source, ctx);
   const change = value => ctx.kpiConfigChange({ dataset: { cfg: 'targets.on_track_percent' }, type: 'number', value: String(value) });
   return { ctx, calls, messages, host, change, company: value => { company = value; } };
 }
@@ -39,6 +41,11 @@ test('validation persists a new unchanged draft before using its record ID', asy
   const h = harness({ draft: false }); await h.ctx.kpiConfigLoad(); assert.equal(await h.ctx.kpiConfigValidate(), true);
   assert.ok(h.calls.some(call => call.options.m === 'POST' && call.url === '/kpi_config_versions'));
   assert.ok(!h.calls.some(call => call.url.includes('undefined')));
+});
+test('configuration uses the production lexical profile, not a required window property', async () => {
+  const h=harness({draft:false,lexicalProfile:true});assert.equal(h.ctx.prof,undefined);
+  assert.equal(await h.ctx.kpiConfigLoad(),true);assert.equal(await h.ctx.kpiConfigValidate(),true);
+  assert.equal(h.calls.find(call=>call.options.m==='POST'&&call.url==='/kpi_config_versions').options.b.created_by,'user-a');
 });
 
 test('editing a validated draft invalidates publication until saved and revalidated', async () => {

@@ -22,11 +22,12 @@ function clone(x){return JSON.parse(JSON.stringify(x));}
 function merge(base,extra){Object.keys(extra||{}).forEach(function(k){if(extra[k]&&typeof extra[k]==='object'&&!Array.isArray(extra[k]))base[k]=merge(base[k]||{},extra[k]);else base[k]=extra[k];});return base;}
 function normaliseOperationalConfig(value){var c=value||defaults();if(['average','worst'].indexOf(c.calculations&&c.calculations.aggregation)<0)c.calculations.aggregation='average';return c;}
 function esc(v){if(typeof escH==='function')return escH(v==null?'':String(v));return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function companyId(){return typeof ccid==='function'?ccid():(window.prof&&prof.company_id);}
-function actor(){return {id:window.prof&&prof.id,name:(window.prof&&(prof.full_name||prof.name||prof.email))||'User'};}
-function canManage(){var r=typeof activeRole==='function'?activeRole():(window.prof&&prof.role);return ['sephs_admin','admin','hse_manager'].indexOf(r)>=0;}
+function profile(){return typeof prof!=='undefined'?prof:window.prof||null;}
+function companyId(){return typeof ccid==='function'?ccid():(profile()&&profile().company_id);}
+function actor(){var p=profile()||{};return {id:p.id,name:p.full_name||p.name||p.email||'User'};}
+function canManage(){var r=typeof activeRole==='function'?activeRole():(profile()&&profile().role);return ['sephs_admin','admin','hse_manager'].indexOf(r)>=0;}
 function notify(message,ok){state.notice={message:message,ok:ok!==false};render();if(typeof toast==='function')toast(message,ok!==false);}
-function scopeKey(){return JSON.stringify([companyId()||'',actor().id||'',typeof activeRole==='function'?activeRole():(window.prof&&prof.role)||'']);}
+function scopeKey(){return JSON.stringify([companyId()||'',actor().id||'',typeof activeRole==='function'?activeRole():(profile()&&profile().role)||'']);}
 function current(context){return !!context&&state.context===context&&context.key===scopeKey();}
 function editable(){return current(state.context)&&state.schemaReady&&!state.loading&&!state.publishing&&!!state.draft&&canManage();}
 function ready(){if(!editable()){notify('Configuration is not ready for this account and company. Reload it before making changes.',false);return false;}if(state.busy)return false;return true;}
@@ -55,7 +56,7 @@ function sectionCalculations(){return panel('Calculation Defaults',grid([
   input('calculations.aggregation','Objective aggregation','select','',[['average','Average KPI achievement'],['worst','Worst KPI status']])
 ]),'Controls how KPI results roll up into the objective score. YTD calculation remains configured on each indicator.');}
 function sectionSources(){return panel('Data Source & Reconciliation',grid([
-  input('sources.default_source','Default source for new KPIs','select','',[['manual','Manual entry'],['module','AURIS360 module'],['integration','External integration']]),input('sources.refresh_frequency','Automatic refresh frequency','select','',[['real_time','Real time'],['hourly','Hourly'],['daily','Daily'],['monthly','Monthly']]),input('sources.allow_manual_override','Allow manual override','toggle','Authorised users may replace an automatically calculated result; the override reason is audited.')
+  input('sources.default_source','Default source for new KPIs','select','',[['manual','Manual entry'],['module','AURIS360 module'],['integration','External integration']]),input('sources.refresh_frequency','Automatic refresh frequency','select','Checked when KPI data loads, not by a background scheduler. Historical years and manual overrides are excluded.',[['real_time','On each KPI load'],['hourly','Hourly'],['daily','Daily'],['monthly','Monthly']]),input('sources.allow_manual_override','Allow manual override','toggle','Authorised users may replace an automatically calculated result; the override reason is audited.')
 ]),'These defaults apply to new KPIs and governed automatic source refreshes. Existing KPI source assignments are preserved.');}
 function sectionWorkflow(){var self=!!val('workflow.self_approval');return panel('Approval Workflow',grid([
   input('workflow.stage1','Stage 1 · KPI owner / data provider','select','',workflowPeople('workflow.stage1')),input('workflow.stage2','Stage 2 · Reviewer','select',self?'Copied from Stage 1 while self-approval is enabled.':'',workflowPeople('workflow.stage2'),self),input('workflow.stage3','Stage 3 · Approver','select',self?'Copied from Stage 1 while self-approval is enabled.':'',workflowPeople('workflow.stage3'),self),input('workflow.self_approval','Allow self-approval','toggle','When enabled, Stages 2 and 3 automatically use the person selected in Stage 1.')
