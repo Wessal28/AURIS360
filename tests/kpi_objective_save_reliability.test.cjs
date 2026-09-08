@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const root=path.resolve(__dirname,'..'),core=fs.readFileSync(path.join(root,'auris-core.js'),'utf8');
+const root=path.resolve(__dirname,'..'),core=fs.readFileSync(path.join(root,'auris-core.js'),'utf8'),editor=fs.readFileSync(path.join(root,'kpi-definition-editor.js'),'utf8');
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};}
 function harness(edit=false){
  const nodes={},calls=[],notices=[];let active=null;
@@ -9,8 +9,8 @@ function harness(edit=false){
  const card=node('card'),modal=node('obj-modal');modal.style.display='none';modal.querySelector=s=>s==='[data-kpi-objective-message]'?card.children.find(n=>!n.removed):s.includes('h0129')?nodes.close:card;modal.querySelectorAll=()=>controls;modal.contains=el=>controls.includes(el)||el===nodes['obj-modal-title']||card.children.includes(el);
  const obj={id:'o',company_id:'company-a',year:2026,name:'Original',code:'1',color:'#1D9E75'};
  const c={console:{error(){}},Date,document:{get activeElement(){return active;},getElementById:id=>nodes[id]||null,createElement:()=>node('alert'),querySelectorAll:()=>[]},prof:{id:'user-a',company_id:'company-a'},sephsCompanyContext:'company-a',isSA:()=>true,ccid:()=>c.company,company:'company-a',kpiCanEdit:()=>c.allowed,allowed:true,kpiSelectedColor:'#1D9E75',kpiObjectives:[obj],kpiKPIs:[{id:'k'}],kpiIndicators:[{id:'i'}],kpiMonthlyData:{i:{8:{actual:4}}},toast:(...args)=>notices.push(args),actionErrorMessage:(_a,_m,msg)=>msg,api:async(url,options)=>{calls.push({url,options});return c.response(url,options);},kpiRenderOverview(){c.renders++;},kpiRenderMonthly(){},kpiUpdateMetrics(){},renders:0,kpiLoadAll:async()=>{},stored:null,response:async(url,options)=>{if(options){c.stored={id:edit?'o':'new',...options.b};return [c.stored];}if(url.includes('select=code'))return [{code:'1'},{code:'3'}];return c.stored?[c.stored]:[obj];}};
- c.window=c;vm.createContext(c);vm.runInContext(core.slice(core.indexOf('var kpiEditObjId = null'),core.indexOf('// -- Print the KPI scorecard')),c);
- vm.runInContext(core.slice(core.indexOf('function kpiSelectColor('),core.indexOf('async function kpiDeleteObjective')),c);
+ c.window=c;vm.createContext(c);vm.runInContext(editor,c);
+ vm.runInContext(core.slice(core.indexOf('function closeKpiModal('),core.indexOf('async function kpiDeleteObjective')),c);
  nodes.launcher.focus();c.openObjModal(edit?'o':null);nodes['obj-name'].value='Safer work';nodes['obj-year'].value='2026';
  return {c,nodes,modal,controls,obj,calls,notices,card,message:()=>card.children.find(n=>!n.removed),writes:()=>calls.filter(x=>x.options)};
 }

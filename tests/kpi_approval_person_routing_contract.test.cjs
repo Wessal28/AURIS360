@@ -19,7 +19,7 @@ test('self approval synchronises all three configured people',()=>{
 });
 
 test('published routing becomes the default on new KPI records',()=>{
-  const core=read('auris-core.js');
+  const core=read('kpi-definition-editor.js');
   assert.match(core,/kpi-resp',publishedWorkflow\.stage1/);
   assert.match(core,/kpi-data-provider',publishedWorkflow\.stage1/);
   assert.match(core,/kpi-reviewer',publishedWorkflow\.stage2/);

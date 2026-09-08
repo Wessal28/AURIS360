@@ -69,7 +69,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.status, 'passed');
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
-  assert.equal(result.assets.length, 35);
+  assert.equal(result.assets.length, 36);
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
@@ -79,6 +79,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.ok(response.requests.includes('/incident-management-upgrade.js'));
   assert.ok(response.requests.includes('/risk-assessment-upgrade.js'));
   assert.ok(response.requests.includes('/sw.js'));
+  assert.ok(response.requests.includes('/kpi-definition-editor.js'));
   assert.equal(JSON.parse(fs.readFileSync(report, 'utf8')).status, 'passed');
   assert.doesNotMatch(fs.readFileSync(report, 'utf8'), /do-not-retain-runtime-key/);
 });
@@ -109,6 +110,20 @@ test('real smoke failures remain blocking and retain stage-specific evidence', a
       assert.ok(saved.assets.length > 0);
     }
   });
+});
+
+test('missing or broken definition editor remains a blocking production asset failure', async (t) => {
+  for (const overrides of [
+    { html: read('index.html').replace(/<script src="kpi-definition-editor\.js[^\"]*"><\/script>/, '') },
+    { assets: { 'kpi-definition-editor.js': 'invalid'.repeat(30) } }
+  ]) {
+    const report = evidenceFile(t), response = fixture(overrides);
+    await assert.rejects(main({ env: productionEnv, fetchImpl: response.fetchImpl, logger: quiet, args: ['--report', report] }), /kpi-definition-editor\.js/);
+    const saved = JSON.parse(fs.readFileSync(report, 'utf8'));
+    assert.equal(saved.status, 'failed');
+    assert.equal(saved.stage, 'critical_assets');
+    assert.equal(saved.checking_asset, 'kpi-definition-editor.js');
+  }
 });
 
 test('CLI failures exit nonzero and save evidence even before the first request', (t) => {

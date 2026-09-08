@@ -13,6 +13,7 @@ const externalAssets = [
   'auris-module-event-handlers-batch-4.js',
   'auris-module-event-handlers-batch-5.js',
   'auris-core.js',
+  'kpi-definition-editor.js',
   'auris-detached-modules.js'
 ];
 for (const asset of externalAssets) {

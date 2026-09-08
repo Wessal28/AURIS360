@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 
 test('KPI writes persist editable details while storing only durable status values',()=>{
-  const core=read('auris-core.js');
+  const core=read('kpi-definition-editor.js');
   assert.match(core,/function kpiStorageStatus\(value\)[\s\S]*'archived'[\s\S]*'not_started'/);
   for(const field of ['description','data_provider','data_source','reviewer','approver','approval_status'])assert.match(core,new RegExp(field+':'));
   assert.match(core,/original\?\.approval_status\|\|'draft'/);
