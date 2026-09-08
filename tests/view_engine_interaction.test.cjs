@@ -1,4 +1,23 @@
 const test=require('node:test'),assert=require('node:assert/strict'),runtime=require('./helpers/view-harness.cjs');
+test('datetime fields retain local hours, minutes and timezone while date-only and invalid values stay honest',()=>{
+  const r=runtime(),timestamp='2026-09-08T08:45:00+04:00';r.def.fields.push({key:'start',label:'Start',type:'datetime'});r.rows[0].start=timestamp;r.mount();
+  const expected=new Date(timestamp).toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+  assert.ok(r.host.innerHTML.includes(expected));r.rows[0].start='2026-09-08';r.mount();assert.match(r.host.innerHTML,/2026-09-08 \(time not recorded\)/);
+  r.rows[0].start='<script>bad</script>';r.mount();assert.match(r.host.innerHTML,/&lt;script&gt;bad/);assert.doesNotMatch(r.host.innerHTML,/<script>/);
+});
+test('datetime sorting compares instants across offsets rather than rendered time strings',()=>{
+  const r=runtime();r.def.fields.push({key:'start',label:'Start',type:'datetime'});
+  const rows=[{id:'late',company_id:r.identity.companyId,start:'2026-09-08T08:00:00Z'},{id:'early',company_id:r.identity.companyId,start:'2026-09-08T10:00:00+04:00'}];
+  const m=r.window.AurisViewEngine.model(rows,r.def,{sortBy:'start'},r.identity);assert.deepEqual(Array.from(m.rows,x=>x.id),['early','late']);
+});
+test('print preparation retains clickable record text, removes workspace controls and releases scroll bounds',()=>{
+  const r=runtime(),replaced=[],removed=[],regions=[{style:{}},{style:{}}];
+  const links=['PTW-2026-001','<script>Work description</script>'].map(textContent=>({textContent,replaceWith:node=>replaced.push(node)}));
+  const controls=[{remove:()=>removed.push('toolbar')},{remove:()=>removed.push('actions')}];
+  const workspace={querySelectorAll:selector=>selector==='.ave-link'?links:selector.includes('.ave-toolbar')?controls:regions};
+  const clone={ownerDocument:{createElement:tag=>({tag})},querySelectorAll:selector=>{assert.equal(selector,'.auris-view-engine');return [workspace];}};
+  assert.equal(r.window.AurisViewEngine.preparePrint(clone),clone);assert.deepEqual(replaced.map(x=>x.textContent),['PTW-2026-001','<script>Work description</script>']);assert.ok(replaced.every(x=>x.tag==='span'&&!x.innerHTML));assert.equal(removed.length,2);assert.ok(regions.every(x=>x.style.maxHeight==='none'&&x.style.overflow==='visible'&&x.style.display==='block'));
+});
 test('columns persist, required fields remain and malformed stored columns are discarded',()=>{
   const r=runtime();r.mount();const status=r.element('[data-view-column="status"]');status.checked=false;status.fire('change');
   assert.doesNotMatch(r.host.innerHTML,/<th scope="col">Status/);r.mount();assert.doesNotMatch(r.host.innerHTML,/<th scope="col">Status/);
