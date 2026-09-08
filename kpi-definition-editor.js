@@ -9,6 +9,48 @@
  */
 
 var kpiEditObjId = null;  // tracks which objective is being edited (null = creating new)
+
+// Shared by the two definition forms, including dynamically added indicators.
+// Listeners stay on their dialog; they do not capture unrelated page shortcuts.
+function kpiEditorFocusAvailable(node){
+  if(!node||!node.isConnected||node.disabled||node.matches?.(':disabled')||!node.getClientRects().length)return false;
+  if(node.closest?.('[hidden],[inert],[aria-hidden="true"]'))return false;
+  return typeof getComputedStyle!=='function'||!['hidden','collapse'].includes(getComputedStyle(node).visibility);
+}
+function kpiEditorContainTab(event,modal,title){
+  if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||!modal.getClientRects().length)return;
+  const focused=document.activeElement,inner=focused?.closest?.('[role="dialog"]');
+  if(inner&&inner!==modal&&modal.contains(inner))return; // A nested dialog owns its keyboard.
+  const controls=Array.from(modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]'))
+    .filter(node=>node.tabIndex>=0&&kpiEditorFocusAvailable(node))
+    .sort((a,b)=>(a.tabIndex||Infinity)-(b.tabIndex||Infinity));
+  const index=controls.indexOf(focused);
+  if(!controls.length||index===-1||(event.shiftKey?index===0:index===controls.length-1)){
+    event.preventDefault();
+    (controls.length?controls[event.shiftKey?controls.length-1:0]:title)?.focus();
+  }
+}
+function kpiEditorBindDialog(modal,title){
+  if(modal._kpiEditorFocusBound)return;
+  modal._kpiEditorFocusBound=true;
+  modal.addEventListener('keydown',event=>kpiEditorContainTab(event,modal,title));
+}
+function kpiEditorRestoreFocus(modal,launcher){
+  // A drawer may have removed the launch button, or a save may rerender its row.
+  // Use a visible module control, never body or a hidden/disconnected element.
+  const fallback=modal.id==='obj-modal'?'kpi-x-new-objective':'kpi-x-new-kpi';
+  const target=[launcher,document.getElementById(fallback),document.getElementById('year-sel')]
+    .find(node=>node&&node!==document.body&&node!==document.documentElement&&typeof node.focus==='function'&&kpiEditorFocusAvailable(node));
+  target?.focus();
+}
+async function kpiEditorConfirmArchive(modal,options){
+  const overlay=document.getElementById('app-confirm3modal'),dialog=overlay?.querySelector('[role="dialog"]'),title=document.getElementById('app-confirm3title');
+  const onKey=event=>{if(modal.getClientRects().length)kpiEditorContainTab(event,dialog,title);};
+  // Scope this temporary guard to this editor's archive confirmation only.
+  dialog?.addEventListener('keydown',onKey);
+  try{return await appConfirmAction(options);}
+  finally{dialog?.removeEventListener('keydown',onKey);}
+}
 function openObjModal(objId) {
   var m = document.getElementById('obj-modal');
   if (!m) return false;
@@ -99,6 +141,7 @@ function openObjModal(objId) {
   m.querySelector('[data-auris-onclick="h0129"]').setAttribute('aria-label','Close objective');
   titleEl.setAttribute('tabindex','-1');
   m.style.display = 'flex';
+  kpiEditorBindDialog(m,titleEl);
   titleEl.focus();return true;
 }
 
@@ -250,6 +293,7 @@ modal._kpiDefinitionControls?.forEach(item=>{item.node.disabled=item.disabled;})
 modal._kpiDefinitionWritten=false;modal._kpiDefinitionControls=null;
 modal.querySelector('[data-kpi-definition-message]')?.remove();
 modal._kpiDefinitionContext={companyId,actorId,year:kpiObjectiveViewYear(),kpiId};
+modal._kpiDefinitionReturnFocus=document.activeElement;
 modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','kpi-modal-title');
 document.getElementById('kpi-modal-title').setAttribute('tabindex','-1');
 modal.querySelector('[data-auris-onclick="h0139"]')?.setAttribute('aria-label','Close KPI editor');
@@ -307,6 +351,7 @@ if(obj){const ex=kpiKPIs.filter(k=>k.objective_id===this.value);document.getElem
 }
 };
 openKpiModal('kpi-edit-modal');
+kpiEditorBindDialog(modal,document.getElementById('kpi-modal-title'));
 document.getElementById('kpi-modal-title').focus();
 }
 function kpiStorageStatus(value){

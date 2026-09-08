@@ -12481,7 +12481,8 @@ function closeKpiModal(id){
   const e=document.getElementById(id);
   if(id==='kpi-edit-modal'&&e?._kpiDefinitionBusy)return false;
   if(id==='obj-modal'&&e?._kpiObjectiveBusy)return false;
-  const objectiveReturnFocus=id==='obj-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiObjectiveReturnFocus:null;
+  const editorHadFocus=(id==='obj-modal'||id==='kpi-edit-modal')&&e?.style.display!=='none'&&e?.contains(document.activeElement);
+  const editorReturnFocus=id==='obj-modal'?e?._kpiObjectiveReturnFocus:e?._kpiDefinitionReturnFocus;
   const returnFocus=id==='kpi-entry-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiEntryReturnFocus:null;
   if(e)e.style.display='none';
   if(id==='kpi-entry-modal'&&e){
@@ -12489,7 +12490,12 @@ function closeKpiModal(id){
     if(returnFocus?.isConnected&&!returnFocus.disabled&&returnFocus.getClientRects().length)returnFocus.focus();
   }
   // When closing the objective modal, clear edit state so next "Add" starts fresh
-  if(id==='obj-modal'){ kpiEditObjId = null; if(e){delete e.dataset.editId;e._kpiObjectiveReturnFocus=null;}if(objectiveReturnFocus?.isConnected&&!objectiveReturnFocus.disabled&&objectiveReturnFocus.getClientRects().length)objectiveReturnFocus.focus(); }
+  if(id==='obj-modal'){ kpiEditObjId = null; if(e){delete e.dataset.editId;e._kpiObjectiveReturnFocus=null;} }
+  if(id==='kpi-edit-modal'&&e)e._kpiDefinitionReturnFocus=null;
+  if(editorHadFocus){
+    if(typeof kpiEditorRestoreFocus==='function')kpiEditorRestoreFocus(e,editorReturnFocus);
+    else if(editorReturnFocus?.isConnected&&!editorReturnFocus.disabled&&editorReturnFocus.getClientRects().length)editorReturnFocus.focus();
+  }
 }
 function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.display='flex';}
 
@@ -12532,9 +12538,10 @@ try{
  const readChildren=async()=>{const rows=await api(childPath+'&select=*&limit=1001');check();if(!Array.isArray(rows)||rows.length>=1000||rows.some(row=>!row.id||row.company_id!==context.companyId||row.objective_id!==id)||new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error('The complete objective KPI list could not be verified. No further archive changes will be made.');return rows;};
  const children=objective?await readChildren():[record],targets=children.filter(row=>row.status!=='archived');
  targets.forEach(kpiArchiveEditable);
- const accepted=await appConfirmAction({title:objective?'Archive objective':'Archive KPI',message:'Archive '+(record.code?record.code+' · ':'')+record.name+'?',detail:(objective?'This includes '+targets.length+' active KPI(s), across reporting years. ':'')+'Unsaved form changes will not be saved. Definitions, indicators and monthly history are kept; archived records leave the active scorecard.',confirmText:objective?'Archive objective':'Archive KPI',cancelText:objective?'Keep objective':'Keep KPI'});
+ const accepted=await kpiEditorConfirmArchive(modal,{title:objective?'Archive objective':'Archive KPI',message:'Archive '+(record.code?record.code+' · ':'')+record.name+'?',detail:(objective?'This includes '+targets.length+' active KPI(s), across reporting years. ':'')+'Unsaved form changes will not be saved. Definitions, indicators and monthly history are kept; archived records leave the active scorecard.',confirmText:objective?'Archive objective':'Archive KPI',cancelText:objective?'Keep objective':'Keep KPI'});
  check();
  if(!accepted){cancelled=true;return {complete:false,cancelled:true};}
+ title?.focus(); // Confirmation is closed; keep pending keyboard focus in the editor.
  // Re-read the confirmed set before the first write, not the mutable selected record.
  same(await readOne(path),record);
  const sameChildren=(rows,expected)=>{if(rows.length!==expected.length||rows.some(row=>!expected.some(other=>other.id===row.id&&kpiArchiveFingerprint(row)===kpiArchiveFingerprint(other))))throw new Error('The objective KPI list changed. Close and reload to review the remaining records.');};
