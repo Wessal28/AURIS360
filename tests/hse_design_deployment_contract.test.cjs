@@ -33,7 +33,7 @@ test('all corrected design assets use the same release cache key', () => {
       : asset === 'kpi-module-upgrade.css'
       ? '20260908-display-clarity-1'
       : asset === 'kpi-module-upgrade.js'
-      ? '20260908-dashboard-reporting-1'
+      ? '20260908-navigation-1'
       : ['bbs-observations.css','bbs-observations.js','incident-management-upgrade.css','incident-management-upgrade.js','risk-assessment-upgrade.css','risk-assessment-upgrade.js','auris-audits-inspections-static.css'].includes(asset)
       ? (asset.startsWith('incident-management-upgrade.') ? '20260831-4' : '20260823-4')
       : ['auris-base.css'].includes(asset)

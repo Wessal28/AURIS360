@@ -2,7 +2,7 @@
   'use strict';
   var handlers = {
     "d0001": function (event, args) {
-kpiXFilterStatus(args[0])
+kpiXOpenStatus(args[0])
     },
     "d0002": function (event, args) {
 kpiXFilterObjective(args[0])
@@ -14,7 +14,7 @@ kpiXOpenDrawer(args[0])
 kpiXReviewExceptions()
     },
     "d0005": function (event, args) {
-kpiXSwitchTab('scorecard')
+kpiXOpenStatus('all')
     },
     "d0006": function (event, args) {
 kpiXReviewMissing()

@@ -16,7 +16,7 @@ test('third module batch has no executable inline event attributes', () => {
     assert.doesNotMatch(source, eventAttribute, moduleName);
     assert.doesNotMatch(source, /on[a-z]+=\\["']/i, moduleName);
   }
-  assert.match(html, /src="auris-module-event-handlers-batch-3\.js\?v=20260814-1"/);
+  assert.match(html, /src="auris-module-event-handlers-batch-3\.js\?v=20260908-navigation-1"/);
 });
 
 test('third module registry contains only precompiled handlers', () => {
@@ -30,7 +30,7 @@ test('third batch dispatches dynamic arguments and control values', () => {
   const calls = [];
   const sandbox = {
     document: { addEventListener(type, listener) { listeners[type] = listener; } },
-    kpiXFilterStatus(value) { calls.push(['argument', value]); },
+    kpiXOpenStatus(value) { calls.push(['argument', value]); },
     kpiXSetSearch(value) { calls.push(['value', value]); }
   };
   vm.runInNewContext(registry, sandbox);

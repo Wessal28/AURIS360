@@ -11,3 +11,5 @@ Final full suite: **746 passed**. Release readiness: **313 passed**, 179 offline
 No SQL, stored business records, permissions, scoring policy, status operators, thresholds, source assignments, chart benchmark or objective colour rules are changed. Authenticated business acceptance and server-side concurrency remain separate prerequisites. This is not a claim that all dashboard/impact-preview policy inconsistencies are resolved.
 
 Separate navigation follow-up identified during inspection: Review Exceptions currently selects Off Track or At Risk only and retains other filters. Missing-only navigation and stale-filter behaviour need dedicated regression coverage; this presentation phase does not claim to fix those handlers.
+
+Follow-up: that navigation issue is now addressed separately in `KPI_DASHBOARD_NAVIGATION.md`, with dedicated dispatcher and monthly-filter regression coverage. The results above describe the earlier reporting-completeness phase.
