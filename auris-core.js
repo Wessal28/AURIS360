@@ -19573,13 +19573,18 @@ function ptwShowList(){
   ptwRenderList();
 }
 
-async function ptwOpenFromRegister(id,expected,generation,viewGeneration){
+async function ptwOpenFromRegister(id,expected,generation,viewGeneration,openControls){
   function assertCurrent(){
     if(!ptwListContext||generation!==ptwListLoadGeneration||generation!==ptwListContext.generation||viewGeneration!==ptwListViewGeneration||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('permit'))throw new Error('The permit register changed. Reload and open the permit again.');
     if(navigator.onLine===false)throw new Error('Reconnect before opening the permit controls.');
   }
   assertCurrent();
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(String(id))||!ptwAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This permit is outside the current register.');
+  if(!openControls&&typeof window!=='undefined'&&window.AurisPermitRecordWorkspace){
+    var selected=ptwAllData.find(function(row){return String(row.id)===String(id);});
+    return window.AurisPermitRecordWorkspace.open(String(id),{reference:selected.permit_number||selected.permit_ref||'DRAFT',types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,assertContext:assertCurrent,
+      openControls:function(){return ptwOpenFromRegister(id,expected,generation,viewGeneration,true);}});
+  }
   var data=await api('/permits?select=*&company_id=eq.'+encodeURIComponent(expected.companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
   assertCurrent();
   if(!Array.isArray(data)||data.length!==1||!data[0]||String(data[0].id)!==String(id)||String(data[0].company_id||'')!==expected.companyId)throw new Error('This permit is unavailable or outside your company access. Reload the register.');
