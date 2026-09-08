@@ -12310,7 +12310,13 @@ async function loadCoDrop(){
 }
 loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
-async function kpiLoadAll(){
+async function kpiLoadAll(entryContext){
+// A monthly save needs an all-or-error refresh; legacy loaders intentionally swallow errors.
+if(entryContext&&entryContext.indicatorId){
+  await kpiReloadEntryData(entryContext);
+  kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
+  return;
+}
 var yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
 var monthlyYearEl=document.getElementById('kpi-monthly-year');
 if(monthlyYearEl)monthlyYearEl.textContent=yr;
@@ -12844,14 +12850,60 @@ if(method==='max')return Math.max(...vals);
 if(method==='min')return Math.min(...vals);
 return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
 }
+function kpiEntryCompany(){
+return typeof ccid==='function'?ccid():((isSA()&&typeof sephsCompanyContext!=='undefined'&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id);
+}
+function kpiEntryContextMatches(context){
+return !!context&&!!context.companyId&&!!context.actorId&&context.companyId===kpiEntryCompany()&&context.actorId===prof?.id&&context.indicatorId===kpiEntryIndicatorId&&context.month===kpiEntryMonth&&context.year===kpiEntryYear&&context.year===(parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear());
+}
+function kpiEntryCheckContext(context){
+if(!kpiEntryContextMatches(context))throw new Error('The company, account or reporting period changed. Close this form and reload the intended company before continuing.');
+}
+function kpiEntryFeedback(message){
+const modal=document.getElementById('kpi-entry-modal');
+if(!modal)return;
+let alert=modal.querySelector('[data-kpi-entry-message]');
+if(!alert){
+  alert=document.createElement('div');alert.setAttribute('data-kpi-entry-message','');alert.setAttribute('role','alert');alert.setAttribute('tabindex','-1');alert.className='kpi-entry-message';
+  modal.querySelector('.auris-kpilegacy-s-9456a3b250').prepend(alert);
+}
+alert.textContent=message;alert.focus();
+}
+async function kpiReloadEntryData(context){
+kpiEntryCheckContext(context);
+const scope='&company_id=eq.'+encodeURIComponent(context.companyId),year='&year=eq.'+context.year;
+const [objectives,kpis,indicators,monthly]=await Promise.all([
+  api('/objectives?select=*'+scope+year+'&order=sort_order,code'),
+  api('/kpis_v2?select=*'+scope+year+'&order=code'),
+  api('/kpi_indicators?select=*'+scope+'&order=sort_order,created_at'),
+  api('/kpi_monthly_data?select=*'+scope+year)
+]);
+kpiEntryCheckContext(context);
+if(![objectives,kpis,indicators,monthly].every(Array.isArray))throw new Error('The saved value could not be reloaded.');
+if(!monthly.some(row=>row.indicator_id===context.indicatorId&&Number(row.month)===context.month))throw new Error('The saved monthly result is not visible in the refreshed data.');
+const activeKpis=kpis.filter(k=>String(k.status||'').toLowerCase()!=='archived'),ids=new Set(activeKpis.map(k=>k.id));
+const activeIndicators=indicators.filter(ind=>ids.has(ind.kpi_id));
+if(!ids.has(context.kpiId)||!activeIndicators.some(ind=>ind.id===context.indicatorId))throw new Error('The KPI or indicator is no longer available in the refreshed data.');
+const values={};monthly.forEach(row=>{const key=row.indicator_id||row.kpi_id;if(!values[key])values[key]={};values[key][row.month]=row;});
+kpiObjectives=objectives.filter(o=>!/^\[Archived/i.test(String(o.name||'')));kpiKPIs=activeKpis;kpiIndicators=activeIndicators;kpiMonthlyData=values;
+}
 function kpiOpenEntry(indicatorId,kpiId,month){
-if(!kpiCanEdit()){toast('Only managers can enter KPI monthly values.',false);return;}
+const modal=document.getElementById('kpi-entry-modal');
+if(modal?._kpiXEntryBusy)return false;
+if(modal?._kpiEntrySaved&&modal.style.display!=='none'){kpiEntryFeedback('This value is already saved. Close this form and reload before opening another entry.');return false;}
+if(!kpiCanEdit()){toast('Only managers can enter KPI monthly values.',false);return false;}
+const ind=kpiIndicators.find(x=>x.id===indicatorId&&x.kpi_id===kpiId);
+const k=kpiKPIs.find(x=>x.id===kpiId);
+if(!ind||!k)return false;
+if(modal){
+  (modal._kpiEntryDisabled||[]).forEach(item=>{item.node.disabled=item.disabled;});
+  modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;
+  modal.querySelector('[data-kpi-entry-message]')?.remove();
+}
 kpiEntryIndicatorId=indicatorId;
 kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
 kpiEntryMonth=month;
-const ind=kpiIndicators.find(x=>x.id===indicatorId);
-const k=kpiKPIs.find(x=>x.id===kpiId);
-if(!ind||!k)return;
+if(modal)modal._kpiEntryContext={companyId:kpiEntryCompany(),actorId:prof?.id,kpiId,indicatorId,year:kpiEntryYear,month};
 document.getElementById('entry-modal-title').textContent='Enter value - '+KPI_MONTHS[month-1]+' '+kpiEntryYear;
 document.getElementById('entry-kpi-name').textContent=k.name+' - '+ind.name;
 const methodLabel={sum:'YTD = cumulative sum',average:'YTD = average of months entered',last:'YTD = last value entered',max:'YTD = maximum value',min:'YTD = minimum value'}[ind.ytd_method||'sum'];
@@ -12873,37 +12925,52 @@ const clearBtn=document.getElementById('kpi-clear-btn');
 if(clearBtn)clearBtn.style.display=ex?'flex':'none';
 openKpiModal('kpi-entry-modal');
 }
-async function kpiSaveEntry(){
-if(!kpiCanEdit()){toast('Only managers can save KPI monthly values.',false);return;}
+async function kpiSaveEntry(options){
+const modal=document.getElementById('kpi-entry-modal'),context=modal?._kpiEntryContext;
+let saved=false,writeStarted=false;
+try{
+if(modal?._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
+if(!kpiCanEdit())throw new Error('Only managers can save KPI monthly values.');
+kpiEntryCheckContext(context);
+const {indicatorId,year,month,companyId,kpiId}=context;
+const ind=kpiIndicators.find(x=>x.id===indicatorId&&x.kpi_id===kpiId),k=kpiKPIs.find(x=>x.id===kpiId);
+if(!ind||!k||(k.company_id&&k.company_id!==companyId))throw new Error('The selected KPI is unavailable. Close and reload before entering data.');
 const actual=document.getElementById('entry-actual').value;
-if(actual===''){toast('Please enter a value',false);return;}
+if(actual===''||!Number.isFinite(Number(actual)))throw new Error('Please enter a valid value.');
 const manualYtd=document.getElementById('entry-ytd').value;
-const autoYTD=kpiCalcYTD(kpiEntryIndicatorId,kpiEntryMonth,parseFloat(actual));
+const autoYTD=kpiCalcYTD(indicatorId,month,parseFloat(actual));
 let ytd=manualYtd!==''&&manualYtd!==String(autoYTD)?parseFloat(manualYtd):autoYTD;
 if(ytd===null)ytd=parseFloat(actual);
-const comment=document.getElementById('entry-comment').value;
-try{
-const existing=kpiMonthlyData[kpiEntryIndicatorId]?.[kpiEntryMonth];
+if(!Number.isFinite(ytd))throw new Error('Please enter a valid YTD value or leave it blank.');
+const comment=typeof options?.comment==='string'?options.comment:document.getElementById('entry-comment').value;
+const existing=kpiMonthlyData[indicatorId]?.[month];
+writeStarted=true;
 if(existing){
-await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'PATCH',p:'return=minimal',b:{actual:parseFloat(actual),ytd:ytd,comment:comment||null}});
+await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+month,{m:'PATCH',p:'return=minimal',b:{actual:parseFloat(actual),ytd:ytd,comment:comment||null}});
 }else{
-const entryCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
-await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:kpiEntryIndicatorId,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:entryCompanyId}});
+await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:indicatorId,year:year,month:month,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:companyId}});
 }
-const ind=kpiIndicators.find(x=>x.id===kpiEntryIndicatorId);
-const k=kpiKPIs.find(x=>kpiIndicators.some(i=>i.kpi_id===x.id&&i.id===kpiEntryIndicatorId));
+saved=true;modal._kpiEntrySaved=true;
+kpiEntryCheckContext(context);
+if(!kpiMonthlyData[indicatorId])kpiMonthlyData[indicatorId]={};
+kpiMonthlyData[indicatorId][month]={...existing,indicator_id:indicatorId,year,month,company_id:companyId,actual:parseFloat(actual),ytd,comment:comment||null};
 if(ind&&k){
 const prog=kpiGetProgress(ind,ytd);
 let status='not_started';
 if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
 await api('/kpis_v2?id=eq.'+k.id,{m:'PATCH',p:'return=representation',b:{status,updated_at:new Date().toISOString()}});
-await kpiRecalcAllYTD(kpiEntryIndicatorId,kpiEntryYear);
+kpiEntryCheckContext(context);
+await kpiRecalcAllYTD(indicatorId,year,context);
 }
-toast('Value saved!');
-closeKpiModal('kpi-entry-modal');
-kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
-await kpiLoadAll();
-}catch(e){toastActionError('Save KPI monthly value','Objectives & KPIs',e);}
+kpiEntryCheckContext(context);
+await kpiLoadAll(context);
+kpiEntryCheckContext(context);
+if(!options?.deferClose){toast('Value saved!');closeKpiModal('kpi-entry-modal');}
+return {saved:true,complete:true};
+}catch(e){
+kpiEntryFeedback((saved?'Value saved, but the summary or follow-up could not be completed. Close this form and reload to check the result; do not enter it again. ':writeStarted?'Save could not be confirmed. Check the existing monthly result before retrying. ':'')+String(e?.message||e));
+return {saved,complete:false};
+}
 }
 
 function kpiCalcYTDFromRows(ind,rows,upToMonth){
@@ -12921,11 +12988,12 @@ if(method==='min')return Math.min.apply(null,vals);
 return Math.round(vals.reduce(function(a,b){return a+b;},0)*100)/100;
 }
 
-async function kpiRecalcAllYTD(indicatorId,year){
+async function kpiRecalcAllYTD(indicatorId,year,entryContext){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return;
 try{
 const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month');
+if(entryContext)kpiEntryCheckContext(entryContext);
 if(!fresh||!fresh.length)return;
 for(var mi=0;mi<fresh.length;mi++){
   var m=fresh[mi].month;
@@ -12934,9 +13002,10 @@ for(var mi=0;mi<fresh.length;mi++){
   var entry=fresh[mi];
   if(Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
     await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
+    if(entryContext)kpiEntryCheckContext(entryContext);
   }
 }
-}catch(e){console.error('YTD recalc error:',e);}
+}catch(e){if(entryContext)throw e;console.error('YTD recalc error:',e);}
 }
 
 

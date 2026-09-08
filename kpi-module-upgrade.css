@@ -242,3 +242,7 @@
 #kpi-x-action-modal :focus-visible{outline:2px solid #0f8a64;outline-offset:2px}
 #kpi-x-action-modal [disabled]{cursor:not-allowed;opacity:.6}
 @media(max-width:620px){#kpi-x-action-modal .kpi-x-action-form{grid-template-columns:minmax(0,1fr)}}
+/* Monthly-save outcomes belong inside the retained entry form, not behind its overlay. */
+#kpi-entry-modal .kpi-entry-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-family:inherit;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#kpi-entry-modal .kpi-entry-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
+#kpi-entry-modal [disabled]{cursor:not-allowed;opacity:.6}

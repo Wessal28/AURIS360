@@ -517,14 +517,60 @@ function kpiXUpdateEntryPreview(){
 }
 function kpiXParseComment(value){var text=String(value||''),root='',evidence='',explanation=text;var rootMatch=text.match(/Root cause:\s*([^\n]+)/i),evidenceMatch=text.match(/Evidence:\s*([^\n]+)/i);if(rootMatch)root=rootMatch[1].trim();if(evidenceMatch)evidence=evidenceMatch[1].trim();explanation=text.replace(/\n?Root cause:[^\n]*/i,'').replace(/\n?Evidence:[^\n]*/i,'').trim();return {explanation:explanation,root:root,evidence:evidence};}
 function kpiXInstallHooks(){
-  if(typeof window.kpiLoadAll==='function'){kpiXLegacy.loadAll=window.kpiLoadAll;window.kpiLoadAll=async function(){await kpiXLegacy.loadAll.apply(this,arguments);if(typeof window.kpiConfigLoad==='function')await window.kpiConfigLoad();kpiXCompute();kpiXRenderAll();};}
+  if(typeof window.kpiLoadAll==='function'){kpiXLegacy.loadAll=window.kpiLoadAll;window.kpiLoadAll=async function(entryContext){await kpiXLegacy.loadAll.apply(this,arguments);if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);if(typeof window.kpiConfigLoad==='function')await window.kpiConfigLoad();if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);kpiXCompute();kpiXRenderAll();};}
   if(typeof window.kpiUpdateMetrics==='function'){kpiXLegacy.updateMetrics=window.kpiUpdateMetrics;window.kpiUpdateMetrics=function(){kpiXCompute();kpiXRefreshFilters();kpiXRenderDashboard();kpiXRenderActions();kpiXRenderReports();kpiXRenderConfig();};}
   if(typeof window.kpiRenderOverview==='function'){kpiXLegacy.renderOverview=window.kpiRenderOverview;window.kpiRenderOverview=kpiXRenderScorecard;}
   if(typeof window.kpiRenderMonthly==='function'){kpiXLegacy.renderMonthly=window.kpiRenderMonthly;window.kpiRenderMonthly=kpiXRenderMonthly;}
   if(typeof window.kpiFmtTarget==='function'){kpiXLegacy.fmtTarget=window.kpiFmtTarget;window.kpiFmtTarget=kpiXTargetText;}
   if(typeof window.kpiGetProgress==='function'){kpiXLegacy.getProgress=window.kpiGetProgress;window.kpiGetProgress=function(ind,actual){return kpiXEvaluate(ind,actual,null).score;};}
-  if(typeof window.kpiOpenEntry==='function'){kpiXLegacy.openEntry=window.kpiOpenEntry;window.kpiOpenEntry=function(indicatorId,kpiId,month){var result=kpiXLegacy.openEntry.apply(this,arguments);kpiXHydrateEntryEnhancements(indicatorId,kpiId,month);return result;};}
-  if(typeof window.kpiSaveEntry==='function'){kpiXLegacy.saveEntry=window.kpiSaveEntry;window.kpiSaveEntry=async function(){var indicatorId=kpiEntryIndicatorId,selectedMonth=kpiEntryMonth,selectedYear=kpiEntryYear,reportingMonth=kpiXReportingMonth(),ind=kpiIndicators.find(function(x){return x.id===indicatorId;}),kpi=kpiXKpiForIndicator(indicatorId),recordedMonth=kpiXIsAnnual(kpi)?kpiXAnnualRecordedMonth(indicatorId):0,actual=document.getElementById('entry-actual'),comment=document.getElementById('entry-comment'),root=document.getElementById('entry-root-cause'),evidence=document.getElementById('entry-evidence'),previous=ind&&kpiXPreviousRow(ind.id,selectedMonth),status=ind&&actual?kpiXEvaluate(ind,actual.value,previous&&previous.actual).status:'not_started';if(recordedMonth&&recordedMonth!==selectedMonth){if(typeof toast==='function')toast('This annual KPI already has a result in '+KPI_X_MONTHS[recordedMonth-1]+'. Clear that result before selecting another reporting month.',false);return;}if(['at_risk','off_track'].indexOf(status)>=0&&(!comment.value.trim()||!root.value.trim())){if(typeof toast==='function')toast('Performance explanation and root cause are required for an At Risk or Off Track result.',false);return;}var original=comment.value;comment.value=original.trim()+(root&&root.value.trim()?'\nRoot cause: '+root.value.trim():'')+(evidence&&evidence.value.trim()?'\nEvidence: '+evidence.value.trim():'');await kpiXLegacy.saveEntry.apply(this,arguments);var entryModal=document.getElementById('kpi-entry-modal'),saveSucceeded=!!entryModal&&entryModal.style.display==='none',savedRow=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{})[selectedMonth];if(saveSucceeded&&savedRow&&kpiXIsAnnual(kpi)&&selectedMonth<reportingMonth&&typeof auditLogEvent==='function')auditLogEvent('late_entry','kpi','Annual KPI result entered for an earlier reporting month',{kpi_id:kpi&&kpi.id,kpi_code:kpi&&kpi.code,kpi_name:kpi&&kpi.name,indicator_id:indicatorId,indicator_name:ind&&ind.name,reporting_year:selectedYear,reporting_month:selectedMonth,entry_month:reportingMonth,entered_at:new Date().toISOString()},{related_table:'kpi_monthly_data',related_id:savedRow.id||indicatorId,related_ref:(kpi&&kpi.code)||null,company_id:savedRow.company_id||(typeof ccid==='function'?ccid():null)});if(kpi&&typeof api==='function'){var refreshed=kpiKPIs.find(function(x){return x.id===kpi.id;})||kpi;var derived=kpiXKpiSnapshot(refreshed,kpiXReportingMonth()).status;if(['not_started','on_track','at_risk','off_track'].indexOf(derived)>=0&&refreshed.status!==derived){try{await api('/kpis_v2?id=eq.'+refreshed.id,{m:'PATCH',p:'return=minimal',b:{status:derived,updated_at:new Date().toISOString()}});refreshed.status=derived;}catch(e){console.warn('KPI status sync failed',e);}}}kpiXRenderAll();};}
+  if(typeof window.kpiOpenEntry==='function'){kpiXLegacy.openEntry=window.kpiOpenEntry;window.kpiOpenEntry=function(indicatorId,kpiId,month){var result=kpiXLegacy.openEntry.apply(this,arguments);if(result!==false)kpiXHydrateEntryEnhancements(indicatorId,kpiId,month);return result;};}
+  if(typeof window.kpiSaveEntry==='function'){
+    kpiXLegacy.saveEntry=window.kpiSaveEntry;
+    window.kpiSaveEntry=async function(){
+      var modal=document.getElementById('kpi-entry-modal');
+      if(!modal||modal._kpiXEntryBusy)return {saved:false,complete:false};
+      if(modal._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
+      modal.querySelector('[data-kpi-entry-message]')?.remove();
+      var context=modal._kpiEntryContext,comment=document.getElementById('entry-comment'),original=comment.value;
+      var controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(function(node){return {node:node,disabled:node.disabled};});
+      modal._kpiXEntryBusy=true;modal._kpiEntryDisabled=controls;
+      controls.forEach(function(item){item.node.disabled=true;});
+      try{
+        kpiEntryCheckContext(context);
+        var indicatorId=kpiEntryIndicatorId,selectedMonth=kpiEntryMonth,selectedYear=kpiEntryYear,reportingMonth=kpiXReportingMonth(),
+          ind=kpiIndicators.find(function(x){return x.id===indicatorId;}),kpi=kpiXKpiForIndicator(indicatorId),
+          recordedMonth=kpiXIsAnnual(kpi)?kpiXAnnualRecordedMonth(indicatorId):0,actual=document.getElementById('entry-actual'),
+          root=document.getElementById('entry-root-cause'),evidence=document.getElementById('entry-evidence'),
+          previous=ind&&kpiXPreviousRow(ind.id,selectedMonth),status=ind&&actual?kpiXEvaluate(ind,actual.value,previous&&previous.actual).status:'not_started';
+        if(recordedMonth&&recordedMonth!==selectedMonth)throw new Error('This annual KPI already has a result in '+KPI_X_MONTHS[recordedMonth-1]+'. Clear that result before selecting another reporting month.');
+        if(['at_risk','off_track'].indexOf(status)>=0&&(!comment.value.trim()||!root.value.trim()))throw new Error('Performance explanation and root cause are required for an At Risk or Off Track result.');
+        var savedComment=original.trim()+(root&&root.value.trim()?'\nRoot cause: '+root.value.trim():'')+(evidence&&evidence.value.trim()?'\nEvidence: '+evidence.value.trim():'');
+        var result=await kpiXLegacy.saveEntry.call(this,{deferClose:true,comment:savedComment});
+        if(!result||result.saved!==true||result.complete!==true)return result||{saved:false,complete:false};
+        kpiEntryCheckContext(context);
+        var savedRow=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{})[selectedMonth];
+        if(savedRow&&kpiXIsAnnual(kpi)&&selectedMonth<reportingMonth&&typeof auditLogEvent==='function')await auditLogEvent('late_entry','kpi','Annual KPI result entered for an earlier reporting month',{kpi_id:kpi&&kpi.id,kpi_code:kpi&&kpi.code,kpi_name:kpi&&kpi.name,indicator_id:indicatorId,indicator_name:ind&&ind.name,reporting_year:selectedYear,reporting_month:selectedMonth,entry_month:reportingMonth,entered_at:new Date().toISOString()},{related_table:'kpi_monthly_data',related_id:savedRow.id||indicatorId,related_ref:(kpi&&kpi.code)||null,company_id:savedRow.company_id||(typeof ccid==='function'?ccid():null)});
+        kpiEntryCheckContext(context);
+        if(kpi&&typeof api==='function'){
+          var refreshed=kpiKPIs.find(function(x){return x.id===kpi.id;})||kpi;
+          var derived=kpiXKpiSnapshot(refreshed,kpiXReportingMonth()).status;
+          if(['not_started','on_track','at_risk','off_track'].indexOf(derived)>=0&&refreshed.status!==derived){
+            await api('/kpis_v2?id=eq.'+refreshed.id,{m:'PATCH',p:'return=minimal',b:{status:derived,updated_at:new Date().toISOString()}});
+            kpiEntryCheckContext(context);refreshed.status=derived;
+          }
+        }
+        kpiXRenderAll();toast('Value saved!');closeKpiModal('kpi-entry-modal');
+        return result;
+      }catch(error){
+        kpiEntryFeedback((modal._kpiEntrySaved?'Value saved, but the summary or follow-up could not be completed. Close this form and reload to check the result; do not enter it again. ':'')+String(error&&error.message||error));
+        return {saved:!!modal._kpiEntrySaved,complete:false};
+      }finally{
+        comment.value=original;modal._kpiXEntryBusy=false;
+        controls.forEach(function(item){item.node.disabled=modal._kpiEntrySaved&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+        if(!modal._kpiEntrySaved)modal._kpiEntryDisabled=null;
+      }
+    };
+  }
   if(typeof window.kpiSaveKPI==='function'){kpiXLegacy.saveKpi=window.kpiSaveKPI;window.kpiSaveKPI=async function(){var editing=typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null;var result=await kpiXLegacy.saveKpi.apply(this,arguments),modal=document.getElementById('kpi-edit-modal');if(modal&&modal.style.display==='none')kpiXClearEditorDraft(editing);return result;};}
   if(typeof window.kpiAddIndicatorRow==='function'){kpiXLegacy.addIndicatorRow=window.kpiAddIndicatorRow;window.kpiAddIndicatorRow=function(){var result=kpiXLegacy.addIndicatorRow.apply(this,arguments);var rows=document.querySelectorAll('.ind-op-input'),select=rows.length?rows[rows.length-1]:null;if(select&&!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');return result;};}
   if(typeof window.openKpiAddModal==='function'){kpiXLegacy.openKpiAddModal=window.openKpiAddModal;window.openKpiAddModal=function(){var args=arguments;kpiXEnhanceKpiModal();var result=kpiXLegacy.openKpiAddModal.apply(this,args);setTimeout(function(){document.querySelectorAll('.ind-op-input').forEach(function(select){if(!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');});kpiXEnhanceKpiModal();var kpiId=args[0],status=document.getElementById('kpi-status'),k=kpiKPIs.find(function(item){return String(item.id)===String(kpiId);});if(status&&k){var derived=kpiXKpiSnapshot(k,kpiXReportingMonth()).status;status.value=['data_missing','in_progress','not_due'].indexOf(derived)>=0?'not_started':derived;}kpiXRestoreEditorDraft(kpiId);kpiXRefreshEditorPeople();},0);return result;};}
