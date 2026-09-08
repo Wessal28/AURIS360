@@ -68,7 +68,7 @@ function openObjModal(objId) {
     m.dataset.editId = objId;
     if (typeof kpiEditObjId !== 'undefined' || true) { kpiEditObjId = objId; }
     if (titleEl) titleEl.textContent = 'Edit objective';
-    if (delBtn) delBtn.style.display = '';  // show delete button
+    if (delBtn) delBtn.style.display = 'inline-flex';  // override the hidden-by-default archive class
   } else {
     // -- CREATE MODE -----------------------------------------------
     // Clear all fields

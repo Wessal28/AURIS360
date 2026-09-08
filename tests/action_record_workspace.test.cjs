@@ -135,7 +135,7 @@ test('legacy editor rechecks company after loading people and before filling or 
 
 test('deployment and list navigation wire the reviewed adapter without replacing source links', () => {
   const html = read('index.html'), handlers = read('auris-runtime-event-handlers.js');
-  assert.match(html, /src="auris-core\.js\?v=20260903-29-editor-extraction-1"/);
+  assert.match(html, /src="auris-core\.js\?v=20260903-29-archive-safety-1"/);
   assert.ok(html.indexOf('src="auris-record-workspace.js?') < html.indexOf('src="auris-action-record-workspace.js?'));
   assert.ok(html.indexOf('src="auris-action-record-workspace.js?') < html.indexOf('src="auris-core.js?'));
   assert.match(handlers, /"r0088"[\s\S]*?mapOpenDetail\(args\[0\]\)/);
