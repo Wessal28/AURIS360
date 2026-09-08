@@ -12496,29 +12496,93 @@ function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.displ
 
 
 
-async function kpiDeleteObjective(){
-const modal=document.getElementById('obj-modal');if(modal?._kpiObjectiveBusy||modal?._kpiObjectiveSaved||modal?._kpiObjectiveUncertain)return false;
-if(!kpiEditObjId)return;
-if(!(await appConfirmAction({title:'Archive objective',message:'Archive this objective and its KPIs instead of deleting them?',detail:'KPI history and monthly values will be kept for management review evidence. The objective will no longer appear in the active scorecard.',confirmText:'Archive objective',cancelText:'Keep objective'})))return;
-try{
-const kpiIds=kpiKPIs.filter(k=>k.objective_id===kpiEditObjId).map(k=>k.id);
-for(const kid of kpiIds){
-await api('/kpis_v2?id=eq.'+kid,{m:'PATCH',p:'return=minimal',b:{status:'archived'}});
-}
-var obj=kpiObjectives.find(function(o){return o.id===kpiEditObjId;})||{};
-await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=minimal',b:{name:ohArchivedText(obj.name||'Objective'),color:'#6B7280'}});
-toast('Objective archived');closeKpiModal('obj-modal');await kpiLoadAll();
-}catch(e){toastActionError('Delete objective','Objectives & KPIs',e);}
-}
+async function kpiDeleteObjective(){return kpiArchiveDefinition('objective');}
 // KPI definition editing and identity-preserving saves: kpi-definition-editor.js.
-async function kpiDeleteKPI(){
-const modal=document.getElementById('kpi-edit-modal');if(modal?._kpiDefinitionBusy||modal?._kpiDefinitionWritten)return false;
-if(!kpiEditKpiId)return;
-if(!(await appConfirmAction({title:'Archive KPI',message:'Archive this KPI instead of deleting it?',detail:'Indicators and monthly KPI history will be kept for management review evidence. The KPI will no longer appear in the active scorecard.',confirmText:'Archive KPI',cancelText:'Keep KPI'})))return;
+async function kpiDeleteKPI(){return kpiArchiveDefinition('kpi');}
+// Archive keeps definition/indicator/monthly rows; it is not a delete or a lifecycle override.
+function kpiArchiveFingerprint(row){
+return JSON.stringify(['id','company_id','objective_id','year','code','name','color','status','approval_status','lifecycle_revision','updated_at'].map(key=>row?.[key]??null));
+}
+function kpiArchiveEditable(row){
+if(!window.KpiGovernedWorkflow||typeof KpiGovernedWorkflow.canEdit!=='function')throw new Error('KPI workflow controls are unavailable. Reload before archiving.');
+if(!KpiGovernedWorkflow.canEdit(row))throw new Error('KPI '+(row.code||'')+' is controlled by its workflow. Complete review or request revision before archiving; approved and locked definitions cannot be archived here.');
+}
+async function kpiArchiveDefinition(kind){
+const objective=kind==='objective',modalId=objective?'obj-modal':'kpi-edit-modal',modal=document.getElementById(modalId);
+const busyKey=objective?'_kpiObjectiveBusy':'_kpiDefinitionBusy',writtenKey=objective?'_kpiObjectiveUncertain':'_kpiDefinitionWritten',controlsKey=objective?'_kpiObjectiveControls':'_kpiDefinitionControls';
+const context=modal?.[objective?'_kpiObjectiveContext':'_kpiDefinitionContext'],id=context?.[objective?'editId':'kpiId'];
+if(!modal||modal.style.display==='none'||modal[busyKey]||modal[writtenKey]||(objective&&modal._kpiObjectiveSaved)||!id)return {complete:false};
+const feedback=objective?kpiObjectiveFeedback:kpiDefinitionFeedback,check=()=>objective?kpiObjectiveCheckContext(context):kpiDefinitionCheckContext(context);
+const title=document.getElementById(objective?'obj-modal-title':'kpi-modal-title'),returnFocus=document.activeElement;
+let controls=null,writeStarted=false,confirmed=0,cancelled=false;
 try{
-await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'PATCH',p:'return=minimal',b:{status:'archived'}});
-toast('KPI archived');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
-}catch(e){toastActionError('Delete KPI','Objectives & KPIs',e);}
+ check();
+ if(!context.companyId||!context.actorId)throw new Error('Select a company and sign in before archiving.');
+ const original=(objective?kpiObjectives:kpiKPIs).find(row=>row.id===id&&row.company_id===context.companyId);
+ if(!original)throw new Error('The original record is unavailable for this company. Close and reload.');
+ const originalFingerprint=kpiArchiveFingerprint(original),scope='&company_id=eq.'+encodeURIComponent(context.companyId);
+ const table=objective?'/objectives':'/kpis_v2',path=table+'?id=eq.'+encodeURIComponent(id)+scope;
+ controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
+ modal[controlsKey]=controls;modal[busyKey]=true;controls.forEach(item=>{item.node.disabled=true;});title?.focus();
+ const readOne=async(url)=>{const rows=await api(url+'&select=*&limit=2');check();if(!Array.isArray(rows)||rows.length!==1||!rows[0].id||rows[0].company_id!==context.companyId)throw new Error('The exact archive record could not be loaded. Close and reload before retrying.');return rows[0];};
+ const same=(row,expected)=>{if(kpiArchiveFingerprint(row)!==kpiArchiveFingerprint(expected))throw new Error('The record or workflow changed after it was opened or confirmed. Close and reload before archiving.');};
+ const record=await readOne(path);same(record,original);
+ if(objective?/^\[Archived/i.test(record.name||''):record.status==='archived')throw new Error('This record is already archived. Close and reload.');
+ const childPath='/kpis_v2?objective_id=eq.'+encodeURIComponent(id)+scope;
+ const readChildren=async()=>{const rows=await api(childPath+'&select=*&limit=1001');check();if(!Array.isArray(rows)||rows.length>=1000||rows.some(row=>!row.id||row.company_id!==context.companyId||row.objective_id!==id)||new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error('The complete objective KPI list could not be verified. No further archive changes will be made.');return rows;};
+ const children=objective?await readChildren():[record],targets=children.filter(row=>row.status!=='archived');
+ targets.forEach(kpiArchiveEditable);
+ const accepted=await appConfirmAction({title:objective?'Archive objective':'Archive KPI',message:'Archive '+(record.code?record.code+' · ':'')+record.name+'?',detail:(objective?'This includes '+targets.length+' active KPI(s), across reporting years. ':'')+'Unsaved form changes will not be saved. Definitions, indicators and monthly history are kept; archived records leave the active scorecard.',confirmText:objective?'Archive objective':'Archive KPI',cancelText:objective?'Keep objective':'Keep KPI'});
+ check();
+ if(!accepted){cancelled=true;return {complete:false,cancelled:true};}
+ // Re-read the confirmed set before the first write, not the mutable selected record.
+ same(await readOne(path),record);
+ const sameChildren=(rows,expected)=>{if(rows.length!==expected.length||rows.some(row=>!expected.some(other=>other.id===row.id&&kpiArchiveFingerprint(row)===kpiArchiveFingerprint(other))))throw new Error('The objective KPI list changed. Close and reload to review the remaining records.');};
+ if(objective)sameChildren(await readChildren(),children);
+ if(kpiArchiveFingerprint(original)!==originalFingerprint)throw new Error('The selected record changed. Close and reload.');
+ const conditional=(row,keys)=>keys.map(key=>'&'+key+'='+(row[key]==null?'is.null':'eq.'+encodeURIComponent(String(row[key])))).join('');
+ const patch=async(url,b,expected)=>{
+  check();writeStarted=true;modal[writtenKey]=true;
+  const rows=await api(url,{m:'PATCH',p:'return=representation',b});
+  if(!Array.isArray(rows)||rows.length!==1||!Object.keys(expected).every(key=>(rows[0]?.[key]??null)===(expected[key]??null)))throw new Error('The server did not confirm the matching archive update.');
+  confirmed++;check();return rows[0];
+ };
+ const archived=[];
+ for(const target of targets){
+  const targetPath='/kpis_v2?id=eq.'+encodeURIComponent(target.id)+scope;
+  const fresh=await readOne(targetPath);same(fresh,target);kpiArchiveEditable(fresh);
+  const keys=['objective_id','year','code','name','status','approval_status'];
+  if(fresh.lifecycle_revision!=null)keys.push('lifecycle_revision');if(fresh.updated_at!=null)keys.push('updated_at');
+  const saved=await patch(targetPath+conditional(fresh,keys),{status:'archived'},{id:target.id,company_id:context.companyId,objective_id:target.objective_id,year:target.year,status:'archived',approval_status:target.approval_status});
+  archived.push(saved);
+ }
+ // A child added/changed during the cascade must not silently disappear with its parent.
+ const expectedChildren=children.map(row=>archived.find(saved=>saved.id===row.id)||row);
+ if(objective){
+  sameChildren(await readChildren(),expectedChildren);
+  same(await readOne(path),record);
+  const payload={name:ohArchivedText(record.name),color:'#6B7280'},keys=['name','year','color'];if(record.updated_at!=null)keys.push('updated_at');
+  const saved=await patch(path+conditional(record,keys),payload,{id,company_id:context.companyId,year:record.year,...payload});
+  same(await readOne(path),saved);
+  sameChildren(await readChildren(),expectedChildren);
+ }else same(await readOne(path),archived[0]);
+ check();
+ // Publish only verified archive changes. Do not erase unrelated caches or monthly history.
+ const archivedIds=new Set(children.map(row=>row.id));
+ kpiKPIs=kpiKPIs.filter(row=>!archivedIds.has(row.id));
+ kpiIndicators=kpiIndicators.filter(row=>!archivedIds.has(row.kpi_id));
+ if(objective)kpiObjectives=kpiObjectives.filter(row=>row.id!==id);
+ kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
+ if(typeof kpiXClearEditorDraft==='function')archivedIds.forEach(kpiXClearEditorDraft);
+ modal[busyKey]=false;closeKpiModal(modalId);toast(objective?'Objective and its KPIs archived. History retained.':'KPI archived. History retained.');
+ return {complete:true,confirmed};
+}catch(error){
+ feedback((writeStarted?(confirmed?confirmed+' archive update(s) confirmed, but the operation did not complete. ':'Archive could not be confirmed. ')+'Close and reload to inspect the records before trying again. ':'')+String(error?.message||error));
+ return {complete:false,confirmed};
+}finally{
+ if(controls){modal[busyKey]=false;controls.forEach(item=>{item.node.disabled=writeStarted&&!item.node.matches(objective?'[data-auris-onclick="h0129"]':'[data-auris-onclick="h0139"]')?true:item.disabled;});if(!writeStarted)modal[controlsKey]=null;}
+ if(cancelled&&returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
+}
 }
 function kpiCalcYTD(indicatorId,upToMonth,newActual){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);

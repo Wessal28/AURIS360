@@ -34,7 +34,7 @@ test('the shell loads the feature once, synchronously after core and before hook
  assert.equal(index,names.indexOf('auris-core.js')+1);
  assert.doesNotMatch(tags[index][0],/\b(?:async|defer|type)\s*(?:=|>)/);
  for(const later of ['kpi-configuration.js','kpi-module-upgrade.js','kpi-workflow.js','kpi-data-source.js','kpi-pdf-import.js'])assert.ok(names.indexOf(later)>index,later);
- assert.match(tags[index][1],/\?v=20260909-editor-extraction-1$/);
+ assert.match(tags[index][1],/\?v=20260909-archive-safety-1$/);
 });
 
 test('existing CSP buttons resolve the current feature handler, including later wrappers',()=>{
