@@ -643,7 +643,15 @@ function generateFullInsights() { genFullAI(); }
 var kpiEditObjId = null;  // tracks which objective is being edited (null = creating new)
 function openObjModal(objId) {
   var m = document.getElementById('obj-modal');
-  if (!m) return;
+  if (!m) return false;
+  if(m._kpiObjectiveBusy)return false;
+  if(m.style.display==='flex'){kpiObjectiveFeedback('An objective form is already open. Save it or close it before opening another objective.');return false;}
+  if(!kpiCanEdit()||!kpiObjectiveCompany()||!prof?.id){toast('Select a company with authorised objective-management access.',false);return false;}
+  if(objId&&!kpiObjectives.some(obj=>obj.id===objId&&obj.company_id===kpiObjectiveCompany())){toast('Objective not found for the selected company.',false);return false;}
+  (m._kpiObjectiveControls||[]).forEach(item=>{item.node.disabled=item.disabled;});
+  m._kpiObjectiveControls=null;m._kpiObjectiveSaved=false;m._kpiObjectiveUncertain=false;
+  m.querySelector('[data-kpi-objective-message]')?.remove();
+  m._kpiObjectiveReturnFocus=document.activeElement;
 
   // Common: get form references
   var nameEl  = document.getElementById('obj-name');
@@ -717,69 +725,84 @@ function openObjModal(objId) {
   }
 
   // Show the modal
+  m._kpiObjectiveContext={companyId:kpiObjectiveCompany(),actorId:prof.id,viewYear:kpiObjectiveViewYear(),editId:kpiEditObjId||null};
+  m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-labelledby','obj-modal-title');
+  ['obj-code','obj-year','obj-name'].forEach(id=>document.getElementById(id)?.parentElement.querySelector('label')?.setAttribute('for',id));
+  m.querySelector('[data-auris-onclick="h0129"]').setAttribute('aria-label','Close objective');
+  titleEl.setAttribute('tabindex','-1');
   m.style.display = 'flex';
+  titleEl.focus();return true;
 }
 
+function kpiObjectiveCompany(){return typeof ccid==='function'?ccid():((isSA()&&typeof sephsCompanyContext!=='undefined'&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id);}
+function kpiObjectiveViewYear(){return Number(document.getElementById('year-sel')?.value)||new Date().getFullYear();}
+function kpiObjectiveFeedback(message){
+  const modal=document.getElementById('obj-modal');if(!modal)return;
+  let alert=modal.querySelector('[data-kpi-objective-message]');
+  if(!alert){alert=document.createElement('div');alert.setAttribute('data-kpi-objective-message','');alert.setAttribute('role','alert');alert.setAttribute('tabindex','-1');alert.className='kpi-objective-message';modal.querySelector('.auris-kpilegacy-s-0e271dda2d').prepend(alert);}
+  alert.textContent=message;alert.focus();
+}
+function kpiObjectiveCheckContext(context){
+  const modal=document.getElementById('obj-modal');
+  if(!context||!context.companyId||!context.actorId||context!==modal?._kpiObjectiveContext||modal.style.display==='none'||context.companyId!==kpiObjectiveCompany()||context.actorId!==prof?.id||context.viewYear!==kpiObjectiveViewYear()||context.editId!==(kpiEditObjId||null))throw new Error('The company, account or reporting year changed. Close this form and reload the intended company before continuing.');
+  if(!kpiCanEdit())throw new Error('Only authorised managers can save objectives.');
+  if(context.editId&&!modal._kpiObjectiveSaved&&!kpiObjectives.some(obj=>obj.id===context.editId&&obj.company_id===context.companyId))throw new Error('The objective is no longer available for this company. Close and reload before editing it.');
+}
+function kpiObjectiveMatches(row,payload,id){
+  return !!row&&!!row.id&&(!id||row.id===id)&&row.company_id===payload.company_id&&Number(row.year)===payload.year&&row.name===payload.name&&String(row.code)===payload.code&&row.color===payload.color;
+}
 async function kpiSaveObjective() {
-  // Read from the actual form fields (obj-name, obj-year, obj-code)
-  var name = document.getElementById('obj-name')?.value?.trim();
-  if (!name) { toast('Please enter an objective name', false); return; }
-  var year = parseInt(document.getElementById('obj-year')?.value) || new Date().getFullYear();
-  var code = document.getElementById('obj-code')?.value?.trim() || null;
-  // Colour: read from the global kpiSelectedColor (set by kpiSelectColor()), fallback to green
-  var color = (typeof kpiSelectedColor !== 'undefined' && kpiSelectedColor) ? kpiSelectedColor : '#1D9E75';
-  // Determine if we're editing (kpiEditObjId set by openObjModal) or creating
-  var editId = kpiEditObjId || null;
-
-  try {
-    // Auto-generate code if blank: look at existing objectives for this year and increment
-    if (!code) {
-      var lookupCompany = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
-      var existing = await api('/objectives?select=code&year=eq.'+year+(lookupCompany?'&company_id=eq.'+lookupCompany:''));
-      var maxCode = 0;
-      (existing||[]).forEach(function(o){
-        var n = parseInt(o.code);
-        if (!isNaN(n) && n>maxCode) maxCode = n;
-      });
-      code = String(maxCode + 1);
+  const modal=document.getElementById('obj-modal'),context=modal?._kpiObjectiveContext;
+  if(!modal||modal.style.display==='none'||modal._kpiObjectiveBusy)return {saved:false,complete:false};
+  if(modal._kpiObjectiveSaved||modal._kpiObjectiveUncertain){kpiObjectiveFeedback(modal.querySelector('[data-kpi-objective-message]')?.textContent||(modal._kpiObjectiveSaved?'This objective is already saved. Close and reload before editing it.':'This save needs checking. Close and reload the objective before trying again.'));return {saved:!!modal._kpiObjectiveSaved,complete:false};}
+  let saved=false,writeStarted=false,controls=null;
+  try{
+    kpiObjectiveCheckContext(context);
+    const name=document.getElementById('obj-name').value.trim(),year=Number(document.getElementById('obj-year').value);
+    if(!name)throw new Error('Please enter an objective name.');
+    if(!Number.isInteger(year)||year<1900||year>9999)throw new Error('Choose a valid reporting year.');
+    let code=document.getElementById('obj-code').value.trim();
+    const payload={company_id:context.companyId,name,code,year,color:kpiSelectedColor||'#1D9E75'};
+    const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
+    modal.querySelector('[data-kpi-objective-message]')?.remove();
+    controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
+    modal._kpiObjectiveControls=controls;modal._kpiObjectiveBusy=true;
+    controls.forEach(item=>{item.node.disabled=true;});document.getElementById('obj-modal-title').focus();
+    if(!code){
+      const existing=await api('/objectives?select=code&year=eq.'+year+scope);
+      kpiObjectiveCheckContext(context);
+      if(!Array.isArray(existing))throw new Error('Objective codes could not be loaded. Reload before saving.');
+      let maxCode=0;existing.forEach(obj=>{const n=parseInt(obj.code,10);if(Number.isFinite(n)&&n>maxCode)maxCode=n;});
+      code=String(maxCode+1);payload.code=code;
     }
-
-    var payload = {
-      // If sephs_admin has selected a specific company via the switcher, save under that.
-      // Otherwise fall back to user's own company_id.
-      company_id: (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id,
-      name: name,
-      code: code,
-      year: year,
-      color: color
-    };
-
-    if (editId) {
-      // Update existing objective
-      await api('/objectives?id=eq.'+editId, {m:'PATCH', p:'return=minimal', b: payload});
-      toast('Objective updated');
-    } else {
-      // Create new - created_by tracks who created it
-      payload.created_by = prof?.id;
-      await api('/objectives', {m:'POST', p:'return=minimal', b: payload});
-      toast('Objective saved');
+    kpiObjectiveCheckContext(context);
+    if(!context.editId)payload.created_by=context.actorId;
+    writeStarted=true;
+    const result=await api(context.editId?'/objectives?id=eq.'+encodeURIComponent(context.editId)+scope:'/objectives',{m:context.editId?'PATCH':'POST',p:'return=representation',b:payload});
+    const rows=Array.isArray(result)?result:result?[result]:[];
+    if(rows.length!==1||!kpiObjectiveMatches(rows[0],payload,context.editId)){
+      modal._kpiObjectiveUncertain=true;
+      throw new Error('The server did not return the matching objective. Close and reload to check whether it was saved.');
     }
-
-    // Close modal, clear edit-id, reset form, reload
-    var m = document.getElementById('obj-modal');
-    if (m) {
-      m.style.display='none';
-      delete m.dataset.editId;
-    }
-    kpiEditObjId = null;
-    // Clear form fields
-    var nameEl = document.getElementById('obj-name'); if(nameEl) nameEl.value = '';
-    var codeEl = document.getElementById('obj-code'); if(codeEl) codeEl.value = '';
-
-    if (typeof kpiLoadAll === 'function') kpiLoadAll();
-  } catch(e) {
-    toast(actionErrorMessage('Save KPI objective','Objectives & KPIs',e.message||e), false);
-    console.error('kpiSaveObjective error:', e);
+    saved=true;modal._kpiObjectiveSaved=true;
+    kpiObjectiveCheckContext(context);
+    const savedId=rows[0].id,verified=await api('/objectives?select=*&id=eq.'+encodeURIComponent(savedId)+scope);
+    kpiObjectiveCheckContext(context);
+    if(!Array.isArray(verified)||verified.length!==1||!kpiObjectiveMatches(verified[0],payload,savedId))throw new Error('The saved objective could not be verified in the refreshed data.');
+    const objectives=await api('/objectives?select=*'+scope+'&year=eq.'+context.viewYear+'&order=sort_order,code');
+    kpiObjectiveCheckContext(context);
+    if(!Array.isArray(objectives)||objectives.some(obj=>obj.company_id!==context.companyId||Number(obj.year)!==context.viewYear)||(year===context.viewYear&&!objectives.some(obj=>kpiObjectiveMatches(obj,payload,savedId))))throw new Error('The objective list could not be refreshed for the selected company and year.');
+    kpiObjectives=objectives.filter(obj=>!/^\[Archived/i.test(String(obj.name||'')));
+    kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
+    kpiObjectiveCheckContext(context);
+    toast((context.editId?'Objective updated':'Objective saved')+(year!==context.viewYear?' for '+year:''));
+    modal._kpiObjectiveBusy=false;closeKpiModal('obj-modal');
+    return {saved:true,complete:true};
+  }catch(error){
+    kpiObjectiveFeedback((saved?'Objective saved, but verification or refresh could not finish. Close this form and reload; do not create it again. ':writeStarted?'Save could not be confirmed. Check existing objectives before retrying. ':'')+String(error?.message||error));
+    return {saved,complete:false};
+  }finally{
+    if(controls){modal._kpiObjectiveBusy=false;controls.forEach(item=>{item.node.disabled=(modal._kpiObjectiveSaved||modal._kpiObjectiveUncertain)&&!item.node.matches('[data-auris-onclick="h0129"]')?true:item.disabled;});if(!modal._kpiObjectiveSaved&&!modal._kpiObjectiveUncertain)modal._kpiObjectiveControls=null;}
   }
 }
 
@@ -12617,6 +12640,7 @@ document.getElementById('kpi-tab-monthly').style.display=tab==='monthly'?'block'
 }
 
 function kpiSelectColor(color,el){
+const modal=document.getElementById('obj-modal');if(modal?._kpiObjectiveBusy||modal?._kpiObjectiveSaved||modal?._kpiObjectiveUncertain)return;
 kpiSelectedColor=color;
 document.querySelectorAll('.kpi-color-dot').forEach(d=>d.style.border='2px solid transparent');
 if(el)el.style.border='3px solid var(--text)';
@@ -12625,6 +12649,8 @@ else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.backgrou
 
 function closeKpiModal(id){
   const e=document.getElementById(id);
+  if(id==='obj-modal'&&e?._kpiObjectiveBusy)return false;
+  const objectiveReturnFocus=id==='obj-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiObjectiveReturnFocus:null;
   const returnFocus=id==='kpi-entry-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiEntryReturnFocus:null;
   if(e)e.style.display='none';
   if(id==='kpi-entry-modal'&&e){
@@ -12632,7 +12658,7 @@ function closeKpiModal(id){
     if(returnFocus?.isConnected&&!returnFocus.disabled&&returnFocus.getClientRects().length)returnFocus.focus();
   }
   // When closing the objective modal, clear edit state so next "Add" starts fresh
-  if(id==='obj-modal'){ kpiEditObjId = null; if(e) delete e.dataset.editId; }
+  if(id==='obj-modal'){ kpiEditObjId = null; if(e){delete e.dataset.editId;e._kpiObjectiveReturnFocus=null;}if(objectiveReturnFocus?.isConnected&&!objectiveReturnFocus.disabled&&objectiveReturnFocus.getClientRects().length)objectiveReturnFocus.focus(); }
 }
 function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.display='flex';}
 
@@ -12640,6 +12666,7 @@ function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.displ
 
 
 async function kpiDeleteObjective(){
+const modal=document.getElementById('obj-modal');if(modal?._kpiObjectiveBusy||modal?._kpiObjectiveSaved||modal?._kpiObjectiveUncertain)return false;
 if(!kpiEditObjId)return;
 if(!(await appConfirmAction({title:'Archive objective',message:'Archive this objective and its KPIs instead of deleting them?',detail:'KPI history and monthly values will be kept for management review evidence. The objective will no longer appear in the active scorecard.',confirmText:'Archive objective',cancelText:'Keep objective'})))return;
 try{
