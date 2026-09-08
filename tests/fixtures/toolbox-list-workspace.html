@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toolbox Talks shared register verification</title><link rel="stylesheet" href="../../auris-view-engine.css"><link rel="stylesheet" href="../../auris-hse-meetings-static.css">
+<style>:root{--card:#fff;--text:#17213a;--text2:#64748b;--border:#d9e0ea}body{margin:0;padding:20px;font:14px Arial,sans-serif;background:#f4f7fa}h1{font-size:24px}#controls{display:flex;gap:8px;flex-wrap:wrap}#controls button{min-height:44px;font:inherit}#tbt-list{margin-top:20px}</style></head>
+<body><h1>Toolbox Talks — shared views</h1><p>Synthetic records only. No database requests or writes. Board groups cannot change a talk's status.</p>
+<div id="mtg-view-tbt"><div class="auris-meetings-s-9c40389b4a">
+<input id="tbt-search" type="search" aria-label="Search toolbox talks" placeholder="Search toolbox talks..." class="auris-meetings-s-bd0e58d190">
+<select id="tbt-filter-status" aria-label="Toolbox talk status" class="auris-meetings-s-bd0e58d190"><option value="">All statuses</option><option value="planned">Planned</option><option value="completed">Completed</option><option value="draft">Draft</option><option value="cancelled">Cancelled</option></select>
+<select id="tbt-filter-cat" aria-label="Toolbox talk topic" class="auris-meetings-s-bd0e58d190"><option value="">All topics</option><option value="chemical">Chemical / COSHH</option><option value="ppe">PPE</option></select></div>
+<div id="controls"><button id="switch">Switch company without reload</button><button id="refresh">Refresh register</button><button id="fail">Toggle opening failure</button><button id="print-test">Prepare print snapshot</button></div>
+<p id="result" role="status"></p><div id="tbt-list"></div></div><div id="print-preview" hidden></div>
+<script>
+let fail=false;
+const identity={company:{id:'fixture-company'},profile:{id:'fixture-user'},role:'manager'},topics={chemical:{label:'Chemical / COSHH'},ppe:{label:'PPE'}};
+const data=Array.from({length:32},(_,index)=>({id:'talk-'+index,company_id:'fixture-company',tbt_ref:'TBT-2026-'+String(index+1).padStart(3,'0'),title:index===0?'Safe handling of chemicals':'Daily briefing '+(index+1),topic_category:index%2?'ppe':'chemical',talk_date:'2026-09-'+String(index%28+1).padStart(2,'0'),presenter:'Fixture presenter',location:index%2?'Factory':'Workshop',department:'Operations',status:['completed','planned','draft','cancelled'][index%4],attendees:[],attendance_count:index,actions_raised:[],duration_mins:index?15:0}));
+data.push({id:'legacy',company_id:'fixture-company',title:'Missing status — not completed',attendees:{},actions_raised:{}});data.push({id:'secret',company_id:'other-company',title:'Must never appear: other company'});
+window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{}}};
+</script><script src="../../auris-view-engine.js"></script><script src="../../auris-toolbox-list-workspace.js"></script><script>
+function render(){AurisToolboxListWorkspace.mount(document.getElementById('tbt-list'),data,{topics,filters:{search:document.getElementById('tbt-search').value,category:document.getElementById('tbt-filter-cat').value,status:document.getElementById('tbt-filter-status').value},
+ onApplyFilters:f=>{document.getElementById('tbt-search').value=f.search;document.getElementById('tbt-filter-cat').value=f.category;document.getElementById('tbt-filter-status').value=f.status;render();},
+ openRecord:async(id,context)=>{if(fail)throw Error('Toolbox talk could not be opened. No records changed.');document.getElementById('result').textContent='Open exact talk: toolbox_talks/'+id+' / '+context.companyId;}
+});}
+['tbt-search','tbt-filter-cat','tbt-filter-status'].forEach(id=>document.getElementById(id).addEventListener(id==='tbt-search'?'input':'change',render));
+document.getElementById('switch').addEventListener('click',()=>{identity.company.id=identity.company.id==='fixture-company'?'empty-company':'fixture-company';document.getElementById('result').textContent='Current company: '+identity.company.id;});
+document.getElementById('refresh').addEventListener('click',render);document.getElementById('fail').addEventListener('click',()=>{fail=!fail;document.getElementById('result').textContent='Opening failure: '+fail;});render();
+document.getElementById('print-test').addEventListener('click',()=>{const copy=AurisViewEngine.preparePrint(document.getElementById('tbt-list').cloneNode(true));copy.removeAttribute('id');document.getElementById('print-preview').replaceChildren(copy);document.getElementById('print-preview').hidden=false;document.getElementById('result').textContent='Print snapshot prepared from current visible columns.';});
+</script></body></html>

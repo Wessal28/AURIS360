@@ -30879,6 +30879,7 @@ async function legalAskAI(question){
 // ===================================================================
 
 let tbtAllData=[], alertAllData=[], bulletinAllData=[];
+var tbtListLoadGeneration=0,tbtListViewGeneration=0,tbtListContext=null;
 let tbtEditId=null, alertEditId=null, bulletinEditId=null;
 
 const TBT_TOPIC_CFG={
@@ -30929,6 +30930,7 @@ const BULL_TYPE_CFG={
 // -- Patch mtgSwitchTab to handle new tabs -------------------------------------
 // Override the existing function
 function mtgSwitchTab(tab, btn){
+  tbtListViewGeneration++;
   document.querySelectorAll('[id^="mtg-tab-"]').forEach(t=>{t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   // Hide all views
@@ -30964,60 +30966,66 @@ function mtgSwitchTab(tab, btn){
 
 async function tbtLoad(){
   var el=document.getElementById('tbt-list');if(!el)return;
+  var generation=++tbtListLoadGeneration,companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
+  function current(){return generation===tbtListLoadGeneration&&companyId===String(ccid()||'')&&userId===String(prof?.id||'')&&role===activeRole()&&canAccessPage('meetings');}
+  tbtAllData=[];tbtListContext=null;
+  ['tbt-m3total','tbt-m3month','tbt-m3attendees','tbt-m3actions'].forEach(function(id){var node=document.getElementById(id);if(node)node.textContent='0';});
+  var search=document.getElementById('tbt-search'),status=document.getElementById('tbt-filter-status');
+  if(search)search.oninput=tbtRenderList;if(status)status.onchange=tbtRenderList;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
-  var ft=document.getElementById('tbt-filter-cat')?.value||'';
   try{
-    var q='/toolbox_talks?select=*'+cf()+'&order=talk_date.desc';
-    if(ft)q+='&topic_category=eq.'+ft;
-    var d=await api(q);tbtAllData=d||[];
+    if(!companyId||!userId||!current())throw new Error('Sign in and select an accessible company to view toolbox talks.');
+    var d=await api('/toolbox_talks?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&order=talk_date.desc');
+    if(!current())return;
+    if(!Array.isArray(d))throw new Error('Toolbox talk register returned an invalid response. Reload to retry.');
+    tbtAllData=d.filter(function(row){return row&&row.id&&String(row.company_id||'')===companyId;});
+    tbtListContext={companyId:companyId,userId:userId,role:role,generation:generation};
+    tbtRenderList();
+  }catch(e){if(generation===tbtListLoadGeneration&&companyId===String(ccid()||'')&&userId===String(prof?.id||'')&&role===activeRole())el.innerHTML=registerErrorHtml('register',e.message);}
+}
+
+function tbtRenderList(){
+  var el=document.getElementById('tbt-list');if(!el)return;
+  var context=tbtListContext,viewGeneration=++tbtListViewGeneration;
+  try{
+    if(!context||context.generation!==tbtListLoadGeneration||context.companyId!==String(ccid()||'')||context.userId!==String(prof?.id||'')||context.role!==activeRole()||!canAccessPage('meetings'))throw new Error('Your account, company or register changed. Reload toolbox talks.');
+    var filter={category:document.getElementById('tbt-filter-cat')?.value||'',search:document.getElementById('tbt-search')?.value||'',status:document.getElementById('tbt-filter-status')?.value||''};
+    if(!window.AurisToolboxListWorkspace)throw new Error('The shared toolbox talk register is unavailable. Reload the application.');
+    var projected=window.AurisToolboxListWorkspace.project(tbtAllData,context,{topics:TBT_TOPIC_CFG,filters:filter});
+    var d=tbtAllData.filter(function(row){return projected.some(function(item){return item.id===String(row.id);});});
     // Metrics
     var now=new Date();var m=now.getMonth();var y=now.getFullYear();
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('tbt-m3total',(d||[]).length);
-    setM('tbt-m3month',(d||[]).filter(x=>x.talk_date&&new Date(x.talk_date).getMonth()===m&&new Date(x.talk_date).getFullYear()===y).length);
-    setM('tbt-m3attendees',(d||[]).reduce((s,x)=>s+tbtStoredCount(x),0));
-    setM('tbt-m3actions',(d||[]).reduce((s,x)=>s+((x.actions_raised||[]).length),0));
-    if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0294"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
-      return;
-    }
-    // Register table
-    var h='<div class="table-scroll">'
-      +'<table class="data-table" style="min-width:1080px">'
-      +'<thead><tr>'
-      +'<th>Ref</th>'
-      +'<th>Toolbox talk</th>'
-      +'<th>Date</th>'
-      +'<th>Presenter</th>'
-      +'<th>Location</th>'
-      +'<th style="text-align:center">Attendees</th>'
-      +'<th style="text-align:center">Actions</th>'
-      +'<th style="text-align:center">Status</th>'
-      +'<th style="width:70px"></th>'
-      +'</tr></thead><tbody>';
-    d.forEach(function(x){
-      var cfg=TBT_TOPIC_CFG[x.topic_category||'other']||TBT_TOPIC_CFG.other;
-      var actions=(x.actions_raised||[]).length;
-      var attendees=tbtStoredCount(x);
-      var dt=x.talk_date?new Date(x.talk_date).toLocaleDateString('en-GB'):'-';
-      var stColor=x.status==='completed'?'#1D9E75':x.status==='planned'?'#185FA5':'#6B7280';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0295">'
-        +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.tbt_ref||'TBT')+'</td>'
-        +'<td style="padding:10px;min-width:260px"><div style="font-weight:800">'+escH(x.title||'Untitled TBT')+'</div><div style="font-size:11px;color:'+cfg.color+';font-weight:700;margin-top:2px">'+cfg.emoji+' '+escH(cfg.label)+(x.duration_mins?' - '+escH(x.duration_mins)+' min':'')+'</div></td>'
-        +'<td style="padding:10px;white-space:nowrap">'+dt+'</td>'
-        +'<td style="padding:10px">'+escH(x.presenter||'-')+'</td>'
-        +'<td style="padding:10px">'+escH(x.location||'-')+'</td>'
-        +'<td style="padding:10px;text-align:center;font-weight:800;color:#185FA5">'+attendees+'</td>'
-        +'<td style="padding:10px;text-align:center;font-weight:800;color:'+(actions>0?'#854F0B':'#6B7280')+'">'+actions+'</td>'
-        +'<td style="padding:10px;text-align:center"><span style="font-size:10px;font-weight:800;color:'+stColor+';background:'+stColor+'15;padding:3px 8px;border-radius:99px;text-transform:capitalize">'+escH(x.status||'completed')+'</span></td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0099" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
-        +'</tr>';
+    setM('tbt-m3month',d.filter(function(x){return String(x.talk_date||'').slice(0,7)===y+'-'+String(m+1).padStart(2,'0');}).length);
+    setM('tbt-m3attendees',projected.reduce(function(sum,row){return sum+(typeof row.attendees==='number'?row.attendees:0);},0));
+    setM('tbt-m3actions',(d||[]).reduce((s,x)=>s+(Array.isArray(x.actions_raised)?x.actions_raised.length:0),0));
+    return window.AurisToolboxListWorkspace.mount(el,tbtAllData,{topics:TBT_TOPIC_CFG,filters:filter,
+      onApplyFilters:function(value){[['tbt-filter-cat','category'],['tbt-search','search'],['tbt-filter-status','status']].forEach(function(pair){var node=document.getElementById(pair[0]);if(node)node.value=value[pair[1]]||'';});tbtRenderList();},
+      openRecord:function(id,expected){return tbtOpenFromRegister(id,expected,context.generation,viewGeneration);}
     });
-    h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
+async function tbtOpenFromRegister(id,expected,generation,viewGeneration){
+  function guard(){
+    if(!expected||generation!==tbtListLoadGeneration||viewGeneration!==tbtListViewGeneration||!tbtListContext||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('meetings'))throw new Error('Your account, company or register changed. Reopen toolbox talks.');
+    if(navigator.onLine===false)throw new Error('Reconnect before opening the toolbox talk form.');
+  }
+  guard();
+  if(!tbtAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This toolbox talk is outside the current register.');
+  var rows=await api('/toolbox_talks?select=*&company_id=eq.'+encodeURIComponent(expected.companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
+  guard();
+  if(!Array.isArray(rows)||rows.length!==1||!rows[0]||String(rows[0].id)!==String(id)||String(rows[0].company_id||'')!==expected.companyId)throw new Error('The toolbox talk is unavailable or outside this company. Reload to retry.');
+  var fresh=rows[0];
+  if(['attendees','actions_raised'].some(function(key){return fresh[key]!=null&&(!Array.isArray(fresh[key])||fresh[key].some(function(item){return !item||typeof item!=='object'||Array.isArray(item);}));}))throw new Error('The stored attendance or action data needs review before this talk can be opened.');
+  tbtAllData=tbtAllData.map(function(row){return String(row.id)===String(id)?fresh:row;});
+  tbtEdit(fresh.id);
+}
+
+
 function tbtShowForm(){
+  tbtListViewGeneration++;
   document.getElementById('mtg-view-tbt').style.display='none';
   document.getElementById('tbt-form').style.display='block';
 }

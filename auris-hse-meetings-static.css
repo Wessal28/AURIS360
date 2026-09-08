@@ -1,5 +1,7 @@
 /* Generated from HSE Meetings by scripts/extract-hse-meetings-styles.cjs. */
 /* Non-important declarations preserve meeting, minutes, toolbox, alert and bulletin runtime state. */
+#mtg-view-tbt .auris-meetings-s-9c40389b4a{flex-wrap:wrap;max-width:100%;align-items:center}
+#mtg-view-tbt .auris-meetings-s-9c40389b4a input,#mtg-view-tbt .auris-meetings-s-9c40389b4a select,#mtg-view-tbt .auris-meetings-s-9c40389b4a button{min-height:44px;min-width:0;max-width:100%;font-family:inherit}
 .auris-meetings-s-0091e6b36a{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px}
 .auris-meetings-s-02a84262bd{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:90px}
 .auris-meetings-s-02b0403f2e{padding:8px;border:1px solid var(--border);width:32px}

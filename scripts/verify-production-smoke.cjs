@@ -158,6 +158,7 @@ async function verifyProduction(options, evidence) {
     ['auris-moc-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-action-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-permit-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
+    ['auris-toolbox-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-permit-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-reporting-engine.js', ["version:'1.0.0'", 'definition:definition', 'aggregate:aggregate', 'csv:csv', 'mount:mount', 'diagnostics:diagnostics']],
     ['auris-dashboard-designer.js', ["version:'1.0.0'", 'configuration:configuration', 'mount:mount', 'diagnostics:diagnostics']],
