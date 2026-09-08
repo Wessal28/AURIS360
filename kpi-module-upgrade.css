@@ -230,3 +230,15 @@
 #page-kpi .kpi-cfg-toggle{min-height:44px}
 #page-kpi .kpi-cfg-toggle:focus-within{outline:2px solid #0f8a64;outline-offset:3px;border-radius:6px}
 #page-kpi .kpi-cfg-error,#page-kpi .kpi-cfg-ok{overflow-wrap:anywhere}
+/* Recovery forms live outside #page-kpi: keep fields readable and errors inside the panel. */
+#kpi-x-action-modal .kpi-x-action-card{min-width:0}
+#kpi-x-action-modal .kpi-x-action-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+#kpi-x-action-modal .kpi-x-action-form label{min-width:0;font-size:12px;font-weight:600}
+#kpi-x-action-modal .kpi-x-action-form input,#kpi-x-action-modal .kpi-x-action-form select,#kpi-x-action-modal .kpi-x-action-form textarea{box-sizing:border-box;min-height:44px;font-family:inherit;font-size:14px;font-weight:400;line-height:1.4}
+#kpi-x-action-modal .kpi-x-action-form textarea{min-height:100px}
+#kpi-x-action-modal .kpi-x-icon-btn{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
+#kpi-x-action-modal .kpi-x-action-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#kpi-x-action-modal .kpi-x-action-note{font-size:12px}
+#kpi-x-action-modal :focus-visible{outline:2px solid #0f8a64;outline-offset:2px}
+#kpi-x-action-modal [disabled]{cursor:not-allowed;opacity:.6}
+@media(max-width:620px){#kpi-x-action-modal .kpi-x-action-form{grid-template-columns:minmax(0,1fr)}}
