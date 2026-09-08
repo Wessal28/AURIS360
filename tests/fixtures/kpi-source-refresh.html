@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI refresh — synthetic acceptance</title><link rel="stylesheet" href="/kpi-module-upgrade.css"><link rel="stylesheet" href="/kpi-data-source.css"><style>body{font:16px Arial,sans-serif;margin:0;color:#17324a;background:#f4f7f9}main{padding:16px;max-width:900px;margin:auto}h1{font-size:24px}label{display:grid;gap:6px}button,select{font:inherit;min-height:44px;padding:8px 12px}nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.result{background:white;border:1px solid #d5e0e9;border-radius:10px;padding:18px;margin:16px 0}#kpi-x-cycle{display:flex;flex-wrap:wrap;gap:10px}#qa-notice{overflow-wrap:anywhere}</style></head><body><main><h1>Linked KPI refresh</h1><p>Synthetic data only. No external API or business records.</p><label>Reporting year<select id="year-sel"></select></label><nav><button id="load">Load KPI data</button><button id="fail">Simulate failure</button><button id="override">Use local override</button><button id="company">Switch company</button></nav><div id="kpi-x-cycle"></div><div id="result" class="result" role="status"></div><p id="qa-notice" role="status"></p></main><script>
+let prof={id:'qa-user',role:'sephs_admin'},company='qa-a',failNext=false,calls=0;
+const year=new Date().getFullYear(),month=new Date().getMonth()+1;
+document.getElementById('year-sel').innerHTML=[year-1,year,year+1].map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('');
+window.ccid=()=>company;window.activeRole=()=>prof.role;window.canAccessPage=()=>true;
+window.kpiKPIs=[{id:'kpi-a',company_id:company,year,approval_status:'draft'}];
+window.kpiIndicators=[{id:'indicator-a',kpi_id:'kpi-a',company_id:company,source_mode:'module',source_metric:'toolbox.completed',source_revision:1}];
+window.kpiMonthlyData={};window.kpiConfigPublished={sources:{refresh_frequency:'real_time'}};
+window.toast=(message)=>{document.getElementById('qa-notice').textContent=message;};
+function render(){const row=window.kpiMonthlyData['indicator-a']?.[month];document.getElementById('result').textContent=company+' · requests '+calls+' · result '+(row?row.actual+' ('+row.entry_mode+')':'not calculated');document.getElementById('kpi-x-cycle').innerHTML='';}
+window.kpiXRenderAll=render;window.kpiLoadAll=async()=>{render();};
+window.api=async(url,{b})=>{calls++;render();await new Promise(resolve=>setTimeout(resolve,350));if(failNext){failNext=false;throw new Error('Synthetic network failure');}return {id:'result-a',company_id:b.p_company_id,kpi_id:'kpi-a',indicator_id:b.p_indicator_id,year:b.p_year,month:b.p_month,actual:0,entry_mode:'automatic',calculated_at:new Date().toISOString(),source_metric:'toolbox.completed',source_evidence:{source_revision:1}};};
+</script><script src="/kpi-data-source.js"></script><script>
+document.getElementById('load').onclick=()=>window.kpiLoadAll();
+document.getElementById('fail').onclick=()=>{failNext=true;window.toast('Next calculation will fail.');};
+document.getElementById('override').onclick=()=>{window.kpiMonthlyData['indicator-a']={[month]:{id:'result-a',company_id:company,kpi_id:'kpi-a',indicator_id:'indicator-a',year,month,entry_mode:'override',actual:12}};render();};
+document.getElementById('company').onclick=()=>{company=company==='qa-a'?'qa-b':'qa-a';window.kpiKPIs=[{...window.kpiKPIs[0],company_id:company}];window.kpiIndicators=[{...window.kpiIndicators[0],company_id:company}];window.kpiMonthlyData={};render();};render();
+</script></body></html>

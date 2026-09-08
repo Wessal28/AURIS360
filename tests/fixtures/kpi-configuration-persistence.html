@@ -4,7 +4,7 @@
 <style>body{margin:0;background:#f4f7f9;font-family:Arial,sans-serif;color:#17324a}main{padding:16px}button,input,select{font-family:inherit}#qa-tools{display:flex;flex-wrap:wrap;gap:8px;padding:16px}#qa-tools button{min-height:44px}#qa-summary{padding:16px;font-size:14px}</style></head>
 <body><div id="qa-tools"><button id="qa-fail">Fail next save</button><button id="qa-switch">Switch test company</button><button id="qa-reload">Reload configuration</button></div><div id="qa-summary" role="status">Synthetic data only; no external API calls.</div><main id="page-kpi"><div id="kpi-x-config-view"></div></main>
 <script>
-window.prof={id:'qa-admin',full_name:'Synthetic Administrator',role:'admin'};
+let prof={id:'qa-admin',full_name:'Synthetic Administrator',role:'admin'};
 let company='qa-a',failNext=false,counter=0;
 const records=[{id:'published-a',company_id:'qa-a',version_no:1,status:'published',configuration:{}},{id:'published-b',company_id:'qa-b',version_no:1,status:'published',configuration:{}}];
 const history=[];

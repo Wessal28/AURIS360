@@ -32,7 +32,7 @@ The remaining controls have code consumers, but that alone does not establish co
 | Exclude open current period | `kpiXCompilationMonth`; verify current, prior and future years and the annual reporting window. |
 | Objective aggregation | The selected mode affects indicator aggregation within `kpiXKpiSnapshot`. Check objective-level roll-up and label accuracy before claiming objective aggregation is complete. |
 | Default source | New KPI editor defaults only; `integration` currently maps to `Evidence / document`, not an external integration connector. |
-| Refresh frequency | `refreshInterval` treats the real-time interval of zero as a falsy value and falls back to daily. Automatic attempts are also remembered for the session/period; this needs dedicated scheduling/identity tests. |
+| Refresh frequency | Corrected in the subsequent source-refresh reliability phase; see `KPI_SOURCE_REFRESH_RELIABILITY.md`. Intervals are checked on deliberate KPI loads, not by a background scheduler. |
 | Allow manual override | `canOverride` controls the UI and the database RPC applies the published-policy rule. Verify authorised roles, reasons, audit and refresh interaction in staging. |
 | Stage 1/2/3 and self-approval | New-KPI defaults and person routing; local mirroring is tested. Existing KPI assignments are intentionally preserved. Live identities, permissions and approval requests still need signed-in acceptance. |
 | Publication reason | Required by the client when configured. Verify server-side enforcement separately; this change does not add a migration. |
