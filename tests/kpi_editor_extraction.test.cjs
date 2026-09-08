@@ -34,13 +34,13 @@ test('the shell loads the feature once, synchronously after core and before hook
  assert.equal(index,names.indexOf('auris-core.js')+1);
  assert.doesNotMatch(tags[index][0],/\b(?:async|defer|type)\s*(?:=|>)/);
  for(const later of ['kpi-configuration.js','kpi-module-upgrade.js','kpi-workflow.js','kpi-data-source.js','kpi-pdf-import.js'])assert.ok(names.indexOf(later)>index,later);
- assert.match(tags[index][1],/\?v=20260909-editor-colour-1$/);
+ assert.match(tags[index][1],/\?v=20260909-indicator-navigation-1$/);
 });
 
 test('existing CSP buttons resolve the current feature handler, including later wrappers',()=>{
  const listeners={},c={document:{addEventListener(type,fn){listeners[type]=fn;}}};c.window=c;vm.createContext(c);
  vm.runInContext(editor,c);vm.runInContext(read('auris-static-event-handlers.js'),c);
- for(const [id,name]of [['h0125','openObjModal'],['h0138','kpiSaveObjective'],['h0140','kpiAddIndicatorRow'],['h0142','kpiSaveKPI']]){
+ for(const [id,name]of [['h0125','openObjModal'],['h0138','kpiSaveObjective'],['h0140','kpiAddIndicatorFromButton'],['h0142','kpiSaveKPI']]){
   assert.equal(typeof c[name],'function');let calls=0;c[name]=()=>{calls++;};
   const button={nodeType:1,parentElement:null,getAttribute:key=>key==='data-auris-onclick'?id:null};
   listeners.click({target:button});assert.equal(calls,1,name);

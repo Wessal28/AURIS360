@@ -220,12 +220,11 @@ function kpiSelectColor(color,el){
 function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum',indicatorId=''){
 const modal=document.getElementById('kpi-edit-modal');if(modal?._kpiDefinitionBusy||modal?._kpiDefinitionWritten)return false;
 const list=document.getElementById('kpi-indicators-list');
-const idx=list.children.length;
 const row=document.createElement('div');
 row.style.cssText='display:grid;grid-template-columns:1fr 80px 120px 100px auto;gap:6px;align-items:center;background:#f9fafb;padding:8px 10px;border-radius:8px;border:1px solid var(--border)';
 row.style.cssText='background:#f9fafb;padding:10px 12px;border-radius:8px;border:1px solid var(--border);position:relative';
 row.innerHTML=
-'<div style="margin-bottom:8px">'
+'<p class="kpi-indicator-heading" data-indicator-heading></p><div style="margin-bottom:8px">'
 +'<input type="text" class="ind-name-input" aria-label="Measurement indicator name" placeholder="Measurement indicator name (e.g. Number of near misses reported per month)" style="font-size:13px;padding:8px 10px;width:100%;border:1px solid var(--border);border-radius:8px;box-sizing:border-box"/>'
 +'</div>'
 +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
@@ -273,6 +272,48 @@ const unitSelect=row.querySelector('.ind-unit-input');
 if(unit&&unitSelect.options&&!Array.from(unitSelect.options).some(option=>option.value===unit)){const option=document.createElement('option');option.value=unit;option.textContent=unit;unitSelect.appendChild(option);unitSelect.value=unit;}
 [['.ind-op-input','Target operator'],['.ind-unit-input','Indicator unit'],['.ind-ytd-input','YTD calculation'],['button','Remove indicator']].forEach(([selector,label])=>row.querySelector(selector)?.setAttribute?.('aria-label',label));
 list.appendChild(row);
+kpiLabelIndicatorRows(list);
+const status=document.getElementById('kpi-indicator-status');if(status)status.textContent='';
+return row;
+}
+function kpiLabelIndicatorRows(list){
+  Array.from(list.children).forEach((row,index)=>{
+    const number=index+1;
+    row.setAttribute('role','group');row.setAttribute('aria-label','Measurement indicator '+number);
+    const heading=row.querySelector('[data-indicator-heading]');if(heading)heading.textContent='Indicator '+number;
+    [['.ind-name-input','Measurement indicator name'],['.ind-target-input','Indicator target'],['.ind-op-input','Target operator'],['.ind-unit-input','Indicator unit'],['.ind-ytd-input','YTD calculation'],['button','Remove indicator']]
+      .forEach(([selector,label])=>row.querySelector(selector)?.setAttribute('aria-label',label+' '+number));
+  });
+}
+function kpiIndicatorActionContext(button){
+  const modal=document.getElementById('kpi-edit-modal');
+  if(!modal||modal.style.display==='none'||!modal.getClientRects().length||modal._kpiDefinitionBusy||modal._kpiDefinitionWritten||!modal.contains(button)||!kpiEditorFocusAvailable(button))return null;
+  try{kpiDefinitionCheckContext(modal._kpiDefinitionContext);return modal;}
+  catch(error){kpiDefinitionFeedback(String(error?.message||error));return null;}
+}
+function kpiIndicatorAnnouncement(list,message){
+  let status=document.getElementById('kpi-indicator-status');
+  if(!status){status=document.createElement('p');status.id='kpi-indicator-status';status.className='kpi-indicator-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');list.insertAdjacentElement('afterend',status);}
+  status.textContent=message;
+  if(typeof kpiXCaptureEditorDraft==='function')kpiXCaptureEditorDraft();
+}
+function kpiAddIndicatorFromButton(button){
+  if(button?.getAttribute('data-auris-onclick')!=='h0140'||!kpiIndicatorActionContext(button))return false;
+  const list=document.getElementById('kpi-indicators-list'),row=kpiAddIndicatorRow();
+  if(!row)return false;
+  row.querySelector('.ind-name-input')?.focus();
+  kpiIndicatorAnnouncement(list,'Indicator '+list.children.length+' added to this draft. Enter its name and target.');return true;
+}
+function kpiRemoveIndicatorRow(button){
+  if(button?.getAttribute('data-auris-generated-onclick')!=='g0062')return false;
+  const modal=kpiIndicatorActionContext(button),list=document.getElementById('kpi-indicators-list'),row=button.closest('[data-ind-row]');
+  if(!modal||!list||row?.parentElement!==list||row.querySelector('button')!==button)return false;
+  const rows=Array.from(list.children),index=rows.indexOf(row);
+  row.remove();kpiLabelIndicatorRows(list);
+  const remaining=Array.from(list.children),next=remaining[index]||remaining[index-1];
+  const target=[next?.querySelector('.ind-name-input'),modal.querySelector('[data-auris-onclick="h0140"]'),document.getElementById('kpi-modal-title')].find(kpiEditorFocusAvailable);
+  target?.focus();
+  kpiIndicatorAnnouncement(list,'Indicator '+(index+1)+' removed from this draft. Changes are checked when you save.');return true;
 }
 function openKpiAddModal(kpiId=null,objId=null){
 const modal=document.getElementById('kpi-edit-modal');
@@ -297,6 +338,7 @@ document.getElementById('kpi-delete-btn').style.display=kpiId?'flex':'none';
 const sel=document.getElementById('kpi-obj-sel');
 sel.innerHTML='<option value="">Select objective...</option>';kpiObjectives.forEach(o=>{const option=document.createElement('option');option.value=o.id;option.textContent=o.code+'. '+o.name;sel.appendChild(option);});
 document.getElementById('kpi-indicators-list').innerHTML='';
+const indicatorStatus=document.getElementById('kpi-indicator-status');if(indicatorStatus)indicatorStatus.textContent='';
 if(kpiId){
 const k=kpiKPIs.find(x=>x.id===kpiId);
 if(k){
