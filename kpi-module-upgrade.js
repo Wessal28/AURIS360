@@ -47,12 +47,12 @@ function kpiXRows(indicatorId){
 function kpiXLatestRow(indicatorId,month){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{};
   if(month&&data[month])return data[month];
-  for(var m=month||12;m>=1;m--)if(data[m])return data[m];
+  for(var m=month==null?12:month;m>=1;m--)if(data[m])return data[m];
   return null;
 }
 function kpiXPreviousRow(indicatorId,month){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{};
-  for(var m=(month||12)-1;m>=1;m--)if(data[m])return data[m];
+  for(var m=(month==null?12:month)-1;m>=1;m--)if(data[m])return data[m];
   return null;
 }
 function kpiXDirection(ind){
