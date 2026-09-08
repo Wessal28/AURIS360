@@ -1,5 +1,13 @@
 # AURIS 360 Modular Architecture
 
+## Toolbox Talks shared register adoption
+
+`auris-toolbox-list-workspace.js` adopts the common List, Card and read-only Board views for the HSE Meetings Toolbox Talks register. Topic, search and status filters combine, and saved personal views restore all three controls. Reference and Toolbox talk remain required columns; presenter, location, recorded attendees/actions, talk date and status are visible by default, with duration and department optional. Preferences are scoped by company, user and this specific register, not the whole Meetings module. Unknown or missing statuses are not relabelled Completed; named attendees take precedence over a legacy stored count, and unavailable/malformed counts remain explicitly unrecorded.
+
+The loader clears obsolete records and metrics, explicitly scopes its request to the current company, validates the response and ignores superseded or changed-session loads. Summary cards follow the filtered register. Opening a talk re-fetches the exact company/record before replacing its cached row and calling the established editor. New loads, views, account/company/role changes, loss of access or offline state invalidate an in-flight handoff. Malformed attendee/action structures are disclosed before the editor is opened. Opening failures remain visible inside the shared register.
+
+The existing talk form, attendance confirmation, AI draft, linked-work, action creation, save/delete and individual print handlers remain authoritative. This phase introduces no approval route, Board mutation or database migration. Common print preparation preserves clickable reference/title text. `tests/toolbox_list_workspace.test.cjs` covers projection, filtered metrics, saved filters, response validation and fresh guarded editor handoff; the local synthetic `tests/fixtures/toolbox-list-workspace.html` covers columns, personal views, portrait controls, scrolling, errors and printing. Release readiness, isolated staging and canonical production smoke require the new adapter. Authenticated production saves are not exercised by these synthetic tests.
+
 ## Foundation 1
 
 `auris-module-registry.js` is the canonical application catalogue. A module manifest declares its route key, display names, category, icon, colour, loader, dependencies, and whether it is configurable per company or belongs to the platform.

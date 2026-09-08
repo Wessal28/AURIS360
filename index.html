@@ -60,6 +60,7 @@
 <script src="auris-moc-record-workspace.js?v=20260908-1"></script>
 <script src="auris-permit-list-workspace.js?v=20260908-1"></script>
 <script src="auris-permit-record-workspace.js?v=20260908-1"></script>
+<script src="auris-toolbox-list-workspace.js?v=20260908-1"></script>
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -76,7 +77,7 @@
 <script src="auris-priority-module-adapters.js?v=20260901-7"></script>
 <script src="auris-extracted-module-adapters.js?v=20260901-12"></script>
 <script src="auris-applications-admin.js?v=20260901-8"></script>
-<script src="auris-core.js?v=20260903-29-permit-record-1"></script>
+<script src="auris-core.js?v=20260903-29-toolbox-list-1"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260904-approval-routing-1">
 <link rel="stylesheet" href="kpi-data-source.css?v=20260903-29-1">
 <link rel="stylesheet" href="kpi-pdf-import.css?v=20260902-1">
@@ -132,7 +133,7 @@
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
-<link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260908-1">
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-master-action-plan-static.css?v=20260815-1">
@@ -7199,7 +7200,9 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-meetings-s-e2e1112055">
 <div><div class="card-title auris-meetings-s-ab79ea2b85">Toolbox Talk Register</div><div class="auris-meetings-s-7299078644">All toolbox talks with attendance and action records</div></div>
 <div class="auris-meetings-s-9c40389b4a">
-<select id="tbt-filter-cat" class="auris-meetings-s-bd0e58d190" data-auris-onchange="h0808">
+<input id="tbt-search" type="search" aria-label="Search toolbox talks" placeholder="Search toolbox talks..." class="auris-meetings-s-bd0e58d190"/>
+<select id="tbt-filter-status" aria-label="Toolbox talk status" class="auris-meetings-s-bd0e58d190"><option value="">All statuses</option><option value="draft">Draft</option><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
+<select id="tbt-filter-cat" aria-label="Toolbox talk topic" class="auris-meetings-s-bd0e58d190" data-auris-onchange="h0808">
 <option value="">All topics</option>
 <option value="safety_general">General Safety</option><option value="fire_safety">Fire Safety</option>
 <option value="chemical">Chemical / COSHH</option><option value="ppe">PPE</option>
@@ -7207,6 +7210,7 @@ Offline mode - changes will sync when connection is restored
 <option value="electrical">Electrical Safety</option><option value="machinery">Machinery</option>
 <option value="housekeeping">Housekeeping</option><option value="emergency">Emergency Response</option>
 <option value="environment">Environment</option><option value="health">Occupational Health</option>
+<option value="driving">Driving / Fleet</option><option value="contractor">Contractor Safety</option>
 <option value="other">Other</option>
 </select>
 <button class="btn btn-primary auris-meetings-s-6aa34d7432" id="tbt-add-btn" data-auris-onclick="h0809"><i class="ti ti-plus"></i>New TBT</button>
