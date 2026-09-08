@@ -131,7 +131,7 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
-for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-action-record-workspace.js', 'auris-action-list-workspace.js', 'auris-moc-list-workspace.js', 'auris-moc-record-workspace.js', 'auris-toolbox-list-workspace.js', 'auris-permit-list-workspace.js', 'auris-permit-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-integration-engine.js', 'auris-integration-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'kpi-workflow.js', 'kpi-data-source.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
+for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js', 'auris-module-runtime.js', 'auris-application-lifecycle.js', 'auris-application-lifecycle-persistence.js', 'auris-command-centre.js', 'auris-view-engine.js', 'auris-record-workspace.js', 'auris-action-record-workspace.js', 'auris-action-list-workspace.js', 'auris-moc-list-workspace.js', 'auris-moc-record-workspace.js', 'auris-toolbox-list-workspace.js', 'auris-toolbox-record-workspace.js', 'auris-permit-list-workspace.js', 'auris-permit-record-workspace.js', 'auris-reporting-engine.js', 'auris-dashboard-designer.js', 'auris-automation-engine.js', 'auris-automation-centre.js', 'auris-integration-engine.js', 'auris-integration-centre.js', 'auris-module-extraction.js', 'auris-extracted-module-adapters.js', 'auris-module-layout.js', 'auris-workflow-service.js', 'auris-approval-centre.js', 'auris-priority-module-adapters.js', 'auris-applications-admin.js', 'auris-workflow-studio.js', 'auris-work-centre.js', 'auris-core.js', 'kpi-module-upgrade.js', 'kpi-workflow.js', 'kpi-data-source.js', 'safety-engagement.js', 'document-control-upgrade.js']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
@@ -189,6 +189,9 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
   ]);
   requireMarkers(assetSources.get('auris-permit-list-workspace.js'), 'Permit to Work list workspace', [
     "version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount'
+  ]);
+  requireMarkers(assetSources.get('auris-toolbox-record-workspace.js'), 'Toolbox talk record workspace', [
+    "version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load'
   ]);
   requireMarkers(assetSources.get('auris-toolbox-list-workspace.js'), 'Toolbox talk list workspace', [
     "version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount'

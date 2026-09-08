@@ -31007,13 +31007,18 @@ function tbtRenderList(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-async function tbtOpenFromRegister(id,expected,generation,viewGeneration){
+async function tbtOpenFromRegister(id,expected,generation,viewGeneration,openEditor){
   function guard(){
     if(!expected||generation!==tbtListLoadGeneration||viewGeneration!==tbtListViewGeneration||!tbtListContext||expected.companyId!==String(ccid()||'')||expected.userId!==String(prof?.id||'')||expected.role!==activeRole()||!canAccessPage('meetings'))throw new Error('Your account, company or register changed. Reopen toolbox talks.');
     if(navigator.onLine===false)throw new Error('Reconnect before opening the toolbox talk form.');
   }
   guard();
-  if(!tbtAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This toolbox talk is outside the current register.');
+  if(!/^[a-zA-Z0-9_-]{1,100}$/.test(String(id))||!tbtAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This toolbox talk is outside the current register.');
+  if(!openEditor&&window.AurisToolboxRecordWorkspace){
+    var selected=tbtAllData.find(function(row){return String(row.id)===String(id);});
+    return window.AurisToolboxRecordWorkspace.open(String(id),{reference:selected.tbt_ref||'',topics:TBT_TOPIC_CFG,assertContext:guard,
+      openEditor:function(){return tbtOpenFromRegister(id,expected,generation,viewGeneration,true);}});
+  }
   var rows=await api('/toolbox_talks?select=*&company_id=eq.'+encodeURIComponent(expected.companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
   guard();
   if(!Array.isArray(rows)||rows.length!==1||!rows[0]||String(rows[0].id)!==String(id)||String(rows[0].company_id||'')!==expected.companyId)throw new Error('The toolbox talk is unavailable or outside this company. Reload to retry.');
