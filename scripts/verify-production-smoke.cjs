@@ -170,6 +170,7 @@ async function verifyProduction(options, evidence) {
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
+    ['kpi-definition-editor.js', ['function openObjModal(', 'async function kpiSaveObjective(', 'function openKpiAddModal(', 'async function kpiSaveKPI(', 'function kpiDefinitionCheckContext(']],
     ['incident-management-upgrade.js', ['async function loadAll', 'window.imv2SaveForm']],
     ['risk-assessment-upgrade.js', ['function renderDashboard', 'window.loadRA']],
     ['sw.js', ['AURIS_SW_ASSET_MANIFEST']]
