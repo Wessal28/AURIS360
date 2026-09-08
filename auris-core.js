@@ -12625,7 +12625,12 @@ else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.backgrou
 
 function closeKpiModal(id){
   const e=document.getElementById(id);
+  const returnFocus=id==='kpi-entry-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiEntryReturnFocus:null;
   if(e)e.style.display='none';
+  if(id==='kpi-entry-modal'&&e){
+    e._kpiEntryReturnFocus=null;
+    if(returnFocus?.isConnected&&!returnFocus.disabled&&returnFocus.getClientRects().length)returnFocus.focus();
+  }
   // When closing the objective modal, clear edit state so next "Add" starts fresh
   if(id==='obj-modal'){ kpiEditObjId = null; if(e) delete e.dataset.editId; }
 }
@@ -12850,6 +12855,19 @@ if(method==='max')return Math.max(...vals);
 if(method==='min')return Math.min(...vals);
 return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
 }
+function kpiEntryBindDialog(modal){
+if(modal.dataset.entryFocusBound)return;
+modal.dataset.entryFocusBound='true';
+modal.addEventListener('keydown',function(event){
+  if(event.key!=='Tab'||event.altKey||event.ctrlKey||event.metaKey||modal.style.display==='none')return;
+  const controls=Array.from(modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')).filter(el=>!el.disabled&&el.tabIndex!==-1&&el.getClientRects().length);
+  const index=controls.indexOf(document.activeElement);
+  if(!controls.length||index===-1||(!event.shiftKey&&index===controls.length-1)||(event.shiftKey&&index===0)){
+    event.preventDefault();
+    (controls.length?controls[event.shiftKey?controls.length-1:0]:document.getElementById('entry-modal-title')).focus();
+  }
+});
+}
 function kpiEntryCompany(){
 return typeof ccid==='function'?ccid():((isSA()&&typeof sephsCompanyContext!=='undefined'&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id);
 }
@@ -12896,6 +12914,8 @@ const ind=kpiIndicators.find(x=>x.id===indicatorId&&x.kpi_id===kpiId);
 const k=kpiKPIs.find(x=>x.id===kpiId);
 if(!ind||!k)return false;
 if(modal){
+  if(!modal.contains(document.activeElement))modal._kpiEntryReturnFocus=document.activeElement;
+  kpiEntryBindDialog(modal);
   (modal._kpiEntryDisabled||[]).forEach(item=>{item.node.disabled=item.disabled;});
   modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;
   modal.querySelector('[data-kpi-entry-message]')?.remove();
@@ -12924,6 +12944,7 @@ document.getElementById('entry-ytd').value=newYTD!==null?newYTD:'';
 const clearBtn=document.getElementById('kpi-clear-btn');
 if(clearBtn)clearBtn.style.display=ex?'flex':'none';
 openKpiModal('kpi-entry-modal');
+document.getElementById('entry-modal-title').focus();
 }
 async function kpiSaveEntry(options){
 const modal=document.getElementById('kpi-entry-modal'),context=modal?._kpiEntryContext;
