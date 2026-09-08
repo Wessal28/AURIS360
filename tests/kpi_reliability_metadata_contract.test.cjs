@@ -9,7 +9,7 @@ test('KPI writes persist editable details while storing only durable status valu
   const core=read('auris-core.js');
   assert.match(core,/function kpiStorageStatus\(value\)[\s\S]*'archived'[\s\S]*'not_started'/);
   for(const field of ['description','data_provider','data_source','reviewer','approver','approval_status'])assert.match(core,new RegExp(field+':'));
-  assert.match(core,/existingKpi\?\.approval_status\|\|'draft'/);
+  assert.match(core,/original\?\.approval_status\|\|'draft'/);
   assert.match(core,/kpis_v2_status_check[\s\S]*entered information is still open/);
 });
 
@@ -48,6 +48,6 @@ test('KPI assets are cache-busted and identify the current build',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js');
   assert.match(html,/modular-foundation-29/);
   assert.match(runtime,/modular-foundation-29/);
-  assert.match(html,/kpi-module-upgrade\.js\?v=20260908-objective-save-1/);
-  assert.match(html,/kpi-module-upgrade\.css\?v=20260908-objective-save-1/);
+  assert.match(html,/kpi-module-upgrade\.js\?v=20260909-indicator-identity-1/);
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260909-indicator-identity-1/);
 });

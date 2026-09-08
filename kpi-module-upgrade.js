@@ -332,23 +332,27 @@ function kpiXEnhanceKpiModal(){
   }
 }
 async function kpiXRefreshEditorPeople(){
+  var modal=document.getElementById('kpi-edit-modal'),context=modal&&modal._kpiDefinitionContext;
   var ids=['kpi-resp','kpi-data-provider','kpi-reviewer','kpi-approver'];
   var selects=ids.map(function(id){return document.getElementById(id);}).filter(function(el){return el&&el.tagName==='SELECT';});
   if(!selects.length)return;
   var selected={};selects.forEach(function(el){selected[el.id]=el.value;el.disabled=true;el.setAttribute('aria-busy','true');});
   try{
     if(typeof loadPeopleCache==='function')await loadPeopleCache();
+    if(context&&typeof kpiDefinitionCheckContext==='function')kpiDefinitionCheckContext(context);
     if(typeof fillPplDrops==='function')fillPplDrops();
   }catch(error){
     console.warn('KPI person selectors could not be refreshed:',error);
   }finally{
+    if(context&&modal._kpiDefinitionContext!==context)return;
+    if(context){try{kpiDefinitionCheckContext(context);}catch(error){return;}}
     var available=typeof tenantPeople==='function'?tenantPeople():[];
     selects.forEach(function(el){
       var value=selected[el.id]||'';
       if(value&&typeof setSelectValueWithFallback==='function')setSelectValueWithFallback(el.id,value);
       else el.value=value;
       if(!available.length&&!value){var option=document.createElement('option');option.value='';option.textContent='No active people available for this company';option.disabled=true;option.selected=true;el.innerHTML='';el.appendChild(option);}
-      el.disabled=false;el.removeAttribute('aria-busy');
+      el.disabled=!!(modal&&(modal._kpiDefinitionBusy||modal._kpiDefinitionWritten));el.removeAttribute('aria-busy');
       el.title=available.length?'Select an active person for this company':'Add or activate a person in the People module first';
     });
   }
@@ -359,10 +363,12 @@ function kpiXEditorDraftKey(kpiId){
 }
 function kpiXCaptureEditorDraft(){
   var modal=document.getElementById('kpi-edit-modal');if(!modal||modal.style.display==='none')return;
+  if(modal._kpiDefinitionBusy||modal._kpiDefinitionWritten)return;
+  if(modal._kpiDefinitionContext){try{kpiDefinitionCheckContext(modal._kpiDefinitionContext);}catch(error){return;}}
   var fieldIds=['kpi-obj-sel','kpi-code','kpi-name','kpi-description','kpi-freq','kpi-resp','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver'];
   var fields={};fieldIds.forEach(function(id){var el=document.getElementById(id);if(el)fields[id]=el.value;});
-  var indicators=Array.from(document.querySelectorAll('#kpi-indicators-list [data-ind-row]')).map(function(row){function value(selector){var el=row.querySelector(selector);return el?el.value:'';}return {name:value('.ind-name-input'),target:value('.ind-target-input'),operator:value('.ind-op-input'),unit:value('.ind-unit-input'),ytd:value('.ind-ytd-input')};});
-  try{sessionStorage.setItem(kpiXEditorDraftKey(typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null),JSON.stringify({savedAt:Date.now(),fields:fields,indicators:indicators}));}catch(e){}
+  var indicators=Array.from(document.querySelectorAll('#kpi-indicators-list [data-ind-row]')).map(function(row){function value(selector){var el=row.querySelector(selector);return el?el.value:'';}return {indicatorId:row.getAttribute('data-indicator-id')||'',name:value('.ind-name-input'),target:value('.ind-target-input'),operator:value('.ind-op-input'),unit:value('.ind-unit-input'),ytd:value('.ind-ytd-input')};});
+  try{sessionStorage.setItem(kpiXEditorDraftKey(typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null),JSON.stringify({schemaVersion:2,savedAt:Date.now(),fields:fields,indicators:indicators}));}catch(e){}
   var note=document.getElementById('kpi-x-editor-draft-note');if(note){note.hidden=false;note.textContent='Unsaved changes are retained in this browser until the KPI is saved.';}
 }
 function kpiXRestoreEditorDraft(kpiId){
@@ -370,7 +376,7 @@ function kpiXRestoreEditorDraft(kpiId){
   try{
     var draft=JSON.parse(raw);if(!draft.savedAt||Date.now()-draft.savedAt>86400000){kpiXClearEditorDraft(kpiId);return;}
     Object.keys(draft.fields||{}).forEach(function(id){var el=document.getElementById(id);if(el)el.value=draft.fields[id];});
-    if(Array.isArray(draft.indicators)&&draft.indicators.length){var list=document.getElementById('kpi-indicators-list');if(list)list.innerHTML='';draft.indicators.forEach(function(ind){kpiAddIndicatorRow(ind.name,ind.target,ind.operator,ind.unit,ind.ytd);});}
+    if(Array.isArray(draft.indicators)){var list=document.getElementById('kpi-indicators-list');if(list)list.innerHTML='';draft.indicators.forEach(function(ind){var indicatorId=ind.indicatorId||'';if(!indicatorId&&!draft.schemaVersion){var matches=kpiIndicators.filter(function(saved){return saved.kpi_id===kpiId&&saved.name===ind.name;});if(matches.length===1)indicatorId=matches[0].id;}kpiAddIndicatorRow(ind.name,ind.target,ind.operator,ind.unit,ind.ytd,indicatorId);});}
     var note=document.getElementById('kpi-x-editor-draft-note');if(note){note.hidden=false;note.textContent='Recovered unsaved changes from this browser. Review them before saving.';}
   }catch(e){kpiXClearEditorDraft(kpiId);}
 }
@@ -576,7 +582,7 @@ function kpiXInstallHooks(){
   }
   if(typeof window.kpiSaveKPI==='function'){kpiXLegacy.saveKpi=window.kpiSaveKPI;window.kpiSaveKPI=async function(){var editing=typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null;var result=await kpiXLegacy.saveKpi.apply(this,arguments),modal=document.getElementById('kpi-edit-modal');if(modal&&modal.style.display==='none')kpiXClearEditorDraft(editing);return result;};}
   if(typeof window.kpiAddIndicatorRow==='function'){kpiXLegacy.addIndicatorRow=window.kpiAddIndicatorRow;window.kpiAddIndicatorRow=function(){var result=kpiXLegacy.addIndicatorRow.apply(this,arguments);var rows=document.querySelectorAll('.ind-op-input'),select=rows.length?rows[rows.length-1]:null;if(select&&!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');return result;};}
-  if(typeof window.openKpiAddModal==='function'){kpiXLegacy.openKpiAddModal=window.openKpiAddModal;window.openKpiAddModal=function(){var args=arguments;kpiXEnhanceKpiModal();var result=kpiXLegacy.openKpiAddModal.apply(this,args);setTimeout(function(){document.querySelectorAll('.ind-op-input').forEach(function(select){if(!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');});kpiXEnhanceKpiModal();var kpiId=args[0],status=document.getElementById('kpi-status'),k=kpiKPIs.find(function(item){return String(item.id)===String(kpiId);});if(status&&k){var derived=kpiXKpiSnapshot(k,kpiXReportingMonth()).status;status.value=['data_missing','in_progress','not_due'].indexOf(derived)>=0?'not_started':derived;}kpiXRestoreEditorDraft(kpiId);kpiXRefreshEditorPeople();},0);return result;};}
+  if(typeof window.openKpiAddModal==='function'){kpiXLegacy.openKpiAddModal=window.openKpiAddModal;window.openKpiAddModal=function(){var args=arguments;kpiXEnhanceKpiModal();var result=kpiXLegacy.openKpiAddModal.apply(this,args);if(result===false)return false;setTimeout(function(){var modal=document.getElementById('kpi-edit-modal');if(!modal||modal.style.display==='none'||modal._kpiDefinitionBusy||modal._kpiDefinitionWritten||kpiEditKpiId!==(args[0]||null))return;document.querySelectorAll('.ind-op-input').forEach(function(select){if(!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');});kpiXEnhanceKpiModal();var kpiId=args[0],status=document.getElementById('kpi-status'),k=kpiKPIs.find(function(item){return String(item.id)===String(kpiId);});if(status&&k){var derived=kpiXKpiSnapshot(k,kpiXReportingMonth()).status;status.value=['data_missing','in_progress','not_due'].indexOf(derived)>=0?'not_started':derived;}kpiXRestoreEditorDraft(kpiId);kpiXRefreshEditorPeople();},0);return result;};}
 }
 
 window.kpiXSwitchTab=kpiXSwitchTab;window.kpiXOpenStatus=kpiXOpenStatus;window.kpiXFilterStatus=kpiXFilterStatus;window.kpiXFilterObjective=kpiXFilterObjective;window.kpiXSetObjective=kpiXSetObjective;window.kpiXSetOwner=kpiXSetOwner;window.kpiXSetFrequency=kpiXSetFrequency;window.kpiXSetSearch=kpiXSetSearch;window.kpiXResetFilters=kpiXResetFilters;window.kpiXSetPeriod=kpiXSetPeriod;window.kpiXReviewExceptions=kpiXReviewExceptions;window.kpiXReviewMissing=kpiXReviewMissing;window.kpiXSubmitMonth=kpiXSubmitMonth;window.kpiXExportCsv=kpiXExportCsv;window.kpiXOpenDrawer=kpiXOpenDrawer;window.kpiXCreateAction=kpiXCreateAction;window.kpiXGoMonthly=kpiXGoMonthly;window.kpiXOpenNewObjective=kpiXOpenNewObjective;window.kpiXOpenNewKpi=kpiXOpenNewKpi;window.kpiXEditObjective=kpiXEditObjective;window.kpiXEditKpi=kpiXEditKpi;

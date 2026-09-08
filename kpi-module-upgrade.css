@@ -261,3 +261,11 @@
 #obj-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
 #obj-modal :focus-visible,#obj-modal .kpi-objective-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
 #obj-modal [disabled]{cursor:not-allowed;opacity:.6}
+/* Indicator identity and partial-save feedback stay inside the KPI definition editor. */
+#kpi-edit-modal .kpi-x-definition-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-family:inherit;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#kpi-edit-modal .kpi-x-definition-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
+#kpi-edit-modal .kpi-x-definition-message button{display:block;margin-top:10px;background:#fff;color:#15334f}
+#kpi-edit-modal input,#kpi-edit-modal select,#kpi-edit-modal textarea,#kpi-edit-modal button{box-sizing:border-box;min-height:44px!important;font-family:inherit;font-size:14px;line-height:1.4}
+#kpi-edit-modal .auris-kpilegacy-s-de071442a1{flex-wrap:wrap}
+#kpi-edit-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f}
+#kpi-edit-modal [disabled]{cursor:not-allowed;opacity:.6}

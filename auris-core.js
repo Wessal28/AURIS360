@@ -12649,6 +12649,7 @@ else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.backgrou
 
 function closeKpiModal(id){
   const e=document.getElementById(id);
+  if(id==='kpi-edit-modal'&&e?._kpiDefinitionBusy)return false;
   if(id==='obj-modal'&&e?._kpiObjectiveBusy)return false;
   const objectiveReturnFocus=id==='obj-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiObjectiveReturnFocus:null;
   const returnFocus=id==='kpi-entry-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiEntryReturnFocus:null;
@@ -12679,7 +12680,8 @@ await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=minimal',b:{nam
 toast('Objective archived');closeKpiModal('obj-modal');await kpiLoadAll();
 }catch(e){toastActionError('Delete objective','Objectives & KPIs',e);}
 }
-function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum'){
+function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum',indicatorId=''){
+const modal=document.getElementById('kpi-edit-modal');if(modal?._kpiDefinitionBusy||modal?._kpiDefinitionWritten)return false;
 const list=document.getElementById('kpi-indicators-list');
 const idx=list.children.length;
 const row=document.createElement('div');
@@ -12687,17 +12689,20 @@ row.style.cssText='display:grid;grid-template-columns:1fr 80px 120px 100px auto;
 row.style.cssText='background:#f9fafb;padding:10px 12px;border-radius:8px;border:1px solid var(--border);position:relative';
 row.innerHTML=
 '<div style="margin-bottom:8px">'
-+'<input type="text" class="ind-name-input" placeholder="Measurement indicator name (e.g. Number of near misses reported per month)" value="'+name+'" style="font-size:13px;padding:8px 10px;width:100%;border:1px solid var(--border);border-radius:8px;box-sizing:border-box"/>'
++'<input type="text" class="ind-name-input" aria-label="Measurement indicator name" placeholder="Measurement indicator name (e.g. Number of near misses reported per month)" style="font-size:13px;padding:8px 10px;width:100%;border:1px solid var(--border);border-radius:8px;box-sizing:border-box"/>'
 +'</div>'
 +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
 +'<label style="font-size:11px;color:var(--text2);font-weight:500">Target:</label>'
-+'<input type="number" class="ind-target-input" placeholder="e.g. 4" value="'+target+'" step="any" style="font-size:12px;padding:6px 8px;width:90px;border:1px solid var(--border);border-radius:8px;text-align:center"/>'
++'<input type="number" class="ind-target-input" aria-label="Indicator target" placeholder="e.g. 4" step="any" style="font-size:12px;padding:6px 8px;width:90px;border:1px solid var(--border);border-radius:8px;text-align:center"/>'
 +'<select class="ind-op-input" style="font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:8px">'
 +'<option value="gte" '+(operator==="gte"?"selected":"")+'>&#8805; min</option>'
 +'<option value="eq" '+(operator==="eq"?"selected":"")+'>= exact</option>'
 +'<option value="lte" '+(operator==="lte"?"selected":"")+'>&#8804; max</option>'
 +'<option value="gt" '+(operator==="gt"?"selected":"")+'>></option>'
 +'<option value="lt" '+(operator==="lt"?"selected":"")+'>< </option>'
++'<option value="zero" '+(operator==="zero"?"selected":"")+'>= 0 · zero tolerance</option>'
++'<option value="trend_up" '+(operator==="trend_up"?"selected":"")+'>↑ improving trend</option>'
++'<option value="trend_down" '+(operator==="trend_down"?"selected":"")+'>↓ reducing trend</option>'
 +'</select>'
 +'<label style="font-size:11px;color:var(--text2);font-weight:500">Unit:</label>'
 +'<select class="ind-unit-input" style="font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:8px">'
@@ -12724,15 +12729,35 @@ row.innerHTML=
 +'<button type="button" data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:20px;margin-left:auto;padding:2px 6px"><i class="ti ti-trash"></i></button>'
 +'</div>';
 row.setAttribute('data-ind-row','1');
+row.setAttribute('data-indicator-id',indicatorId||'');
+row.querySelector('.ind-name-input').value=name;
+row.querySelector('.ind-target-input').value=target;
+const unitSelect=row.querySelector('.ind-unit-input');
+if(unit&&unitSelect.options&&!Array.from(unitSelect.options).some(option=>option.value===unit)){const option=document.createElement('option');option.value=unit;option.textContent=unit;unitSelect.appendChild(option);unitSelect.value=unit;}
+[['.ind-op-input','Target operator'],['.ind-unit-input','Indicator unit'],['.ind-ytd-input','YTD calculation'],['button','Remove indicator']].forEach(([selector,label])=>row.querySelector(selector)?.setAttribute?.('aria-label',label));
 list.appendChild(row);
 }
 function openKpiAddModal(kpiId=null,objId=null){
+const modal=document.getElementById('kpi-edit-modal');
+if(!modal||modal._kpiDefinitionBusy||modal.style.display==='flex')return false;
+const companyId=kpiObjectiveCompany(),actorId=prof?.id;
+if(!isMgr()||!companyId||!actorId){toast('Select a company with permission to manage KPIs.',false);return false;}
+const selected=kpiId?kpiKPIs.find(k=>k.id===kpiId):null;
+if(kpiId&&(!selected||(selected.company_id&&selected.company_id!==companyId)||(window.KpiGovernedWorkflow&&!KpiGovernedWorkflow.canEdit(selected)))){toast('This KPI definition is unavailable for editing. Check its workflow state.',false);return false;}
+modal._kpiDefinitionControls?.forEach(item=>{item.node.disabled=item.disabled;});
+modal._kpiDefinitionWritten=false;modal._kpiDefinitionControls=null;
+modal.querySelector('[data-kpi-definition-message]')?.remove();
+modal._kpiDefinitionContext={companyId,actorId,year:kpiObjectiveViewYear(),kpiId};
+modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','kpi-modal-title');
+document.getElementById('kpi-modal-title').setAttribute('tabindex','-1');
+modal.querySelector('[data-auris-onclick="h0139"]')?.setAttribute('aria-label','Close KPI editor');
+['kpi-code','kpi-obj-sel','kpi-name','kpi-freq','kpi-resp','kpi-status'].forEach(id=>document.getElementById(id)?.parentElement?.querySelector('label')?.setAttribute('for',id));
 fillPplDrops();
 kpiEditKpiId=kpiId;
 document.getElementById('kpi-modal-title').textContent=kpiId?'Edit KPI':'Add KPI';
 document.getElementById('kpi-delete-btn').style.display=kpiId?'flex':'none';
 const sel=document.getElementById('kpi-obj-sel');
-sel.innerHTML='<option value="">Select objective...</option>'+kpiObjectives.map(o=>'<option value="'+o.id+'">'+o.code+'. '+o.name+'</option>').join('');
+sel.innerHTML='<option value="">Select objective...</option>';kpiObjectives.forEach(o=>{const option=document.createElement('option');option.value=o.id;option.textContent=o.code+'. '+o.name;sel.appendChild(option);});
 document.getElementById('kpi-indicators-list').innerHTML='';
 if(kpiId){
 const k=kpiKPIs.find(x=>x.id===kpiId);
@@ -12750,7 +12775,7 @@ setSelectValueWithFallback('kpi-approver',k.approver||'');
 document.getElementById('kpi-approval-status').value=k.approval_status||'draft';
 sel.value=k.objective_id||objId||'';
 const inds=kpiIndicators.filter(i=>i.kpi_id===kpiId);
-if(inds.length){inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?i.target_value:'',i.target_operator||'gte',i.unit||'',i.ytd_method||'sum'));}else{kpiAddIndicatorRow();}
+if(inds.length){inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?i.target_value:'',i.target_operator||'gte',i.unit||'',i.ytd_method||'sum',i.id));}else{kpiAddIndicatorRow();}
 }
 }else{
 ['kpi-name','kpi-resp','kpi-description','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver'].forEach(id=>document.getElementById(id).value='');
@@ -12780,85 +12805,130 @@ if(obj){const ex=kpiKPIs.filter(k=>k.objective_id===this.value);document.getElem
 }
 };
 openKpiModal('kpi-edit-modal');
+document.getElementById('kpi-modal-title').focus();
 }
 function kpiStorageStatus(value){
 return ['not_started','on_track','at_risk','off_track','archived'].includes(String(value||''))?String(value):'not_started';
 }
+function kpiDefinitionFeedback(message,restoreIndicator){
+const modal=document.getElementById('kpi-edit-modal');if(!modal)return;
+let alert=modal.querySelector('[data-kpi-definition-message]');
+if(!alert){alert=document.createElement('div');alert.setAttribute('data-kpi-definition-message','true');alert.className='kpi-x-definition-message';alert.setAttribute('role','alert');alert.setAttribute('tabindex','-1');modal.querySelector(':scope > div').prepend(alert);}
+alert.textContent=String(message);
+if(restoreIndicator){
+ const context=modal._kpiDefinitionContext,button=document.createElement('button');button.type='button';button.className='btn';button.textContent='Restore indicator';
+ button.onclick=function(){try{kpiDefinitionCheckContext(context);if(!Array.from(document.getElementById('kpi-indicators-list').children).some(row=>row.getAttribute('data-indicator-id')===restoreIndicator.id)){kpiAddIndicatorRow(restoreIndicator.name,restoreIndicator.target_value??'',restoreIndicator.target_operator||'gte',restoreIndicator.unit||'',restoreIndicator.ytd_method||'sum',restoreIndicator.id);}alert.remove();if(typeof kpiXCaptureEditorDraft==='function')kpiXCaptureEditorDraft();document.getElementById('kpi-indicators-list').lastElementChild?.querySelector('.ind-name-input')?.focus();}catch(error){kpiDefinitionFeedback(String(error?.message||error));}};
+ alert.appendChild(button);
+}
+alert.focus();
+}
+function kpiDefinitionCheckContext(context){
+const modal=document.getElementById('kpi-edit-modal');
+if(!context||modal?.style.display==='none'||modal?._kpiDefinitionContext!==context||kpiObjectiveCompany()!==context.companyId||prof?.id!==context.actorId||kpiObjectiveViewYear()!==context.year||kpiEditKpiId!==context.kpiId)throw new Error('The company, account or KPI changed. Close and reopen the intended KPI before saving.');
+if(!isMgr())throw new Error('Your permission to edit KPIs has changed.');
+const k=context.kpiId?kpiKPIs.find(item=>item.id===context.kpiId):null;
+if(context.kpiId&&(!k||(k.company_id&&k.company_id!==context.companyId)))throw new Error('The original KPI is no longer available. Close and reload.');
+if(k&&window.KpiGovernedWorkflow&&!KpiGovernedWorkflow.canEdit(k))throw new Error('This KPI definition cannot be edited in its current workflow state.');
+}
+function kpiDefinitionRowsMatch(rows,expected){
+return Array.isArray(rows)&&rows.length===1&&!!rows[0].id&&Object.keys(expected).every(key=>key==='target_value'&&expected[key]!==null&&rows[0][key]!==null?Number(rows[0][key])===Number(expected[key]):(rows[0][key]??null)===(expected[key]??null));
+}
 async function kpiSaveKPI(){
-const name=document.getElementById('kpi-name').value.trim();
-const objId=document.getElementById('kpi-obj-sel').value;
-if(!name){toast('Please enter a KPI name',false);return;}
-if(!objId){toast('Please select an objective',false);return;}
-const indRows=Array.from(document.getElementById('kpi-indicators-list').children);
-if(!indRows.length){toast('Please add at least one measurement indicator',false);return;}
-const indicators=indRows.map(row=>{
-const nameEl=row.querySelector('.ind-name-input');
-const targetEl=row.querySelector('.ind-target-input');
-const opEl=row.querySelector('.ind-op-input');
-const unitEl=row.querySelector('.ind-unit-input');
-const ytdEl=row.querySelector('.ind-ytd-input');
-if(!nameEl||!nameEl.value.trim())return null;
-return{
-name:nameEl.value.trim(),
-target_value:targetEl&&targetEl.value!==''?parseFloat(targetEl.value):null,
-target_operator:opEl?opEl.value:'gte',
-unit:unitEl?unitEl.value||null:null,
-ytd_method:ytdEl?ytdEl.value||'sum':'sum'
-};
-}).filter(i=>i&&i.name);
-if(!indicators.length){toast('Please enter at least one indicator name',false);return;}
-// Use the sephs_admin's selected company context if any, otherwise the user's own company.
-// This is critical: without it, sephs_admin saves under their own profile company
-// (BuildCo) even when viewing/working on another client's data.
-const effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
-const kpiYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
-const existingKpi=kpiEditKpiId?kpiKPIs.find(k=>k.id===kpiEditKpiId):null;
-const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,description:document.getElementById('kpi-description').value.trim()||null,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,data_provider:document.getElementById('kpi-data-provider').value.trim()||null,data_source:document.getElementById('kpi-data-source').value.trim()||null,reviewer:document.getElementById('kpi-reviewer').value.trim()||null,approver:document.getElementById('kpi-approver').value.trim()||null,approval_status:existingKpi?.approval_status||'draft',status:kpiStorageStatus(existingKpi?.status||document.getElementById('kpi-status').value),year:kpiYear,created_by:prof?.id};
+const modal=document.getElementById('kpi-edit-modal'),context=modal?._kpiDefinitionContext;
+if(!modal||modal.style.display==='none'||modal._kpiDefinitionBusy)return {complete:false};
+if(modal._kpiDefinitionWritten)return {complete:false};
+let controls=null,writeStarted=false,parentSaved=false;
 try{
-let kpiId=kpiEditKpiId;
-if(kpiId){
-await api('/kpis_v2?id=eq.'+kpiId,{m:'PATCH',p:'return=representation',b:body});
-}else{
-const res=await api('/kpis_v2',{m:'POST',p:'return=representation',b:body});
-kpiId=res?.[0]?.id||res?.id;
-}
-if(kpiId&&indicators.length){
-const existingInds=kpiIndicators.filter(i=>i.kpi_id===kpiId);
-for(let i=0;i<indicators.length;i++){
-const ind=indicators[i];
-const existing=existingInds.find(e=>e.name===ind.name);
-if(existing){
-await api('/kpi_indicators?id=eq.'+existing.id,{m:'PATCH',p:'return=minimal',b:{
-target_value:ind.target_value,target_operator:ind.target_operator,
-unit:ind.unit,ytd_method:ind.ytd_method,sort_order:i
-}});
-Object.assign(existing,ind,{sort_order:i});
-}else{
-// Same company-context logic for the indicator: must match the parent KPI's company.
-await api('/kpi_indicators',{m:'POST',p:'return=minimal',b:{...ind,kpi_id:kpiId,company_id:effectiveCompanyId,sort_order:i}});
-}
-}
-for(const ex of existingInds){
-const stillExists=indicators.find(i=>i.name===ex.name);
-if(!stillExists){
-const hasData=await api('/kpi_monthly_data?indicator_id=eq.'+ex.id+'&limit=1');
-if(!hasData||!hasData.length){
-await api('/kpi_indicators?id=eq.'+ex.id,{m:'DELETE'});
-}
-}
-}
-for(const ex of existingInds){
-await kpiRecalcAllYTD(ex.id,kpiYear);
-}
-}
-toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
-}catch(e){
-const modal=document.getElementById('kpi-edit-modal');if(modal)modal.dataset.saveFailed='true';
-if(String(e?.message||e).includes('kpis_v2_status_check'))toast('KPI not saved: the calculated display status cannot be stored. Your entered information is still open; refresh the KPI status and try again.',false);
-else toastActionError('Save KPI','Objectives & KPIs',e);
+ kpiDefinitionCheckContext(context);
+ if(['kpi-resp','kpi-data-provider','kpi-reviewer','kpi-approver'].some(id=>document.getElementById(id)?.getAttribute('aria-busy')==='true'))throw new Error('The people list is still loading. Wait for it to finish, then save again.');
+ const field=id=>document.getElementById(id).value.trim();
+ const name=field('kpi-name'),objId=field('kpi-obj-sel');
+ if(!name)throw new Error('Please enter a KPI name.');
+ if(!objId||!kpiObjectives.some(o=>o.id===objId&&(!o.company_id||o.company_id===context.companyId)&&(!o.year||Number(o.year)===context.year)))throw new Error('Please select an objective for this company and reporting year.');
+ const indicators=Array.from(document.getElementById('kpi-indicators-list').children).map((row,index)=>{
+  const value=selector=>row.querySelector(selector)?.value||'',indicatorId=row.getAttribute('data-indicator-id')||'';
+  if(!value('.ind-name-input').trim())throw new Error('Enter a name for every measurement indicator, or remove an unused new row.');
+  const target=value('.ind-target-input');
+  if(target!==''&&!Number.isFinite(Number(target)))throw new Error('Enter a valid indicator target.');
+  return {indicatorId,row,body:{name:value('.ind-name-input').trim(),target_value:target===''?null:Number(target),target_operator:value('.ind-op-input')||'gte',unit:value('.ind-unit-input')||null,ytd_method:value('.ind-ytd-input')||'sum',sort_order:index}};
+ });
+ if(!indicators.length)throw new Error('Please add at least one measurement indicator.');
+ const ids=indicators.map(i=>i.indicatorId).filter(Boolean);
+ if(new Set(ids).size!==ids.length)throw new Error('Duplicate indicator identity. Close and reopen the KPI to recover its original rows.');
+ const original=context.kpiId?kpiKPIs.find(k=>k.id===context.kpiId):null;
+ const body={company_id:context.companyId,objective_id:objId,code:field('kpi-code'),name,description:field('kpi-description')||null,frequency:field('kpi-freq'),responsible:field('kpi-resp')||null,data_provider:field('kpi-data-provider')||null,data_source:field('kpi-data-source')||null,reviewer:field('kpi-reviewer')||null,approver:field('kpi-approver')||null,approval_status:original?.approval_status||'draft',status:kpiStorageStatus(original?.status||field('kpi-status')),year:context.year};
+ if(!original)body.created_by=context.actorId;
+ const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
+ modal.querySelector('[data-kpi-definition-message]')?.remove();
+ controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
+ modal._kpiDefinitionBusy=true;modal._kpiDefinitionControls=controls;
+ controls.forEach(item=>{item.node.disabled=true;});document.getElementById('kpi-modal-title').focus();
+ let existing=[];
+ if(context.kpiId){
+  existing=await api('/kpi_indicators?kpi_id=eq.'+encodeURIComponent(context.kpiId)+scope+'&select=*');
+  kpiDefinitionCheckContext(context);
+  if(!Array.isArray(existing)||existing.some(i=>i.kpi_id!==context.kpiId||i.company_id!==context.companyId))throw new Error('Could not verify the existing indicators. No changes were saved.');
+ }
+ for(const id of ids)if(!existing.some(i=>i.id===id))throw new Error('An indicator no longer belongs to this KPI. Close and reopen before saving.');
+ const removed=existing.filter(i=>!ids.includes(i.id));
+ for(const ind of removed){
+  const data=await api('/kpi_monthly_data?indicator_id=eq.'+encodeURIComponent(ind.id)+scope+'&select=id&limit=1');
+  kpiDefinitionCheckContext(context);
+  if(!Array.isArray(data))throw new Error('Could not verify indicator history. No changes were saved.');
+  if(data.length){const error=new Error('Cannot remove "'+ind.name+'" because it has monthly records. Restore its row below, then rename the existing row to preserve its history.');error.indicatorToRestore=ind;throw error;}
+ }
+ kpiDefinitionCheckContext(context);
+ writeStarted=true;modal._kpiDefinitionWritten=true;
+ const parent=await api(context.kpiId?'/kpis_v2?id=eq.'+encodeURIComponent(context.kpiId)+scope:'/kpis_v2',{m:context.kpiId?'PATCH':'POST',p:'return=representation',b:body});
+ if(!kpiDefinitionRowsMatch(parent,body)||(context.kpiId&&parent[0].id!==context.kpiId))throw new Error('The saved KPI identity or fields could not be confirmed.');
+ parentSaved=true;
+ const kpiId=parent[0].id,kpiScope='&kpi_id=eq.'+encodeURIComponent(kpiId)+scope;
+ const saved=[];
+ for(const ind of indicators){
+  kpiDefinitionCheckContext(context);
+  const expected={...ind.body,kpi_id:kpiId,company_id:context.companyId};
+  const response=await api(ind.indicatorId?'/kpi_indicators?id=eq.'+encodeURIComponent(ind.indicatorId)+kpiScope:'/kpi_indicators',{m:ind.indicatorId?'PATCH':'POST',p:'return=representation',b:expected});
+  if(!kpiDefinitionRowsMatch(response,expected)||(ind.indicatorId&&response[0].id!==ind.indicatorId))throw new Error('A saved indicator could not be confirmed.');
+  saved.push(response[0]);
+ }
+ for(const ind of removed){
+  kpiDefinitionCheckContext(context);
+  const response=await api('/kpi_indicators?id=eq.'+encodeURIComponent(ind.id)+kpiScope,{m:'DELETE',p:'return=representation'});
+  if(!Array.isArray(response)||response.length!==1||response[0].id!==ind.id)throw new Error('Removal of the unused indicator could not be confirmed.');
+ }
+ for(const ind of saved){
+  kpiDefinitionCheckContext(context);
+  await kpiRecalcAllYTD(ind.id,context.year,{...context,operation:'definition',definitionContext:context},ind);
+ }
+ kpiDefinitionCheckContext(context);
+ const [freshParent,freshIndicators,freshMonthly]=await Promise.all([
+  api('/kpis_v2?id=eq.'+encodeURIComponent(kpiId)+scope+'&select=*'),
+  api('/kpi_indicators?kpi_id=eq.'+encodeURIComponent(kpiId)+scope+'&select=*&order=sort_order'),
+  api('/kpi_monthly_data?indicator_id=in.('+saved.map(i=>encodeURIComponent(i.id)).join(',')+')'+scope+'&year=eq.'+context.year+'&select=*')
+ ]);
+ kpiDefinitionCheckContext(context);
+ if(!kpiDefinitionRowsMatch(freshParent,{...body,id:kpiId})||!Array.isArray(freshIndicators)||freshIndicators.length!==saved.length||!saved.every(i=>kpiDefinitionRowsMatch(freshIndicators.filter(r=>r.id===i.id),{id:i.id,name:i.name,target_value:i.target_value,target_operator:i.target_operator,unit:i.unit,ytd_method:i.ytd_method,sort_order:i.sort_order,kpi_id:kpiId,company_id:context.companyId})))throw new Error('The refreshed KPI definition does not match the saved rows.');
+ if(!Array.isArray(freshMonthly)||freshMonthly.some(r=>!saved.some(i=>i.id===r.indicator_id)||r.company_id!==context.companyId||Number(r.year)!==context.year))throw new Error('Monthly history could not be refreshed safely.');
+ kpiKPIs=kpiKPIs.filter(k=>k.id!==kpiId).concat(freshParent);
+ kpiIndicators=kpiIndicators.filter(i=>i.kpi_id!==kpiId).concat(freshIndicators);
+ existing.concat(saved).forEach(i=>{delete kpiMonthlyData[i.id];});
+ freshMonthly.forEach(r=>{if(!kpiMonthlyData[r.indicator_id])kpiMonthlyData[r.indicator_id]={};kpiMonthlyData[r.indicator_id][r.month]=r;});
+ kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
+ modal._kpiDefinitionBusy=false;
+ toast(context.kpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');
+ return {complete:true,kpiId};
+}catch(error){
+ modal.dataset.saveFailed='true';
+ const detail=String(error?.message||error).includes('kpis_v2_status_check')?'The calculated display status cannot be stored. Your entered information is still open; reload and check the KPI before retrying.':String(error?.message||error);
+ kpiDefinitionFeedback((parentSaved?'Some KPI changes were saved, but the operation did not complete. Close and reload this KPI to review the saved rows before editing again. ':writeStarted?'Save could not be confirmed. Close and check existing KPIs before trying again. ':'')+detail,error.indicatorToRestore);
+ return {complete:false,partial:writeStarted};
+}finally{
+ modal._kpiDefinitionBusy=false;
+ if(controls)controls.forEach(item=>{item.node.disabled=writeStarted&&modal.style.display!=='none'&&!item.node.matches('[data-auris-onclick="h0139"]')?true:item.disabled;});
 }
 }
 async function kpiDeleteKPI(){
+const modal=document.getElementById('kpi-edit-modal');if(modal?._kpiDefinitionBusy||modal?._kpiDefinitionWritten)return false;
 if(!kpiEditKpiId)return;
 if(!(await appConfirmAction({title:'Archive KPI',message:'Archive this KPI instead of deleting it?',detail:'Indicators and monthly KPI history will be kept for management review evidence. The KPI will no longer appear in the active scorecard.',confirmText:'Archive KPI',cancelText:'Keep KPI'})))return;
 try{
@@ -13042,14 +13112,16 @@ if(method==='min')return Math.min.apply(null,vals);
 return Math.round(vals.reduce(function(a,b){return a+b;},0)*100)/100;
 }
 
-async function kpiRecalcAllYTD(indicatorId,year,entryContext){
-const ind=kpiIndicators.find(x=>x.id===indicatorId);
+async function kpiRecalcAllYTD(indicatorId,year,entryContext,definitionIndicator){
+const ind=definitionIndicator||kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return;
+const checkContext=()=>{if(entryContext?.operation==='definition')kpiDefinitionCheckContext(entryContext.definitionContext);else if(entryContext)kpiEntryCheckContext(entryContext);};
 try{
-if(entryContext)kpiEntryCheckContext(entryContext);
+checkContext();
 const scope=entryContext?'&company_id=eq.'+encodeURIComponent(entryContext.companyId):'';
 const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month'+scope);
-if(entryContext)kpiEntryCheckContext(entryContext);
+checkContext();
+if(entryContext&&!Array.isArray(fresh))throw new Error('Monthly history could not be verified for recalculation.');
 if(!fresh||!fresh.length)return;
 for(var mi=0;mi<fresh.length;mi++){
   var m=fresh[mi].month;
@@ -13058,7 +13130,7 @@ for(var mi=0;mi<fresh.length;mi++){
   var entry=fresh[mi];
   if(Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
     await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m+scope,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
-    if(entryContext)kpiEntryCheckContext(entryContext);
+    checkContext();
   }
 }
 }catch(e){if(entryContext)throw e;console.error('YTD recalc error:',e);}
