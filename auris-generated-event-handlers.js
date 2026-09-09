@@ -185,7 +185,7 @@ mtgScheduleMeeting(this.getAttribute('data-id'))
 mtgEditSeries(this.getAttribute('data-id'))
     },
     "g0062": function (event) {
-this.parentNode.parentNode.remove()
+return kpiRemoveIndicatorRow(this)
     },
     "g0063": function (event) {
 mtgOpenMom(this.getAttribute('data-id'))

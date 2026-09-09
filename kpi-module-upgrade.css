@@ -19,6 +19,8 @@
 #page-kpi .kpi-x-btn:hover {border-color:#94a3b8;background:#f8fafc}
 #page-kpi .kpi-x-btn.primary {background:linear-gradient(145deg,#17a979,#087252);border-color:#087252;color:#fff;box-shadow:0 7px 16px rgba(15,138,100,.2)}
 #page-kpi .kpi-x-btn.warn {border-color:#f59e0b;color:#a75800;background:#fffbeb}
+/* Keep report actions touch-sized despite legacy important mobile button rules. */
+#page-kpi #kpi-x-reports-view .kpi-x-btn{min-height:44px!important}
 #page-kpi .kpi-x-filters {display:grid;grid-template-columns:132px minmax(160px,1fr) minmax(160px,1fr) minmax(150px,1fr) minmax(150px,1fr) auto;gap:8px;align-items:end;margin-bottom:12px}
 #page-kpi .kpi-x-field label {display:block;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:0 0 4px 3px}
 #page-kpi .kpi-x-field select,#page-kpi .kpi-x-field input {width:100%;height:38px;border:1px solid #d9e1ea;border-radius:9px;background:#fff;padding:0 11px;font-size:12px;color:#0f172a;box-sizing:border-box}
@@ -121,7 +123,7 @@
 #page-kpi .kpi-x-period {display:inline-flex;border:1px solid #d9e1ea;border-radius:8px;overflow:hidden}
 #page-kpi .kpi-x-period button {height:32px;border:0;background:#fff;color:#64748b;padding:0 12px;font-size:11px;cursor:pointer}
 #page-kpi .kpi-x-period button.active {background:#0f8a64;color:#fff}
-#page-kpi .kpi-x-month-scroll {box-sizing:border-box;width:100%;height:clamp(360px,calc(100dvh - 330px),720px);overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable both-edges;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0}
+#page-kpi .kpi-x-month-scroll {box-sizing:border-box;width:100%;height:clamp(360px,calc(100dvh - 330px),720px);overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable both-edges;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;container-type:inline-size;container-name:kpi-monthly-table}
 #page-kpi .kpi-x-month-scroll:focus-visible {outline:2px solid #0f8a64;outline-offset:-2px}
 #page-kpi #kpi-monthly-table {min-width:1500px!important;border-collapse:separate!important;border-spacing:0!important}
 #page-kpi #kpi-monthly-table th {position:sticky!important;top:0!important;z-index:5!important;background:#f8fafc!important;white-space:nowrap}
@@ -130,6 +132,17 @@
 #page-kpi #kpi-monthly-table .kpi-x-sticky-2 {position:sticky;left:64px;z-index:3;background:#fff!important;min-width:160px}
 #page-kpi #kpi-monthly-table .kpi-x-sticky-3 {position:sticky;left:224px;z-index:3;background:#fff!important;min-width:190px;box-shadow:5px 0 8px rgba(15,23,42,.05)}
 #page-kpi #kpi-monthly-table thead .kpi-x-sticky-1,#page-kpi #kpi-monthly-table thead .kpi-x-sticky-2,#page-kpi #kpi-monthly-table thead .kpi-x-sticky-3 {z-index:8!important;background:#f8fafc!important}
+/* Reserve narrow panels for period cells. Keep Code pinned and headers sticky vertically. */
+@container kpi-monthly-table (max-width:760px) {
+  #page-kpi #kpi-monthly-table .kpi-x-sticky-2,
+  #page-kpi #kpi-monthly-table .kpi-x-sticky-3 {left:auto!important}
+}
+@supports not (container-type:inline-size) {
+  @media (max-width:1100px) {
+    #page-kpi #kpi-monthly-table .kpi-x-sticky-2,
+    #page-kpi #kpi-monthly-table .kpi-x-sticky-3 {left:auto!important}
+  }
+}
 #page-kpi .kpi-x-cell {min-width:62px;text-align:center!important;cursor:default}
 #page-kpi .kpi-x-cell.editable {cursor:pointer;touch-action:manipulation}
 #page-kpi .kpi-x-cell.editable:hover,#page-kpi .kpi-x-cell.editable:focus-visible {box-shadow:inset 0 0 0 2px #0f8a64;outline:0}
@@ -146,6 +159,9 @@
 #page-kpi .kpi-x-workflow .active i {background:#0f8a64;color:#fff;border-color:#0f8a64}
 #page-kpi .kpi-x-empty {padding:30px;text-align:center;color:#64748b;font-size:12px}
 #page-kpi .kpi-x-empty>strong,#page-kpi .kpi-x-empty>span{display:block;margin-bottom:8px}
+#page-kpi #kpi-x-config-view .kpi-x-config-unavailable .kpi-x-btn{min-height:44px!important;max-width:100%;white-space:normal}
+#page-kpi .kpi-x-config-unavailable h2{font-size:18px;color:#17324a;margin:0 0 12px}
+#page-kpi .kpi-x-config-unavailable p{line-height:1.6;margin:0 0 12px}
 #page-kpi .kpi-x-btn:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
 #page-kpi .kpi-x-config {display:grid;grid-template-columns:220px 1fr 260px;gap:12px}
 #page-kpi .kpi-x-config-nav button {width:100%;height:38px;border:0;background:transparent;text-align:left;padding:0 10px;color:#475569;font-size:11px;border-radius:7px}
@@ -261,10 +277,18 @@
 #obj-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f;cursor:pointer}
 #obj-modal :focus-visible,#obj-modal .kpi-objective-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
 #obj-modal [disabled]{cursor:not-allowed;opacity:.6}
+#obj-modal .kpi-color-dot{width:44px;height:44px;flex:0 0 44px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:2px solid transparent;border-radius:50%;color:#fff;cursor:pointer}
+#obj-modal .kpi-color-dot[aria-pressed="true"]{border-color:var(--text)}
+#obj-modal .kpi-color-dot[aria-pressed="true"]::after{content:"✓";font-size:22px;font-weight:700}
+#obj-modal #kpi-color-selection{margin:8px 0 0;color:var(--text2);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 /* Indicator identity and partial-save feedback stay inside the KPI definition editor. */
 #kpi-edit-modal .kpi-x-definition-message{margin:0 0 16px;padding:12px 14px;border:1px solid #fdba74;border-radius:9px;background:#fff7ed;color:#7c2d12;font-family:inherit;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
 #kpi-edit-modal .kpi-x-definition-message:focus{outline:2px solid #0f8a64;outline-offset:2px}
 #kpi-edit-modal .kpi-x-definition-message button{display:block;margin-top:10px;background:#fff;color:#15334f}
+#kpi-edit-modal .kpi-indicator-heading{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--text)}
+#kpi-edit-modal .kpi-indicator-status{margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--text2);overflow-wrap:anywhere}
+#kpi-edit-modal [data-ind-row] button{min-width:44px}
+#kpi-edit-modal [data-ind-row] :focus-visible{outline:2px solid #0f8a64;outline-offset:2px}
 #kpi-edit-modal input,#kpi-edit-modal select,#kpi-edit-modal textarea,#kpi-edit-modal button{box-sizing:border-box;min-height:44px!important;font-family:inherit;font-size:14px;line-height:1.4}
 #kpi-edit-modal .auris-kpilegacy-s-de071442a1{flex-wrap:wrap}
 #kpi-edit-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f}

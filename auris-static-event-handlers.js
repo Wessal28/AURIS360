@@ -419,7 +419,7 @@ kpiSaveObjective()
 closeKpiModal('kpi-edit-modal')
     },
     "h0140": function (event) {
-kpiAddIndicatorRow()
+return kpiAddIndicatorFromButton(this)
     },
     "h0141": function (event) {
 kpiDeleteKPI()
