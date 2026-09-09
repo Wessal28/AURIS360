@@ -42,6 +42,24 @@ test('shared page routing relies on the existing active page contract', () => {
   assert.match(base, /\.page\.active\{display:block/);
 });
 
+test('programmatic routes keep the matching sidebar module active', () => {
+  const helperStart = core.indexOf('function activatePageNavigation(pageKey, suppliedElement)');
+  const routerStart = core.indexOf('function showPage(name,el)', helperStart);
+  const helper = core.slice(helperStart, routerStart);
+  const routerEnd = core.indexOf('function toggleForm(id)', routerStart);
+  const router = core.slice(routerStart, routerEnd);
+
+  assert.ok(helperStart > 0 && routerStart > helperStart);
+  assert.match(helper, /sidebarEnhanceNavItems\(\)/);
+  assert.match(helper, /querySelectorAll\('\.sidebar \.nav-item'\)/);
+  assert.match(helper, /item\.dataset\.navKey===pageKey/);
+  assert.match(helper, /classList\.toggle\('active',isActive\)/);
+  assert.match(helper, /setAttribute\('aria-current','page'\)/);
+  assert.match(helper, /removeAttribute\('aria-current'\)/);
+  assert.match(router, /activatePageNavigation\(name,el\)/);
+  assert.doesNotMatch(router, /if\(el&&el\.classList\)el\.classList\.add\('active'\)/);
+});
+
 test('shared toast visibility is class-based', () => {
   const start = core.indexOf('function toast(m,ok=true)');
   const end = core.indexOf('// Field voice capture', start);
