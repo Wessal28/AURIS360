@@ -11,6 +11,7 @@ This change hardens the existing configuration editor without modifying database
 - Scope version writes to company, editable state and the loaded update timestamp when available. Reject duplicate operations and changed account/company/role contexts.
 - Clear old company configuration before loading another company and ignore obsolete responses. Missing optional audit history is disclosed without discarding a successfully loaded published version.
 - Show errors inside the configuration view, retain typing focus, use the inherited application font and minimum 44px controls.
+- The subsequent editor-recovery phase removes the misleading legacy controls shown when the renderer is missing, and provides a safe local Retry for missing or synchronously failing renderers. It preserves loaded draft/published state without service operations; see `KPI_CONFIGURATION_EDITOR_RECOVERY.md`.
 
 Database RLS and the existing publication RPC remain authoritative. The client guards are not a substitute for server enforcement or complete cross-session transaction/version validation. In particular, the RPC does not accept an expected revision; a later database-hardening phase should assess atomic validation/publication and immutable published versions after recovery readiness is established.
 
