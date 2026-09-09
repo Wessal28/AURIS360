@@ -64,7 +64,7 @@ test('current build markers and cache keys are published',()=>{
   assert.match(html,/modular-foundation-29/);assert.match(runtime,/modular-foundation-29/);
   for(const asset of ['auris-module-registry.js','auris-workflow-service.js','auris-core.js'])assert.match(html,new RegExp(asset.replace('.', '\\.')+'\\?v=20260903-29'));
   assert.match(html,/kpi-module-upgrade\.js\?v=20260909-period-cutoff-1/);
-  assert.match(html,/kpi-module-upgrade\.css\?v=20260909-indicator-navigation-1/);
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260909-monthly-table-1/);
   assert.match(html,/kpi-workflow\.js\?v=20260904-locked-monthly-1/);
   assert.match(manifest,/kpi-workflow\.js/);
 });
