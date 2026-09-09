@@ -296,6 +296,7 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
 
   const companyFilter = `company_id=eq.${encodeURIComponent(profile.company_id)}`;
   const sources = [
+    ['Pre-start inspection forms (apply 20260909180000_inspection_prestart_form_fields.sql if missing)', `inspections?select=id,items,activity,location,inspection_time,duration_hours,supervisor,team_members,ra_ref,ptw_ref,tbt_done,tbt_topics,stop_work_briefed,decision,decision_notes,hazards,controls,ppe_required,ppe_extra,prestart_signed_at&${companyFilter}&limit=1`],
     ['Executive Dashboard', `events?select=id&${companyFilter}&limit=1`],
     ['Executive Dashboard actions', `action_tracker?select=id&${companyFilter}&limit=1`],
     ['Toolbox Talks (apply 20260907010000_toolbox_talk_save_fields.sql if missing)', `toolbox_talks?select=id,tbt_ref,topic_category,presenter,duration_mins,incidents_referenced&${companyFilter}&limit=1`],

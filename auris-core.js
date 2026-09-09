@@ -20765,7 +20765,66 @@ function aurisReadableRecordFields(row){
 
 function raOpenReadOnly(id){var row=(raAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('Risk assessment · Read-only preview',row.title||row.activity||'Risk assessment',row,[['Reference',row.ra_ref],['Type',row.ra_type_v2||row.ra_type],['Activity / scope',row.activity||row.scope],['Site / location',row.site_name||row.location||row.workshop],['Department',row.department||row.dept],['Assessed by',row.assessed_by||row.ra_assessor],['Assessment date',row.ra_date||row.assessment_date||row.date],['Initial risk',row.initial_risk_level||row.risk_level],['Residual risk',row.overall_risk_level||row.residual_risk_level],['Status',row.status],['Review date',row.review_date],['Controls / notes',row.controls||row.notes||row.revision_notes]]);}
 function jsaOpenReadOnly(id){var row=(raAllJSA||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('JSA / JHA · Read-only preview',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Scope',row.scope||row.description],['Location',row.location],['Prepared by',row.prepared_by],['Status',row.status],['Revision',row.revision],['Job steps',Array.isArray(row.steps)?row.steps.map(function(x){return x.step||x.task||x.description;}).filter(Boolean).join('\n'):row.steps]]);}
-function auditOpenReadOnly(id){var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('Audit / inspection · Read-only preview',row.site||row.audit_scope||'Inspection',row,[['Reference',row.reference_no],['Type',row.inspection_type],['Site / department',[row.site||row.if_site,row.department].filter(Boolean).join(' / ')],['Inspection date',row.inspection_date||row.if_date],['Inspector',row.inspector||row.by||row.if_by],['Standard',row.audit_standard],['Status',row.status],['Priority',row.priority],['Positive observations',row.positive_obs||row.if_pos],['Findings',row.negative_obs||row.if_neg],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]]);}
+function auditOpenReadOnly(id){
+  var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;
+  document.getElementById('audit-inspection-report')?.closeReport?.();
+  var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
+  modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
+  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · Full read-only report</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section></div></section>';
+  document.body.appendChild(modal);
+  document.body.style.overflow='hidden';
+  var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(opener?.isConnected)opener.focus();};
+  modal.closeReport=close;
+  modal.querySelector('.inspection-report-close').addEventListener('click',close);
+  modal.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();close();}
+    if(ev.key==='Tab'){
+      var buttons=Array.from(modal.querySelectorAll('button,a[href]')).filter(function(el){return !el.disabled;});
+      var first=buttons[0],last=buttons[buttons.length-1];
+      if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus();}
+      else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus();}
+    }
+  });
+  modal.querySelector('.inspection-report-close').focus();
+  var findings=modal.querySelector('#inspection-report-findings');
+  if(!row.company_id){findings.textContent='Findings could not be loaded: this record has no company identifier.';return;}
+  api('/audit_findings?select=*&company_id=eq.'+encodeURIComponent(row.company_id)+'&inspection_id=eq.'+encodeURIComponent(row.id)+'&order=created_at.asc').then(function(rows){
+    if(!modal.isConnected||String(ccid())!==String(company))return;
+    if(!Array.isArray(rows))throw new Error('Invalid findings response');
+    findings.innerHTML=auditInspectionFindingsHTML(rows.filter(function(f){return String(f.company_id)===String(row.company_id)&&String(f.inspection_id)===String(row.id);}));
+  }).catch(function(){if(modal.isConnected&&String(ccid())===String(company))findings.textContent='Recorded findings could not be loaded. The report may be incomplete. Close and reopen it to retry.';});
+}
+function auditInspectionFieldsHTML(fields){
+  return '<dl class="inspection-report-fields">'+fields.map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(f[1]===null||f[1]===undefined||f[1]===''?'Not recorded':String(f[1]))+'</dd></div>';}).join('')+'</dl>';
+}
+function auditInspectionFindingsHTML(rows){
+  return rows.length?rows.map(function(f){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Reference',f.finding_ref],['Type',f.finding_type],['Clause',f.clause],['Finding',f.description],['Evidence',f.evidence],['Corrective action',f.corrective_action],['Assigned to',f.assigned_to],['Status',f.status],['Closed date',f.closed_date]])+'</article>';}).join(''):'<p>No findings recorded.</p>';
+}
+function auditInspectionReportHTML(row){
+  var h='<section><h3>Inspection details</h3>'+auditInspectionFieldsHTML([
+    ['Reference',row.reference_no],['Type',row.inspection_type],['Site / department',[row.site||row.if_site,row.department].filter(Boolean).join(' / ')],
+    ['Location',row.location||row.gps_address],['Inspection date',row.inspection_date||row.if_date],['Inspector',row.inspector||row.by||row.if_by||row.performed_by],
+    ['Standard',row.audit_standard],['Scope',row.audit_scope],['Lead auditor',row.lead_auditor],['Audit team',row.audit_team],['Auditee',row.auditee],
+    ['Status',row.status],['Priority',row.priority],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
+  ])+'</section><section><h3>Checklist and observations</h3>';
+  var items=Array.isArray(row.items)?row.items.filter(function(i){return i&&typeof i==='object';}):[];
+  h+=items.length?items.map(function(c,i){return '<article class="inspection-report-item"><h4>'+escH((i+1)+'. '+(c.item||c.item_name||'Untitled item'))+'</h4>'+auditInspectionFieldsHTML([['Category',c.category||c.ca],['Guidance',c.guidance],['Result',({good:'Good',insufficient:'Insufficient',na:'N/A'})[c.result]||'Not answered'],['Observations / comments',c.observation||c.obs]])+'</article>';}).join(''):'<p>No checklist answers were saved with this record. A score alone cannot reconstruct the checklist.</p>';
+  h+='</section><section><h3>Overall observations</h3>'+auditInspectionFieldsHTML([['Positive observations',row.positive_obs||row.if_pos],['Findings / improvements',row.negative_obs||row.if_neg]])+'</section>';
+  if(row.inspection_type==='prestart')h+='<section><h3>Pre-start task and controls</h3>'+auditInspectionFieldsHTML([
+    ['Activity / task',row.activity||row.site],['Time',row.inspection_time],['Duration (hours)',row.duration_hours],['Supervisor',row.supervisor||row.inspector],['Team members',row.team_members],['Risk assessment',row.ra_ref],['Permit to work',row.ptw_ref],
+    ['Hazards',row.hazards],['Control measures',row.controls],['PPE required',Array.isArray(row.ppe_required)?row.ppe_required.join(', '):row.ppe_required],['Additional PPE',row.ppe_extra],
+    ['Toolbox talk completed',row.tbt_done==null?null:row.tbt_done?'Yes':'No'],['Topics covered',row.tbt_topics],['Stop Work Authority briefing',row.stop_work_briefed==null?null:row.stop_work_briefed?'Yes':'No'],['Decision',row.decision],['Decision notes',row.decision_notes]
+  ])+'</section>';
+  var actions=Array.isArray(row.action_items)?row.action_items.filter(Boolean):[];
+  h+='<section><h3>Corrective actions</h3>'+(actions.length?actions.map(function(a){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Action',a.description],['Responsible',a.responsible],['Due date',a.target_date]])+'</article>';}).join(''):'<p>No corrective actions recorded.</p>')+'</section>';
+  var photos=Array.isArray(row.photos)?row.photos.filter(Boolean):[];
+  h+='<section><h3>Evidence attachments</h3>'+(photos.length?'<ul>'+photos.map(function(p){
+    var raw=typeof p==='string'?p:p.url,url=null;try{url=new URL(raw);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)url=null;}catch(_){}
+    var name=typeof p==='object'&&(p.file_name||p.type)||'Attachment';
+    return '<li>'+(url?'<a href="'+escH(url.href)+'" target="_blank" rel="noopener noreferrer">'+escH(name)+'</a>':escH(name)+' — unavailable or unsafe link')+'</li>';
+  }).join('')+'</ul>':'<p>No evidence attachments recorded.</p>')+'</section>';
+  return h+'<section><h3>Sign-off</h3>'+auditInspectionFieldsHTML([['Inspector / supervisor',row.sign_inspector],['Signed',row.prestart_signed_at||row.sign_date],['Reviewer',row.sign_reviewer||row.reviewed_by],['Reviewed',row.sign_reviewer_date||row.reviewed_date]])+'</section>';
+}
 
 // -- CONTRACTOR FORM -----------------------------------------------------------
 function conShowForm(){
@@ -33811,17 +33870,54 @@ async function psLoad(){
 }
 
 function psShowList(){
+  if(window.psSaving)return;
   document.getElementById('ps-form3view').style.display='none';
   document.getElementById('ps-list-view').style.display='block';
   psLoad();
 }
 
+// Pre-start checklist helpers: never share controls or draft state with #if-checklist.
+function psDefaultChecklist(){
+  return [
+    {category:'Equipment',item:'Equipment is in good working condition'},
+    {category:'Equipment',item:'All guards and safety devices in place'},
+    {category:'Area',item:'Work area is clear of hazards'},
+    {category:'Area',item:'Proper lighting is available'},
+    {category:'Personnel',item:'All team members are competent for the task'},
+    {category:'Personnel',item:'No physical impairment (fatigue, illness)'},
+    {category:'Documentation',item:'Risk assessment has been reviewed'},
+    {category:'Documentation',item:'Permit to work is in place (if required)'},
+    {category:'PPE',item:'All required PPE is available and worn'},
+    {category:'Emergency',item:'Emergency procedures are known'}
+  ];
+}
+function psFormError(message){
+  var el=document.getElementById('ps-form-error');
+  if(el){el.textContent=message||'';el.hidden=!message;if(message){el.focus();el.scrollIntoView({block:'nearest'});}}
+}
+function psResetSupplementary(x){
+  x=x||{};
+  ['hazards','controls','ppe-extra'].forEach(function(key){var el=document.getElementById('ps-'+key);if(el)el.value=x[key.replace(/-/g,'_')]||'';});
+  document.querySelectorAll('#ps-ppe-checks input').forEach(function(el){
+    el.checked=Array.isArray(x.ppe_required)&&x.ppe_required.includes(el.parentElement.textContent.trim());
+  });
+}
+function psBindFormLabels(){
+  document.querySelectorAll('#ps-form3view .form3group').forEach(function(group){
+    var label=group.querySelector('label'),input=group.querySelector('input,select,textarea');
+    if(label&&input?.id)label.htmlFor=input.id;
+  });
+}
 function psNew(){
+  if(window.psSaving)return;
+  window.psFormContext={company:ccid(),id:null};
+  window.psLegacySignDate=null;
+  psFormError('');psResetSupplementary();psBindFormLabels();
   window.psEditId=null;
   document.getElementById('ps-form3title').textContent='New Pre-Start Inspection';
   document.getElementById('ps-delete-btn').style.display='none';
   ['ps-activity','ps-location','ps-supervisor','ps-team','ps-ra-ref','ps-ptw-ref',
-   'ps-tbt-topics','ps-decision-notes','ps-sign-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+   'ps-tbt-topics','ps-decision-notes','ps-sign-name','ps-sign-datetime'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('ps-date').value=new Date().toISOString().slice(0,16);
   fillPersonSelect('ps-supervisor', prof?.full_name||personFullName(prof)||'');
   fillRiskAssessmentSelect('ps-ra-ref','');
@@ -33831,29 +33927,31 @@ function psNew(){
   document.getElementById('ps-stop-work').checked=false;
   document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value==='go';});
   // Load pre-start checklist
-  window.chkItems=[
-    {ca:'Equipment',item:'Equipment is in good working condition'},{ca:'Equipment',item:'All guards and safety devices in place'},
-    {ca:'Area',item:'Work area is clear of hazards'},{ca:'Area',item:'Proper lighting is available'},
-    {ca:'Personnel',item:'All team members are competent for the task'},{ca:'Personnel',item:'No physical impairment (fatigue, illness)'},
-    {ca:'Documentation',item:'Risk assessment has been reviewed'},{ca:'Documentation',item:'Permit to work is in place (if required)'},
-    {ca:'PPE',item:'All required PPE is available and worn'},{ca:'Emergency',item:'Emergency procedures are known'},
-  ];
-  buildChecklist([]);
+  psBuildChecklist(psDefaultChecklist());
   document.getElementById('ps-list-view').style.display='none';
   document.getElementById('ps-form3view').style.display='block';
 }
 
 function psOpen(id){
+  if(window.psSaving)return;
+  var company=ccid();
   // Load from audit data or fetch
   var x = auditAllData.find(function(r){return r.id===id;});
   if(x){
     psOpenData(x);
   } else {
-    api('/inspections?id=eq.'+id+cf()).then(function(d){if(d&&d[0])psOpenData(d[0]);}).catch(function(){});
+    api('/inspections?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(company)).then(function(d){
+      if(String(ccid())!==String(company))return;
+      if(d&&d[0])psOpenData(d[0]);else toast('Pre-start inspection not found or access denied.',false);
+    }).catch(function(){if(String(ccid())===String(company))toast('Could not load the pre-start inspection. Please retry.',false);});
   }
 }
 
 function psOpenData(x){
+  if(window.psSaving)return;
+  if(!x.company_id||String(x.company_id)!==String(ccid())){toast('Select this inspection\'s company before editing it.',false);return;}
+  window.psFormContext={company:x.company_id,id:x.id,status:x.status};
+  psFormError('');psResetSupplementary(x);psBindFormLabels();
   window.psEditId=x.id;
   document.getElementById('ps-form3title').textContent=x.site||x.activity||'Pre-Start';
   document.getElementById('ps-delete-btn').style.display=isMgr()?'inline-flex':'none';
@@ -33865,41 +33963,38 @@ function psOpenData(x){
   gf('ps-team',x.team_members||''); fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
   gf('ps-tbt-topics',x.tbt_topics||''); gf('ps-decision-notes',x.decision_notes||'');
   gf('ps-sign-name',x.sign_inspector||'');
-  if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.sign_date||'';
+  if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.prestart_signed_at||'';
   document.getElementById('ps-tbt-done').checked=!!x.tbt_done;
   document.getElementById('ps-stop-work').checked=!!x.stop_work_briefed;
   var dec=x.decision||'go';
   document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value===dec;});
-  if(x.items){window.chkItems=(x.items||[]).map(function(i){return{ca:i.category||'',item:i.item||''};});buildChecklist(x.items);}
-  else{
-    window.chkItems=AUDIT_DEFAULT_CHECKLISTS.prestart||[
-      {ca:'Equipment',item:'Equipment is in good working condition'},{ca:'Area',item:'Work area is clear of hazards'},
-      {ca:'Personnel',item:'All team members are competent for the task'},{ca:'Documentation',item:'Risk assessment has been reviewed'}
-    ];
-    buildChecklist([]);
-  }
+  var savedItems=Array.isArray(x.items)?x.items.filter(function(i){return i&&(i.item||i.item_name);}):[];
+  psBuildChecklist(savedItems.length?savedItems:psDefaultChecklist());
+  if(!savedItems.length)psFormError('This record has no saved checklist answers. Complete the checklist before saving.');
+  window.psLegacySignDate=x.sign_date||null;
   document.getElementById('ps-list-view').style.display='none';
   document.getElementById('ps-form3view').style.display='block';
 }
 
 async function psSave(){
+  if(window.psSaving||!workflowCanMutate('inspection','pre-start inspections'))return;
+  psFormError('');
+  var context=window.psFormContext;
+  if(!context||!context.company||String(context.company)!==String(ccid())){psFormError('Company changed. Reopen this inspection in its original company before saving.');return;}
   var activity=document.getElementById('ps-activity')?.value?.trim();
-  if(!activity){toast('Please enter activity / task',false);return;}
+  if(!activity){psFormError('Please enter activity / task');return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  if(!g('ps-location')){toast('Please enter pre-start location',false);return;}
-  if(!g('ps-date')){toast('Please select pre-start date and time',false);return;}
-  if(!g('ps-supervisor')){toast('Please select supervisor / inspector',false);return;}
-  var items=(window.chkItems||[]).map(function(c,i){
-    var gEl=document.getElementById('cg-'+i);var iEl=document.getElementById('ci-'+i);var nEl=document.getElementById('cn-'+i);var oEl=document.getElementById('co-'+i);
-    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
-  }).filter(function(x){return x.item;});
-  if(!items.length){toast('Please add at least one pre-start checklist item',false);return;}
-  if(items.some(function(x){return !x.result;})){toast('Please mark each pre-start checklist item as Good, Insufficient, or N/A',false);return;}
+  if(!g('ps-location')?.trim()){psFormError('Please enter pre-start location');return;}
+  if(!g('ps-date')){psFormError('Please select pre-start date and time');return;}
+  if(!g('ps-supervisor')){psFormError('Please select supervisor / inspector');return;}
+  var items=psCollectChecklist();
+  if(!items.length){psFormError('Please add at least one pre-start checklist item');return;}
+  if(items.some(function(x){return !x.result;})){psFormError('Please mark each pre-start checklist item as Good, Insufficient, or N/A');return;}
   var goodCnt=items.filter(function(x){return x.result==='good';}).length;
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   var dec=document.querySelector('input[name="ps-dec"]:checked')?.value||'go';
   var dt=g('ps-date');
-  var body={company_id:ccid(),inspection_type:'prestart',site:activity,activity:activity,
+  var body={company_id:context.company,inspection_type:'prestart',site:activity,activity:activity,
     location:g('ps-location'),inspection_date:dt?dt.split('T')[0]:null,if_date:dt?dt.split('T')[0]:null,
     inspection_time:dt?dt.split('T')[1]:null,duration_hours:g('ps-duration')?parseFloat(g('ps-duration')):null,
     inspector:g('ps-supervisor'),supervisor:g('ps-supervisor'),if_by:g('ps-supervisor'),
@@ -33907,14 +34002,32 @@ async function psSave(){
     tbt_done:document.getElementById('ps-tbt-done')?.checked||false,tbt_topics:g('ps-tbt-topics'),
     stop_work_briefed:document.getElementById('ps-stop-work')?.checked||false,
     decision:dec,decision_notes:g('ps-decision-notes'),
-    sign_inspector:g('ps-sign-name'),sign_date:g('ps-sign-datetime')||null,
-    score_good:goodCnt,score_insuf:insufCnt,items,status:'completed',updated_at:new Date().toISOString()};
+    hazards:g('ps-hazards'),controls:g('ps-controls'),ppe_extra:g('ps-ppe-extra'),
+    ppe_required:Array.from(document.querySelectorAll('#ps-ppe-checks input:checked')).map(function(el){return el.parentElement.textContent.trim();}),
+    sign_inspector:g('ps-sign-name'),sign_date:g('ps-sign-datetime')?.split('T')[0]||window.psLegacySignDate||null,
+    prestart_signed_at:g('ps-sign-datetime')||null,
+    score_good:goodCnt,score_insuf:insufCnt,items,status:context.status||'completed',updated_at:new Date().toISOString()};
+  var controls=Array.from(document.getElementById('ps-form3view').querySelectorAll('input,select,textarea,button')).map(function(el){return {el:el,disabled:el.disabled};});
+  window.psSaving=true;controls.forEach(function(x){x.el.disabled=true;});
+  var saved=false;
   try{
-    if(window.psEditId){await api('/inspections?id=eq.'+window.psEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/inspections',{m:'POST',p:'return=minimal',b:body});toast('Pre-start saved!');}
+    if(!context.id)body.created_by=prof?.id;
+    var result=await api(context.id?'/inspections?id=eq.'+encodeURIComponent(context.id)+'&company_id=eq.'+encodeURIComponent(context.company):'/inspections',
+      {m:context.id?'PATCH':'POST',p:'return=representation',b:body});
+    if(!Array.isArray(result)||result.length!==1||!result[0].id||String(result[0].company_id)!==String(context.company)||(context.id&&String(result[0].id)!==String(context.id)))throw new Error('Save was not confirmed. Keep this form open and check the register before retrying.');
+    saved=true;
+    if(window.psFormContext!==context||String(ccid())!==String(context.company))return;
+    window.psEditId=result[0].id;context.id=result[0].id;
+    toast('Pre-start inspection saved.');
     if(dec==='stop')toast('STOP decision - work must not proceed until issues resolved.',false);
-    psShowList();
-  }catch(e){toast(actionErrorMessage('Save pre-start inspection','Audits & Inspections',e.message),false);}
+  }catch(e){
+    if(window.psFormContext===context){
+      var message=e.message||'Unable to save this inspection.';
+      if(/schema cache|column.*does not exist/i.test(message))message='Pre-start database setup is incomplete. The inspection form migration must be deployed before saving. Your entries remain here. Technical detail: '+message;
+      psFormError(message);
+    }
+  }finally{window.psSaving=false;controls.forEach(function(x){x.el.disabled=x.disabled;});}
+  if(saved&&window.psFormContext===context&&String(ccid())===String(context.company))psShowList();
 }
 
 async function psDelete(){
@@ -33948,9 +34061,18 @@ async function psDeleteFromList(id){
 }
 
 function psDecisionChange(){}  // handled by radio onchange
-function psBuildChecklist(){buildChecklist([]);}
-function psScore(){updateScore();}
-function psCollectChecklist(){return (window.chkItems||[]).map(function(c,i){return{category:c.ca,item:c.item,result:document.getElementById('cg-'+i)?.checked?'good':(document.getElementById('ci-'+i)?.checked?'insufficient':'na'),observation:document.getElementById('co-'+i)?.value||''};});}
+function psBuildChecklist(items){
+  var el=document.getElementById('ps-checklist-body');if(!el)return;
+  window.psChecklistItems=(Array.isArray(items)?items:psDefaultChecklist()).map(function(c){return {category:c.category||c.ca||'',item:c.item||c.item_name||'',guidance:c.guidance||'',result:c.result||'',observation:c.observation||c.obs||''};}).filter(function(c){return c.item;});
+  el.innerHTML=window.psChecklistItems.map(function(c,i){return '<fieldset class="ps-check-item"><legend>'+escH((i+1)+'. '+c.item)+'</legend><p class="ps-check-category">'+escH(c.category)+'</p>'+(c.guidance?'<p>'+escH(c.guidance)+'</p>':'')+'<div class="ps-check-answers">'+[['good','Good'],['insufficient','Insufficient'],['na','N/A']].map(function(v){return '<label><input type="radio" id="ps-'+v[0]+'-'+i+'" name="ps-result-'+i+'" value="'+v[0]+'"'+(c.result===v[0]?' checked':'')+'><span>'+v[1]+'</span></label>';}).join('')+'</div><label class="ps-check-comment" for="ps-observation-'+i+'">Observations / comments</label><textarea id="ps-observation-'+i+'" rows="2">'+escH(c.observation)+'</textarea></fieldset>';}).join('');
+  el.onchange=psScore;psScore();
+}
+function psScore(){
+  var items=psCollectChecklist(),good=items.filter(function(x){return x.result==='good';}).length,insuf=items.filter(function(x){return x.result==='insufficient';}).length;
+  var answered=items.filter(function(x){return x.result;}).length;
+  var el=document.getElementById('ps-score');if(el)el.textContent=(good+insuf?Math.round(good/(good+insuf)*100)+'%':'—')+' · '+answered+'/'+items.length+' answered';
+}
+function psCollectChecklist(){return (window.psChecklistItems||[]).map(function(c,i){return {category:c.category,item:c.item,guidance:c.guidance||'',result:['good','insufficient','na'].find(function(v){return document.getElementById('ps-'+v+'-'+i)?.checked;})||'',observation:document.getElementById('ps-observation-'+i)?.value?.trim()||''};});}
 
 // -- Misc backward compat --------------------------------------------
 function psShowList_alt(){psShowList();}
