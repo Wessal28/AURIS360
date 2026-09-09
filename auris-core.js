@@ -13850,7 +13850,7 @@ async function wsOpenLinkedRecord(kind,value){
         p=permits&&permits[0];
         if(p&&!(ptwAllData||[]).some(function(r){return r.id===p.id;}))ptwAllData.unshift(p);
       }
-      if(p&&typeof ptwShowDetail==='function'){setTimeout(function(){ptwShowDetail(p.id);},150);return;}
+      if(p&&typeof ptwShowDetail==='function'){wsSetRecordReturnContext('ptw',wsCurrentId,'preview');setTimeout(function(){ptwShowDetail(p.id);},150);return;}
     }
     if(kind==='tbt'){
       showPage('meetings',document.querySelector('[onclick*="\'meetings\'"]'));
@@ -19519,6 +19519,7 @@ function ptwRenderList(){
   el.innerHTML=h+'</tbody></table></div>';
 }
 function ptwShowList(){
+  if(typeof wsReturnToWork==='function'&&wsReturnToWork('ptw'))return;
   ptwSetView('list');
   ptwRenderList();
 }
@@ -20050,7 +20051,10 @@ async function ptwSave(targetStatus){
       toast('Permit updated!');
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
-      ptwShowDetail(ptwEditingId);
+      if(wsRecordReturnMatches('ptw')){
+        try{await wsAttachSavedRecord('ptw',updatedPermit);wsReturnToWork('ptw');}
+        catch(linkError){toast('The permit was saved, but it could not be linked to the work order. Please retry from the work order. '+(linkError.message||''),false);ptwShowDetail(ptwEditingId);}
+      }else ptwShowDetail(ptwEditingId);
     }else{
       body.created_by=prof?.id;
       var res=await apiWriteWithMissingColumnFallback('/permits',{m:'POST',p:'return=representation',b:body},'Permit');
@@ -20079,7 +20083,10 @@ async function ptwSave(targetStatus){
         }
         toast('Permit created! Ref: '+ref);
         ptwCurrentId=res[0].id;
-        await ptwShowDetail(res[0].id);
+        if(wsRecordReturnMatches('ptw')){
+          try{await wsAttachSavedRecord('ptw',res[0]);wsReturnToWork('ptw');}
+          catch(linkError){toast('The permit was created, but it could not be linked to the work order. Please retry from the work order. '+(linkError.message||''),false);await ptwShowDetail(res[0].id);}
+        }else await ptwShowDetail(res[0].id);
       }
     }
   }catch(e){toast(actionErrorMessage('Save permit','Permit to Work',e.message),false);console.error(e);}
@@ -20130,6 +20137,7 @@ function ptwEditCurrent(){
 }
 
 function ptwFormBack(){
+  if(typeof wsReturnToWork==='function'&&wsReturnToWork('ptw'))return;
   document.getElementById('ptw-form3view').style.display='none';
   if(ptwCurrentId&&ptwEditingId){document.getElementById('ptw-detail-view').style.display='block';}
   else{ptwSetView('list');ptwRenderList();}

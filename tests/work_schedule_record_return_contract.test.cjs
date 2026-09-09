@@ -16,13 +16,14 @@ test('work detail supports every linked inspection, risk assessment and permit',
 });
 
 test('forms opened from a work order link back and return to that work', () => {
-  for (const kind of ['prestart', 'site', 'ra']) {
+  for (const kind of ['prestart', 'site', 'ra', 'ptw']) {
     assert.match(core, new RegExp(`wsSetRecordReturnContext\\('${kind}'`));
     assert.match(core, new RegExp(`wsReturnToWork\\('${kind}'\\)`));
   }
   assert.match(core, /wsAttachSavedRecord\('prestart'/);
   assert.match(core, /wsAttachSavedRecord\('site'/);
   assert.match(core, /wsAttachSavedRecord\('ra'/);
+  assert.match(core, /wsAttachSavedRecord\('ptw'/);
   assert.match(core, /showPage\('workschedule'/);
 });
 
