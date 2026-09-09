@@ -100,3 +100,15 @@ test('mobile interaction keeps named icon actions and visible keyboard focus', (
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /scroll-padding-bottom:\s*calc\(82px \+ env\(safe-area-inset-bottom, 0px\)\)/);
 });
+
+test('mobile navigation exposes the routed page as the current destination', () => {
+  const start = core.indexOf('function mobileSetBottomNavActive(page, btnEl)');
+  const end = core.indexOf('function mobileGoBack()', start);
+  const activeState = core.slice(start, end);
+
+  assert.match(html, /id="mob-btn-dashboard"[^>]+aria-current="page"/);
+  assert.match(activeState, /removeAttribute\('aria-current'\)/);
+  assert.match(activeState, /setAttribute\('aria-current', 'page'\)/);
+  assert.match(core, /window\.innerWidth<=768&&typeof mobileSetBottomNavActive==='function'/);
+  assert.match(core, /mobileSetBottomNavActive\(pageKey,null\)/);
+});

@@ -3249,6 +3249,29 @@ function moduleLoaderFor(pageKey){
   return loaderName&&typeof window[loaderName]==='function'?window[loaderName]:null;
 }
 
+function activatePageNavigation(pageKey, suppliedElement){
+  // Some routes run before the icon system has annotated the sidebar.
+  // The enhancer is hoisted and safely fills the same stable route keys.
+  if(typeof sidebarEnhanceNavItems==='function')sidebarEnhanceNavItems();
+  var sidebarItems=Array.prototype.slice.call(document.querySelectorAll('.sidebar .nav-item'));
+  var suppliedItem=suppliedElement&&typeof suppliedElement.closest==='function'
+    ?suppliedElement.closest('.sidebar .nav-item')
+    :null;
+  var activeItem=suppliedItem&&suppliedItem.dataset&&suppliedItem.dataset.navKey===pageKey
+    ?suppliedItem
+    :sidebarItems.find(function(item){return item.dataset&&item.dataset.navKey===pageKey;})||null;
+
+  sidebarItems.forEach(function(item){
+    var isActive=item===activeItem;
+    item.classList.toggle('active',isActive);
+    if(isActive)item.setAttribute('aria-current','page');
+    else item.removeAttribute('aria-current');
+  });
+  if(window.innerWidth<=768&&typeof mobileSetBottomNavActive==='function'){
+    mobileSetBottomNavActive(pageKey,null);
+  }
+}
+
 function showPage(name,el){
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
@@ -3262,14 +3285,13 @@ closeTransientOverlays();
 const activateRoutedPage=function(){
   // Shared page CSS owns visibility; routing only changes the active state.
   document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
-  document.querySelectorAll('.nav-item').forEach(function(item){item.classList.remove('active');});
   const target=document.getElementById('page-'+name);
   if(!target)return null;
   target.classList.add('active');
   // Dynamic/upgraded modules must not be allowed to retain a stale inline
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
-  if(el&&el.classList)el.classList.add('active');
+  activatePageNavigation(name,el);
   return target;
 };
 var pageLoader=moduleLoaderFor(name);
@@ -38535,12 +38557,18 @@ function mobileNavTo(page, title, btnEl) {
 }
 
 function mobileSetBottomNavActive(page, btnEl) {
-  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) {
+    b.classList.remove('active');
+    b.removeAttribute('aria-current');
+  });
   var activeBtn = null;
   if (btnEl && btnEl.classList && btnEl.classList.contains('mob-nav-btn')) activeBtn = btnEl;
   if (!activeBtn) activeBtn = document.getElementById('mob-btn-' + page);
   if (!activeBtn) activeBtn = document.getElementById('mob-btn-modules');
-  if (activeBtn) activeBtn.classList.add('active');
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-current', 'page');
+  }
 }
 
 function mobileGoBack() {
