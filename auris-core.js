@@ -13274,6 +13274,7 @@ function wsOpenPreStart(){
     var btn=document.getElementById('insp-tab-prestart');
     if(btn)inspSwitchTab('prestart',btn);
     setTimeout(function(){
+      wsSetRecordReturnContext('prestart',x.id,'form');
       psNew();
       // Pre-fill
       setTimeout(function(){
@@ -13296,6 +13297,7 @@ function wsOpenSiteInspection(){
     var btn=document.getElementById('insp-tab-site');
     if(btn)inspSwitchTab('site',btn);
     setTimeout(function(){
+      wsSetRecordReturnContext('site',x.id,'form');
       inspNew();
       setTimeout(function(){
         var site=document.getElementById('if-site');if(site)site.value=x.location||'';
@@ -13540,11 +13542,12 @@ async function wsOpenRA(){
     }catch(e){toastActionError('Choose risk assessment','Work Schedule',e);}
     return;
   }
-  window.wsPendingRiskLink={workOrderId:x.id,companyId:ccid(),workOrderTitle:x.title||x.ref_number||'Work order'};
   showPage('risk',document.querySelector('[onclick*="\'risk\'"]'));
   setTimeout(function(){
+    wsSetRecordReturnContext('ra',x.id,'form');
     if(choice==='template'&&typeof raShowNewPanel==='function')raShowNewPanel();
     else if(typeof raNew==='function')raNew('baseline');
+    setTimeout(function(){var wo=document.getElementById('ra-linked-wo');if(wo)wo.value=x.id;},180);
   },250);
 }
 
@@ -13791,6 +13794,40 @@ function wsRestEqValue(value){
   return encodeURIComponent(String(value||'').trim());
 }
 
+function wsSetRecordReturnContext(kind,workOrderId,mode){
+  if(!workOrderId)return;
+  window.wsRecordReturnContext={kind:kind,workOrderId:String(workOrderId),companyId:String(ccid()||''),mode:mode||'preview'};
+}
+
+function wsRecordReturnMatches(kind){
+  var ctx=window.wsRecordReturnContext;
+  return !!(ctx&&ctx.workOrderId&&String(ctx.companyId)===String(ccid()||'')&&(!kind||ctx.kind===kind));
+}
+
+function wsReturnToWork(kind){
+  if(!wsRecordReturnMatches(kind))return false;
+  var ctx=window.wsRecordReturnContext;
+  window.wsRecordReturnContext=null;
+  showPage('workschedule',document.querySelector('[onclick*="\'workschedule\'"]'));
+  setTimeout(function(){wsShowDetail(ctx.workOrderId);},220);
+  return true;
+}
+
+async function wsAttachSavedRecord(kind,record){
+  if(!record||!record.id||!wsRecordReturnMatches(kind))return;
+  var ctx=window.wsRecordReturnContext;
+  var ref=kind==='ra'?(record.ra_ref||record.id):kind==='ptw'?(record.permit_number||record.id):(record.reference_no||record.id);
+  await api('/work_schedule_links?on_conflict=work_order_id,link_type,record_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ctx.companyId,work_order_id:ctx.workOrderId,link_type:kind,record_id:record.id,record_ref:ref,created_by:prof?.id}});
+  var patch={updated_at:new Date().toISOString()};
+  if(kind==='prestart')patch.prestart_id=record.id;
+  if(kind==='site')patch.site_inspection_id=record.id;
+  if(kind==='ra'){patch.ra_ref=ref;patch.risk_assessment_id=record.id;patch.requires_ra=true;}
+  if(kind==='ptw'){patch.permit_ref=ref;patch.permit_id=record.id;patch.requires_permit=true;}
+  await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+encodeURIComponent(ctx.workOrderId),{m:'PATCH',p:'return=minimal',b:patch},'Work order relationship');
+  var work=(wsAllData||[]).find(function(x){return String(x.id)===String(ctx.workOrderId);});
+  if(work){Object.assign(work,patch);work.__hseLinks=work.__hseLinks||[];if(!work.__hseLinks.some(function(l){return l.link_type===kind&&String(l.record_id)===String(record.id);})){work.__hseLinks.push({link_type:kind,record_id:record.id,record_ref:ref});}}
+}
+
 async function wsOpenLinkedRecord(kind,value){
   value=value||wsSelectedLinkedValue(kind);
   if(!value){toast('No linked record selected',false);return;}
@@ -13803,7 +13840,7 @@ async function wsOpenLinkedRecord(kind,value){
         rec=rows&&rows[0];
         if(rec&&!(raAllData||[]).some(function(r){return r.id===rec.id;}))raAllData.unshift(rec);
       }
-      if(rec&&typeof raOpenReadOnly==='function'){setTimeout(function(){raOpenReadOnly(rec.id);},150);return;}
+      if(rec&&typeof raOpenReadOnly==='function'){wsSetRecordReturnContext('ra',wsCurrentId,'preview');setTimeout(function(){raOpenReadOnly(rec.id);},150);return;}
     }
     if(kind==='ptw'){
       showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
@@ -13834,7 +13871,7 @@ async function wsOpenLinkedRecord(kind,value){
         a=audits&&audits[0];
         if(a&&!(auditAllData||[]).some(function(r){return r.id===a.id;}))auditAllData.unshift(a);
       }
-      if(a&&typeof auditOpenReadOnly==='function'){setTimeout(function(){auditOpenReadOnly(a.id);},150);return;}
+      if(a&&typeof auditOpenReadOnly==='function'){wsSetRecordReturnContext(kind,wsCurrentId,'preview');setTimeout(function(){auditOpenReadOnly(a.id);},150);return;}
     }
     if(kind==='event'){
       showPage('events',document.querySelector('[onclick*="\'events\'"]'));
@@ -13852,12 +13889,14 @@ async function wsOpenLinkedRecord(kind,value){
 async function wsRenderLinkedRecords(x){
   var el=document.getElementById('ws-linked-records');if(!el)return;
   var row=function(icon,label,kind,col){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
+    return '<div style="padding:8px 0;border-bottom:1px solid #f5f5f5">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
       +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
       +'<span style="font-size:12px;color:var(--text2);flex:0 0 105px">'+label+'</span>'
-      +'<select id="ws-link-'+kind+'" '+(['tbt','prestart','site','ptw'].includes(kind)?'multiple size="3" title="Select one or more records" ':'')+'data-auris-runtime-onchange="r0058" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
+      +'<select id="ws-link-'+kind+'" '+(['tbt','prestart','site','ra','ptw'].includes(kind)?'multiple size="3" title="Select one or more records" ':'')+'data-auris-runtime-onchange="r0058" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
       +'<option value="">Loading...</option></select>'
       +'<button class="btn btn-sm" type="button" title="Open linked record" data-auris-runtime-onclick="r0059" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="padding:5px 7px"><i class="ti ti-external-link"></i></button>'
+      +'</div><div id="ws-linked-summary-'+kind+'" style="margin:6px 0 0 131px"></div>'
       +'</div>';
   };
   var h='';
@@ -13869,6 +13908,12 @@ async function wsRenderLinkedRecords(x){
   h+=row('ti-siren','Incident / hazard','event','#D63A3A');
   el.innerHTML=h;
   await wsLoadLinkedRecordOptions(x);
+}
+
+function wsRenderLinkedSummary(kind){
+  var el=document.getElementById('ws-linked-summary-'+kind),sel=document.getElementById('ws-link-'+kind);if(!el||!sel)return;
+  var options=Array.from(sel.selectedOptions||[]).filter(function(o){return o.value;});
+  el.innerHTML=options.length?options.map(function(o){return '<button type="button" class="link-ref-btn" data-auris-runtime-onclick="r0057" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind,o.value]))+'" style="display:inline-flex;align-items:center;gap:4px;margin:2px 5px 2px 0;padding:3px 7px;border:1px solid var(--border);border-radius:999px;background:#f8fafc;color:var(--green);font-size:10.5px;cursor:pointer"><i class="ti ti-external-link"></i>'+escH(o.textContent)+'</button>';}).join(''):'<span style="font-size:10.5px;color:var(--text3)">No records linked</span>';
 }
 
 function wsLinkedOptionHtml(rows,selected,blankLabel,valueFn,labelFn){
@@ -13900,21 +13945,22 @@ async function wsLoadLinkedRecordOptions(x){
       api('/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&order=talk_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
       api('/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&inspection_type=eq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
       api('/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&inspection_type=neq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
-      api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
-      api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];}),
+      api('/risk_assessments?select=id,ra_ref,title,activity,status,work_order_id'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
+      api('/permits?select=id,permit_number,permit_type,permit_type_v2,status,work_order_id'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];}),
       api('/events?select=id,event_ref,incident_number,event_type,severity,status,description,event_date'+cf()+'&order=event_date.desc,created_at.desc&limit=150').catch(function(){return[];})
       ,api('/work_schedule_links?select=*'+cf()+'&work_order_id=eq.'+wsRestEqValue(x.id)+'&order=created_at.asc').catch(function(){return[];})
     ]);
-    x.__hseLinks=data[6]||[];var linked=function(kind,fallback){var values=x.__hseLinks.filter(function(l){return l.link_type===kind;}).map(function(l){return l.record_ref||l.record_id;}).filter(Boolean);if(fallback&&!values.includes(fallback))values.unshift(fallback);return values;};
+    x.__hseLinks=data[6]||[];var linked=function(kind,fallback,directRows,valueFn){var values=x.__hseLinks.filter(function(l){return l.link_type===kind;}).map(function(l){return l.record_ref||l.record_id;}).filter(Boolean);(directRows||[]).filter(function(r){return String(r.work_order_id||'')===String(x.id);}).forEach(function(r){var v=valueFn(r);if(v&&!values.includes(v))values.push(v);});if(fallback&&!values.includes(fallback))values.unshift(fallback);return values;};
     data[0]=await wsEnsureLinkedRow(data[0],x.toolbox_talk_id,'/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&id=eq.'+wsRestEqValue(x.toolbox_talk_id)+'&limit=1',function(r,v){return r.id===v||r.tbt_ref===v;});
     data[1]=await wsEnsureLinkedRow(data[1],x.prestart_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.prestart_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
     data[2]=await wsEnsureLinkedRow(data[2],x.site_inspection_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.site_inspection_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
     set('ws-link-tbt',wsLinkedOptionHtml(data[0],linked('tbt',x.toolbox_talk_id),'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
     set('ws-link-prestart',wsLinkedOptionHtml(data[1],linked('prestart',x.prestart_id),'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
     set('ws-link-site',wsLinkedOptionHtml(data[2],linked('site',x.site_inspection_id),'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
-    set('ws-link-ra',wsLinkedOptionHtml(data[3],x.ra_ref,'No risk assessment',function(r){return r.ra_ref||r.id;},function(r){return [(r.ra_ref||'RA'),r.title||r.activity,r.status].filter(Boolean).join(' - ');}));
-    set('ws-link-ptw',wsLinkedOptionHtml(data[4],linked('ptw',x.permit_ref),'No permit to work',function(r){return r.permit_number||r.id;},function(r){var type=r.permit_type_v2||r.permit_type;var cfg=(typeof PTW_TYPE_CFG!=='undefined')?PTW_TYPE_CFG[type]:null;return [(r.permit_number||'PTW'),cfg?.label||type,r.status].filter(Boolean).join(' - ');}));
+    set('ws-link-ra',wsLinkedOptionHtml(data[3],linked('ra',x.ra_ref,data[3],function(r){return r.ra_ref||r.id;}),'No risk assessment',function(r){return r.ra_ref||r.id;},function(r){return [(r.ra_ref||'RA'),r.title||r.activity,r.status].filter(Boolean).join(' - ');}));
+    set('ws-link-ptw',wsLinkedOptionHtml(data[4],linked('ptw',x.permit_ref,data[4],function(r){return r.permit_number||r.id;}),'No permit to work',function(r){return r.permit_number||r.id;},function(r){var type=r.permit_type_v2||r.permit_type;var cfg=(typeof PTW_TYPE_CFG!=='undefined')?PTW_TYPE_CFG[type]:null;return [(r.permit_number||'PTW'),cfg?.label||type,r.status].filter(Boolean).join(' - ');}));
     set('ws-link-event',wsLinkedOptionHtml(data[5],x.linked_event_ref,'No incident or hazard report',function(r){return r.event_ref||r.incident_number||r.id;},function(r){return [(r.event_ref||r.incident_number||'Event'),r.event_type,r.severity,r.status].filter(Boolean).join(' - ');}));
+    ['tbt','prestart','site','ra','ptw','event'].forEach(wsRenderLinkedSummary);
   }catch(e){
     ['tbt','prestart','site','ra','ptw','event'].forEach(function(k){set('ws-link-'+k,'<option value="">Unable to load</option>');});
   }
@@ -13932,7 +13978,7 @@ async function wsLinkedRecordChanged(kind,value){
   if(kind==='ptw'){patch.permit_ref=value||null;patch.permit_id=selectedId;patch.requires_permit=!!value;}
   if(kind==='event')patch.linked_event_ref=value||null;
   try{
-    if(['tbt','prestart','site','ptw'].includes(kind)){
+    if(['tbt','prestart','site','ra','ptw'].includes(kind)){
       await api('/work_schedule_links?work_order_id=eq.'+encodeURIComponent(wsCurrentId)+'&link_type=eq.'+encodeURIComponent(kind),{m:'DELETE',p:'return=minimal'}).catch(function(){return null;});
       for(var li=0;li<values.length;li++){var opt=Array.from(document.getElementById('ws-link-'+kind)?.options||[]).find(function(o){return o.value===values[li];});await api('/work_schedule_links',{m:'POST',p:'return=minimal',b:{company_id:ccid(),work_order_id:wsCurrentId,link_type:kind,record_id:opt?.dataset.recordId||null,record_ref:opt?.dataset.recordRef||values[li],created_by:prof?.id}}).catch(function(){return null;});}
     }
@@ -13942,6 +13988,7 @@ async function wsLinkedRecordChanged(kind,value){
     if(kind==='ra'){var ra=document.getElementById('ws-detail-ra');if(ra)ra.innerHTML=wsLinkedRefButton('ra',value,value||'-');}
     if(kind==='ptw'){var ptw=document.getElementById('ws-detail-ptw');if(ptw)ptw.innerHTML=wsLinkedRefButton('ptw',value,value||'-');}
     if(x)wsRenderActionStatuses(x);
+    wsRenderLinkedSummary(kind);
     toast('Linked record updated');
   }catch(e){toastActionError('Link HSE record','Work Schedule',e);}
 }
@@ -16139,6 +16186,7 @@ async function loadRA(){
 }
 
 function raShowList(){
+  if(typeof wsReturnToWork==='function'&&wsReturnToWork('ra'))return;
   ['ra-new-panel','ra-form3view','ra-jsa-form','ra-library-view','ra-manual-form','ra-specific-form'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
@@ -17030,12 +17078,13 @@ async function raSave(targetStatus){
   var woSel=document.getElementById('ra-linked-wo');
   if(woSel&&woSel.value)body.work_order_id=woSel.value;
   try{
-    var saved;
+    var savedRecord=null;
     if(raEditingId){
       await apiWriteWithMissingColumnFallback('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body},'Risk assessment');
       var idx=raAllData.findIndex(x=>x.id===raEditingId);
       if(idx>=0)Object.assign(raAllData[idx],body);
       var updatedRa=Object.assign({},currentRa||{},{id:raEditingId},body);
+      savedRecord=updatedRa;
       raRenderWorkflowBar(updatedRa);
       var submitted=['pending_review','pending_approval','review'].includes(status);
       if(submitted){
@@ -17060,6 +17109,7 @@ async function raSave(targetStatus){
         document.getElementById('ra-form3ref').textContent=ref;
         document.getElementById('ra-form3title').textContent=body.title||'Risk Assessment';
         var createdRa=Object.assign({},body,{id:res[0].id,ra_ref:ref});
+        savedRecord=createdRa;
         raRenderWorkflowBar(createdRa);
         var newSubmitted=['pending_review','pending_approval','review'].includes(status);
         if(newSubmitted){
@@ -17072,6 +17122,10 @@ async function raSave(targetStatus){
         toast('RA saved! Ref: '+ref);
         raSyncToMAP(res[0].id, rows);
       }
+    }
+    if(savedRecord&&wsRecordReturnMatches('ra')){
+      await wsAttachSavedRecord('ra',savedRecord);
+      wsReturnToWork('ra');
     }
   }catch(e){toast(actionErrorMessage('Save risk assessment','Risk Assessment',e.message),false);console.error(e);}
 }
@@ -20747,7 +20801,8 @@ function aurisReadOnlyRecordModal(kind,title,row,fields){
   var modal=document.createElement('div');modal.id='auris-readonly-record-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   var body=(fields||[]).filter(function(f){return f[1]!==null&&f[1]!==undefined&&String(f[1]).trim()!=='';}).map(function(f){return '<div style="border-bottom:1px solid var(--border);padding:9px 0"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(f[0])+'</div><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">'+escH(String(f[1]))+'</div></div>';}).join('');
   modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="'+escH(kind)+'" style="width:100%;max-width:720px;max-height:88vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(kind)+'</div><h2 style="margin:4px 0">'+escH(title||'Record')+'</h2><div style="font-family:monospace;font-size:11px;color:var(--text2)">'+escH(displayRecordRef(row||{},['reference_no','ref_number','plan_ref','drill_ref','issuance_ref'],'READ ONLY'))+'</div></div><button class="btn btn-sm auris-readonly-close"><i class="ti ti-x"></i></button></div><div style="margin-top:14px">'+(body||'<div class="empty">No additional details recorded.</div>')+'</div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary auris-readonly-close">Close</button></div></div>';
-  document.body.appendChild(modal);modal.querySelectorAll('.auris-readonly-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+  var close=function(){modal.remove();if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();};
+  document.body.appendChild(modal);modal.querySelectorAll('.auris-readonly-close').forEach(function(b){b.addEventListener('click',close);});modal.addEventListener('click',function(ev){if(ev.target===modal)close();});
 }
 
 function aurisRowRecordId(row){
@@ -20780,7 +20835,7 @@ function auditOpenReadOnly(id){
   modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · Full read-only report</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section></div></section>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
-  var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(opener?.isConnected)opener.focus();};
+  var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
   modal.closeReport=close;
   modal.querySelector('.inspection-report-close').addEventListener('click',close);
   modal.addEventListener('keydown',function(ev){
@@ -33651,7 +33706,11 @@ async function auditSave() {
       if(!a.description)continue;
       try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_id:savedId||null,source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
     }
-    auditBackToList();
+    var savedRecord=Object.assign({},body,{id:savedId,reference_no:savedRef||body.reference_no});
+    if(savedId&&wsRecordReturnMatches('site')){
+      await wsAttachSavedRecord('site',savedRecord);
+      wsReturnToWork('site');
+    }else auditBackToList();
   } catch(e) { toast(actionErrorMessage('Save inspection','Audits & Inspections',e.message),false); }
 }
 
@@ -33680,6 +33739,7 @@ async function auditDelete() {
 }
 
 function auditBackToList() {
+  if(typeof wsReturnToWork==='function'&&wsReturnToWork('site'))return;
   document.getElementById('audit-form3view').style.display='none';
   document.getElementById('audit-view-prestart').style.display='none';
   document.getElementById('audit-view-findings').style.display='none';
@@ -33878,6 +33938,7 @@ async function psLoad(){
 
 function psShowList(){
   if(window.psSaving)return;
+  if(typeof wsReturnToWork==='function'&&wsReturnToWork('prestart'))return;
   document.getElementById('ps-form3view').style.display='none';
   document.getElementById('ps-list-view').style.display='block';
   psLoad();
@@ -34034,7 +34095,12 @@ async function psSave(){
       psFormError(message);
     }
   }finally{window.psSaving=false;controls.forEach(function(x){x.el.disabled=x.disabled;});}
-  if(saved&&window.psFormContext===context&&String(ccid())===String(context.company))psShowList();
+  if(saved&&window.psFormContext===context&&String(ccid())===String(context.company)){
+    if(wsRecordReturnMatches('prestart')){
+      try{await wsAttachSavedRecord('prestart',Object.assign({},body,{id:context.id,reference_no:result[0].reference_no||context.id}));wsReturnToWork('prestart');}
+      catch(linkError){psFormError('The inspection was saved, but it could not be linked to the work order. Please retry from the work order. '+(linkError.message||''));}
+    }else psShowList();
+  }
 }
 
 async function psDelete(){

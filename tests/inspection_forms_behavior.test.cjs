@@ -21,6 +21,7 @@ function harness() {
     buildChecklist: () => { node('if-checklist').innerHTML='WRONG TABLE'; }, updateScore() {},
     escH:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
     toast:(s)=>notices.push(s), actionErrorMessage:(a,b,c)=>c, api:async(q,o)=>{calls.push({q,o});return [{id:'saved',company_id:'company-a'}];},
+    wsRecordReturnMatches:()=>false, wsAttachSavedRecord:async()=>{}, wsReturnToWork:()=>false,
     console, URL, Date };
   vm.createContext(ctx);
   const start = core.includes('// Pre-start checklist helpers') ? '// Pre-start checklist helpers' : 'function psNew()';
