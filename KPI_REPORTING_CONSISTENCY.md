@@ -21,7 +21,7 @@ For synthetic browser verification, run `node scripts/serve-kpi-preview-integrat
 
 Browser checks at 390x844 and 768x1024 confirmed the Reports basis, native click/Enter/Space export dispatch, August actual 80/Off Track versus included September 100/On Track, quarterly cut-offs, future-year blank results and prior-year measured zeroes. Captured CSVs retained all records and the stored monthly rows remained unchanged. Recorded-trend labels were verified in the real header and SVG accessibility text. Final report buttons measured 44px, with no document overflow or console warnings/errors. The temporary tab was closed, viewport reset and the exact task-owned helper stopped.
 
-Browser checks are not physical Android or authenticated tenant acceptance. External icon fonts are omitted. Raw-trend colour semantics, a different six-month trend policy, detailed print consistency and spreadsheet formula-text neutralisation remain separate review items; none is claimed fixed here. CSV quoting is preserved, not a claim of spreadsheet formula sanitisation.
+Browser checks are not physical Android or authenticated tenant acceptance. External icon fonts are omitted. At the #102 checkpoint, raw-trend colour semantics, a different six-month trend policy, detailed print consistency and spreadsheet formula-text neutralisation remained separate review items. The subsequent preview-only CSV protection phase is documented in `KPI_CSV_SPREADSHEET_SAFETY.md`, including spreadsheet-consumer limitations; the other items remain unclaimed.
 
 ## Release boundary
 

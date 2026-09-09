@@ -13,10 +13,11 @@ const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://127.0.0.1').pathname;
  if(req.method!=='GET'){res.writeHead(405);res.end();return;}
  let content,type;
- if(pathname==='/'||pathname==='/reporting'){type='text/html';content=read('tests/fixtures/kpi-preview-integration.html').replace('<!-- APP_STYLES -->',[...styles.values()].join('\n')).replace('<!-- KPI_PAGE -->',html.slice(start,end));if(pathname==='/reporting')content=content.replace('</body>','<script src="/fixture-reporting.js"></script></body>');}
+ if(pathname==='/'||pathname==='/reporting'||pathname==='/csv-safety'){type='text/html';content=read('tests/fixtures/kpi-preview-integration.html').replace('<!-- APP_STYLES -->',[...styles.values()].join('\n')).replace('<!-- KPI_PAGE -->',html.slice(start,end));if(pathname!=='/')content=content.replace('</body>','<script src="/fixture-reporting.js"></script>'+(pathname==='/csv-safety'?'<script src="/fixture-csv-safety.js"></script>':'')+'</body>');}
  else if(styles.has(pathname)){type='text/css';content=read(pathname.slice(1));}
  else if(pathname==='/fixture-configuration.js'){type='text/javascript';content=read('tests/fixtures/kpi-preview-configuration.js');}
  else if(pathname==='/fixture-reporting.js'){type='text/javascript';content=read('tests/fixtures/kpi-reporting-preview.js');}
+ else if(pathname==='/fixture-csv-safety.js'){type='text/javascript';content=read('tests/fixtures/kpi-csv-safety-preview.js');}
  else if(scripts.has(pathname.slice(1))){type='text/javascript';content=read(pathname.slice(1));}
  else{res.writeHead(404);res.end();return;}
  res.writeHead(200,{'Content-Type':type+'; charset=utf-8','Cache-Control':'no-store'});res.end(content);
