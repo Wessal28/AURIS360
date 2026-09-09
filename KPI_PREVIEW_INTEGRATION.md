@@ -2,6 +2,8 @@
 
 9 September 2026. Preview only; this document does not claim a production release.
 
+This evidence records the #101 integration checkpoint at `0ac5e08a69b7e8aad471e55a16b01cba128ae4dc`. The subsequent reporting changes are documented separately in `KPI_REPORTING_CONSISTENCY.md`.
+
 ## Preserved sources
 
 | Source PR | Exact integrated head | Scope |

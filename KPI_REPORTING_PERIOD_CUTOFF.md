@@ -27,3 +27,5 @@ The local helper `node scripts/serve-kpi-cutoff-fixture.cjs` binds only to loopb
 - Standalone upgrade CSS has white header text against a pale monthly-table background; frozen columns also obscure result cells on narrow screens. Verify the complete application's stylesheet cascade before a separate layout correction. Fixture-only scaffolding is not a production fix.
 - Objective aggregation, zero-tolerance policy and live identity/role acceptance remain separate work.
 - Keep this phase preview-only and unmerged while the existing release boundary is unresolved. It does not authorize production promotion or SQL execution.
+
+Follow-up: `KPI_REPORTING_CONSISTENCY.md` covers CSV/scorecard cut-off alignment and accurate full-year Recorded trend labels. The historical evidence above describes the original two-line cut-off phase; raw chart points and print implementation were not changed by the follow-up. Full-app narrow table visibility was separately verified in `KPI_MONTHLY_TABLE_VISIBILITY.md`.

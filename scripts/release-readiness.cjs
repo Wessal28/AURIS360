@@ -21,6 +21,7 @@ const testFiles = [
   'tests/kpi_configuration_persistence.test.cjs',
   'tests/kpi_configuration_preview.test.cjs',
   'tests/kpi_preview_integration.test.cjs',
+  'tests/kpi_reporting_consistency.test.cjs',
   'tests/kpi_source_refresh_behaviour.test.cjs',
   'tests/kpi_display_clarity.test.cjs',
   'tests/kpi_dashboard_reporting.test.cjs',
