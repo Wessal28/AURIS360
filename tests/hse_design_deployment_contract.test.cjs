@@ -29,7 +29,9 @@ test('corrected design assets use their expected release cache keys', () => {
   for (const asset of assets) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const expected = asset === 'auris-core.js'
-      ? '20260903-29-archive-safety-1'
+      ? '20260903-29-inspection-forms-1'
+      : asset === 'auris-audits-inspections-static.css'
+      ? '20260909-1'
       : asset === 'kpi-module-upgrade.css'
       ? '20260909-indicator-identity-1'
       : asset === 'kpi-module-upgrade.js'
