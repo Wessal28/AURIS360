@@ -172,14 +172,14 @@
 .audit-type-locked .audit-type-btn{opacity:.45;cursor:not-allowed;filter:grayscale(.45)}
 .ps-form-error{padding:14px 18px;margin-bottom:16px;background:#fff1f2;border:1px solid #fda4af;border-radius:10px;color:#9f1239;white-space:pre-wrap;overflow-wrap:anywhere}
 .ps-form-error[hidden]{display:none}
-#ps-checklist-body .ps-check-item{min-width:0;margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:10px}
-#ps-checklist-body legend{font:inherit;font-weight:700;max-width:100%;white-space:normal;overflow-wrap:anywhere;padding:0 4px}
-#ps-checklist-body .ps-check-category{margin:0 0 8px;color:var(--text2);font-size:12px}
-#ps-checklist-body .ps-check-answers{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-#ps-checklist-body .ps-check-answers label{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font:inherit;letter-spacing:normal;text-transform:none}
-#ps-checklist-body .ps-check-answers input{width:18px;height:18px;min-height:18px;margin:0;accent-color:var(--green)}
-#ps-checklist-body .ps-check-comment{display:block;margin-bottom:6px;font:inherit;letter-spacing:normal;text-transform:none}
-#ps-checklist-body textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:70px;resize:vertical;font:inherit;padding:10px;border:1px solid var(--border);border-radius:8px}
+#ps-checklist-body .ps-check-item{min-width:0;margin:8px 0;padding:10px 12px;border:1px solid var(--border);border-radius:9px}
+#ps-checklist-body legend{max-width:100%;padding:0 3px;font-size:13px;line-height:1.35;font-weight:750;white-space:normal;overflow-wrap:anywhere}
+#ps-checklist-body .ps-check-category{margin:0 0 6px;color:var(--text2);font-size:10.5px;line-height:1.3}
+#ps-checklist-body .ps-check-answers{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+#ps-checklist-body .ps-check-answers label{display:flex;align-items:center;gap:6px;min-height:36px;padding:3px 8px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:12px;line-height:1.25;letter-spacing:normal;text-transform:none}
+#ps-checklist-body .ps-check-answers input{width:15px;height:15px;min-height:15px;margin:0;accent-color:var(--green)}
+#ps-checklist-body .ps-check-comment{display:block;margin-bottom:4px;font-size:11px;line-height:1.3;letter-spacing:normal;text-transform:none}
+#ps-checklist-body textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:52px;resize:vertical;font-size:12px;line-height:1.4;padding:7px 8px;border:1px solid var(--border);border-radius:7px}
 #audit-inspection-report{position:fixed;inset:0;z-index:10040;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.55);padding:16px;font-family:var(--font-main,Arial,sans-serif)}
 #audit-inspection-report .inspection-report-dialog{display:flex;flex-direction:column;width:100%;max-width:1000px;max-height:92dvh;min-width:0;background:var(--card,#fff);color:var(--text,#172536);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.2);overflow:hidden}
 #audit-inspection-report header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid var(--border);flex:none}
