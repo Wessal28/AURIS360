@@ -24,6 +24,7 @@ const testFiles = [
   'tests/kpi_dashboard_reporting.test.cjs',
   'tests/kpi_navigation.test.cjs',
   'tests/kpi_monthly_navigation.test.cjs',
+  'tests/kpi_monthly_table_visibility.test.cjs',
   'tests/kpi_action_form.test.cjs',
   'tests/kpi_monthly_save_outcome.test.cjs',
   'tests/kpi_entry_accessibility.test.cjs',
