@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI monthly table — synthetic QA</title>
+<!-- APP_STYLES -->
+<style>
+/* Shell-only scaffold. No table, cell, header or scrollbar style overrides. */
+#app{display:block!important}.fixture-banner{padding:12px;background:#fff7ed;color:#17324a}
+.fixture-banner button{min-height:44px;padding:8px;margin:4px}
+#page-kpi{display:block!important}.fixture-sidebar{padding:12px}
+</style></head><body><div id="app"><div class="layout"><aside class="sidebar fixture-sidebar">Synthetic workspace navigation</aside><div class="main"><div class="fixture-banner">Synthetic records only; no tenant APIs. Full local stylesheet order; external icon/font resources omitted.
+<button id="fixture-sidebar-toggle" type="button">Toggle workspace sidebar</button>
+<button id="fixture-scroll-start" type="button">First months</button>
+<button id="fixture-scroll-end" type="button">Last columns</button>
+<button id="fixture-scroll-bottom" type="button">Last rows</button>
+<span id="fixture-entry" role="status">No entry opened</span></div>
+<!-- KPI_PAGE -->
+</div></div></div><script>
+window.kpiObjectives=[{id:'safety',code:'1',name:'Synthetic safety performance'}];
+window.kpiKPIs=Array.from({length:18},(_,i)=>({id:'k'+i,code:'1.'+(i+1),objective_id:'safety',name:'Toolbox coverage '+(i+1),frequency:i===1?'annual':i===2?'quarterly':'monthly'}));
+window.kpiIndicators=kpiKPIs.map(k=>({id:'i-'+k.id,kpi_id:k.id,name:k.name+' measurement',target_operator:'gte',target_value:100}));
+window.kpiMonthlyData=Object.fromEntries(kpiIndicators.map(i=>[i.id,{12:{month:12,actual:20,ytd:20}}]));
+window.kpiConfigPublished={targets:{critical_override:true},cycles:{current_period_excluded:true}};
+window.isMgr=()=>false;window.kpiCanEdit=()=>true;window.kpiUpdateMetrics=()=>{};
+// Record the real table event route; do not open/save a tenant entry or hydrate a fake form.
+window.kpiOpenEntry=(indicator,kpi,month)=>{document.getElementById('fixture-entry').textContent='Entry requested: '+indicator+' / '+month;return false;};
+window.api=()=>{throw new Error('Tenant API is forbidden in this fixture');};
+document.getElementById('year-sel').value='2025';
+</script><script src="/auris-module-event-handlers-batch-3.js"></script><script src="/kpi-module-upgrade.js"></script><script>
+document.addEventListener('DOMContentLoaded',()=>kpiXSwitchTab('monthly'));
+document.getElementById('fixture-sidebar-toggle').addEventListener('click',()=>{const sidebar=document.querySelector('.fixture-sidebar');sidebar.style.display=sidebar.style.display==='none'?'':'none';});
+document.getElementById('fixture-scroll-start').addEventListener('click',()=>{document.querySelector('.kpi-x-month-scroll').scrollLeft=0;});
+document.getElementById('fixture-scroll-end').addEventListener('click',()=>{const scroll=document.querySelector('.kpi-x-month-scroll');scroll.scrollLeft=scroll.scrollWidth;});
+document.getElementById('fixture-scroll-bottom').addEventListener('click',()=>{const scroll=document.querySelector('.kpi-x-month-scroll');scroll.scrollTop=scroll.scrollHeight;});
+</script></body></html>

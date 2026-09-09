@@ -7,7 +7,7 @@ var KPI_X_COLUMNS=[
   {key:'target',label:'Target',className:'kpi-x-col-target'},
   {key:'actual',label:'Actual / YTD',className:'kpi-x-col-actual'},
   {key:'variance',label:'Variance',className:'kpi-x-col-variance'},
-  {key:'trend',label:'6-month trend',className:'kpi-x-col-trend'},
+  {key:'trend',label:'Recorded trend',className:'kpi-x-col-trend'},
   {key:'owner',label:'Owner',className:'kpi-x-col-owner'},
   {key:'status',label:'Status',className:'kpi-x-col-status'}
 ];
@@ -29,7 +29,7 @@ function kpiXOwner(k){return k.kpi_owner||k.owner||k.responsible||'Unassigned';}
 function kpiXInitials(value){return String(value||'?').split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('')||'?';}
 function kpiXSelectedYear(){var el=document.getElementById('year-sel');return parseInt(el&&el.value,10)||new Date().getFullYear();}
 function kpiXReportingMonth(){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;return now.getMonth()+1;}
-function kpiXCompilationMonth(){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;var cycles=(window.kpiConfigPublished&&window.kpiConfigPublished.cycles)||{};return cycles.current_period_excluded===false?now.getMonth()+1:now.getMonth();}
+function kpiXCompilationMonth(configuration){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;var config=configuration||window.kpiConfigPublished,cycles=(config&&config.cycles)||{};return cycles.current_period_excluded===false?now.getMonth()+1:now.getMonth();}
 function kpiXFrequency(k){return String((k&&k.frequency)||'monthly').toLowerCase();}
 function kpiXIsAnnual(k){return kpiXFrequency(k).indexOf('annual')>=0;}
 function kpiXAnnualRecordedMonth(indicatorId){
@@ -47,12 +47,12 @@ function kpiXRows(indicatorId){
 function kpiXLatestRow(indicatorId,month){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{};
   if(month&&data[month])return data[month];
-  for(var m=month||12;m>=1;m--)if(data[m])return data[m];
+  for(var m=month==null?12:month;m>=1;m--)if(data[m])return data[m];
   return null;
 }
 function kpiXPreviousRow(indicatorId,month){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{};
-  for(var m=(month||12)-1;m>=1;m--)if(data[m])return data[m];
+  for(var m=(month==null?12:month)-1;m>=1;m--)if(data[m])return data[m];
   return null;
 }
 function kpiXDirection(ind){
@@ -71,7 +71,7 @@ function kpiXTargetText(ind){
   var symbol={eq:'=',gte:'≥',lte:'≤',gt:'>',lt:'<'}[op]||'≥';
   return symbol+(target==null?'—':target)+(unit?' '+unit:'');
 }
-function kpiXEvaluate(ind,actual,previous){
+function kpiXEvaluate(ind,actual,previous,configuration){
   actual=kpiXNum(actual);previous=kpiXNum(previous);
   if(actual==null)return {status:'data_missing',score:null,variance:null};
   var op=String(ind.target_operator||'gte').toLowerCase(),target=kpiXNum(ind.target_value),max=kpiXNum(ind.target_value_max);
@@ -105,30 +105,39 @@ function kpiXEvaluate(ind,actual,previous){
     score=ok?100:target===0?0:Math.max(0,actual/target*100);
   }
   score=kpiXRound(Math.min(100,Math.max(0,score)),0);
-  var rules=(window.kpiConfigPublished&&window.kpiConfigPublished.targets)||{},atRisk=kpiXNum(rules.at_risk_percent);
+  var config=configuration||window.kpiConfigPublished,rules=(config&&config.targets)||{},atRisk=kpiXNum(rules.at_risk_percent);
   atRisk=atRisk==null?85:atRisk;
   var status=ok?'on_track':score>=atRisk?'at_risk':'off_track';
   if((op==='zero'||op==='zero_tolerance')&&rules.zero_tolerance_override!==false&&actual!==0)status='off_track';
   return {status:status,score:score,variance:variance};
 }
-function kpiXIndicatorSnapshot(ind,month){
+function kpiXIndicatorSnapshot(ind,month,configuration){
   var row=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[ind.id])||{})[month];
-  if(!row)return {row:null,status:month>kpiXReportingMonth()?'not_due':month>kpiXCompilationMonth()?'in_progress':'data_missing',score:null,actual:null,variance:null};
+  if(!row)return {row:null,status:month>kpiXReportingMonth()?'not_due':month>kpiXCompilationMonth(configuration)?'in_progress':'data_missing',score:null,actual:null,variance:null};
   var previous=kpiXPreviousRow(ind.id,month),actual=row.actual;
-  var result=kpiXEvaluate(ind,actual,previous&&previous.actual);
+  var result=kpiXEvaluate(ind,actual,previous&&previous.actual,configuration);
   result.row=row;result.actual=kpiXNum(actual);return result;
 }
-function kpiXKpiSnapshot(k,month){
+function kpiXKpiSnapshot(k,month,configuration){
   var indicators=(typeof kpiIndicators!=='undefined'?kpiIndicators:[]).filter(function(ind){return String(ind.kpi_id)===String(k.id);});
   if(!indicators.length)return {status:'not_started',score:null,indicators:[]};
-  var snapshots=indicators.map(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth):{status:'not_due',score:null,row:null,actual:null,variance:null};snap.indicator=ind;return snap;});
-  var statuses=snapshots.map(function(x){return x.status;}),rules=(window.kpiConfigPublished&&window.kpiConfigPublished.targets)||{},calcs=(window.kpiConfigPublished&&window.kpiConfigPublished.calculations)||{};
+  var snapshots=indicators.map(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth,configuration):{status:'not_due',score:null,row:null,actual:null,variance:null};snap.indicator=ind;return snap;});
+  var config=configuration||window.kpiConfigPublished,statuses=snapshots.map(function(x){return x.status;}),rules=(config&&config.targets)||{},calcs=(config&&config.calculations)||{};
   var status=statuses.indexOf('off_track')>=0?'off_track':statuses.indexOf('data_missing')>=0?'data_missing':statuses.indexOf('at_risk')>=0?'at_risk':statuses.indexOf('in_progress')>=0?'in_progress':statuses.every(function(x){return x==='not_due';})?'not_due':statuses.every(function(x){return x==='not_started';})?'not_started':'on_track';
   var scores=snapshots.map(function(x){return x.score;}).filter(function(x){return x!=null;});
   var score=scores.length?(calcs.aggregation==='worst'?Math.min.apply(null,scores):scores.reduce(function(a,b){return a+b;},0)/scores.length):null;
   if(rules.critical_override===false&&score!=null&&statuses.indexOf('data_missing')<0){var on=kpiXNum(rules.on_track_percent);on=on==null?95:on;var risk=kpiXNum(rules.at_risk_percent);risk=risk==null?85:risk;status=score>=on?'on_track':score>=risk?'at_risk':'off_track';}
   return {status:status,score:score==null?null:kpiXRound(score,0),indicators:snapshots};
 }
+// Compare loaded reporting snapshots without swapping globals, updating caches or writing data.
+function kpiXPreviewConfiguration(configuration){
+  var live=window.kpiConfigPublished,kpis=typeof kpiKPIs!=='undefined'?kpiKPIs:null;
+  if(!live||!configuration||!Array.isArray(kpis)||typeof kpiIndicators==='undefined'||!Array.isArray(kpiIndicators)||typeof kpiMonthlyData==='undefined'||!kpiMonthlyData)throw new Error('KPI reporting data is not loaded.');
+  var beforeMonth=kpiXCompilationMonth(live),afterMonth=kpiXCompilationMonth(configuration),statuses=0,scores=0;
+  kpis.forEach(function(k){var before=kpiXKpiSnapshot(k,beforeMonth,live),after=kpiXKpiSnapshot(k,afterMonth,configuration);if(before.status!==after.status)statuses++;if(before.score!==after.score)scores++;});
+  return {available:true,kpis_evaluated:kpis.length,status_changes:statuses,score_changes:scores,reporting_year:kpiXSelectedYear(),published_month:beforeMonth,draft_month:afterMonth,generated_at:new Date().toISOString()};
+}
+window.kpiXPreviewConfiguration=kpiXPreviewConfiguration;
 function kpiXCompute(month){
   if(month==null)month=kpiXCompilationMonth();
   (typeof kpiKPIs!=='undefined'?kpiKPIs:[]).forEach(function(k){var snap=kpiXKpiSnapshot(k,month);k._kpiX=snap;k._computed_status=snap.status;});
@@ -166,12 +175,13 @@ function kpiXVarianceText(ind,snapshot){
   return (value>0?'+':'')+value+(unit?' '+unit:'');
 }
 function kpiXSpark(ind){
+  var label='Recorded results for '+kpiXSelectedYear()+' (Jan–Dec). Includes open or future recorded periods; raw values, not a performance score.';
   var vals=[];for(var m=1;m<=12;m++){var row=((kpiMonthlyData[ind.id]||{})[m]);vals.push(row&&kpiXNum(row.actual));}
-  var clean=vals.filter(function(v){return v!=null;});if(clean.length<2)return '<span style="color:#94a3b8">—</span>';
+  var clean=vals.filter(function(v){return v!=null;});if(clean.length<2)return '<span title="'+kpiXEsc(label+' At least two recorded results are needed for a trend.')+'" style="color:#94a3b8">—</span>';
   var min=Math.min.apply(null,clean),max=Math.max.apply(null,clean),range=Math.max(max-min,1),points=[];
   vals.forEach(function(v,i){if(v!=null)points.push((3+i*6.1).toFixed(1)+','+(21-(v-min)/range*17).toFixed(1));});
   var last=clean[clean.length-1],prev=clean[clean.length-2],color=last>=prev?'#0f9f70':'#dc2626';
-  return '<svg class="kpi-x-spark" viewBox="0 0 74 24"><polyline points="'+points.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return '<svg class="kpi-x-spark" role="img" aria-label="'+kpiXEsc(label)+'" viewBox="0 0 74 24"><title>'+kpiXEsc(label)+'</title><polyline points="'+points.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 function kpiXFilteredKpis(){
   var rows=(typeof kpiKPIs!=='undefined'?kpiKPIs:[]).slice();
@@ -253,7 +263,7 @@ function kpiXCanEnterMonthly(kpi){var governed=window.KpiGovernedWorkflow;return
 function kpiXRenderMonthly(){
   var table=document.getElementById('kpi-monthly-table'),body=document.getElementById('kpi-monthly-body');if(!table||!body)return;kpiXCompute();
   var period=kpiXState.period,groups=period==='quarterly'?[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]:period==='annual'?[KPI_X_MONTHS.map(function(_,i){return i+1;})]:KPI_X_MONTHS.map(function(_,i){return [i+1];}),labels=period==='quarterly'?['Q1','Q2','Q3','Q4']:period==='annual'?['Annual']:KPI_X_MONTHS;
-  table.querySelector('thead').innerHTML='<tr><th class="kpi-x-sticky-1">Code</th><th class="kpi-x-sticky-2">KPI</th><th class="kpi-x-sticky-3">Measurement Indicator</th><th>Unit</th><th>Direction</th><th>Target</th>'+labels.map(function(x){return '<th style="text-align:center">'+x+'</th>';}).join('')+'<th>YTD</th><th>Variance</th><th>Trend</th><th>Status</th><th>Actions</th></tr>';
+  table.querySelector('thead').innerHTML='<tr><th class="kpi-x-sticky-1">Code</th><th class="kpi-x-sticky-2">KPI</th><th class="kpi-x-sticky-3">Measurement Indicator</th><th>Unit</th><th>Direction</th><th>Target</th>'+labels.map(function(x){return '<th style="text-align:center">'+x+'</th>';}).join('')+'<th>YTD</th><th>Variance</th><th>Recorded trend</th><th>Status</th><th>Actions</th></tr>';
   var html='',monthNow=kpiXReportingMonth(),compilationMonth=kpiXCompilationMonth();
   kpiObjectives.forEach(function(obj){var rows=kpiXFilteredKpis().filter(function(k){return String(k.objective_id)===String(obj.id);});if(!rows.length)return;html+='<tr><td colspan="'+(11+groups.length)+'" style="background:#eff8f5!important;color:#087252;font-weight:800">'+kpiXEsc((obj.code||'')+'. '+obj.name)+'</td></tr>';rows.forEach(function(k){var inds=kpiIndicators.filter(function(ind){return String(ind.kpi_id)===String(k.id);});inds.forEach(function(ind,index){var currentDueMonth=kpiXDueMonth(k,compilationMonth,ind.id),current=currentDueMonth?kpiXIndicatorSnapshot(ind,currentDueMonth):{status:'not_due',actual:null,variance:null},direction=kpiXDirection(ind);html+='<tr data-kpi-id="'+kpiXEsc(k.id)+'"><td class="kpi-x-sticky-1">'+(index===0?kpiXEsc(k.code||''):'')+'</td><td class="kpi-x-sticky-2">'+(index===0?'<strong>'+kpiXEsc(k.name)+'</strong>':'')+'</td><td class="kpi-x-sticky-3">'+kpiXEsc(ind.name)+'</td><td>'+kpiXEsc(ind.unit||'count')+'</td><td>'+direction.arrow+'</td><td><strong>'+kpiXEsc(kpiXTargetText(ind))+'</strong></td>';
       groups.forEach(function(months){var lastMonth=months[months.length-1],annualMonth=kpiXIsAnnual(k)?kpiXAnnualEntryMonth(ind.id):0,entryMonth=period==='annual'&&annualMonth?annualMonth:lastMonth,future=!entryMonth||entryMonth>monthNow,open=!future&&entryMonth>compilationMonth,applicable=period!=='monthly'||(kpiXIsAnnual(k)?lastMonth===annualMonth:kpiXIsDue(k,lastMonth)),row=applicable?(period==='monthly'?((kpiMonthlyData[ind.id]||{})[entryMonth]):kpiXAggregateRows(ind,months)):null,evaluation=!applicable?{status:'not_due'}:row?kpiXEvaluate(ind,row.actual,(kpiXPreviousRow(ind.id,months[0])||{}).actual):{status:future?'not_due':open?'in_progress':'data_missing'};var text=!applicable?'N/A':future?'Not Due':row?kpiXRound(row.actual,2):open?'In Progress':'No Data',editable=applicable&&!future&&kpiXCanEnterMonthly(k);html+='<td class="kpi-x-cell '+evaluation.status+(editable?' editable':'')+'" '+(editable?'role="button" tabindex="0" data-kpi-month-entry="true" data-indicator-id="'+kpiXEsc(ind.id)+'" data-kpi-id="'+kpiXEsc(k.id)+'" data-month="'+entryMonth+'" aria-label="Enter '+(kpiXIsAnnual(k)?'annual':'monthly')+' data for '+kpiXEsc(ind.name)+', '+kpiXEsc(labels[groups.indexOf(months)])+'"':'')+'>'+kpiXEsc(text)+'</td>';});
@@ -281,12 +291,22 @@ function kpiXRenderActions(){
   var host=document.getElementById('kpi-x-actions-view');if(!host)return;kpiXCompute();var affected=kpiKPIs.filter(function(k){return ['at_risk','off_track'].indexOf(k._computed_status)>=0;});host.innerHTML='<div class="kpi-x-panel"><div class="kpi-x-panel-title">KPI Recovery & Improvement Actions <span class="kpi-x-panel-sub">Uses the existing Master Action Plan workflow</span></div>'+ (affected.length?affected.map(function(k){return '<div class="kpi-x-priority-row"><span class="kpi-x-priority-rank"><i class="ti ti-alert-triangle"></i></span><span><strong>'+kpiXEsc(k.name)+'</strong><small style="display:block;color:#64748b">Owner: '+kpiXEsc(kpiXOwner(k))+' · '+kpiXStatusLabel(k._computed_status)+'</small></span><button class="kpi-x-btn primary" style="height:31px" data-auris-module-onclick="d0007" data-auris-module-args="'+encodeURIComponent(JSON.stringify([kpiXEsc(k.id)]))+'"><i class="ti ti-plus"></i>Create Action</button></div>';}).join(''):'<div class="kpi-x-empty">No KPI currently requires a recovery action.</div>')+'</div>';
 }
 function kpiXRenderReports(){
-  var host=document.getElementById('kpi-x-reports-view');if(!host)return;var m=kpiXMetrics();host.innerHTML='<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Performance Report</div><p style="font-size:12px;color:#475569;line-height:1.6">Generate the existing printable scorecard or export the complete KPI register with current results, variance, ownership and status.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="kpi-x-btn primary" data-auris-module-onclick="d0008"><i class="ti ti-printer"></i>Print Report</button><button class="kpi-x-btn" data-auris-module-onclick="d0009"><i class="ti ti-download"></i>Export CSV</button></div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Year Summary <span class="kpi-x-panel-sub">'+kpiXEsc(kpiXAchievementBasis(m))+'</span></div><div class="kpi-x-quality"><div><strong>'+kpiXAchievementText(m)+'</strong><span>Achievement</span></div><div><strong>'+m.on_track+'</strong><span>On Track</span></div><div><strong style="color:#dc2626">'+m.off_track+'</strong><span>Off Track</span></div></div></section></div>';
+  var host=document.getElementById('kpi-x-reports-view');if(!host)return;var m=kpiXMetrics(),month=kpiXCompilationMonth(),basis=month?'Compiled through '+KPI_X_MONTHS[month-1]+' '+kpiXSelectedYear():'No compiled month in '+kpiXSelectedYear();host.innerHTML='<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Performance Report</div><p style="font-size:12px;color:#475569;line-height:1.6">Generate the existing printable scorecard or export the complete KPI register. CSV actuals, variance and status use the same compiled period as the scorecard.</p><p class="kpi-x-csv-note" style="font-size:12px;color:#475569;line-height:1.6">CSV text that could be read as a formula receives a leading tab; saved KPI data is unchanged. Behaviour varies between spreadsheet applications. Keep that prefix when importing or re-saving the file.</p><p class="kpi-x-report-basis" style="font-size:12px;color:#475569;line-height:1.6"><strong>'+kpiXEsc(basis)+'</strong>. Raw recorded trend charts can include open or future recorded periods.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="kpi-x-btn primary" data-auris-module-onclick="d0008"><i class="ti ti-printer"></i>Print Report</button><button class="kpi-x-btn" data-auris-module-onclick="d0009"><i class="ti ti-download"></i>Export CSV</button></div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Year Summary <span class="kpi-x-panel-sub">'+kpiXEsc(kpiXAchievementBasis(m))+'</span></div><div class="kpi-x-quality"><div><strong>'+kpiXAchievementText(m)+'</strong><span>Achievement</span></div><div><strong>'+m.on_track+'</strong><span>On Track</span></div><div><strong style="color:#dc2626">'+m.off_track+'</strong><span>Off Track</span></div></div></section></div>';
 }
 function kpiXRenderConfig(){
-  if(typeof window.kpiConfigRender==='function'){window.kpiConfigRender();return;}
-  var host=document.getElementById('kpi-x-config-view');if(!host)return;host.innerHTML='<div class="kpi-x-config"><aside class="kpi-x-panel kpi-x-config-nav"><button class="active"><i class="ti ti-adjustments"></i> Targets & Status Rules</button><button><i class="ti ti-calendar"></i> Reporting Cycles</button><button><i class="ti ti-database"></i> Data Sources</button><button><i class="ti ti-users"></i> Workflow & Approvals</button><button><i class="ti ti-bell"></i> Notifications</button><button><i class="ti ti-lock"></i> Permissions</button></aside><section class="kpi-x-panel"><div class="kpi-x-panel-title">Targets & Status Rules</div><p style="font-size:11px;color:#64748b">Rules are evaluated per indicator. A critical failure cannot be hidden by averaging: the parent KPI inherits the worst indicator status.</p>'+[
-    ['Equal to / Zero tolerance','Actual must equal the target. Any non-zero result against a zero target is Off Track.','=', 'Off Track override'],['Greater than or equal','Actual at or above target is On Track; within 10% is At Risk.','≥','Standard'],['Less than or equal','Actual at or below target is On Track; within 10% above is At Risk.','≤','Standard'],['Between','Supported when a maximum threshold is available in the data model.','↔','Schema dependent'],['Improving / reducing trend','Compares the current period with the previous reported period.','↗','Trend based']].map(function(r){return '<div class="kpi-x-rule"><strong>'+r[0]+'</strong><span>'+r[1]+'</span><span style="text-align:center"><b>'+r[2]+'</b><small style="display:block;color:#64748b">'+r[3]+'</small></span></div>';}).join('')+'<div style="margin-top:14px;padding:10px;border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;font-size:11px;color:#9a4d05"><strong>Important:</strong> Between-range thresholds and durable submission/approval locks require database fields that are not present in the current deployed schema. The interface does not pretend those controls are persisted.</div></section><aside class="kpi-x-panel"><div class="kpi-x-panel-title">Rule Preview</div><div class="kpi-x-kv"><span>Example KPI</span><span>Lost Time Injuries</span></div><div class="kpi-x-kv"><span>Direction</span><span>↓ Lower is better</span></div><div class="kpi-x-kv"><span>Target</span><span>0 · zero tolerance</span></div><div class="kpi-x-kv"><span>Actual</span><span>1</span></div><div style="margin-top:16px;text-align:center">'+kpiXStatusHtml('off_track')+'</div></aside></div>';
+  var host=document.getElementById('kpi-x-config-view');if(!host)return;
+  var wasRetryFocused=!!document.activeElement&&document.activeElement===host.querySelector('[data-kpi-config-retry]');
+  function visible(){var page=document.getElementById('page-kpi');return document.getElementById('kpi-x-config-view')===host&&!host.hidden&&(!host.style||host.style.display!=='none')&&(!page||!page.hidden&&(!page.style||page.style.display!=='none'));}
+  if(typeof window.kpiConfigRender==='function'){
+    try{
+      window.kpiConfigRender();
+      if(wasRetryFocused&&visible()){var heading=host.querySelector('h2,h3');if(heading){heading.setAttribute('tabindex','-1');heading.focus({preventScroll:true});}}
+      return;
+    }catch(e){/* Display a local recovery state without exposing raw error details. */}
+  }
+  host.innerHTML='<section class="kpi-x-panel kpi-x-empty kpi-x-config-unavailable"><div role="alert"><h2>Configuration editor unavailable</h2><p>The configuration editor could not be displayed. Its controls are unavailable in this view.</p></div><p>Retrying only tries to display the editor. It does not save, validate or publish settings.</p><p>If this continues, finish any other unsaved work before reloading the application.</p><button type="button" class="kpi-x-btn" data-kpi-config-retry>Retry editor</button></section>';
+  var retry=host.querySelector('[data-kpi-config-retry]');
+  if(retry){retry.addEventListener('click',function(){if(visible()&&host.contains(retry))kpiXRenderConfig();});if(wasRetryFocused&&visible())retry.focus({preventScroll:true});}
 }
 function kpiXRefreshCreationActions(){var allowed=typeof isMgr==='function'&&isMgr(),objective=document.getElementById('kpi-x-new-objective'),kpi=document.getElementById('kpi-x-new-kpi'),importPdf=document.getElementById('kpi-x-import-pdf');if(objective)objective.hidden=!allowed;if(importPdf)importPdf.hidden=!allowed;if(kpi){kpi.disabled=!allowed||!kpiObjectives.length;kpi.title=!allowed?'Only authorised managers and administrators can create KPIs.':!kpiObjectives.length?'Create an objective before adding a KPI.':'Create KPI';}}
 function kpiXRefreshHeader(){var label=document.getElementById('kpi-co-label');if(label)label.textContent='Company performance';kpiXRefreshCreationActions();}
@@ -499,8 +519,18 @@ function kpiXSetPeriod(period,button){kpiXState.period=period;document.querySele
 function kpiXReviewExceptions(){kpiXOpenStatus('attention');}
 function kpiXReviewMissing(){kpiXOpenStatus('data_missing');}
 async function kpiXSubmitMonth(){var month=kpiXReportingMonth(),missing=kpiIndicators.filter(function(ind){var k=kpiKPIs.find(function(item){return item.id===ind.kpi_id;}),resultMonth=kpiXIsAnnual(k)?kpiXAnnualRecordedMonth(ind.id):month;return kpiXIsDue(k,month)&&!(resultMonth&&((kpiMonthlyData[ind.id]||{})[resultMonth]));});if(missing.length){if(typeof toast==='function')toast(missing.length+' required KPI result'+(missing.length===1?' is':'s are')+' missing. Complete them before submission.',false);kpiXReviewMissing();return;}if(typeof appConfirmAction==='function'){var ok=await appConfirmAction({title:'Submission readiness confirmed',message:'All required KPI values are complete for '+KPI_X_MONTHS[month-1]+' '+kpiXSelectedYear()+'.',detail:'A durable Submitted → Verified → Approved → Locked workflow requires the governance database migration. This check will not falsely lock the current records.',confirmText:'Acknowledge',cancelText:'Back'});if(!ok)return;}if(typeof auditLogEvent==='function')auditLogEvent('review','kpi','KPI month reviewed for submission',{year:kpiXSelectedYear(),month:month});if(typeof toast==='function')toast('Month is complete and ready for the approval workflow.');}
+// Spreadsheet-oriented CSV: guard formula-like text only at the export boundary.
+// A quoted leading tab follows OWASP's Excel-resistant guidance; CSV consumers vary.
+// Only actual/variance columns may preserve strict finite numeric text (never names).
+function kpiXCsvCell(value,numericColumn){
+  var text=String(value==null?'':value);
+  var numeric=numericColumn&&/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text)&&isFinite(Number(text));
+  var probe=text.replace(/^[\s\u0000-\u001f\u007f]+/,'');
+  if(!numeric&&(/^[=+\-@\uFF1D\uFF0B\uFF0D\uFF20]/.test(probe)||/^\s*[\u0000-\u001f\u007f]/.test(text)))text='\t'+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+}
 function kpiXExportCsv(){
-  kpiXCompute();var rows=[['Objective','KPI Code','KPI','Indicator','Direction','Unit','Target','Current Actual','Variance','KPI Owner','Frequency','Status']];var month=kpiXReportingMonth();kpiObjectives.forEach(function(obj){kpiKPIs.filter(function(k){return k.objective_id===obj.id;}).forEach(function(k){kpiIndicators.filter(function(ind){return ind.kpi_id===k.id;}).forEach(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth):{status:'not_due',actual:null,variance:null};rows.push([obj.name,k.code||'',k.name,ind.name,kpiXDirection(ind).label,ind.unit||'count',kpiXTargetText(ind),snap.actual==null?'':snap.actual,kpiXVarianceText(ind,snap),kpiXOwner(k),k.frequency||'monthly',kpiXStatusLabel(snap.status)]);});});});var csv=rows.map(function(row){return row.map(function(value){return '"'+String(value==null?'':value).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AURIS360-KPI-Scorecard-'+kpiXSelectedYear()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},500);
+  kpiXCompute();var rows=[['Objective','KPI Code','KPI','Indicator','Direction','Unit','Target','Current Actual','Variance','KPI Owner','Frequency','Status']];var month=kpiXCompilationMonth();kpiObjectives.forEach(function(obj){kpiKPIs.filter(function(k){return k.objective_id===obj.id;}).forEach(function(k){kpiIndicators.filter(function(ind){return ind.kpi_id===k.id;}).forEach(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth):{status:'not_due',actual:null,variance:null};rows.push([obj.name,k.code||'',k.name,ind.name,kpiXDirection(ind).label,ind.unit||'count',kpiXTargetText(ind),snap.actual==null?'':snap.actual,kpiXVarianceText(ind,snap),kpiXOwner(k),k.frequency||'monthly',kpiXStatusLabel(snap.status)]);});});});var csv=rows.map(function(row,rowIndex){return row.map(function(value,column){return kpiXCsvCell(value,rowIndex>0&&(column===7||column===8));}).join(',');}).join('\r\n');var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AURIS360-KPI-Scorecard-'+kpiXSelectedYear()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},500);
 }
 function kpiXKpiForIndicator(indicatorId){var ind=kpiIndicators.find(function(item){return String(item.id)===String(indicatorId);});return ind&&kpiKPIs.find(function(item){return String(item.id)===String(ind.kpi_id);});}
 function kpiXHydrateEntryEnhancements(indicatorId,kpiId,month){

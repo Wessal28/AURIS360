@@ -2,15 +2,19 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI configuration persistence — synthetic QA</title>
 <link rel="stylesheet" href="/kpi-module-upgrade.css">
 <style>body{margin:0;background:#f4f7f9;font-family:Arial,sans-serif;color:#17324a}main{padding:16px}button,input,select{font-family:inherit}#qa-tools{display:flex;flex-wrap:wrap;gap:8px;padding:16px}#qa-tools button{min-height:44px}#qa-summary{padding:16px;font-size:14px}</style></head>
-<body><div id="qa-tools"><button id="qa-fail">Fail next save</button><button id="qa-switch">Switch test company</button><button id="qa-reload">Reload configuration</button></div><div id="qa-summary" role="status">Synthetic data only; no external API calls.</div><main id="page-kpi"><div id="kpi-x-config-view"></div></main>
+<body><div id="qa-tools"><button id="qa-fail">Fail next save</button><button id="qa-switch">Switch test company</button><button id="qa-reload">Reload configuration</button><label>Reporting year <select id="year-sel"><option>2025</option><option selected>2026</option><option>2027</option></select></label></div><div id="qa-summary" role="status">Synthetic data only; no external API calls.</div><main id="page-kpi"><div id="kpi-x-config-view"></div></main>
 <script>
 let prof={id:'qa-admin',full_name:'Synthetic Administrator',role:'admin'};
 let company='qa-a',failNext=false,counter=0;
-const records=[{id:'published-a',company_id:'qa-a',version_no:1,status:'published',configuration:{}},{id:'published-b',company_id:'qa-b',version_no:1,status:'published',configuration:{}}];
+const records=[{id:'published-a',company_id:'qa-a',version_no:1,status:'published',configuration:{targets:{critical_override:false}}},{id:'published-b',company_id:'qa-b',version_no:1,status:'published',configuration:{}}];
 const history=[];
 window.ccid=()=>company;window.activeRole=()=>prof.role;window.toast=()=>{};
 window.tenantPeople=()=>[{first_name:'Casey',last_name:'Reviewer',job_title:'QA'},{first_name:'Alex',last_name:'Owner',job_title:'QA'}];
-window.kpiKPIs=[];
+// Fixed synthetic reporting clock and values, never real tenant records.
+const BrowserDate=Date;window.Date=class extends BrowserDate{constructor(...args){super(...(args.length?args:['2026-09-09T12:00:00Z']));}};
+window.kpiKPIs=[{id:'qa-kpi',frequency:'monthly',name:'Synthetic performance',_computed_status:'at_risk',_kpiX:{score:90}}];
+window.kpiIndicators=[{id:'qa-1',kpi_id:'qa-kpi',target_operator:'gte',target_value:100},{id:'qa-2',kpi_id:'qa-kpi',target_operator:'gte',target_value:100}];
+window.kpiMonthlyData={'qa-1':{8:{month:8,actual:100},9:{month:9,actual:100}},'qa-2':{8:{month:8,actual:80},9:{month:9,actual:100}}};
 const copy=value=>JSON.parse(JSON.stringify(value));
 function summary(){document.getElementById('qa-summary').textContent='Synthetic company '+company+' · live threshold '+(window.kpiConfigPublished?.targets?.on_track_percent??95)+' · recorded writes '+counter;}
 window.api=async(url,options={})=>{
@@ -25,7 +29,7 @@ window.api=async(url,options={})=>{
   if(!row||row.status==='published'||row.status==='archived')return [];
   Object.assign(row,copy(options.b));return [copy(row)];
 };
-</script><script src="/kpi-configuration.js"></script><script>
+</script><script src="/kpi-configuration.js"></script><script src="/kpi-module-upgrade.js"></script><script>
 document.addEventListener('input',event=>{if(event.target.dataset.aurisModuleOninput)kpiConfigChange(event.target);});
 document.addEventListener('change',event=>{if(event.target.dataset.aurisModuleOnchange)kpiConfigChange(event.target);});
 document.addEventListener('click',async event=>{
