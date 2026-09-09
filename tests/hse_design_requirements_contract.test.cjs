@@ -52,8 +52,9 @@ test('Incident learning supports anonymised AI drafting and compulsory distribut
 test('Incident and risk dashboards use colourful icon tiles and standard card height', () => {
   const incident = read('incident-management-upgrade.css');
   const risk = read('risk-assessment-upgrade.css');
+  const icons = read('auris-icon-system.css');
   assert.match(incident, /\.imx-metric-icon/);
   assert.match(incident, /min-height:118px/);
-  assert.match(risk, /\.rax-metric-icon/);
+  assert.match(icons, /\.auris-indicator-icon/);
   assert.match(risk, /min-height:118px/);
 });

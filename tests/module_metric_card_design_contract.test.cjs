@@ -24,6 +24,16 @@ test('module metric cards use pictorial artwork and a coloured left border', () 
   assert.match(css, /data-indicator-icon="training"/);
 });
 
+test('affected modules do not render legacy placeholder icons beside pictorial artwork', () => {
+  const work = read('auris-work-schedule.css');
+  const audit = read('auris-audits-inspections-static.css');
+  const risk = read('risk-assessment-upgrade.js');
+
+  assert.doesNotMatch(work, /card:has\(>#ws-m3planned\)[\s\S]*:before/);
+  assert.doesNotMatch(audit, /card:has\(>#audit-m3total\)[\s\S]*:before/);
+  assert.doesNotMatch(risk, /rax-metric-icon/);
+});
+
 test('Main Dashboard artwork mappings remain present and unchanged by module decoration', () => {
   const css = read('auris-icon-system.css');
 
