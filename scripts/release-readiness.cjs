@@ -19,6 +19,7 @@ const testFiles = [
   'tests/moc_separation_contract.test.cjs',
   'tests/person_identity_contract.test.cjs',
   'tests/kpi_configuration_persistence.test.cjs',
+  'tests/kpi_configuration_preview.test.cjs',
   'tests/kpi_source_refresh_behaviour.test.cjs',
   'tests/kpi_display_clarity.test.cjs',
   'tests/kpi_dashboard_reporting.test.cjs',

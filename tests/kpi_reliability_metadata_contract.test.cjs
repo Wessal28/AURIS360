@@ -48,6 +48,6 @@ test('KPI assets are cache-busted and identify the current build',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js');
   assert.match(html,/modular-foundation-29/);
   assert.match(runtime,/modular-foundation-29/);
-  assert.match(html,/kpi-module-upgrade\.js\?v=20260909-period-cutoff-1/);
+  assert.match(html,/kpi-module-upgrade\.js\?v=20260909-config-preview-1/);
   assert.match(html,/kpi-module-upgrade\.css\?v=20260909-monthly-table-1/);
 });

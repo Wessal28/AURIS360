@@ -29,7 +29,7 @@ function kpiXOwner(k){return k.kpi_owner||k.owner||k.responsible||'Unassigned';}
 function kpiXInitials(value){return String(value||'?').split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('')||'?';}
 function kpiXSelectedYear(){var el=document.getElementById('year-sel');return parseInt(el&&el.value,10)||new Date().getFullYear();}
 function kpiXReportingMonth(){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;return now.getMonth()+1;}
-function kpiXCompilationMonth(){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;var cycles=(window.kpiConfigPublished&&window.kpiConfigPublished.cycles)||{};return cycles.current_period_excluded===false?now.getMonth()+1:now.getMonth();}
+function kpiXCompilationMonth(configuration){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;var config=configuration||window.kpiConfigPublished,cycles=(config&&config.cycles)||{};return cycles.current_period_excluded===false?now.getMonth()+1:now.getMonth();}
 function kpiXFrequency(k){return String((k&&k.frequency)||'monthly').toLowerCase();}
 function kpiXIsAnnual(k){return kpiXFrequency(k).indexOf('annual')>=0;}
 function kpiXAnnualRecordedMonth(indicatorId){
@@ -71,7 +71,7 @@ function kpiXTargetText(ind){
   var symbol={eq:'=',gte:'≥',lte:'≤',gt:'>',lt:'<'}[op]||'≥';
   return symbol+(target==null?'—':target)+(unit?' '+unit:'');
 }
-function kpiXEvaluate(ind,actual,previous){
+function kpiXEvaluate(ind,actual,previous,configuration){
   actual=kpiXNum(actual);previous=kpiXNum(previous);
   if(actual==null)return {status:'data_missing',score:null,variance:null};
   var op=String(ind.target_operator||'gte').toLowerCase(),target=kpiXNum(ind.target_value),max=kpiXNum(ind.target_value_max);
@@ -105,30 +105,39 @@ function kpiXEvaluate(ind,actual,previous){
     score=ok?100:target===0?0:Math.max(0,actual/target*100);
   }
   score=kpiXRound(Math.min(100,Math.max(0,score)),0);
-  var rules=(window.kpiConfigPublished&&window.kpiConfigPublished.targets)||{},atRisk=kpiXNum(rules.at_risk_percent);
+  var config=configuration||window.kpiConfigPublished,rules=(config&&config.targets)||{},atRisk=kpiXNum(rules.at_risk_percent);
   atRisk=atRisk==null?85:atRisk;
   var status=ok?'on_track':score>=atRisk?'at_risk':'off_track';
   if((op==='zero'||op==='zero_tolerance')&&rules.zero_tolerance_override!==false&&actual!==0)status='off_track';
   return {status:status,score:score,variance:variance};
 }
-function kpiXIndicatorSnapshot(ind,month){
+function kpiXIndicatorSnapshot(ind,month,configuration){
   var row=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[ind.id])||{})[month];
-  if(!row)return {row:null,status:month>kpiXReportingMonth()?'not_due':month>kpiXCompilationMonth()?'in_progress':'data_missing',score:null,actual:null,variance:null};
+  if(!row)return {row:null,status:month>kpiXReportingMonth()?'not_due':month>kpiXCompilationMonth(configuration)?'in_progress':'data_missing',score:null,actual:null,variance:null};
   var previous=kpiXPreviousRow(ind.id,month),actual=row.actual;
-  var result=kpiXEvaluate(ind,actual,previous&&previous.actual);
+  var result=kpiXEvaluate(ind,actual,previous&&previous.actual,configuration);
   result.row=row;result.actual=kpiXNum(actual);return result;
 }
-function kpiXKpiSnapshot(k,month){
+function kpiXKpiSnapshot(k,month,configuration){
   var indicators=(typeof kpiIndicators!=='undefined'?kpiIndicators:[]).filter(function(ind){return String(ind.kpi_id)===String(k.id);});
   if(!indicators.length)return {status:'not_started',score:null,indicators:[]};
-  var snapshots=indicators.map(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth):{status:'not_due',score:null,row:null,actual:null,variance:null};snap.indicator=ind;return snap;});
-  var statuses=snapshots.map(function(x){return x.status;}),rules=(window.kpiConfigPublished&&window.kpiConfigPublished.targets)||{},calcs=(window.kpiConfigPublished&&window.kpiConfigPublished.calculations)||{};
+  var snapshots=indicators.map(function(ind){var dueMonth=kpiXDueMonth(k,month,ind.id),snap=dueMonth?kpiXIndicatorSnapshot(ind,dueMonth,configuration):{status:'not_due',score:null,row:null,actual:null,variance:null};snap.indicator=ind;return snap;});
+  var config=configuration||window.kpiConfigPublished,statuses=snapshots.map(function(x){return x.status;}),rules=(config&&config.targets)||{},calcs=(config&&config.calculations)||{};
   var status=statuses.indexOf('off_track')>=0?'off_track':statuses.indexOf('data_missing')>=0?'data_missing':statuses.indexOf('at_risk')>=0?'at_risk':statuses.indexOf('in_progress')>=0?'in_progress':statuses.every(function(x){return x==='not_due';})?'not_due':statuses.every(function(x){return x==='not_started';})?'not_started':'on_track';
   var scores=snapshots.map(function(x){return x.score;}).filter(function(x){return x!=null;});
   var score=scores.length?(calcs.aggregation==='worst'?Math.min.apply(null,scores):scores.reduce(function(a,b){return a+b;},0)/scores.length):null;
   if(rules.critical_override===false&&score!=null&&statuses.indexOf('data_missing')<0){var on=kpiXNum(rules.on_track_percent);on=on==null?95:on;var risk=kpiXNum(rules.at_risk_percent);risk=risk==null?85:risk;status=score>=on?'on_track':score>=risk?'at_risk':'off_track';}
   return {status:status,score:score==null?null:kpiXRound(score,0),indicators:snapshots};
 }
+// Compare loaded reporting snapshots without swapping globals, updating caches or writing data.
+function kpiXPreviewConfiguration(configuration){
+  var live=window.kpiConfigPublished,kpis=typeof kpiKPIs!=='undefined'?kpiKPIs:null;
+  if(!live||!configuration||!Array.isArray(kpis)||typeof kpiIndicators==='undefined'||!Array.isArray(kpiIndicators)||typeof kpiMonthlyData==='undefined'||!kpiMonthlyData)throw new Error('KPI reporting data is not loaded.');
+  var beforeMonth=kpiXCompilationMonth(live),afterMonth=kpiXCompilationMonth(configuration),statuses=0,scores=0;
+  kpis.forEach(function(k){var before=kpiXKpiSnapshot(k,beforeMonth,live),after=kpiXKpiSnapshot(k,afterMonth,configuration);if(before.status!==after.status)statuses++;if(before.score!==after.score)scores++;});
+  return {available:true,kpis_evaluated:kpis.length,status_changes:statuses,score_changes:scores,reporting_year:kpiXSelectedYear(),published_month:beforeMonth,draft_month:afterMonth,generated_at:new Date().toISOString()};
+}
+window.kpiXPreviewConfiguration=kpiXPreviewConfiguration;
 function kpiXCompute(month){
   if(month==null)month=kpiXCompilationMonth();
   (typeof kpiKPIs!=='undefined'?kpiKPIs:[]).forEach(function(k){var snap=kpiXKpiSnapshot(k,month);k._kpiX=snap;k._computed_status=snap.status;});
