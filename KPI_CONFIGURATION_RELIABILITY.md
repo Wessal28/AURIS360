@@ -30,11 +30,13 @@ The remaining controls have code consumers, but that alone does not establish co
 | Zero-tolerance override | `kpiXEvaluate`; changing the toggle must be checked against the zero-tolerance operator's underlying calculation. |
 | Critical override | `kpiXKpiSnapshot`; worst indicator status is used without a separate critical-indicator flag. The wording needs comparison with the intended policy. |
 | Exclude open current period | `kpiXCompilationMonth`; verify current, prior and future years and the annual reporting window. |
-| Objective aggregation | The selected mode affects indicator aggregation within `kpiXKpiSnapshot`. Check objective-level roll-up and label accuracy before claiming objective aggregation is complete. |
-| Default source | New KPI editor defaults only; `integration` currently maps to `Evidence / document`, not an external integration connector. |
+| Indicator aggregation | The visible label now correctly describes combining indicators within a KPI. Objective totals still average reported KPI scores. Draft impact recalculation is covered by `KPI_CONFIGURATION_PREVIEW.md`. |
+| Default source | Label/help already describe new-KPI editor defaults; `integration` is shown as `Evidence / document`, not an external integration connector. |
 | Refresh frequency | Corrected in the subsequent source-refresh reliability phase; see `KPI_SOURCE_REFRESH_RELIABILITY.md`. Intervals are checked on deliberate KPI loads, not by a background scheduler. |
 | Allow manual override | `canOverride` controls the UI and the database RPC applies the published-policy rule. Verify authorised roles, reasons, audit and refresh interaction in staging. |
 | Stage 1/2/3 and self-approval | New-KPI defaults and person routing; local mirroring is tested. Existing KPI assignments are intentionally preserved. Live identities, permissions and approval requests still need signed-in acceptance. |
 | Publication reason | Required by the client when configured. Verify server-side enforcement separately; this change does not add a migration. |
 
 Do not describe all configuration priorities as completed by this PR. Remaining items need their own regression cases and review; changing calculation or approval meaning must be explicit.
+
+The subsequent configuration-preview phase rejects blank/invalid thresholds, uses exact range labels and compares draft versus published snapshots using the shared evaluator. It removes the unsupported affected-period count. This is selected-year, loaded-data validation evidence, not full-history or tenant acceptance; see `KPI_CONFIGURATION_PREVIEW.md`.
