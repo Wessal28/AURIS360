@@ -684,7 +684,7 @@ function kpiPrint() {
   html += '<div class="print-doc">';
   html += '<div class="print-doc-header">';
   html += '<div class="print-doc-title">Objectives &amp; KPIs Scorecard</div>';
-  html += '<div class="print-doc-sub">'+kpiPrintEsc(companyName)+' &middot; '+year+'</div>';
+  html += '<div class="print-doc-sub">'+kpiPrintEsc(companyName)+' &middot; '+kpiPrintEsc(year)+'</div>';
   html += '<div class="print-doc-meta">Generated on '+generatedOn+(printingOverview?' &middot; Overview':' &middot; Monthly Follow-up')+'</div>';
   html += '</div>';
 
@@ -739,14 +739,14 @@ function kpiPrintStatusLabel(st){
   if(st==='at_risk') return 'At Risk';
   if(st==='off_track') return 'Off Track';
   if(st==='not_started') return 'Not Started';
-  return st || '--';
+  return kpiPrintEsc(st || '--');
 }
 
 // Helper: format target with operator + unit (re-uses kpiFmtTarget if available)
 function kpiPrintFmtTarget(ind){
-  if (typeof kpiFmtTarget === 'function') return kpiFmtTarget(ind);
+  if (typeof kpiFmtTarget === 'function') return kpiPrintEsc(kpiFmtTarget(ind));
   var op = ind?.target_operator==='lte'?'=':ind?.target_operator==='eq'?'=':'=';
-  return op+' '+(ind?.target_value!=null?ind.target_value:'--')+(ind?.unit?' '+ind.unit:'');
+  return kpiPrintEsc(op+' '+(ind?.target_value!=null?ind.target_value:'--')+(ind?.unit?' '+ind.unit:''));
 }
 
 // Build the overview document content
@@ -844,9 +844,9 @@ function kpiBuildPrintMonthly(year) {
           var d = data[m];
           var actual = d?.actual != null ? d.actual : null;
           if (d?.ytd != null) ytdVal = d.ytd;
-          html += '<td style="text-align:center">'+(actual != null ? actual : '-')+'</td>';
+          html += '<td style="text-align:center">'+kpiPrintEsc(actual != null ? actual : '-')+'</td>';
         }
-        html += '<td style="text-align:center;background:#f0f9f4"><strong>'+(ytdVal!=null?ytdVal:'-')+'</strong></td>';
+        html += '<td style="text-align:center;background:#f0f9f4"><strong>'+kpiPrintEsc(ytdVal!=null?ytdVal:'-')+'</strong></td>';
         if (idx === 0) {
           html += '<td rowspan="'+inds.length+'" style="text-align:center">'+kpiPrintStatusLabel(k.status)+'</td>';
         }

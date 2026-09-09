@@ -23,6 +23,7 @@ const testFiles = [
   'tests/kpi_preview_integration.test.cjs',
   'tests/kpi_reporting_consistency.test.cjs',
   'tests/kpi_csv_safety.test.cjs',
+  'tests/kpi_print_text_safety.test.cjs',
   'tests/kpi_source_refresh_behaviour.test.cjs',
   'tests/kpi_display_clarity.test.cjs',
   'tests/kpi_dashboard_reporting.test.cjs',
