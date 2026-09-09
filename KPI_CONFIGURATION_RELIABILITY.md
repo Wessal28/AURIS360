@@ -29,7 +29,7 @@ The remaining controls have code consumers, but that alone does not establish co
 | On Track / At Risk thresholds | `kpiXEvaluate` and `kpiXKpiSnapshot`; the On Track threshold is applied to aggregate classification when the critical override is disabled, not uniformly to indicator classification. |
 | Zero-tolerance override | `kpiXEvaluate`; changing the toggle must be checked against the zero-tolerance operator's underlying calculation. |
 | Critical override | `kpiXKpiSnapshot`; worst indicator status is used without a separate critical-indicator flag. The wording needs comparison with the intended policy. |
-| Exclude open current period | `kpiXCompilationMonth`; verify current, prior and future years and the annual reporting window. |
+| Exclude open current period | Zero-month compiled latest/YTD lookup corrected in the reporting cut-off phase; January, prior/future years, measured zeroes and annual backdating tested. See `KPI_REPORTING_PERIOD_CUTOFF.md` for scope; raw trend and CSV cut-off consistency remain separate findings. |
 | Objective aggregation | The selected mode affects indicator aggregation within `kpiXKpiSnapshot`. Check objective-level roll-up and label accuracy before claiming objective aggregation is complete. |
 | Default source | New KPI editor defaults only; `integration` currently maps to `Evidence / document`, not an external integration connector. |
 | Refresh frequency | Corrected in the subsequent source-refresh reliability phase; see `KPI_SOURCE_REFRESH_RELIABILITY.md`. Intervals are checked on deliberate KPI loads, not by a background scheduler. |
