@@ -3267,6 +3267,9 @@ function activatePageNavigation(pageKey, suppliedElement){
     if(isActive)item.setAttribute('aria-current','page');
     else item.removeAttribute('aria-current');
   });
+  if(window.innerWidth<=768&&typeof mobileSetBottomNavActive==='function'){
+    mobileSetBottomNavActive(pageKey,null);
+  }
 }
 
 function showPage(name,el){
@@ -38554,12 +38557,18 @@ function mobileNavTo(page, title, btnEl) {
 }
 
 function mobileSetBottomNavActive(page, btnEl) {
-  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) {
+    b.classList.remove('active');
+    b.removeAttribute('aria-current');
+  });
   var activeBtn = null;
   if (btnEl && btnEl.classList && btnEl.classList.contains('mob-nav-btn')) activeBtn = btnEl;
   if (!activeBtn) activeBtn = document.getElementById('mob-btn-' + page);
   if (!activeBtn) activeBtn = document.getElementById('mob-btn-modules');
-  if (activeBtn) activeBtn.classList.add('active');
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-current', 'page');
+  }
 }
 
 function mobileGoBack() {
