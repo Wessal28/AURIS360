@@ -25,9 +25,6 @@ seOpenDrawer('validation',args[0])
     "f0008": function (event, args) {
 seGenerateReport(args[0])
     },
-    "f0009": function (event, args) {
-seConfigFilter(args[0])
-    },
     "f0010": function (event, args) {
 seConfirmQr()
     },
@@ -162,12 +159,6 @@ seSaveReviewTemplate('draft')
     },
     "f0054": function (event, args) {
 seSaveReviewTemplate('published')
-    },
-    "f0055": function (event, args) {
-sePreviewConfig()
-    },
-    "f0056": function (event, args) {
-seSaveEntity('configRecords',null,'draft')
     },
     "f0057": function (event, args) {
 seSaveEntity(args[0],args[1],args[2])
