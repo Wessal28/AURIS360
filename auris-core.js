@@ -12991,6 +12991,7 @@ async function sopDelete(id){
 
 // ===== WORK SCHEDULE MODULE =====
 let wsAllData=[], wsEditingId=null, wsCurrentId=null, wsWeekOffset=0, wsTbtAttendees=[];
+var wsTbtSavePending=false, wsTbtSavedId=null;
 
 const WS_STATUS_CFG={
   planned:    ['#E6F1FB','#185FA5','Planned'],
@@ -13251,6 +13252,7 @@ function wsGetCurrent(){return wsAllData.find(function(r){return r.id===wsCurren
 
 function wsOpenToolboxTalk(){
   var x=wsGetCurrent();
+  wsTbtSavedId=null;
   document.getElementById('ws-detail-view').style.display='none';
   document.getElementById('ws-tbt-form').style.display='block';
 
@@ -13284,7 +13286,7 @@ function wsOpenToolboxTalk(){
       var n=name.trim();if(n)wsTbtAttendees.push({name:n,signed:false});
     });
   }
-  tbtRenderAttendees();
+  wsTbtRenderAttendees();
 }
 
 function wsOpenPreStart(){
@@ -13339,7 +13341,7 @@ function wsBackToDetail(){
 
 // -- TOOLBOX TALK FORM --------------------------------------------------------
 
-function tbtRenderAttendees(){
+function wsTbtRenderAttendees(){
   var el=document.getElementById('tbt-attendees-list');if(!el)return;
   if(!wsTbtAttendees.length){
     el.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0">No attendees added yet</div>';
@@ -13354,6 +13356,69 @@ function tbtRenderAttendees(){
       +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-runtime-onclick="r0053" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x" style="font-size:11px"></i></button>'
       +'</div>';
   }).join('');
+}
+
+function wsTbtAddAttendee(){
+  var input=document.getElementById('tbt-new-attendee');
+  var name=String(input?.value||'').trim();
+  if(!name)return;
+  if(!wsTbtAttendees.some(function(a){return String(a.name||'').toLowerCase()===name.toLowerCase();})){
+    wsTbtAttendees.push({name:name,signed:false});
+  }
+  input.value='';
+  wsTbtRenderAttendees();
+}
+
+async function wsSaveToolboxTalk(){
+  if(wsTbtSavePending)return;
+  var title=document.getElementById('tbt-title')?.value?.trim();
+  if(!title){toast('Please enter a toolbox talk title',false);return;}
+  if(!wsCurrentId){toast('Open a work order before saving the toolbox talk',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var conductedById=g('tbt-by');
+  var conductedBy=tenantPeople().find(function(p){return String(p.id)===String(conductedById||'');});
+  var conductedByName=conductedBy?wsTeamMemberName(conductedBy):(document.getElementById('tbt-by')?.selectedOptions?.[0]?.textContent||'');
+  if(conductedByName==='Select...')conductedByName='';
+  var confirmed=!!document.getElementById('tbt-confirmed')?.checked;
+  var signedAt=g('tbt-sign-dt');
+  var attendees=wsTbtAttendees.map(function(a){
+    var person=personFromValue(a.name);
+    return {person_id:person?.id||null,name:a.name,signed:!!a.signed,confirmed_at:a.signed?(signedAt||new Date().toISOString()):null,confirmation_method:a.signed?'in_person':null};
+  });
+  var body={
+    company_id:ccid(),work_schedule_id:wsCurrentId,title:title,talk_date:g('tbt-date'),
+    conducted_by_id:conductedById||null,conducted_by_name:conductedByName||null,
+    presenter:conductedByName||null,presenter_person_id:conductedById||null,
+    location:g('tbt-location'),work_location:g('tbt-location'),
+    duration_minutes:parseInt(g('tbt-duration'),10)||15,duration_mins:parseInt(g('tbt-duration'),10)||15,
+    work_activity:g('tbt-activity'),topics_covered:g('tbt-topics'),key_points:g('tbt-topics'),
+    hazards_discussed:g('tbt-hazards'),controls_discussed:g('tbt-controls'),
+    ppe_required:g('tbt-ppe'),emergency_procedures:g('tbt-emergency'),
+    attendees:attendees,attendee_person_ids:attendees.map(function(a){return a.person_id;}).filter(Boolean),
+    signed_by:g('tbt-sign-name'),signed_at:confirmed?(signedAt||new Date().toISOString()):null,
+    status:confirmed?'completed':'draft',updated_at:new Date().toISOString()
+  };
+  wsTbtSavePending=true;
+  try{
+    var savedId=wsTbtSavedId;
+    if(savedId){
+      await api('/toolbox_talks?id=eq.'+encodeURIComponent(savedId),{m:'PATCH',p:'return=minimal',b:body});
+    }else{
+      body.created_by=prof?.id||null;
+      body.tbt_ref=await nextCompanyRef('toolbox_talks','tbt_ref','TBT-'+new Date().getFullYear()+'-');
+      var saved=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+      savedId=saved?.[0]?.id||null;
+      if(!savedId)throw new Error('Save confirmation was incomplete. Check the Toolbox Talks register before retrying.');
+      wsTbtSavedId=savedId;
+    }
+    await api('/work_schedule?id=eq.'+encodeURIComponent(wsCurrentId),{m:'PATCH',p:'return=minimal',b:{toolbox_talk_id:savedId,updated_at:new Date().toISOString()}});
+    await api('/work_schedule_links?on_conflict=work_order_id,link_type,record_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ccid(),work_order_id:wsCurrentId,link_type:'tbt',record_id:savedId,record_ref:body.tbt_ref||savedId,created_by:prof?.id||null}}).catch(function(){return null;});
+    var work=wsGetCurrent();if(work.id)work.toolbox_talk_id=savedId;
+    toast(confirmed?'Toolbox talk completed and linked to the work order':'Toolbox talk draft saved and linked to the work order');
+    wsBackToDetail();
+    await wsShowDetail(wsCurrentId);
+  }catch(e){toastActionError('Save toolbox talk','Work Schedule',e);}
+  finally{wsTbtSavePending=false;}
 }
 
 

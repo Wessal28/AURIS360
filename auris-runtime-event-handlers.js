@@ -155,10 +155,10 @@ brandPickPreset(args[0])
 event.stopPropagation();wsShowDetail(args[0])
     },
     "r0052": function (event, args) {
-wsTbtAttendees[args[0]].signed=this.checked;tbtRenderAttendees()
+wsTbtAttendees[args[0]].signed=this.checked;wsTbtRenderAttendees()
     },
     "r0053": function (event, args) {
-wsTbtAttendees.splice(args[0],1);tbtRenderAttendees()
+wsTbtAttendees.splice(args[0],1);wsTbtRenderAttendees()
     },
     "r0054": function (event, args) {
 wsTEOpenChecklist(args[0])
