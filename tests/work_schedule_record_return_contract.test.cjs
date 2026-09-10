@@ -13,6 +13,8 @@ test('work detail supports every linked inspection, risk assessment and permit',
   assert.match(core, /linked\('ptw',x\.permit_ref,data\[4\]/);
   assert.match(core, /\['tbt','prestart','site','ra','ptw','event'\]\.forEach\(wsRenderLinkedSummary\)/);
   assert.match(core, /work_schedule_links\?on_conflict=work_order_id,link_type,record_id/);
+  assert.match(core, /Optional work schedule multi-record links are not installed; direct relationship saved/);
+  assert.match(core, /work_schedule\?id=eq[\s\S]*work_schedule_links\?on_conflict/);
 });
 
 test('forms opened from a work order link back and return to that work', () => {
