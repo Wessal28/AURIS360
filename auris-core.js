@@ -25122,18 +25122,49 @@ async function toolsSaveEquipment(){
 
 async function toolsDelete(){
   if(!toolsEditingId)return;
-  try{var rows=await api('/tools_register?id=eq.'+toolsEditingId+'&select=status,notes');var current=rows?.[0]||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'&&!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. Use delete again if permanent removal is required.');toolsFormBack();return;}if(!(await appConfirmDelete('equipment','This equipment is already out of service/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
-  catch(e){toastActionError('Delete equipment','Tools & Equipment',e);}
+  try{var rows=await api('/tools_register?id=eq.'+toolsEditingId+'&select=status,notes');var current=rows?.[0]||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'||!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. It remains available for inspection and defect history.');toolsFormBack();return;}var linked=await toolsLinkedDeleteRecords(toolsEditingId);if(linked.length){toolsShowLinkedDeleteProtection(linked);return;}if(!(await appConfirmDelete('equipment','This equipment is already out of service/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
+  catch(e){if(toolsHandleLinkedDeleteError(e))return;toastActionError('Delete equipment','Tools & Equipment',e);}
+}
+
+async function toolsLinkedDeleteRecords(id){
+  var linked=[];
+  var checks=[
+    ['equipment_defects','equipment_id','defect record'],
+    ['equipment_maintenance_events','equipment_id','maintenance record'],
+    ['equipment_movements','equipment_id','movement record']
+  ];
+  for(var i=0;i<checks.length;i++){
+    try{var rows=await api('/'+checks[i][0]+'?select=id&'+checks[i][1]+'=eq.'+encodeURIComponent(id)+'&limit=1');if(rows&&rows.length)linked.push(checks[i][2]);}
+    catch(e){console.warn('Equipment link check unavailable for '+checks[i][0],e);}
+  }
+  return linked;
+}
+
+function toolsShowLinkedDeleteProtection(linked){
+  var labels=(linked||[]).join(', ');
+  toast('This equipment cannot be permanently deleted because it has linked '+labels+'. It has been kept out of service so its safety history remains available.',false);
+}
+
+function toolsHandleLinkedDeleteError(error){
+  var message=String(error?.message||error||'');
+  var linked=[];
+  if(/equipment_defects_equipment_id_fkey|equipment_defects/i.test(message))linked.push('defect record');
+  if(/equipment_maintenance_events_equipment_id_fkey|equipment_maintenance_events/i.test(message))linked.push('maintenance record');
+  if(/equipment_movements_equipment_id_fkey|equipment_movements/i.test(message))linked.push('movement record');
+  if(!linked.length)return false;
+  toolsShowLinkedDeleteProtection(linked);
+  return true;
 }
 
 async function toolsDeleteFromList(id){
   try{
-    var current=toolsAllData.find(x=>x.id===id)||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'&&!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. Use delete again if permanent removal is required.');toolsLoadRegister();return;}
+    var current=toolsAllData.find(x=>x.id===id)||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'||!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. It remains available for inspection and defect history.');toolsLoadRegister();return;}
+    var linked=await toolsLinkedDeleteRecords(id);if(linked.length){toolsShowLinkedDeleteProtection(linked);return;}
     if(!(await appConfirmDelete('equipment','This equipment is already out of service/archived. Permanent deletion should be used only for duplicate/test records.')))return;
     await api('/tools_register?id=eq.'+id,{m:'DELETE'});
     toolsAllData=toolsAllData.filter(x=>x.id!==id);
     toast('Deleted!');toolsFilterRegister();
-  }catch(e){toastActionError('Delete equipment','Tools & Equipment',e);}
+  }catch(e){if(toolsHandleLinkedDeleteError(e))return;toastActionError('Delete equipment','Tools & Equipment',e);}
 }
 
 // -- PERSONAL TOOLS -----------------------------------------------------------
