@@ -32,6 +32,11 @@ test('work schedule team members are company-scoped employee multi-select choice
   assert.match(core, /tenantPeople\(\)\.filter/);
   assert.match(core, /p\.person_type\|\|'employee'/);
   assert.match(core, /team_members:wsSelectedTeamNames\(\)/);
+  assert.match(core, /async function wsEnsureWorkOrderPeople\(\)[\s\S]*?await loadPeopleCache\(\)/);
+  assert.match(core, /async function wsNew\(\)\{\s*if\(!await wsEnsureWorkOrderPeople\(\)\)return/);
+  assert.match(core, /async function wsEdit\(id\)[\s\S]*?if\(!await wsEnsureWorkOrderPeople\(\)\)return/);
+  assert.match(core, /function wsPopulateSupervisorSelect\(selectedId,selectedName\)/);
+  assert.match(core, /No active people found - add them in People/);
 });
 
 test('work schedule offers new, template and existing risk-assessment paths and links the result', () => {

@@ -13449,6 +13449,21 @@ async function wsLoadReferenceOptions(selectedRA,selectedPTW){
 }
 
 function wsTeamMemberName(p){return [p?.first_name,p?.last_name].filter(Boolean).join(' ')||p?.email||'';}
+async function wsEnsureWorkOrderPeople(){
+  var companyId=String(ccid()||'');
+  if(!tenantPeople().length)await loadPeopleCache();
+  if(String(ccid()||'')!==companyId){toast('Company changed while loading people. Reopen the work order.',false);return false;}
+  return true;
+}
+function wsPopulateSupervisorSelect(selectedId,selectedName){
+  var select=document.getElementById('wsf-supervisor');if(!select)return;
+  var active=tenantPeople().filter(function(p){return !p.status||String(p.status).toLowerCase()==='active';});
+  select.innerHTML='<option value="">Select supervisor...</option>';
+  active.forEach(function(p){var option=document.createElement('option');option.value=p.id;option.textContent=[p.last_name,p.first_name].filter(Boolean).join(', ')+(p.job_title?' - '+p.job_title:'');select.appendChild(option);});
+  if(selectedId&&!active.some(function(p){return String(p.id)===String(selectedId);})){var saved=document.createElement('option');saved.value=selectedId;saved.textContent=(selectedName||'Saved supervisor')+' (saved)';select.appendChild(saved);}
+  if(!active.length&&!selectedId){var empty=document.createElement('option');empty.disabled=true;empty.textContent='No active people found - add them in People';select.appendChild(empty);}
+  select.value=selectedId||'';
+}
 function wsPopulateTeamSelect(selectedValue){
   var select=document.getElementById('wsf-team');if(!select)return;
   var selected=Array.isArray(selectedValue)?selectedValue:String(selectedValue||'').split(/[,;\n]+/).map(function(v){return v.trim();}).filter(Boolean);
@@ -13457,6 +13472,7 @@ function wsPopulateTeamSelect(selectedValue){
     var name=wsTeamMemberName(p),reverse=[p.last_name,p.first_name].filter(Boolean).join(', '),option=document.createElement('option');
     option.value=name;option.textContent=(reverse||name)+(p.job_title?' - '+p.job_title:'');option.selected=selectedKeys.includes(name.toLowerCase())||selectedKeys.includes(reverse.toLowerCase());select.appendChild(option);
   });
+  if(!select.options.length&&!selected.length){var empty=document.createElement('option');empty.disabled=true;empty.textContent='No active employees found - add them in People';select.appendChild(empty);}
   selected.forEach(function(name){if(!Array.from(select.options).some(function(o){return o.value.toLowerCase()===name.toLowerCase();})){var option=document.createElement('option');option.value=name;option.textContent=name+' (saved)';option.selected=true;select.appendChild(option);}});
   wsInitTeamMultiSelect(select);
 }
@@ -13464,6 +13480,7 @@ function wsInitTeamMultiSelect(select){if(!select||select.dataset.clickToggleBou
 function wsSelectedTeamNames(){var select=document.getElementById('wsf-team');return select?Array.from(select.selectedOptions).map(function(o){return o.value;}).filter(Boolean).join(', ')||null:null;}
 
 async function wsNew(){
+  if(!await wsEnsureWorkOrderPeople())return;
   wsEditingId=null;
   document.getElementById('ws-form3title').textContent='New Work Order';
   document.getElementById('ws-form3ref').textContent='';
@@ -13479,8 +13496,7 @@ async function wsNew(){
   var p=document.getElementById('wsf-priority');if(p)p.value='medium';
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=true;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=false;
-  var sup=document.getElementById('wsf-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});}
+  wsPopulateSupervisorSelect('','');
   ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
@@ -13488,6 +13504,7 @@ async function wsNew(){
 async function wsEdit(id){
   var x=wsAllData.find(function(r){return r.id===id;});
   if(!x)return;
+  if(!await wsEnsureWorkOrderPeople())return;
   wsEditingId=id;
   document.getElementById('ws-form3title').textContent='Edit Work Order';
   document.getElementById('ws-form3ref').textContent=x.ref_number||'';
@@ -13505,8 +13522,7 @@ async function wsEdit(id){
   var p=document.getElementById('wsf-priority');if(p)p.value=x.priority||'medium';
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=x.requires_ra!==false;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=!!x.requires_permit;
-  var sup=document.getElementById('wsf-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select...</option>';tenantPeople().forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
+  wsPopulateSupervisorSelect(x.supervisor_id||'',x.supervisor_name||'');
   ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
