@@ -116,6 +116,11 @@
       "order": 23,
       "file": "20260909180000_inspection_prestart_form_fields.sql",
       "sha256": "8ee6b94d3cff78fea40f14457c88c224e2e498d94c687d4f6e88e47313e12117"
+    },
+    {
+      "order": 24,
+      "file": "20260911030000_tool_inspection_record_lifecycle.sql",
+      "sha256": "6c847a77773f16ffe9a55c63a781c0f44da998b513c5560515ec7b0c909ae98f"
     }
   ]
 }
