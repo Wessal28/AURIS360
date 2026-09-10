@@ -524,13 +524,13 @@ openVerifiedReferenceSelect('wsf-ptw-ref','ptw')
 wsBackToDetail()
     },
     "h0175": function (event) {
-tbtSave()
+wsSaveToolboxTalk()
     },
     "h0176": function (event) {
-if(event.key==='Enter')tbtAddAttendee()
+if(event.key==='Enter'){event.preventDefault();wsTbtAddAttendee()}
     },
     "h0177": function (event) {
-tbtAddAttendee()
+wsTbtAddAttendee()
     },
     "h0178": function (event) {
 wsTEAddItem()
@@ -3798,6 +3798,9 @@ aiExtractUploadedDocument(this,'comp-check-text','comp-check-file-state')
     },
     "h1263": function (event) {
 aiExtractUploadedDocument(this,'doc-analysis-text','doc-analysis-file-state')
+    },
+    "h1264": function (event) {
+tbtSave()
     }
   };
   var eventTypes = ["change","click","dragleave","dragover","drop","input","keydown","mouseout","mouseover"];
