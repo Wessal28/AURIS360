@@ -438,6 +438,7 @@ try{
  if(new Set(ids).size!==ids.length)throw new Error('Duplicate indicator identity. Close and reopen the KPI to recover its original rows.');
  const original=context.kpiId?kpiKPIs.find(k=>k.id===context.kpiId):null;
  const body={company_id:context.companyId,objective_id:objId,code:field('kpi-code'),name,description:field('kpi-description')||null,frequency:field('kpi-freq'),responsible:field('kpi-resp')||null,data_provider:field('kpi-data-provider')||null,data_source:field('kpi-data-source')||null,reviewer:field('kpi-reviewer')||null,approver:field('kpi-approver')||null,approval_status:original?.approval_status||'draft',status:kpiStorageStatus(original?.status||field('kpi-status')),year:context.year};
+ if(typeof window.kpiXPlannedMonthsValue==='function')body.planned_months=window.kpiXPlannedMonthsValue(body.frequency);
  if(!original)body.created_by=context.actorId;
  const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
  modal.querySelector('[data-kpi-definition-message]')?.remove();

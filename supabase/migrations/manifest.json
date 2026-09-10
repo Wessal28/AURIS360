@@ -119,6 +119,16 @@
     },
     {
       "order": 24,
+      "file": "20260911010000_kpi_planned_reporting_months.sql",
+      "sha256": "6f3994c1b65d3d969f086c5ff084afdceea0369388382ea1b7241b1a0414aab4"
+    },
+    {
+      "order": 25,
+      "file": "20260911020000_chemical_sds_document_storage.sql",
+      "sha256": "5352abf6379b22bfb07ee10cdc794b127bcebcebb56d76b15c5560b9cabcf9c2"
+    },
+    {
+      "order": 26,
       "file": "20260911030000_tool_inspection_record_lifecycle.sql",
       "sha256": "6c847a77773f16ffe9a55c63a781c0f44da998b513c5560515ec7b0c909ae98f"
     }
