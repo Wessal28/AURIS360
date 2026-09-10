@@ -13904,13 +13904,19 @@ async function wsAttachSavedRecord(kind,record){
   if(!record||!record.id||!wsRecordReturnMatches(kind))return;
   var ctx=window.wsRecordReturnContext;
   var ref=kind==='ra'?(record.ra_ref||record.id):kind==='ptw'?(record.permit_number||record.id):(record.reference_no||record.id);
-  await api('/work_schedule_links?on_conflict=work_order_id,link_type,record_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ctx.companyId,work_order_id:ctx.workOrderId,link_type:kind,record_id:record.id,record_ref:ref,created_by:prof?.id}});
   var patch={updated_at:new Date().toISOString()};
   if(kind==='prestart')patch.prestart_id=record.id;
   if(kind==='site')patch.site_inspection_id=record.id;
   if(kind==='ra'){patch.ra_ref=ref;patch.risk_assessment_id=record.id;patch.requires_ra=true;}
   if(kind==='ptw'){patch.permit_ref=ref;patch.permit_id=record.id;patch.requires_permit=true;}
   await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+encodeURIComponent(ctx.workOrderId),{m:'PATCH',p:'return=minimal',b:patch},'Work order relationship');
+  try{
+    await api('/work_schedule_links?on_conflict=work_order_id,link_type,record_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ctx.companyId,work_order_id:ctx.workOrderId,link_type:kind,record_id:record.id,record_ref:ref,created_by:prof?.id}});
+  }catch(linkError){
+    var linkMessage=String(linkError?.message||linkError||'');
+    if(!/work_schedule_links/i.test(linkMessage)||!/schema cache|does not exist|not found|PGRST205/i.test(linkMessage))throw linkError;
+    console.warn('Optional work schedule multi-record links are not installed; direct relationship saved.');
+  }
   var work=(wsAllData||[]).find(function(x){return String(x.id)===String(ctx.workOrderId);});
   if(work){Object.assign(work,patch);work.__hseLinks=work.__hseLinks||[];if(!work.__hseLinks.some(function(l){return l.link_type===kind&&String(l.record_id)===String(record.id);})){work.__hseLinks.push({link_type:kind,record_id:record.id,record_ref:ref});}}
 }
