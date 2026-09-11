@@ -24891,6 +24891,8 @@ async function loadTools(){
   if(rcdBtn)rcdBtn.style.display=isMgr()?'inline-flex':'none';
   var search=document.getElementById('tools-insp-search');
   if(search&&!search.dataset.bound){search.dataset.bound='1';search.addEventListener('input',toolsRenderInspections);}
+  var statusFilter=document.getElementById('tools-insp-status-filter');
+  if(statusFilter&&!statusFilter.dataset.bound){statusFilter.dataset.bound='1';statusFilter.addEventListener('change',toolsRenderInspections);}
   toolsLoadRegister();
 }
 
@@ -24902,7 +24904,7 @@ async function toolsLoadRegister(){
   try{
     var res=await Promise.all([
       api('/tools_register?select=*'+cf()+'&order=category,name'),
-      api('/tool_inspections?select=tool_id,inspection_date,overall_result'+cf()+'&order=inspection_date.desc&limit=800')
+      api('/tool_inspections?select=tool_id,inspection_date,overall_result&status=eq.active'+cf()+'&order=inspection_date.desc&limit=800')
     ]);
     toolsAllData=(res[0]||[]).filter(toolsIsGeneralEquipment);
     toolsLastInspectionByTool={};
@@ -24987,7 +24989,7 @@ function toolsFilterRegister(){
 async function toolsOpenEquipmentDetail(id){
   var x=toolsAllData.find(function(r){return String(r.id)===String(id);});if(!x)return;
   try{
-    var inspections=await api('/tool_inspections?tool_id=eq.'+encodeURIComponent(id)+'&select=*&order=inspection_date.desc&limit=100')||[];
+    var inspections=await api('/tool_inspections?tool_id=eq.'+encodeURIComponent(id)+'&status=eq.active&select=*&order=inspection_date.desc&limit=100')||[];
     document.getElementById('tools-equipment-detail-modal')?.remove();
     var modal=document.createElement('div');modal.id='tools-equipment-detail-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
     var rows=inspections.map(function(r){return '<tr><td>'+escH(r.inspection_date?new Date(r.inspection_date).toLocaleDateString('en-GB'):'-')+'</td><td>'+escH(String(r.inspection_type||'periodic').replace(/_/g,' '))+'</td><td>'+escH(r.inspected_by_name||'-')+'</td><td>'+escH(r.overall_result||'-')+'</td><td><button class="btn btn-sm tools-detail-inspection" data-id="'+r.id+'"><i class="ti ti-eye"></i></button></td></tr>';}).join('');
@@ -25250,12 +25252,15 @@ async function toolsLoadInspections(){
 function toolsRenderInspections(){
   var el=document.getElementById('tools-insp-list');if(!el)return;
   var q=String(document.getElementById('tools-insp-search')?.value||'').trim().toLowerCase();
+  var status=String(document.getElementById('tools-insp-status-filter')?.value||'active');
   var d=(toolsInspectionData||[]).filter(function(x){
     var t=x.tools_register||{};
-    return !q||[t.name,t.ref_number,x.inspected_by_name,x.inspection_type,x.overall_result].filter(Boolean).join(' ').toLowerCase().includes(q);
+    var recordStatus=String(x.status||'active').toLowerCase();
+    var statusMatches=status==='all'||recordStatus===status;
+    return statusMatches&&(!q||[t.name,t.ref_number,x.inspected_by_name,x.inspection_type,x.overall_result,x.archive_reason].filter(Boolean).join(' ').toLowerCase().includes(q));
   });
   if(!d.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'+(q?'No inspections match this equipment search.':'No inspections recorded yet.')+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0228"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'+(q?'No inspections match this equipment search.':status==='archived'?'No archived inspection records.':'No inspections recorded yet.')+(isMgr()&&status!=='archived'?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0228"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
     return;
   }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:860px"><thead><tr>'
@@ -25265,7 +25270,7 @@ function toolsRenderInspections(){
       +'<th>Type</th>'
       +'<th>Inspector</th>'
       +'<th>Result</th>'
-      +'<th style="width:60px"></th>'
+      +'<th style="width:120px">Actions</th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
@@ -25280,11 +25285,53 @@ function toolsRenderInspections(){
         +'<td style="padding:8px 10px;text-transform:capitalize;font-size:11px">'+escH((x.inspection_type||'').replace(/_/g,' '))+'</td>'
         +'<td style="padding:8px 10px">'+escH(x.inspected_by_name||'-')+'</td>'
         +'<td style="padding:8px 10px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
-        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0229"><i class="ti ti-eye"></i></button></td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:6px"><button class="btn btn-sm tools-inspection-view" type="button" data-id="'+x.id+'" title="View inspection"><i class="ti ti-eye"></i></button>'
+        +(String(x.status||'active')==='archived'&&toolsCanPermanentlyDeleteInspection()?'<button class="btn btn-sm danger tools-inspection-delete" type="button" data-id="'+x.id+'" title="Permanently delete archived inspection"><i class="ti ti-trash"></i></button>':String(x.status||'active')!=='archived'&&toolsCanArchiveInspection()?'<button class="btn btn-sm tools-inspection-archive" type="button" data-id="'+x.id+'" title="Archive inspection"><i class="ti ti-archive"></i></button>':'')
+        +'</div></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
   el.innerHTML=h;
+  el.querySelectorAll('.tools-inspection-view').forEach(function(btn){btn.addEventListener('click',function(){toolsViewInspection(btn.dataset.id);});});
+  el.querySelectorAll('.tools-inspection-archive').forEach(function(btn){btn.addEventListener('click',function(){toolsArchiveInspection(btn.dataset.id);});});
+  el.querySelectorAll('.tools-inspection-delete').forEach(function(btn){btn.addEventListener('click',function(){toolsDeleteInspectionPermanently(btn.dataset.id);});});
+}
+
+function toolsCanArchiveInspection(){
+  return ['sephs_admin','admin','company_admin','hse_manager','hse_officer','manager','site_manager','supervisor','inspector','auditor'].indexOf(activeRole())!==-1;
+}
+
+function toolsCanPermanentlyDeleteInspection(){
+  return ['sephs_admin','admin','company_admin'].indexOf(activeRole())!==-1;
+}
+
+async function toolsArchiveInspection(id){
+  if(!id||!toolsCanArchiveInspection()){toast('You do not have permission to archive inspection records.',false);return;}
+  var reason=await appPrompt({title:'Archive equipment inspection',message:'Why is this inspection being archived?',placeholder:'e.g. Duplicate or test record',multiline:true,confirmText:'Continue'});
+  if(!String(reason||'').trim())return;
+  var ok=await appConfirmAction({title:'Archive inspection record',message:'Remove this inspection from the active register?',detail:'The inspection will remain available under Archived records with the reason and date retained for audit history.',confirmText:'Archive inspection',cancelText:'Keep record'});
+  if(!ok)return;
+  try{
+    var updated=await api('/tool_inspections?id=eq.'+encodeURIComponent(id)+cf(),{m:'PATCH',p:'return=representation',b:{status:'archived',archived_at:new Date().toISOString(),archived_by:prof?.id||null,archived_by_name:prof?.full_name||prof?.name||prof?.email||null,archive_reason:String(reason).trim(),updated_at:new Date().toISOString()}});
+    if(!Array.isArray(updated)||!updated.length)throw new Error('Record not found or permission denied');
+    document.getElementById('tools-inspection-detail-modal')?.remove();
+    toast('Inspection archived. It remains available under Archived records.');
+    await toolsLoadInspections();
+  }catch(e){toast(actionErrorMessage('Archive inspection','Tools & Equipment',e),false);}
+}
+
+async function toolsDeleteInspectionPermanently(id){
+  if(!id||!toolsCanPermanentlyDeleteInspection()){toast('Only a company or software administrator can permanently delete archived inspections.',false);return;}
+  var record=(toolsInspectionData||[]).find(function(x){return String(x.id)===String(id);});
+  if(!record||String(record.status||'active')!=='archived'){toast('Archive the inspection before permanently deleting it.',false);return;}
+  if(!(await appConfirmDelete('archived equipment inspection','This is intended only for duplicate or test records. The inspection and its audit evidence will be permanently removed.')))return;
+  try{
+    var deleted=await api('/tool_inspections?id=eq.'+encodeURIComponent(id)+'&status=eq.archived'+cf(),{m:'DELETE',p:'return=representation'});
+    if(!Array.isArray(deleted)||!deleted.length)throw new Error('Record not found or permission denied');
+    document.getElementById('tools-inspection-detail-modal')?.remove();
+    toast('Archived inspection permanently deleted.');
+    await toolsLoadInspections();
+  }catch(e){toast(actionErrorMessage('Delete archived inspection','Tools & Equipment',e),false);}
 }
 
 async function toolsLoadLiftingAccessories(){
@@ -25294,7 +25341,7 @@ async function toolsLoadLiftingAccessories(){
   try{
     var res=await Promise.all([
       api('/tools_register?category=eq.lifting'+cf()+'&order=name&select=*'),
-      api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500')
+      api('/tool_inspections?select=*&status=eq.active'+cf()+'&order=inspection_date.desc&limit=500')
     ]);
     toolsLiftingData=res[0]||[];
     var inspections=res[1]||[];
@@ -25550,7 +25597,7 @@ async function toolsLoadRCD(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
-    var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)'+cf()+'&order=inspection_date.desc&limit=300&select=*');
+    var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)&status=eq.active'+cf()+'&order=inspection_date.desc&limit=300&select=*');
     toolsRcdData=(tools||[]).filter(toolsIsRCD);
     toolsRcdTests=tests||[];
     var lastByTool={};
@@ -25826,7 +25873,7 @@ async function toolsLoadVehicles(){
     for(var i=0;i<vehicles.length;i++){
       var v=vehicles[i];
       var lastInsp=null;
-      try{var ins=await api('/tool_inspections?tool_id=eq.'+v.id+'&order=inspection_date.desc&limit=1'+cf());lastInsp=ins?.[0];}catch(ex){}
+      try{var ins=await api('/tool_inspections?tool_id=eq.'+v.id+'&status=eq.active&order=inspection_date.desc&limit=1'+cf());lastInsp=ins?.[0];}catch(ex){}
       var lastDt=lastInsp?new Date(lastInsp.inspection_date):null;
       var daysSince=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
       var isOverdue=daysSince>35;
@@ -25865,7 +25912,7 @@ function toolsNewVehicleInspection(){
 async function toolsViewInspection(id){
   if(!id)return;
   try{
-    var rows=await api('/tool_inspections?id=eq.'+id+'&select=*,tools_register(name,ref_number,category,location,serial_number)');
+    var rows=await api('/tool_inspections?id=eq.'+encodeURIComponent(id)+'&select=*,tools_register(name,ref_number,category,location,serial_number)'+cf());
     var x=rows?.[0];
     if(!x){toast('Inspection record not found',false);return;}
     var tool=x.tools_register||{};
@@ -25911,10 +25958,15 @@ async function toolsViewInspection(id){
       +'</div>'
       +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff"><div style="padding:10px 12px;font-size:12px;font-weight:900;background:#f9fafb;border-bottom:1px solid var(--border)">Checklist results</div>'
       +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 10px;text-align:left">Check item</th><th style="padding:8px 10px;text-align:center;width:90px">Result</th><th style="padding:8px 10px;text-align:left">Notes</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
-      +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn tools-inspection-print"><i class="ti ti-printer"></i>Print this inspection</button><button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
+      +(String(x.status||'active')==='archived'?'<div style="margin-top:14px;padding:10px 12px;border-radius:8px;background:#FEF9EC;color:#854F0B;font-size:12px"><strong>Archived</strong>'+(x.archived_at?' on '+escH(new Date(x.archived_at).toLocaleString()):'')+(x.archived_by_name?' by '+escH(x.archived_by_name):'')+(x.archive_reason?'<br>Reason: '+escH(x.archive_reason):'')+'</div>':'')
+      +'<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn tools-inspection-print"><i class="ti ti-printer"></i>Print this inspection</button>'
+      +(String(x.status||'active')==='archived'&&toolsCanPermanentlyDeleteInspection()?'<button class="btn danger tools-inspection-delete-detail" type="button"><i class="ti ti-trash"></i>Delete permanently</button>':String(x.status||'active')!=='archived'&&toolsCanArchiveInspection()?'<button class="btn danger tools-inspection-archive-detail" type="button"><i class="ti ti-archive"></i>Archive</button>':'')
+      +'<button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
       +'</div></div>';
     document.body.appendChild(modal);
     modal.querySelector('.tools-inspection-print')?.addEventListener('click',function(){printRegisterView('Equipment inspection - '+(tool.name||''),'#tools-inspection-detail-modal .tools-inspection-print-area');});
+    modal.querySelector('.tools-inspection-archive-detail')?.addEventListener('click',function(){toolsArchiveInspection(x.id);});
+    modal.querySelector('.tools-inspection-delete-detail')?.addEventListener('click',function(){toolsDeleteInspectionPermanently(x.id);});
     modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
   }catch(e){toast(actionErrorMessage('Open inspection details','Tools & Equipment',e),false);}
 }
@@ -25969,7 +26021,7 @@ async function loadFleet(){
     var optional=function(p,label){return p.catch(function(e){console.warn('Fleet optional data unavailable: '+label,e);return[];});};
     var res=await Promise.all([
       api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*'),
-      optional(api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),'vehicle inspections'),
+      optional(api('/tool_inspections?select=*&status=eq.active'+cf()+'&order=inspection_date.desc&limit=500'),'vehicle inspections'),
       optional(api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),'fuel log'),
       optional(api('/events?select=id,event_type,vehicle_reg,created_at,event_date,description,location'+cf()+'&order=created_at.desc&limit=200'),'vehicle incidents'),
       optional(api('/equipment_maintenance_events?select=*'+cf()+'&order=created_at.desc&limit=500'),'service history')

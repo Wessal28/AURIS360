@@ -9,7 +9,7 @@ const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
 const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
 
 test('reviewed migration replay inventory includes locked KPI monthly reporting', () => {
-  assert.deepEqual(expectations, { format_version: 1, tables: 270, policies: 432, routines: 127 });
+  assert.deepEqual(expectations, { format_version: 1, tables: 270, policies: 435, routines: 127 });
 });
 
 function run(databaseUrl) {
