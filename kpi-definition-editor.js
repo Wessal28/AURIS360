@@ -8,6 +8,7 @@
  * Archive workflows and monthly reporting remain in auris-core.js.
  */
 
+var kpiSelectedColor = typeof kpiSelectedColor === 'undefined' ? '#1D9E75' : kpiSelectedColor;
 var kpiEditObjId = null;  // tracks which objective is being edited (null = creating new)
 
 // Shared by the two definition forms, including dynamically added indicators.
