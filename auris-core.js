@@ -8115,11 +8115,31 @@ function chemClearAIReview(){
   var panel=document.getElementById('chem3ai-panel');
   if(panel){panel.style.display='none';panel.innerHTML='';}
 }
+var chemPendingSdsFile=null;
+function chemCurrentSdsDocument(createPreviewUrl){
+  var current=chemEditId?chemData.find(function(x){return String(x.id)===String(chemEditId);}):null;
+  if(chemPendingSdsFile)return {file_url:createPreviewUrl?URL.createObjectURL(chemPendingSdsFile):'pending-upload',file_name:chemPendingSdsFile.name,file_mime:chemPendingSdsFile.type||'application/pdf',temporary:true};
+  return current&&current.sds_file_url?{file_url:current.sds_file_url,file_name:current.sds_file_name||'Safety data sheet',file_mime:current.sds_file_mime||'application/pdf'}:null;
+}
+function chemRefreshSdsPreview(){
+  var button=document.getElementById('chem3sds-preview');if(!button)return;
+  var available=!!chemCurrentSdsDocument(false);button.hidden=!available;
+  button.onclick=function(){var doc=chemCurrentSdsDocument(true);if(!doc)return toast('No retained SDS document is available to preview.',false);dcOpenViewer(doc);};
+}
+async function chemUploadPendingSds(){
+  if(!chemPendingSdsFile)return null;
+  if(!tok||!ccid())throw new Error('Sign in and select a company before uploading the SDS.');
+  var file=chemPendingSdsFile,path=ccid()+'/chemical-sds/'+Date.now()+'_'+dcSanitiseName(file.name),encoded=path.split('/').map(encodeURIComponent).join('/');
+  var response=await fetch(SB+'/storage/v1/object/'+DC_BUCKET+'/'+encoded,{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'x-upsert':'false','Content-Type':file.type||'application/pdf'},body:file});
+  if(!response.ok){var detail=await response.text();throw new Error('SDS upload failed ('+response.status+'): '+detail.slice(0,240));}
+  return {sds_file_url:SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+encoded,sds_file_path:path,sds_file_mime:file.type||'application/pdf'};
+}
 function chemShowForm(){document.getElementById('chem3register-view').style.display='none';document.getElementById('chem3form3view').style.display='block';}
 async function chemBack(){document.getElementById('chem3form3view').style.display='none';document.getElementById('chem3register-view').style.display='block';await chemLoad();}
 
 function chemNew(){
   chemEditId=null;
+  chemPendingSdsFile=null;
   document.getElementById('chem3form3title').textContent='New Chemical';
   document.getElementById('chem3form3ref').textContent='CHEM-AUTO';
   document.getElementById('chem3del-btn').style.display='none';
@@ -8133,6 +8153,7 @@ function chemNew(){
   var msg=document.getElementById('chem3sds-msg');if(msg)msg.textContent='';
   chemClearAIReview();
   chemUpdateRiskPreview();
+  chemRefreshSdsPreview();
   chemShowForm();
 }
 
@@ -8140,6 +8161,7 @@ function chemEdit(id){
   var x=chemData.find(r=>r.id===id);if(!x)return;
   var exp=chemExposureValues(x);
   chemEditId=id;
+  chemPendingSdsFile=null;
   document.getElementById('chem3form3title').textContent=x.product_name||'Edit Chemical';
   document.getElementById('chem3form3ref').textContent=displayRecordRef(x,'chemical_ref','CHEM-DRAFT');
   document.getElementById('chem3del-btn').style.display=isMgr()?'inline-flex':'none';
@@ -8158,6 +8180,7 @@ function chemEdit(id){
   document.getElementById('chem3status').value=x.status||'active';
   chemClearAIReview();
   chemUpdateRiskPreview();
+  chemRefreshSdsPreview();
   chemShowForm();
 }
 
@@ -8290,6 +8313,10 @@ function chemAIApplyReview(){
 
 async function chemParseSdsFile(file){
   if(!file)return;
+  if(file.type!=='application/pdf'&&!/\.pdf$/i.test(file.name||'')){toast('Select a PDF safety data sheet.',false);return;}
+  if(file.size>20*1024*1024){toast('The SDS PDF is larger than 20 MB.',false);return;}
+  chemPendingSdsFile=file;
+  chemRefreshSdsPreview();
   var msg=document.getElementById('chem3sds-msg');
   if(msg)msg.textContent='Reading SDS PDF...';
   try{
@@ -8309,6 +8336,7 @@ async function chemParseSdsFile(file){
       if(msg)msg.textContent='Reading SDS page '+p+' of '+pdf.numPages+'...';
     }
     chemApplySdsText(lines.join('\n'),file.name);
+    chemRefreshSdsPreview();
     if(msg)msg.textContent='SDS extracted. Please review fields before saving.';
   }catch(e){if(msg)msg.textContent=actionErrorMessage('Import SDS','Chemical Control',e);toast(actionErrorMessage('Import SDS','Chemical Control',e),false);}
 }
@@ -8379,11 +8407,15 @@ async function chemSave(){
   if(['high','critical'].includes(r.level)&&!g('chem3controls')){toast('Please enter existing exposure controls for high/critical chemical risk.',false);return;}
   var reviewDate=g('chem3review');
   if(!reviewDate){var d=new Date();d.setFullYear(d.getFullYear()+1);reviewDate=d.toISOString().slice(0,10);}
-  var body={company_id:ccid(),product_name:product,supplier:g('chem3supplier'),manufacturer:g('chem3manufacturer'),sds_file_name:g('chem3sds-file'),sds_revision_date:g('chem3sds-date')||null,signal_word:g('chem3signal'),hazard_identification:g('chem3hazards'),hazard_statements:chemSplitList(g('chem3hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem3routes')),exposure_consequences:g('chem3consequences'),first_aid:g('chem3firstaid'),handling_storage:g('chem3handling'),ppe_required:g('chem3ppe'),location:g('chem3location'),department:g('chem3dept'),process_use:g('chem3use'),quantity_stored:g('chem3qty'),persons_exposed:parseInt(g('chem3persons'))||0,exposure_frequency:g('chem3frequency')||'occasional',exposure_duration:g('chem3duration')||'short',task_type:g('chem3task')||'closed_handling',existing_controls:g('chem3controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem3recommendations'),status:g('chem3status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
   var previous=chemEditId?(chemData.find(function(x){return x.id===chemEditId;})||{}):{};
+  var body={company_id:ccid(),product_name:product,supplier:g('chem3supplier'),manufacturer:g('chem3manufacturer'),sds_file_name:g('chem3sds-file'),sds_file_url:previous.sds_file_url||null,sds_file_path:previous.sds_file_path||null,sds_file_mime:previous.sds_file_mime||null,sds_revision_date:g('chem3sds-date')||null,signal_word:g('chem3signal'),hazard_identification:g('chem3hazards'),hazard_statements:chemSplitList(g('chem3hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem3routes')),exposure_consequences:g('chem3consequences'),first_aid:g('chem3firstaid'),handling_storage:g('chem3handling'),ppe_required:g('chem3ppe'),location:g('chem3location'),department:g('chem3dept'),process_use:g('chem3use'),quantity_stored:g('chem3qty'),persons_exposed:parseInt(g('chem3persons'))||0,exposure_frequency:g('chem3frequency')||'occasional',exposure_duration:g('chem3duration')||'short',task_type:g('chem3task')||'closed_handling',existing_controls:g('chem3controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem3recommendations'),status:g('chem3status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
   var shouldCreateAction=['high','critical'].includes(r.level)&&previous.risk_level!==r.level;
   var savedChemId=null, savedChemRef=null;
   try{
+    var saveCompany=String(ccid()||''),saveUser=String(prof?.id||''),saveEditId=chemEditId;
+    var uploaded=await chemUploadPendingSds();
+    if(saveCompany!==String(ccid()||'')||saveUser!==String(prof?.id||'')||saveEditId!==chemEditId)throw new Error('The company, account or chemical changed during SDS upload. Reopen the intended chemical before saving.');
+    if(uploaded)Object.assign(body,uploaded);
     if(chemEditId){
       var updateBody=Object.assign({},body);
       delete updateBody.company_id;
@@ -8418,7 +8450,7 @@ async function chemSave(){
         }});
       }catch(ex){console.warn('Chemical MAP action failed',ex);}
     }
-    chemBack();
+    chemPendingSdsFile=null;chemBack();
   }catch(e){toast(actionErrorMessage('Save chemical','Chemical Control',e.message),false);}
 }
 
@@ -10343,7 +10375,8 @@ function mtgRenderRoadmap(){
 }
 
 function mtgClickWeek(seriesId,week){
-  var saved=(mtgMinutesData||[]).find(function(m){return String(m.series_id)===String(seriesId)&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&m.status==='completed';});
+  var series=mtgSeriesData.find(function(item){return String(item.id)===String(seriesId);});
+  var saved=(mtgMinutesData||[]).find(function(m){var linked=String(m.series_id||'')===String(seriesId)||(series&&!m.series_id&&String(m.title||'').trim().toLowerCase()===String(series.title||'').trim().toLowerCase());return linked&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&String(m.status||'').toLowerCase()==='completed';});
   if(saved){mtgViewMomReadOnly(saved.id);return;}
   // No completed minutes exist yet: open the meeting form pre-set to that week.
   var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
@@ -10413,8 +10446,16 @@ async function mtgLoadMinutes(){
   }catch(e){if(el)el.innerHTML=registerErrorHtml('HSE Meetings register',e.message);console.error(e);}
 }
 
-function mtgViewMomReadOnly(id){
-  var m=mtgMinutesData.find(function(x){return String(x.id)===String(id);});if(!m)return;
+async function mtgViewMomReadOnly(id){
+  var companyId=String(ccid()||''),userId=String(prof?.id||''),m=mtgMinutesData.find(function(x){return String(x.id)===String(id);});if(!m)return;
+  try{
+    if(!Object.prototype.hasOwnProperty.call(m,'title')){
+      var rows=await api('/hse_meetings?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
+      if(companyId!==String(ccid()||'')||userId!==String(prof?.id||''))throw new Error('The account or company changed while opening these minutes.');
+      if(!Array.isArray(rows)||rows.length!==1||String(rows[0].id)!==String(id)||String(rows[0].company_id||'')!==companyId)throw new Error('The completed meeting minutes are unavailable for this company.');
+      m=rows[0];mtgMinutesData=mtgMinutesData.map(function(item){return String(item.id)===String(id)?m:item;});
+    }
+  }catch(error){toastActionError('Open completed meeting minutes','HSE Meetings',error);return;}
   document.getElementById('mtg-minutes-readonly')?.remove();var modal=document.createElement('div');modal.id='mtg-minutes-readonly';modal.className='r5-record-modal';
   var agenda=mtgSplitAgendaPayload(m.agenda_items).items||[], recommendations=mtgSplitRecommendationPayload(m.recommendations).recs||[];
   var rows=function(items,cols){return items.length?'<div class="table-scroll"><table class="data-table"><thead><tr>'+cols.map(function(c){return '<th>'+escH(c[0])+'</th>';}).join('')+'</tr></thead><tbody>'+items.map(function(x){return '<tr>'+cols.map(function(c){return '<td>'+escH(x[c[1]]||'-')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<div class="empty">No records.</div>';};

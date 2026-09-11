@@ -302,6 +302,10 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
     ['Toolbox Talks (apply 20260907010000_toolbox_talk_save_fields.sql if missing)', `toolbox_talks?select=id,tbt_ref,topic_category,presenter,duration_mins,incidents_referenced&${companyFilter}&limit=1`],
     ['Monthly KPI Follow-up', `kpi_monthly_data?select=id&${companyFilter}&limit=1`],
     ['Governed KPI definitions', `kpis_v2?select=id,description,data_provider,data_source,reviewer,approver,approval_status,lifecycle_revision,lifecycle_reason,submitted_by,submitted_at,verified_by,verified_at,approved_by,approved_at,locked_by,locked_at&${companyFilter}&limit=1`],
+    ['Planned KPI months (apply 20260911010000_kpi_planned_reporting_months.sql if missing)', `kpis_v2?select=id,frequency,planned_months&${companyFilter}&limit=1`],
+    ['Retained chemical SDS (apply 20260911020000_chemical_sds_document_storage.sql if missing)', `chemical_register?select=id,sds_file_url,sds_file_path,sds_file_mime&${companyFilter}&limit=1`],
+    ['Retained SDS versions (apply 20260911020000_chemical_sds_document_storage.sql if missing)', `chemical_sds_versions?select=id,file_url,file_path,file_mime&${companyFilter}&limit=1`],
+    ['Completed meeting minutes', `hse_meetings?select=id,title,series_id,status,meeting_date,minutes,agenda_items,recommendations&${companyFilter}&limit=1`],
     ['Governed KPI sources', `kpi_indicators?select=id,source_mode,source_metric,source_revision&${companyFilter}&limit=1`],
     ['Workflow governance', `workflow_policy_versions?select=id,module_key,status,version,revision&${companyFilter}&limit=1`],
     ['Approval governance', `approval_requests?select=id,module_name,source_record_id,source_page,source_adapter_key,from_state,to_state,status,revision&${companyFilter}&limit=1`],
@@ -328,6 +332,27 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
     fail('Staging write persistence probe did not return the exact tenant-scoped site.');
   }
   checks.push({ label: 'Tenant-scoped write persistence', accessible: true, record_id: site.id, operation: 'same-value site PATCH' });
+
+  const storedFiles = await jsonRequest(base + '/storage/v1/object/list/documents', {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefix: profile.company_id + '/chemical-sds/', limit: 1, offset: 0 })
+  }).catch(error => fail('Chemical SDS documents bucket is unavailable (' + error.message + ').'));
+  if (!Array.isArray(storedFiles)) fail('Chemical SDS storage returned an invalid listing.');
+  checks.push({ label: 'Chemical SDS storage listing', accessible: true, sample_rows: storedFiles.length });
+
+  const probePath = profile.company_id + '/chemical-sds/qa-pr118-storage-probe.pdf';
+  const probe = fs.readFileSync(path.join(root, 'tests/fixtures/qa-pr118-sds.pdf'));
+  const uploadResponse = await fetch(base + '/storage/v1/object/documents/' + probePath, {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: probe
+  });
+  if (!uploadResponse.ok) {
+    const detail = await uploadResponse.json().catch(() => ({}));
+    fail('Synthetic SDS upload failed (' + uploadResponse.status + '): ' + String(detail.message || detail.error || 'Storage rejected upload'));
+  }
+  const previewResponse = await fetch(base + '/storage/v1/object/public/documents/' + probePath);
+  if (!previewResponse.ok) fail('Retained SDS public preview unavailable (' + previewResponse.status + ').');
+  if (!Buffer.from(await previewResponse.arrayBuffer()).equals(probe)) fail('Retained SDS preview bytes do not match the uploaded fixture.');
+  checks.push({ label: 'Synthetic SDS upload and retained preview', accessible: true });
 
   const emptySources = checks.filter((check) => check.presentation_state === 'controlled_empty').map((check) => check.label);
 

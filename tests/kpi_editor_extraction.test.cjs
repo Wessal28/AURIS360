@@ -34,7 +34,7 @@ test('the shell loads the feature once, synchronously after core and before hook
  assert.equal(index,names.indexOf('auris-core.js')+1);
  assert.doesNotMatch(tags[index][0],/\b(?:async|defer|type)\s*(?:=|>)/);
  for(const later of ['kpi-configuration.js','kpi-module-upgrade.js','kpi-workflow.js','kpi-data-source.js','kpi-pdf-import.js'])assert.ok(names.indexOf(later)>index,later);
- assert.match(tags[index][1],/\?v=20260909-indicator-navigation-1$/);
+ assert.match(tags[index][1],/\?v=20260911-planned-months-1$/);
 });
 
 test('existing CSP buttons resolve the current feature handler, including later wrappers',()=>{
@@ -77,3 +77,5 @@ test('synthetic browser fixtures load the complete feature file in the shell ord
   assert.doesNotMatch(read(server),/core\.indexOf\('function (?:openObjModal|kpiAddIndicatorRow)/);
  }
 });
+
+test('save confirmation compares reporting-month arrays by value',()=>{const source=fs.readFileSync(path.join(root,'kpi-definition-editor.js'),'utf8');const start=source.indexOf('function kpiDefinitionRowsMatch('),end=source.indexOf('async function kpiSaveKPI(',start);const c={};vm.createContext(c);vm.runInContext(source.slice(start,end),c);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[4,8]}],{planned_months:[4,8]}),true);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[4,9]}],{planned_months:[4,8]}),false);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[]}],{planned_months:[]}),true);});

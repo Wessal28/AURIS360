@@ -31,15 +31,23 @@ function kpiXSelectedYear(){var el=document.getElementById('year-sel');return pa
 function kpiXReportingMonth(){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;return now.getMonth()+1;}
 function kpiXCompilationMonth(configuration){var year=kpiXSelectedYear(),now=new Date();if(year<now.getFullYear())return 12;if(year>now.getFullYear())return 0;var config=configuration||window.kpiConfigPublished,cycles=(config&&config.cycles)||{};return cycles.current_period_excluded===false?now.getMonth()+1:now.getMonth();}
 function kpiXFrequency(k){return String((k&&k.frequency)||'monthly').toLowerCase();}
-function kpiXIsAnnual(k){return kpiXFrequency(k).indexOf('annual')>=0;}
+function kpiXIsAnnual(k){return /^annual(?:ly)?$/.test(kpiXFrequency(k));}
+function kpiXPlannedMonths(k){
+  var months=Array.isArray(k&&k.planned_months)?k.planned_months.map(function(value){return parseInt(value,10);}).filter(function(value,index,list){return value>=1&&value<=12&&list.indexOf(value)===index;}):[];
+  return months.sort(function(a,b){return a-b;});
+}
+function kpiXValidatePlannedEntry(kpi,month,indicatorId){
+  var planned=kpiXPlannedMonths(kpi),existing=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{})[month];
+  if(planned.length&&planned.indexOf(Number(month))<0&&!(existing&&existing.actual!=null))throw new Error('Select a planned reporting month for this KPI.');
+}
 function kpiXAnnualRecordedMonth(indicatorId){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{},recorded=0;
   Object.keys(data).forEach(function(key){var month=parseInt(key,10),row=data[key];if(month>=1&&month<=12&&row&&row.actual!=null)recorded=Math.max(recorded,month);});
   return recorded;
 }
-function kpiXAnnualEntryMonth(indicatorId){return kpiXAnnualRecordedMonth(indicatorId)||kpiXReportingMonth();}
-function kpiXIsDue(k,month){var frequency=kpiXFrequency(k);if(frequency.indexOf('annual')>=0)return month===12;if(frequency.indexOf('quarter')>=0)return month%3===0;return true;}
-function kpiXDueMonth(k,month,indicatorId){var frequency=kpiXFrequency(k);if(frequency.indexOf('annual')>=0){var annualMonth=kpiXAnnualEntryMonth(indicatorId);return annualMonth&&month>=annualMonth?annualMonth:0;}if(frequency.indexOf('quarter')>=0)return Math.floor(month/3)*3;return month;}
+function kpiXAnnualEntryMonth(indicatorId,kpi){var planned=kpiXPlannedMonths(kpi);return kpiXAnnualRecordedMonth(indicatorId)||(planned.length?planned[0]:kpiXReportingMonth());}
+function kpiXIsDue(k,month){var planned=kpiXPlannedMonths(k),frequency=kpiXFrequency(k);if(planned.length)return planned.indexOf(Number(month))>=0;if(/^annual(?:ly)?$/.test(frequency))return month===12;if(frequency.indexOf('biannual')>=0)return month===6||month===12;if(frequency.indexOf('quarter')>=0)return month%3===0;return true;}
+function kpiXDueMonth(k,month,indicatorId){var planned=kpiXPlannedMonths(k),frequency=kpiXFrequency(k);if(planned.length){for(var p=planned.length-1;p>=0;p--)if(planned[p]<=month)return planned[p];return 0;}if(/^annual(?:ly)?$/.test(frequency)){var annualMonth=kpiXAnnualEntryMonth(indicatorId);return annualMonth&&month>=annualMonth?annualMonth:0;}if(frequency.indexOf('biannual')>=0)return month>=6?(month>=12?12:6):0;if(frequency.indexOf('quarter')>=0)return Math.floor(month/3)*3;return month;}
 function kpiXRows(indicatorId){
   var data=(typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{};
   return Object.keys(data).map(function(key){return data[key];}).sort(function(a,b){return (a.month||0)-(b.month||0);});
@@ -266,7 +274,7 @@ function kpiXRenderMonthly(){
   table.querySelector('thead').innerHTML='<tr><th class="kpi-x-sticky-1">Code</th><th class="kpi-x-sticky-2">KPI</th><th class="kpi-x-sticky-3">Measurement Indicator</th><th>Unit</th><th>Direction</th><th>Target</th>'+labels.map(function(x){return '<th style="text-align:center">'+x+'</th>';}).join('')+'<th>YTD</th><th>Variance</th><th>Recorded trend</th><th>Status</th><th>Actions</th></tr>';
   var html='',monthNow=kpiXReportingMonth(),compilationMonth=kpiXCompilationMonth();
   kpiObjectives.forEach(function(obj){var rows=kpiXFilteredKpis().filter(function(k){return String(k.objective_id)===String(obj.id);});if(!rows.length)return;html+='<tr><td colspan="'+(11+groups.length)+'" style="background:#eff8f5!important;color:#087252;font-weight:800">'+kpiXEsc((obj.code||'')+'. '+obj.name)+'</td></tr>';rows.forEach(function(k){var inds=kpiIndicators.filter(function(ind){return String(ind.kpi_id)===String(k.id);});inds.forEach(function(ind,index){var currentDueMonth=kpiXDueMonth(k,compilationMonth,ind.id),current=currentDueMonth?kpiXIndicatorSnapshot(ind,currentDueMonth):{status:'not_due',actual:null,variance:null},direction=kpiXDirection(ind);html+='<tr data-kpi-id="'+kpiXEsc(k.id)+'"><td class="kpi-x-sticky-1">'+(index===0?kpiXEsc(k.code||''):'')+'</td><td class="kpi-x-sticky-2">'+(index===0?'<strong>'+kpiXEsc(k.name)+'</strong>':'')+'</td><td class="kpi-x-sticky-3">'+kpiXEsc(ind.name)+'</td><td>'+kpiXEsc(ind.unit||'count')+'</td><td>'+direction.arrow+'</td><td><strong>'+kpiXEsc(kpiXTargetText(ind))+'</strong></td>';
-      groups.forEach(function(months){var lastMonth=months[months.length-1],annualMonth=kpiXIsAnnual(k)?kpiXAnnualEntryMonth(ind.id):0,entryMonth=period==='annual'&&annualMonth?annualMonth:lastMonth,future=!entryMonth||entryMonth>monthNow,open=!future&&entryMonth>compilationMonth,applicable=period!=='monthly'||(kpiXIsAnnual(k)?lastMonth===annualMonth:kpiXIsDue(k,lastMonth)),row=applicable?(period==='monthly'?((kpiMonthlyData[ind.id]||{})[entryMonth]):kpiXAggregateRows(ind,months)):null,evaluation=!applicable?{status:'not_due'}:row?kpiXEvaluate(ind,row.actual,(kpiXPreviousRow(ind.id,months[0])||{}).actual):{status:future?'not_due':open?'in_progress':'data_missing'};var text=!applicable?'N/A':future?'Not Due':row?kpiXRound(row.actual,2):open?'In Progress':'No Data',editable=applicable&&!future&&kpiXCanEnterMonthly(k);html+='<td class="kpi-x-cell '+evaluation.status+(editable?' editable':'')+'" '+(editable?'role="button" tabindex="0" data-kpi-month-entry="true" data-indicator-id="'+kpiXEsc(ind.id)+'" data-kpi-id="'+kpiXEsc(k.id)+'" data-month="'+entryMonth+'" aria-label="Enter '+(kpiXIsAnnual(k)?'annual':'monthly')+' data for '+kpiXEsc(ind.name)+', '+kpiXEsc(labels[groups.indexOf(months)])+'"':'')+'>'+kpiXEsc(text)+'</td>';});
+      groups.forEach(function(months){var lastMonth=months[months.length-1],annualMonth=kpiXIsAnnual(k)?kpiXAnnualEntryMonth(ind.id,k):0,entryMonth=period==='annual'&&annualMonth?annualMonth:lastMonth,future=!entryMonth||entryMonth>monthNow,open=!future&&entryMonth>compilationMonth,applicable=period!=='monthly'||(kpiXIsAnnual(k)?lastMonth===annualMonth:kpiXIsDue(k,lastMonth)),row=applicable?(period==='monthly'?((kpiMonthlyData[ind.id]||{})[entryMonth]):kpiXAggregateRows(ind,months)):null,evaluation=!applicable?{status:'not_due'}:row?kpiXEvaluate(ind,row.actual,(kpiXPreviousRow(ind.id,months[0])||{}).actual):{status:future?'not_due':open?'in_progress':'data_missing'};var text=!applicable?'N/A':future?'Not Due':row?kpiXRound(row.actual,2):open?'In Progress':'No Data',editable=applicable&&!future&&kpiXCanEnterMonthly(k);html+='<td class="kpi-x-cell '+evaluation.status+(editable?' editable':'')+'" '+(editable?'role="button" tabindex="0" data-kpi-month-entry="true" data-indicator-id="'+kpiXEsc(ind.id)+'" data-kpi-id="'+kpiXEsc(k.id)+'" data-month="'+entryMonth+'" aria-label="Enter '+(kpiXIsAnnual(k)?'annual':'monthly')+' data for '+kpiXEsc(ind.name)+', '+kpiXEsc(labels[groups.indexOf(months)])+'"':'')+'>'+kpiXEsc(text)+'</td>';});
       var latest=kpiXLatestRow(ind.id,compilationMonth),ytd=latest&&latest.ytd!=null?latest.ytd:(latest&&latest.actual);html+='<td><strong>'+(ytd==null?'—':kpiXEsc(kpiXRound(ytd,2)))+'</strong></td><td>'+kpiXEsc(kpiXVarianceText(ind,current))+'</td><td>'+kpiXSpark(ind)+'</td><td>'+kpiXStatusHtml(current.status)+'</td><td><button class="kpi-x-icon-btn" data-auris-module-onclick="d0003" data-auris-module-args="'+encodeURIComponent(JSON.stringify([kpiXEsc(k.id)]))+'"><i class="ti ti-dots"></i></button></td></tr>';});});});
   body.innerHTML=html||'<tr><td colspan="20" class="kpi-x-empty">No KPI data is available.</td></tr>';
   kpiXRenderCycleBanner();
@@ -337,9 +345,37 @@ function kpiXInstall(){
 function kpiXEnhanceEntryModal(){
   var modal=document.getElementById('kpi-entry-modal'),comment=document.getElementById('entry-comment'),actual=document.getElementById('entry-actual');if(!modal||!comment||document.getElementById('entry-root-cause'))return;var label=comment.parentElement&&comment.parentElement.querySelector('label');if(label)label.textContent='Performance explanation';comment.placeholder='Explain the result and factors affecting performance...';if(actual&&actual.parentElement)actual.parentElement.insertAdjacentHTML('beforebegin','<div class="kpi-x-annual-period" id="kpi-x-annual-period" hidden><label class="form3label" for="kpi-x-annual-month">Reporting month</label><select id="kpi-x-annual-month"></select><small id="kpi-x-annual-month-note"></small></div>');comment.parentElement.insertAdjacentHTML('afterend','<div class="kpi-x-exception-fields"><div><label class="form3label" for="entry-root-cause">Root cause</label><textarea id="entry-root-cause" placeholder="What caused this result?"></textarea></div><div><label class="form3label" for="entry-evidence">Evidence reference</label><input type="text" id="entry-evidence" placeholder="Document, inspection, incident or action reference"></div></div><div class="kpi-x-preview" id="kpi-x-entry-preview"><div>Target<strong>—</strong></div><div>Variance<strong>—</strong></div><div>Status<strong>—</strong></div></div>');
 }
+function kpiXPlannedMonthCount(frequency){return {quarterly:4,biannual:2,annual:1}[String(frequency||'').toLowerCase()]||0;}
+function kpiXDefaultPlannedMonths(frequency){return {quarterly:[3,6,9,12],biannual:[6,12],annual:[12]}[String(frequency||'').toLowerCase()]||[];}
+function kpiXSelectedPlannedMonths(){return Array.from(document.querySelectorAll('#kpi-x-planned-months input:checked')).map(function(input){return parseInt(input.value,10);}).sort(function(a,b){return a-b;});}
+function kpiXSetPlannedMonths(months){
+  var selected=Array.isArray(months)?months.map(Number):[];
+  document.querySelectorAll('#kpi-x-planned-months input').forEach(function(input){input.checked=selected.indexOf(parseInt(input.value,10))>=0;});
+  kpiXRenderPlannedMonthControl(false);
+}
+function kpiXRenderPlannedMonthControl(reset){
+  var frequency=document.getElementById('kpi-freq'),host=document.getElementById('kpi-x-planned-months'),note=document.getElementById('kpi-x-planned-month-note');if(!frequency||!host)return;
+  var expected=kpiXPlannedMonthCount(frequency.value);host.hidden=!expected;
+  if(reset&&expected)kpiXSetPlannedMonths(kpiXDefaultPlannedMonths(frequency.value));
+  var selected=kpiXSelectedPlannedMonths();
+  if(note)note.textContent=expected?(selected.length+' of '+expected+' due month'+(expected===1?'':'s')+' selected. Only these months accept results; missed due months remain editable.'):'Monthly KPIs accept a result every month.';
+}
+function kpiXPlannedMonthsValue(frequency){
+  var expected=kpiXPlannedMonthCount(frequency);if(!expected)return [];
+  var selected=kpiXSelectedPlannedMonths();
+  if(selected.length!==expected)throw new Error('Select exactly '+expected+' planned reporting month'+(expected===1?'':'s')+' for this KPI frequency.');
+  return selected;
+}
 function kpiXEnhanceKpiModal(){
-  var modal=document.getElementById('kpi-edit-modal'),status=document.getElementById('kpi-status');if(!modal||!status)return;
+  var modal=document.getElementById('kpi-edit-modal'),status=document.getElementById('kpi-status'),frequency=document.getElementById('kpi-freq');if(!modal||!status)return;
   status.disabled=true;status.title='Status is calculated from indicator results';var label=status.parentElement&&status.parentElement.querySelector('label');if(label)label.textContent='Calculated status';
+  if(frequency&&!frequency.querySelector('option[value="biannual"]'))frequency.querySelector('option[value="annual"]')?.insertAdjacentHTML('beforebegin','<option value="biannual">Twice yearly</option>');
+  if(frequency&&!document.getElementById('kpi-x-planned-months')){
+    var frequencyRow=frequency.closest('.form3row')||frequency.parentElement;
+    frequencyRow.insertAdjacentHTML('afterend','<fieldset id="kpi-x-planned-months" class="kpi-x-planned-months" hidden><legend>Planned reporting months</legend><div>'+KPI_X_MONTHS.map(function(month,index){return '<label><input type="checkbox" value="'+(index+1)+'"><span>'+month+'</span></label>';}).join('')+'</div><small id="kpi-x-planned-month-note"></small></fieldset>');
+    frequency.addEventListener('change',function(){kpiXRenderPlannedMonthControl(true);});
+    document.getElementById('kpi-x-planned-months').addEventListener('change',function(){kpiXRenderPlannedMonthControl(false);});
+  }
   if(!document.getElementById('kpi-description')){
     var row=status.closest('.form3row')||status.parentElement;
     row.insertAdjacentHTML('afterend','<section class="kpi-x-editor-meta" aria-label="KPI details and governance"><label class="full">Description<textarea id="kpi-description" maxlength="4000" placeholder="Purpose, scope and expected outcome"></textarea></label><label>Data provider<select id="kpi-data-provider"><option value="">Select person...</option></select></label><label>Data source<select id="kpi-data-source" required><option value="">Select data source...</option><option value="Manual">Manual entry</option><option value="AURIS module">AURIS module</option><option value="Evidence / document">Evidence / document</option></select></label><label>Reviewer<select id="kpi-reviewer"><option value="">Select person...</option></select></label><label>Approver<select id="kpi-approver"><option value="">Select person...</option></select></label><label class="full">Approval state<input id="kpi-approval-status" value="draft" readonly aria-readonly="true"><small>Read-only here. Submission, review and approval will be controlled by the governed KPI workflow.</small></label><div id="kpi-x-editor-draft-note" class="kpi-x-editor-draft-note full" hidden></div></section>');
@@ -388,7 +424,7 @@ function kpiXCaptureEditorDraft(){
   var fieldIds=['kpi-obj-sel','kpi-code','kpi-name','kpi-description','kpi-freq','kpi-resp','kpi-data-provider','kpi-data-source','kpi-reviewer','kpi-approver'];
   var fields={};fieldIds.forEach(function(id){var el=document.getElementById(id);if(el)fields[id]=el.value;});
   var indicators=Array.from(document.querySelectorAll('#kpi-indicators-list [data-ind-row]')).map(function(row){function value(selector){var el=row.querySelector(selector);return el?el.value:'';}return {indicatorId:row.getAttribute('data-indicator-id')||'',name:value('.ind-name-input'),target:value('.ind-target-input'),operator:value('.ind-op-input'),unit:value('.ind-unit-input'),ytd:value('.ind-ytd-input')};});
-  try{sessionStorage.setItem(kpiXEditorDraftKey(typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null),JSON.stringify({schemaVersion:2,savedAt:Date.now(),fields:fields,indicators:indicators}));}catch(e){}
+  try{sessionStorage.setItem(kpiXEditorDraftKey(typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null),JSON.stringify({schemaVersion:3,savedAt:Date.now(),fields:fields,plannedMonths:kpiXSelectedPlannedMonths(),indicators:indicators}));}catch(e){}
   var note=document.getElementById('kpi-x-editor-draft-note');if(note){note.hidden=false;note.textContent='Unsaved changes are retained in this browser until the KPI is saved.';}
 }
 function kpiXRestoreEditorDraft(kpiId){
@@ -396,6 +432,7 @@ function kpiXRestoreEditorDraft(kpiId){
   try{
     var draft=JSON.parse(raw);if(!draft.savedAt||Date.now()-draft.savedAt>86400000){kpiXClearEditorDraft(kpiId);return;}
     Object.keys(draft.fields||{}).forEach(function(id){var el=document.getElementById(id);if(el)el.value=draft.fields[id];});
+    if(typeof kpiXSetPlannedMonths==='function')kpiXSetPlannedMonths(Array.isArray(draft.plannedMonths)?draft.plannedMonths:kpiXDefaultPlannedMonths(draft.fields&&draft.fields['kpi-freq']));
     if(Array.isArray(draft.indicators)){var list=document.getElementById('kpi-indicators-list');if(list)list.innerHTML='';draft.indicators.forEach(function(ind){var indicatorId=ind.indicatorId||'';if(!indicatorId&&!draft.schemaVersion){var matches=kpiIndicators.filter(function(saved){return saved.kpi_id===kpiId&&saved.name===ind.name;});if(matches.length===1)indicatorId=matches[0].id;}kpiAddIndicatorRow(ind.name,ind.target,ind.operator,ind.unit,ind.ytd,indicatorId);});}
     var note=document.getElementById('kpi-x-editor-draft-note');if(note){note.hidden=false;note.textContent='Recovered unsaved changes from this browser. Review them before saving.';}
   }catch(e){kpiXClearEditorDraft(kpiId);}
@@ -539,9 +576,9 @@ function kpiXHydrateEntryEnhancements(indicatorId,kpiId,month){
   if(actual){actual.addEventListener('input',kpiXUpdateEntryPreview);kpiXUpdateEntryPreview();}
   if(!period||!select||!note)return;
   if(!kpiXIsAnnual(kpi)){period.hidden=true;select.onchange=null;return;}
-  var reportingMonth=kpiXReportingMonth(),recordedMonth=kpiXAnnualRecordedMonth(indicatorId),selectedMonth=recordedMonth||month||reportingMonth;
+  var reportingMonth=kpiXReportingMonth(),recordedMonth=kpiXAnnualRecordedMonth(indicatorId),planned=kpiXPlannedMonths(kpi),selectedMonth=recordedMonth||(planned[0]||month||reportingMonth);
   period.hidden=false;select.innerHTML='';
-  for(var m=1;m<=reportingMonth;m++){var option=document.createElement('option');option.value=String(m);option.textContent=KPI_X_MONTHS[m-1]+' '+kpiXSelectedYear();option.disabled=!!recordedMonth&&m!==recordedMonth;select.appendChild(option);}
+  for(var m=1;m<=reportingMonth;m++){if(planned.length&&planned.indexOf(m)<0)continue;var option=document.createElement('option');option.value=String(m);option.textContent=KPI_X_MONTHS[m-1]+' '+kpiXSelectedYear();option.disabled=!!recordedMonth&&m!==recordedMonth;select.appendChild(option);}
   select.value=String(selectedMonth);
   select.disabled=!!recordedMonth;
   note.className=selectedMonth<reportingMonth?'late':'current';
@@ -559,7 +596,7 @@ function kpiXInstallHooks(){
   if(typeof window.kpiRenderMonthly==='function'){kpiXLegacy.renderMonthly=window.kpiRenderMonthly;window.kpiRenderMonthly=kpiXRenderMonthly;}
   if(typeof window.kpiFmtTarget==='function'){kpiXLegacy.fmtTarget=window.kpiFmtTarget;window.kpiFmtTarget=kpiXTargetText;}
   if(typeof window.kpiGetProgress==='function'){kpiXLegacy.getProgress=window.kpiGetProgress;window.kpiGetProgress=function(ind,actual){return kpiXEvaluate(ind,actual,null).score;};}
-  if(typeof window.kpiOpenEntry==='function'){kpiXLegacy.openEntry=window.kpiOpenEntry;window.kpiOpenEntry=function(indicatorId,kpiId,month){var result=kpiXLegacy.openEntry.apply(this,arguments);if(result!==false)kpiXHydrateEntryEnhancements(indicatorId,kpiId,month);return result;};}
+  if(typeof window.kpiOpenEntry==='function'){kpiXLegacy.openEntry=window.kpiOpenEntry;window.kpiOpenEntry=function(indicatorId,kpiId,month){try{kpiXValidatePlannedEntry(kpiXKpiForIndicator(indicatorId),month,indicatorId);}catch(error){if(typeof toast==='function')toast(error.message,false);return false;}var result=kpiXLegacy.openEntry.apply(this,arguments);if(result!==false)kpiXHydrateEntryEnhancements(indicatorId,kpiId,month);return result;};}
   if(typeof window.kpiSaveEntry==='function'){
     kpiXLegacy.saveEntry=window.kpiSaveEntry;
     window.kpiSaveEntry=async function(){
@@ -581,6 +618,7 @@ function kpiXInstallHooks(){
           recordedMonth=kpiXIsAnnual(kpi)?kpiXAnnualRecordedMonth(indicatorId):0,actual=document.getElementById('entry-actual'),
           root=document.getElementById('entry-root-cause'),evidence=document.getElementById('entry-evidence'),
           previous=ind&&kpiXPreviousRow(ind.id,selectedMonth),status=ind&&actual?kpiXEvaluate(ind,actual.value,previous&&previous.actual).status:'not_started';
+        kpiXValidatePlannedEntry(kpi,selectedMonth,indicatorId);
         if(recordedMonth&&recordedMonth!==selectedMonth)throw new Error('This annual KPI already has a result in '+KPI_X_MONTHS[recordedMonth-1]+'. Clear that result before selecting another reporting month.');
         if(['at_risk','off_track'].indexOf(status)>=0&&(!comment.value.trim()||!root.value.trim()))throw new Error('Performance explanation and root cause are required for an At Risk or Off Track result.');
         var savedComment=original.trim()+(root&&root.value.trim()?'\nRoot cause: '+root.value.trim():'')+(evidence&&evidence.value.trim()?'\nEvidence: '+evidence.value.trim():'');
@@ -612,10 +650,10 @@ function kpiXInstallHooks(){
   }
   if(typeof window.kpiSaveKPI==='function'){kpiXLegacy.saveKpi=window.kpiSaveKPI;window.kpiSaveKPI=async function(){var editing=typeof kpiEditKpiId!=='undefined'?kpiEditKpiId:null;var result=await kpiXLegacy.saveKpi.apply(this,arguments),modal=document.getElementById('kpi-edit-modal');if(modal&&modal.style.display==='none')kpiXClearEditorDraft(editing);return result;};}
   if(typeof window.kpiAddIndicatorRow==='function'){kpiXLegacy.addIndicatorRow=window.kpiAddIndicatorRow;window.kpiAddIndicatorRow=function(){var result=kpiXLegacy.addIndicatorRow.apply(this,arguments);var rows=document.querySelectorAll('.ind-op-input'),select=rows.length?rows[rows.length-1]:null;if(select&&!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');return result;};}
-  if(typeof window.openKpiAddModal==='function'){kpiXLegacy.openKpiAddModal=window.openKpiAddModal;window.openKpiAddModal=function(){var args=arguments;kpiXEnhanceKpiModal();var result=kpiXLegacy.openKpiAddModal.apply(this,args);if(result===false)return false;setTimeout(function(){var modal=document.getElementById('kpi-edit-modal');if(!modal||modal.style.display==='none'||modal._kpiDefinitionBusy||modal._kpiDefinitionWritten||kpiEditKpiId!==(args[0]||null))return;document.querySelectorAll('.ind-op-input').forEach(function(select){if(!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');});kpiXEnhanceKpiModal();var kpiId=args[0],status=document.getElementById('kpi-status'),k=kpiKPIs.find(function(item){return String(item.id)===String(kpiId);});if(status&&k){var derived=kpiXKpiSnapshot(k,kpiXReportingMonth()).status;status.value=['data_missing','in_progress','not_due'].indexOf(derived)>=0?'not_started':derived;}kpiXRestoreEditorDraft(kpiId);kpiXRefreshEditorPeople();},0);return result;};}
+  if(typeof window.openKpiAddModal==='function'){kpiXLegacy.openKpiAddModal=window.openKpiAddModal;window.openKpiAddModal=function(){var args=arguments;kpiXEnhanceKpiModal();var result=kpiXLegacy.openKpiAddModal.apply(this,args);if(result===false)return false;setTimeout(function(){var modal=document.getElementById('kpi-edit-modal');if(!modal||modal.style.display==='none'||modal._kpiDefinitionBusy||modal._kpiDefinitionWritten||kpiEditKpiId!==(args[0]||null))return;document.querySelectorAll('.ind-op-input').forEach(function(select){if(!select.querySelector('option[value="zero"]'))select.insertAdjacentHTML('beforeend','<option value="zero">= 0 · zero tolerance</option><option value="trend_up">↑ improving trend</option><option value="trend_down">↓ reducing trend</option>');});kpiXEnhanceKpiModal();var kpiId=args[0],status=document.getElementById('kpi-status'),k=kpiKPIs.find(function(item){return String(item.id)===String(kpiId);});if(status&&k){var derived=kpiXKpiSnapshot(k,kpiXReportingMonth()).status;status.value=['data_missing','in_progress','not_due'].indexOf(derived)>=0?'not_started':derived;}kpiXSetPlannedMonths(k&&kpiXPlannedMonths(k).length?kpiXPlannedMonths(k):kpiXDefaultPlannedMonths(document.getElementById('kpi-freq')?.value));kpiXRestoreEditorDraft(kpiId);kpiXRefreshEditorPeople();},0);return result;};}
 }
 
-window.kpiXSwitchTab=kpiXSwitchTab;window.kpiXOpenStatus=kpiXOpenStatus;window.kpiXFilterStatus=kpiXFilterStatus;window.kpiXFilterObjective=kpiXFilterObjective;window.kpiXSetObjective=kpiXSetObjective;window.kpiXSetOwner=kpiXSetOwner;window.kpiXSetFrequency=kpiXSetFrequency;window.kpiXSetSearch=kpiXSetSearch;window.kpiXResetFilters=kpiXResetFilters;window.kpiXSetPeriod=kpiXSetPeriod;window.kpiXReviewExceptions=kpiXReviewExceptions;window.kpiXReviewMissing=kpiXReviewMissing;window.kpiXSubmitMonth=kpiXSubmitMonth;window.kpiXExportCsv=kpiXExportCsv;window.kpiXOpenDrawer=kpiXOpenDrawer;window.kpiXCreateAction=kpiXCreateAction;window.kpiXGoMonthly=kpiXGoMonthly;window.kpiXOpenNewObjective=kpiXOpenNewObjective;window.kpiXOpenNewKpi=kpiXOpenNewKpi;window.kpiXEditObjective=kpiXEditObjective;window.kpiXEditKpi=kpiXEditKpi;
+window.kpiXSwitchTab=kpiXSwitchTab;window.kpiXOpenStatus=kpiXOpenStatus;window.kpiXFilterStatus=kpiXFilterStatus;window.kpiXFilterObjective=kpiXFilterObjective;window.kpiXSetObjective=kpiXSetObjective;window.kpiXSetOwner=kpiXSetOwner;window.kpiXSetFrequency=kpiXSetFrequency;window.kpiXSetSearch=kpiXSetSearch;window.kpiXResetFilters=kpiXResetFilters;window.kpiXSetPeriod=kpiXSetPeriod;window.kpiXReviewExceptions=kpiXReviewExceptions;window.kpiXReviewMissing=kpiXReviewMissing;window.kpiXSubmitMonth=kpiXSubmitMonth;window.kpiXExportCsv=kpiXExportCsv;window.kpiXOpenDrawer=kpiXOpenDrawer;window.kpiXCreateAction=kpiXCreateAction;window.kpiXGoMonthly=kpiXGoMonthly;window.kpiXOpenNewObjective=kpiXOpenNewObjective;window.kpiXOpenNewKpi=kpiXOpenNewKpi;window.kpiXEditObjective=kpiXEditObjective;window.kpiXEditKpi=kpiXEditKpi;window.kpiXPlannedMonthsValue=kpiXPlannedMonthsValue;
 
 function kpiXBoot(){
   if(typeof window.kpiObjectives==='undefined')window.kpiObjectives=[];
