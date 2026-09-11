@@ -77,3 +77,5 @@ test('synthetic browser fixtures load the complete feature file in the shell ord
   assert.doesNotMatch(read(server),/core\.indexOf\('function (?:openObjModal|kpiAddIndicatorRow)/);
  }
 });
+
+test('save confirmation compares reporting-month arrays by value',()=>{const source=fs.readFileSync(path.join(root,'kpi-definition-editor.js'),'utf8');const start=source.indexOf('function kpiDefinitionRowsMatch('),end=source.indexOf('async function kpiSaveKPI(',start);const c={};vm.createContext(c);vm.runInContext(source.slice(start,end),c);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[4,8]}],{planned_months:[4,8]}),true);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[4,9]}],{planned_months:[4,8]}),false);assert.equal(c.kpiDefinitionRowsMatch([{id:'k',planned_months:[]}],{planned_months:[]}),true);});

@@ -413,7 +413,7 @@ if(context.kpiId&&(!k||(k.company_id&&k.company_id!==context.companyId)))throw n
 if(k&&window.KpiGovernedWorkflow&&!KpiGovernedWorkflow.canEdit(k))throw new Error('This KPI definition cannot be edited in its current workflow state.');
 }
 function kpiDefinitionRowsMatch(rows,expected){
-return Array.isArray(rows)&&rows.length===1&&!!rows[0].id&&Object.keys(expected).every(key=>key==='target_value'&&expected[key]!==null&&rows[0][key]!==null?Number(rows[0][key])===Number(expected[key]):(rows[0][key]??null)===(expected[key]??null));
+return Array.isArray(rows)&&rows.length===1&&!!rows[0].id&&Object.keys(expected).every(key=>Array.isArray(expected[key])?Array.isArray(rows[0][key])&&rows[0][key].length===expected[key].length&&expected[key].every((value,index)=>rows[0][key][index]===value):key==='target_value'&&expected[key]!==null&&rows[0][key]!==null?Number(rows[0][key])===Number(expected[key]):(rows[0][key]??null)===(expected[key]??null));
 }
 async function kpiSaveKPI(){
 const modal=document.getElementById('kpi-edit-modal'),context=modal?._kpiDefinitionContext;
