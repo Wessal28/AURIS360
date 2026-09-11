@@ -15,11 +15,11 @@ alter table public.kpis_v2
 create or replace function public.kpi_planned_months_valid(months smallint[])
 returns boolean language sql immutable strict
 set search_path = pg_catalog
-as $
+as $validation$
   select coalesce(array_ndims(months), 1) = 1
     and cardinality(months) = (select count(distinct month) from unnest(months) as month)
     and months <@ array[1,2,3,4,5,6,7,8,9,10,11,12]::smallint[];
-$;
+$validation$;
 
 alter table public.kpis_v2
   drop constraint if exists kpis_v2_planned_months_check;
