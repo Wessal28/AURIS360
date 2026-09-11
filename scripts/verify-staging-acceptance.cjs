@@ -333,6 +333,13 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
   }
   checks.push({ label: 'Tenant-scoped write persistence', accessible: true, record_id: site.id, operation: 'same-value site PATCH' });
 
+  const storedFiles = await jsonRequest(base + '/storage/v1/object/list/documents', {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefix: profile.company_id + '/chemical-sds/', limit: 1, offset: 0 })
+  }).catch(error => fail('Chemical SDS documents bucket is unavailable (' + error.message + ').'));
+  if (!Array.isArray(storedFiles)) fail('Chemical SDS storage returned an invalid listing.');
+  checks.push({ label: 'Chemical SDS storage listing', accessible: true, sample_rows: storedFiles.length });
+
   const emptySources = checks.filter((check) => check.presentation_state === 'controlled_empty').map((check) => check.label);
 
   const evidence = {
