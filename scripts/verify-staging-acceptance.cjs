@@ -340,6 +340,20 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
   if (!Array.isArray(storedFiles)) fail('Chemical SDS storage returned an invalid listing.');
   checks.push({ label: 'Chemical SDS storage listing', accessible: true, sample_rows: storedFiles.length });
 
+  const probePath = profile.company_id + '/chemical-sds/qa-pr118-storage-probe.pdf';
+  const probe = fs.readFileSync(path.join(root, 'tests/fixtures/qa-pr118-sds.pdf'));
+  const uploadResponse = await fetch(base + '/storage/v1/object/documents/' + probePath, {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: probe
+  });
+  if (!uploadResponse.ok) {
+    const detail = await uploadResponse.json().catch(() => ({}));
+    fail('Synthetic SDS upload failed (' + uploadResponse.status + '): ' + String(detail.message || detail.error || 'Storage rejected upload'));
+  }
+  const previewResponse = await fetch(base + '/storage/v1/object/public/documents/' + probePath);
+  if (!previewResponse.ok) fail('Retained SDS public preview unavailable (' + previewResponse.status + ').');
+  if (!Buffer.from(await previewResponse.arrayBuffer()).equals(probe)) fail('Retained SDS preview bytes do not match the uploaded fixture.');
+  checks.push({ label: 'Synthetic SDS upload and retained preview', accessible: true });
+
   const emptySources = checks.filter((check) => check.presentation_state === 'controlled_empty').map((check) => check.label);
 
   const evidence = {
