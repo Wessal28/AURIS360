@@ -7,7 +7,8 @@ const source=fs.readFileSync(path.resolve(__dirname,'..','kpi-module-upgrade.js'
 
 test('annual KPIs expose one editable reporting slot in the current year',()=>{
   assert.match(source,/function kpiXAnnualRecordedMonth\(indicatorId\)/);
-  assert.match(source,/function kpiXAnnualEntryMonth\(indicatorId\)\{return kpiXAnnualRecordedMonth\(indicatorId\)\|\|kpiXReportingMonth\(\);\}/);
+  assert.match(source,/function kpiXAnnualEntryMonth\(indicatorId,kpi\)/);
+  assert.match(source,/planned\.length\?planned\[0\]:kpiXReportingMonth\(\)/);
   assert.match(source,/kpiXIsAnnual\(k\)\?lastMonth===annualMonth:kpiXIsDue\(k,lastMonth\)/);
   assert.match(source,/data-month="'\+entryMonth\+'/);
   assert.match(source,/Enter '\+\(kpiXIsAnnual\(k\)\?'annual':'monthly'\)\+' data/);

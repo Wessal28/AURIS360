@@ -8,6 +8,7 @@
  * Archive workflows and monthly reporting remain in auris-core.js.
  */
 
+var kpiSelectedColor = typeof kpiSelectedColor === 'undefined' ? '#1D9E75' : kpiSelectedColor;
 var kpiEditObjId = null;  // tracks which objective is being edited (null = creating new)
 
 // Shared by the two definition forms, including dynamically added indicators.
@@ -412,7 +413,7 @@ if(context.kpiId&&(!k||(k.company_id&&k.company_id!==context.companyId)))throw n
 if(k&&window.KpiGovernedWorkflow&&!KpiGovernedWorkflow.canEdit(k))throw new Error('This KPI definition cannot be edited in its current workflow state.');
 }
 function kpiDefinitionRowsMatch(rows,expected){
-return Array.isArray(rows)&&rows.length===1&&!!rows[0].id&&Object.keys(expected).every(key=>key==='target_value'&&expected[key]!==null&&rows[0][key]!==null?Number(rows[0][key])===Number(expected[key]):(rows[0][key]??null)===(expected[key]??null));
+return Array.isArray(rows)&&rows.length===1&&!!rows[0].id&&Object.keys(expected).every(key=>Array.isArray(expected[key])?Array.isArray(rows[0][key])&&rows[0][key].length===expected[key].length&&expected[key].every((value,index)=>rows[0][key][index]===value):key==='target_value'&&expected[key]!==null&&rows[0][key]!==null?Number(rows[0][key])===Number(expected[key]):(rows[0][key]??null)===(expected[key]??null));
 }
 async function kpiSaveKPI(){
 const modal=document.getElementById('kpi-edit-modal'),context=modal?._kpiDefinitionContext;
@@ -438,6 +439,7 @@ try{
  if(new Set(ids).size!==ids.length)throw new Error('Duplicate indicator identity. Close and reopen the KPI to recover its original rows.');
  const original=context.kpiId?kpiKPIs.find(k=>k.id===context.kpiId):null;
  const body={company_id:context.companyId,objective_id:objId,code:field('kpi-code'),name,description:field('kpi-description')||null,frequency:field('kpi-freq'),responsible:field('kpi-resp')||null,data_provider:field('kpi-data-provider')||null,data_source:field('kpi-data-source')||null,reviewer:field('kpi-reviewer')||null,approver:field('kpi-approver')||null,approval_status:original?.approval_status||'draft',status:kpiStorageStatus(original?.status||field('kpi-status')),year:context.year};
+ if(typeof window.kpiXPlannedMonthsValue==='function')body.planned_months=window.kpiXPlannedMonthsValue(body.frequency);
  if(!original)body.created_by=context.actorId;
  const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
  modal.querySelector('[data-kpi-definition-message]')?.remove();

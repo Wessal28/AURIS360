@@ -293,3 +293,13 @@
 #kpi-edit-modal .auris-kpilegacy-s-de071442a1{flex-wrap:wrap}
 #kpi-edit-modal .auris-kpilegacy-s-1bfaad0397{width:44px;min-width:44px;height:44px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#15334f}
 #kpi-edit-modal [disabled]{cursor:not-allowed;opacity:.6}
+#kpi-edit-modal .kpi-x-planned-months{margin:0 0 14px;padding:12px 14px;border:1px solid #dce4ed;border-radius:9px;background:#f8fafc}
+#kpi-edit-modal .kpi-x-planned-months legend{padding:0 5px;font-size:12px;font-weight:750;color:#334155}
+#kpi-edit-modal .kpi-x-planned-months>div{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+#kpi-edit-modal .kpi-x-planned-months label{position:relative;cursor:pointer}
+#kpi-edit-modal .kpi-x-planned-months input{position:absolute;opacity:0;pointer-events:none}
+#kpi-edit-modal .kpi-x-planned-months span{display:flex;align-items:center;justify-content:center;min-height:38px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#475569;font-size:12px;font-weight:650}
+#kpi-edit-modal .kpi-x-planned-months input:checked+span{border-color:#0f8a64;background:#eaf7f2;color:#087252;box-shadow:inset 0 0 0 1px #0f8a64}
+#kpi-edit-modal .kpi-x-planned-months input:focus-visible+span{outline:2px solid #0f8a64;outline-offset:2px}
+#kpi-edit-modal .kpi-x-planned-months small{display:block;margin-top:8px;color:#64748b;font-size:11px;line-height:1.45}
+@media(max-width:620px){#kpi-edit-modal .kpi-x-planned-months>div{grid-template-columns:repeat(4,minmax(0,1fr))}}
