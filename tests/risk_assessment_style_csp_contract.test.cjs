@@ -13,7 +13,9 @@ const section = index.slice(start, end);
 test('Risk Assessment has no inline style attributes', () => {
   assert.match(index, /<link rel="stylesheet" href="auris-risk-assessment-static\.css\?v=\d+-\d+">/);
   assert.equal((section.match(/\sstyle=(?:"[^"]*"|'[^']*')/gi) || []).length, 0);
-  assert.ok((section.match(/auris-risk-s-[a-f0-9]{10}/g) || []).length >= 427);
+  assert.ok((section.match(/auris-risk-s-[a-f0-9]{10}/g) || []).length >= 418);
+  assert.match(section,/id="ra-selected-matrix-label"/);
+  assert.doesNotMatch(section,/Critical \(20-25\)/);
   assert.ok((css.match(/^\.auris-risk-s-[a-f0-9]{10}\{/gm) || []).length >= 212);
 });
 

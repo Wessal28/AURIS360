@@ -69,7 +69,7 @@ async function open(id,options){
   options=options||{};id=identifier(id);var current=session();assertSession(current,options);
   var workspace=root.AurisRecordWorkspace;if(!workspace)throw new Error('The shared record workspace is unavailable. Reload the application.');
   var source={module:'meetings',table:'toolbox_talks',id:id,company_id:current.companyId,ref:String(options.reference||'').slice(0,120)};
-  workspace.registerAdapter({key:'toolbox-record',module:'meetings',table:'toolbox_talks',explicitOnly:true,titleField:'title',statusField:'status_label',canEdit:function(){return false;},load:function(exact,context){return load(exact,context,options);},fields:fields()});
+  workspace.registerAdapter({key:'toolbox-record',module:'meetings',table:'toolbox_talks',explicitOnly:true,titleField:'title',statusField:'status_label',actions:[{key:'photo',label:'View attendance photo',when:function(record){return !!(root.AurisAttendancePhoto&&root.AurisAttendancePhoto.valid(record.attendance_photo));}}],canEdit:function(){return false;},load:function(exact,context){return load(exact,context,options);},fields:fields()});
   return workspace.open({source:source,adapterKey:'toolbox-record',context:current,availableActions:typeof options.openEditor==='function'?['copy','photo','open']:['copy','photo'],actionLabels:{copy:'Copy talk reference',photo:'View attendance photo',open:'Open talk form'},
     workflowHelp:'This overview is read-only. Open the existing talk form to edit, confirm attendance or print. Its permission checks and save handlers remain authoritative. Shared approval evidence does not confirm attendance or change the talk status here.',
     onAction:async function(action,exact,record){
