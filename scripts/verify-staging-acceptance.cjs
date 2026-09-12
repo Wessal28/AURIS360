@@ -354,6 +354,25 @@ for (const fileName of ['auris-module-registry.js', 'auris-platform-services.js'
   if (!Buffer.from(await previewResponse.arrayBuffer()).equals(probe)) fail('Retained SDS preview bytes do not match the uploaded fixture.');
   checks.push({ label: 'Synthetic SDS upload and retained preview', accessible: true });
 
+  // Synthetic round-trip records are restricted to the verified staging tenant above.
+  const matrix = { version: 1, kind: 'matrix', name: 'QA completion matrix', severity: ['Negligible','Minor','Moderate','Major','Extreme'], likelihood: ['Rare','Unlikely','Possible','Likely','Almost Certain'], cells: [['Very Low','Very Low','Low','Low','Medium'],['Very Low','Low','Low','Medium','High'],['Low','Low','Medium','High','High'],['Low','Medium','High','High','Very High'],['Medium','High','High','Very High','Very High']] };
+  const photo = { data: 'data:image/jpeg;base64,' + fs.readFileSync(path.join(root, 'tests/fixtures/qa-attendance.jpg')).toString('base64'), name: 'qa-attendance.jpg', uploaded_by: profile.id };
+  async function completionProbe(table, title, field, value, extra) {
+    const found = await rest(`${table}?select=id&${companyFilter}&title=eq.${encodeURIComponent(title)}&limit=2`);
+    if (!Array.isArray(found) || found.length > 1) fail(`Ambiguous synthetic ${table} fixture.`);
+    const body = {company_id: profile.company_id, title, status: 'draft', ...extra, [field]: value};
+    const resource = table + (found.length ? `?id=eq.${encodeURIComponent(found[0].id)}&${companyFilter}` : '');
+    const saved = await jsonRequest(`${base}/rest/v1/${resource}`, {method: found.length ? 'PATCH' : 'POST', headers: {...headers, 'Content-Type':'application/json', Prefer:'return=representation'}, body:JSON.stringify(body)});
+    if (!Array.isArray(saved) || saved.length !== 1 || saved[0].company_id !== profile.company_id) fail(`Synthetic ${table} save was not confirmed.`);
+    const fetched = await rest(`${table}?select=id,company_id,${field}&id=eq.${encodeURIComponent(saved[0].id)}&${companyFilter}&limit=1`);
+    const assert = require('node:assert/strict');
+    assert.deepEqual(fetched[0]?.[field], value, `${table}.${field} did not survive reload`);
+    checks.push({label:`Completion ${table}.${field} authenticated round trip`,accessible:true,record_id:saved[0].id});
+  }
+  await completionProbe('toolbox_talks', 'QA Improvement 260910 attendance fixture', 'attendance_photo', photo, {talk_date:'2026-09-13', presenter:'Synthetic QA', topic_category:'safety_general'});
+  await completionProbe('documents', 'QA Improvement 260910 matrix fixture', 'template_definition', matrix, {document_type:'risk_assessment',doc_type:'risk_assessment',category:'Company Risk Matrix',approval_status:'draft'});
+  await completionProbe('risk_assessments', 'QA Improvement 260910 matrix snapshot fixture', 'risk_matrix_snapshot', matrix, {ra_type:'task',ra_type_v2:'task'});
+
   const emptySources = checks.filter((check) => check.presentation_state === 'controlled_empty').map((check) => check.label);
 
   const evidence = {
