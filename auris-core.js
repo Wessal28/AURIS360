@@ -28504,6 +28504,49 @@ function dcPreviewCurrent(){
 }
 
 /* -- INLINE VIEWER ------------------------------------------------- */
+var dcViewerGeneration=0,dcPdfTask=null;
+function dcStopPdfPreview(){
+  dcViewerGeneration++;
+  if(dcPdfTask){var task=dcPdfTask;dcPdfTask=null;Promise.resolve(task.destroy()).catch(function(){});}
+}
+async function dcRenderPdfPreview(body,url,generation){
+  var current=function(){return generation===dcViewerGeneration;};
+  try{
+    if(!window.pdfjsLib)throw new Error('PDF reader is unavailable. Reload the page or use Open / Download.');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var task=window.pdfjsLib.getDocument({url:url,isEvalSupported:false});dcPdfTask=task;
+    var pdf=await task.promise;if(!current())return;
+    body.innerHTML='';
+    var toolbar=document.createElement('div');toolbar.className='dc-pdf-toolbar';
+    var previous=document.createElement('button'),next=document.createElement('button'),status=document.createElement('span');
+    previous.type=next.type='button';previous.className=next.className='btn btn-sm';
+    previous.textContent='Previous page';next.textContent='Next page';status.setAttribute('aria-live','polite');
+    toolbar.append(previous,status,next);
+    var pages=document.createElement('div');pages.className='dc-pdf-pages';
+    body.append(toolbar,pages);
+    var pageNumber=1;
+    async function renderPage(number){
+      if(!current())return;
+      previous.disabled=next.disabled=true;status.textContent='Loading page '+number+'…';
+      try{
+        var page=await pdf.getPage(number);if(!current())return;
+        var base=page.getViewport({scale:1}),width=Math.max(240,Math.min(body.clientWidth-32,1200));
+        var viewport=page.getViewport({scale:Math.min(width/base.width,2)});
+        var canvas=document.createElement('canvas');canvas.className='dc-pdf-page';
+        canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+        canvas.setAttribute('role','img');canvas.setAttribute('aria-label','PDF page '+number+' of '+pdf.numPages);
+        await page.render({canvasContext:canvas.getContext('2d'),viewport:viewport}).promise;
+        if(!current())return;
+        pages.replaceChildren(canvas);pageNumber=number;
+        status.textContent='Page '+number+' of '+pdf.numPages;
+        previous.disabled=number<=1;next.disabled=number>=pdf.numPages;
+      }catch(error){if(current()){status.textContent='PDF preview failed. Use Open or Download to view the file.';}}
+    }
+    previous.addEventListener('click',function(){renderPage(pageNumber-1);});
+    next.addEventListener('click',function(){renderPage(pageNumber+1);});
+    await renderPage(1);
+  }catch(error){if(current()){body.textContent='PDF preview unavailable. Use Open or Download to view the file.';}}
+}
 function dcOpenViewer(doc){
   if(!doc || !doc.file_url){ toast('No file attached to this document',false); return; }
   var name = doc.file_name || doc.title || doc.file_url.split('/').pop();
@@ -28511,6 +28554,8 @@ function dcOpenViewer(doc){
   var url  = aurisSafeMediaUrl(doc.file_url,'document');
   if(!url){ toast('This file URL is not permitted. Use HTTPS or an approved uploaded file.',false); return; }
   var isVideo = dcLooksLikeVideo(url, mime, name);
+  dcStopPdfPreview();
+  var generation=dcViewerGeneration;
 
   document.getElementById('dc-viewer-title').textContent = name;
   document.getElementById('dc-viewer-meta').textContent  = mime + (doc.file_size?' - '+dcFormatSize(doc.file_size):'');
@@ -28521,8 +28566,9 @@ function dcOpenViewer(doc){
 
   // Pick the right renderer
   setTimeout(function(){
+    if(generation!==dcViewerGeneration)return;
     if(mime === 'application/pdf'){
-      body.innerHTML = '<embed src="'+escH(url)+'#toolbar=1" type="application/pdf" style="width:100%;height:100%;border:none"/>';
+      dcRenderPdfPreview(body,url,generation);
     }
     else if(mime.startsWith('image/')){
       body.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0f172a;overflow:auto;padding:20px"><img src="'+escH(url)+'" style="max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 24px rgba(0,0,0,.3)"/></div>';
@@ -28566,6 +28612,7 @@ function dcViewerFallbackHTML(url, name, mime){
 }
 
 function dcCloseViewer(){
+  dcStopPdfPreview();
   document.getElementById('dc-viewer-modal').style.display = 'none';
   document.getElementById('dc-viewer-body').innerHTML = '';
 }
