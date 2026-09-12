@@ -31,3 +31,5 @@
 .auris-risk-library-dialog>fieldset{display:inline-block;vertical-align:top;box-sizing:border-box;width:calc(50% - 8px);margin:4px;padding:8px}
 .auris-risk-library-dialog fieldset input{min-width:0;flex:1;width:80%}
 @media(max-width:650px){.auris-risk-library-dialog>fieldset{width:100%;margin:4px 0}.auris-risk-library-dialog table{font-size:10px}.auris-risk-library-dialog td,.auris-risk-library-dialog th{padding:2px}.auris-risk-library-dialog select{max-width:80px}}
+
+#page-risk:has(> .auris-module-viewbar) #rax-nav{display:none!important}

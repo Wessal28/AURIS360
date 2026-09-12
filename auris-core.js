@@ -16363,6 +16363,7 @@ function raShowLibrary(){
 
 // -- List Tab ------------------------------------------------------------------
 function raListTab(tab, btn){
+  if(window.AurisModuleLayout)AurisModuleLayout.setView('risk',tab==='ra'?'register':tab);
   raCurrentListTab=tab;
   document.querySelectorAll('[id^="ra-ltab-"]').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
