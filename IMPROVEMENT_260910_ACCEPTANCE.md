@@ -1,45 +1,40 @@
 # Improvement 260910 acceptance
 
-Source: seven rendered pages in the 2026-08-31 task, reviewed 2026-09-13.
+Source: the seven-page AURIS360 Improvement 260910 document, reviewed from its rendered pages on 2026-09-13.
 
-## Completed phase one (PR 118)
-- Planned periodic KPI reporting months, persistent save and input schedule.
-- Saved SDS upload, retained document and actual PDF preview.
-- Completed meeting occurrence opens stored minutes.
-- Top command search opens and accepts input.
-- Production schema migration applied and seven columns verified 2026-09-13. Production commit 30631ad; previous live smoke verified 36 assets.
+## Production phase one — complete
 
-## Remaining implementation and acceptance
-- Column visibility in chemical, risk, audit, inspection and all tabular registers, scoped to user/company.
-- Master Action Plan missing records/source links; duplicated action tabs.
-- Risk duplicate tabs; company-created/imported templates and risk matrices.
-- PPE MSB certificate preview for existing uploaded attachments.
-- Slow module loading: profile and eliminate redundant blocking loads.
-- Pre-start team selection from employees; compact checklist title/answer row.
-- Pre-start row opens a full read-only record.
-- Toolbox records created from Work Schedule appear in the toolbox register.
-- Work-order links open TBT, pre-start and site inspection read-only records.
-- Toolbox group attendance photo upload/capture, retained on the record.
-- App catalogue icons match sidebar icons.
+PR 118 was merged and promoted by the owner. The approved seven-column migration was applied to production and its columns verified: planned KPI months, chemical SDS file URL/path/MIME, and SDS-version file URL/path/MIME. Existing storage permissions were retained. Scheduled KPI reporting, retained PDF preview, completed minutes and command search were delivered in phase one.
 
-Implementation branch: codex/improvement-260910-completion, based on merged main.
-Do not claim completion until each remaining item has recorded implementation and verification evidence.
+## Remaining document implementation — complete in PR 119
 
-## Completion implementation (2026-09-13)
-- Shared per-user/company column controls for legacy registers; existing view-engine controls retained.
-- Duplicate MAP and risk register tabs hidden when the shared navigation is present. Risk module preserves its required shared header, fixing a module-entry failure.
-- Company risk matrix editor and JSON import/export; structured assessment templates created from the current form and imported/exported. Assessments retain their own matrix snapshot; printing uses the saved record matrix.
-- Existing base64 PDF attachments are validated and converted to a PDF blob for the existing canvas viewer.
-- Pre-start employee multi-select, compact checklist rows, read-only register opening and exact read-only work-order inspection links.
-- Legacy work-order toolbox fields display correctly in the shared register. Work-order links use the exact read-only talk workspace.
-- Group attendance capture/upload is compressed and saved within the toolbox record's existing RLS boundary.
-- Edited toolbox talks now transfer newly added actions to MAP. Failures keep the saved talk open; retry skips already transferred source-linked descriptions.
-- App catalogue uses the sidebar icon mapping. Concurrent risk assurance loads are coalesced and stale sessions cannot update the current view.
+| Requirement | Implementation and verification |
+| --- | --- |
+| Register columns | Per-company/user visibility controls in legacy tabular registers; existing view-engine column controls retained. Browser verified hiding a column. |
+| Duplicate action/risk tabs | One shared risk navigation bar, synchronized register selection; duplicate legacy MAP tabs hidden. Required risk header retained to prevent module-entry failure. |
+| Master Action Plan records and links | Edited talks transfer new source-linked actions. Exact source IDs work without a reference label. Retry, failure disclosure and duplicate avoidance verified by behavior tests. Existing cross-module source adapters retained. |
+| Own RA templates | Save a current assessment as a company template; import/export validated JSON; create a fresh draft from the saved definition. Company template saved and reloaded through staging UI. Existing PDF/Word/Excel template uploads retained. |
+| Own risk matrices | Configurable 5x5 cells and criteria, JSON import/export, validated monotonic levels. Each assessment retains its matrix snapshot, including printed criteria. Staging UI saved a custom-matrix draft; authenticated round-trip verified persistence. |
+| MSB certificate preview | Validated stored base64 PDFs converted to blobs for the existing PDF canvas viewer; malformed/active data URLs rejected. Behavior tests pass. |
+| Slow loading | Concurrent risk assurance loads share their two requests. Stale company responses cannot update the current view. Behavior test verifies both. |
+| Pre-start team | Employee multi-select with historical-name preservation. Selection, save and reset covered by inspection behavior tests. |
+| Compact pre-start checklist | Smaller type and title/answer row; independent answer/comment persistence retained. Browser fixture visually checked. |
+| Pre-start row viewing | Register rows open an exact tenant-scoped read-only record. |
+| Work-order TBT register visibility | Canonical saved talk is shown in the shared register; legacy presenter/duration fields remain visible. Created TBT-2026-001 from the staging work order and verified it appears in the toolbox register. |
+| Work-order TBT/pre-start/site links | Exact record reads with account/company checks; linked records open read-only. Staging TBT link verified, showing saved content and no edit action. |
+| TBT attendance photo | Camera/upload controls compress the image; JSON field retains it under existing toolbox RLS. Authenticated staging save/reload passes. Actual retained synthetic JPEG visually verified in the document viewer. |
+| App icons | Catalogue cards use the same icon mapping as sidebar items. |
 
-## Verification in progress
-- 42 toolbox checks passed; 22 inspection behavior checks passed; 7 added matrix/PDF/photo checks passed.
-- Three added action-transfer recovery checks passed.
-- Full local suite: 1,282 passed; stale asset manifest failure resolved and standalone asset check passed (184 routes). Final immutable CI run still required.
-- Local browser: columns hide correctly; matrix editor saves a complete synthetic definition; compact checklist visually inspected.
-- Completion migration applied to staging only: attendance_photo, risk_matrix_snapshot, template_definition. Success confirmed in staging SQL editor.
-- Live staging acceptance and final release review remain outstanding.
+## Release evidence
+
+- Draft implementation PR: https://github.com/Wessal28/AURIS360/pull/119
+- Release readiness and migration replay passed on commit 4fbb35f: https://github.com/Wessal28/AURIS360/actions/runs/34717280968
+- Authenticated staging acceptance passed on that commit: https://github.com/Wessal28/AURIS360/actions/runs/34717308871
+- Later work-order summary and photo-panel handoff refinements have passing focused tests; PR checks verify the final revision.
+- Staging uses the existing signed-in preview, mirrored from the completion branch: https://auris-360-git-codex-improvemen-be038d-salomon-wesley-s-projects.vercel.app/
+
+## Production rollout remaining
+
+PR 119 is not merged or promoted. Its additional migration `20260913010000_improvement_document_completion.sql` adds three nullable JSON fields: toolbox attendance_photo, assessment risk_matrix_snapshot, and document template_definition. It has been applied to staging, and all three pass authenticated save/reload checks. Apply it to production before promoting PR 119. It changes no RLS or storage policies and does not rewrite existing records.
+
+Structured matrix import uses the supported 5x5 scoring model. Company PDF/Word/Excel forms remain layout references; structured JSON templates populate the editable assessment fields. A group photo is supporting attendance evidence and does not fabricate individual confirmations.
