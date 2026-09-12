@@ -13428,7 +13428,7 @@ async function wsSaveToolboxTalk(){
     return {person_id:person?.id||null,name:a.name,signed:!!a.signed,confirmed_at:a.signed?(signedAt||new Date().toISOString()):null,confirmation_method:a.signed?'in_person':null};
   });
   var body={
-    company_id:ccid(),work_schedule_id:wsCurrentId,title:title,talk_date:g('tbt-date'),
+    company_id:ccid(),work_schedule_id:wsCurrentId,title:title,topic_category:'safety_general',talk_date:g('tbt-date'),
     conducted_by_id:conductedById||null,conducted_by_name:conductedByName||null,
     presenter:conductedByName||null,presenter_person_id:conductedById||null,
     location:g('tbt-location'),work_location:g('tbt-location'),

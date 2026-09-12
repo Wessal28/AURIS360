@@ -21,7 +21,7 @@ function activity(source,row,kind,body,date){return {id:row.id,company_id:source
 function localTime(value){if(!value)return 'Not recorded';var raw=String(value);if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw+' (time not recorded)';var date=new Date(raw);return Number.isNaN(date.getTime())?'Invalid recorded time: '+raw:date.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});}
 function recordedList(value,format){if(!Array.isArray(value))return value==null?'Not recorded':'Unavailable: malformed recorded data.';if(!value.length)return 'No entries recorded in this snapshot.';return value.map(function(item,index){return (index+1)+'. '+(item&&typeof item==='object'&&!Array.isArray(item)?format(item):'Malformed entry; details unavailable.');}).join('\n\n');}
 function linkedWork(record){
-  var notes=String(record.notes||''),match=notes.match(/\[AURIS360_LINKED_WORK:({[\s\S]*?})\]/),value=record.work_order_id?'Work ID: '+text(record.work_order_id):'Not recorded';
+  var notes=String(record.notes||''),match=notes.match(/\[AURIS360_LINKED_WORK:({[\s\S]*?})\]/),value=(record.work_order_id||record.work_schedule_id)?'Work ID: '+text(record.work_order_id||record.work_schedule_id):'Not recorded';
   if(match){try{var work=JSON.parse(match[1]);identifier(work.id);value='Work ID: '+text(work.id)+'\nReference: '+text(work.ref)+'\nTitle: '+text(work.title);if(record.work_order_id&&String(record.work_order_id)!==String(work.id))return {notes:notes,value:'Conflicting recorded work IDs. Review the original notes and talk form.'};notes=notes.replace(match[0],'').trim();}catch(error){value='Unavailable: malformed linked-work marker. Original notes retained.';}}
   return {notes:notes,value:value};
 }
