@@ -28,8 +28,8 @@ function linkedWork(record){
 function project(record,current,options){
   if(!root.AurisToolboxListWorkspace)throw new Error('The toolbox talk record definitions are unavailable. Reload the application.');
   var result=copy(record),display=root.AurisToolboxListWorkspace.project([record],current,{topics:options&&options.topics})[0],work=linkedWork(record);
-  result.title=record.title||'Untitled toolbox talk';result.reference_label=record.tbt_ref||'Not recorded';result.status_label=display.status;result.topic_label=display.topic;
-  result.date_label=text(record.talk_date);result.duration_label=display.duration;result.presenter_label=text(record.presenter);result.attendance_label=display.attendees;
+  result.key_points=record.key_points||record.topics_covered;result.title=record.title||'Untitled toolbox talk';result.reference_label=record.tbt_ref||'Not recorded';result.status_label=display.status;result.topic_label=display.topic;
+  result.date_label=text(record.talk_date);result.duration_label=display.duration;result.presenter_label=text(record.presenter||record.conducted_by_name);result.attendance_label=display.attendees;
   result.attendees_label=recordedList(record.attendees,function(item){return 'Name: '+text(item.name||item.full_name||item.person_name)+'\nDepartment: '+text(item.dept||item.department)+'; Organisation: '+text(item.organization_snapshot)+'; Role: '+text(item.role_snapshot)+'\nConfirmation time: '+localTime(item.confirmed_at)+'\nRecorded method: '+text(item.confirmation_method);});
   result.actions_label=recordedList(record.actions_raised,function(item){return text(item.description)+'\nAssigned to: '+text(item.assigned_to)+'; Due: '+text(item.due_date);});
   result.work_label=work.value;result.notes_label=text(work.notes);result.created_label=localTime(record.created_at);result.updated_label=localTime(record.updated_at);
@@ -70,11 +70,12 @@ async function open(id,options){
   var workspace=root.AurisRecordWorkspace;if(!workspace)throw new Error('The shared record workspace is unavailable. Reload the application.');
   var source={module:'meetings',table:'toolbox_talks',id:id,company_id:current.companyId,ref:String(options.reference||'').slice(0,120)};
   workspace.registerAdapter({key:'toolbox-record',module:'meetings',table:'toolbox_talks',explicitOnly:true,titleField:'title',statusField:'status_label',canEdit:function(){return false;},load:function(exact,context){return load(exact,context,options);},fields:fields()});
-  return workspace.open({source:source,adapterKey:'toolbox-record',context:current,availableActions:['copy','open'],actionLabels:{copy:'Copy talk reference',open:'Open talk form'},
+  return workspace.open({source:source,adapterKey:'toolbox-record',context:current,availableActions:typeof options.openEditor==='function'?['copy','photo','open']:['copy','photo'],actionLabels:{copy:'Copy talk reference',photo:'View attendance photo',open:'Open talk form'},
     workflowHelp:'This overview is read-only. Open the existing talk form to edit, confirm attendance or print. Its permission checks and save handlers remain authoritative. Shared approval evidence does not confirm attendance or change the talk status here.',
     onAction:async function(action,exact,record){
       assertSession(current,options);assertSource(exact,current);if(exact.id!==source.id)throw new Error('The toolbox talk identity changed. Reopen the register.');assertRecord(record,source);
       if(action==='copy'){if(!root.navigator||!root.navigator.clipboard)throw new Error('Copying is unavailable in this browser.');await root.navigator.clipboard.writeText(record.tbt_ref||id);assertSession(current,options);return {message:'Toolbox talk reference copied.'};}
+      if(action==='photo'){if(!root.AurisAttendancePhoto||!root.AurisAttendancePhoto.valid(record.attendance_photo))throw new Error('No valid group attendance photo is recorded.');if(typeof root.dcOpenViewer!=='function')throw new Error('Photo viewer is unavailable.');root.dcOpenViewer({file_url:record.attendance_photo.data,file_mime:'image/jpeg',file_name:record.attendance_photo.name||'Attendance photo',title:'Group attendance photo'});return;}
       if(action!=='open')throw new Error('This action is unavailable in the read-only toolbox talk overview.');
       if(root.navigator&&root.navigator.onLine===false)throw new Error('Reconnect before opening the toolbox talk form.');
       if(typeof options.openEditor!=='function')throw new Error('The toolbox talk form is unavailable. Reload the application.');

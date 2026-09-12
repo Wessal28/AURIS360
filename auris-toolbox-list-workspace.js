@@ -23,10 +23,10 @@ function project(rows,current,options){
     if(f.category&&row.topic_category!==f.category||f.status&&row.status!==f.status)return null;
     var topic=Object.prototype.hasOwnProperty.call(topics,row.topic_category)?topics[row.topic_category].label:row.topic_category||'Not recorded';
     var reference=row.tbt_ref||'TBT',title=row.title||'Untitled toolbox talk';
-    if(search&&![reference,title,topic,row.presenter,row.location,row.department].some(function(value){return String(value||'').toLowerCase().includes(search);}))return null;
+    if(search&&![reference,title,topic,row.presenter||row.conducted_by_name,row.location,row.department].some(function(value){return String(value||'').toLowerCase().includes(search);}))return null;
     return {id:String(row.id),company_id:String(row.company_id),source_table:'toolbox_talks',reference:reference,title:title,topic:topic,talk_date:row.talk_date||'',
-      presenter:row.presenter||'Not recorded',location:row.location||'',department:row.department||'',attendees:attendance(row),
-      actions:Array.isArray(row.actions_raised)?row.actions_raised.length:'Not recorded',duration:row.duration_mins===0||row.duration_mins?row.duration_mins:'Not recorded',
+      presenter:row.presenter||row.conducted_by_name||'Not recorded',location:row.location||'',department:row.department||'',attendees:attendance(row),
+      actions:Array.isArray(row.actions_raised)?row.actions_raised.length:'Not recorded',duration:row.duration_mins===0||row.duration_mins?row.duration_mins:(row.duration_minutes??'Not recorded'),
       status:({completed:'Completed',planned:'Planned',cancelled:'Cancelled',draft:'Draft'}[row.status]||row.status||'Not recorded')};
   }).filter(Boolean);
 }

@@ -131,6 +131,11 @@
       "order": 26,
       "file": "20260911030000_tool_inspection_record_lifecycle.sql",
       "sha256": "6c847a77773f16ffe9a55c63a781c0f44da998b513c5560515ec7b0c909ae98f"
+    },
+    {
+      "order": 27,
+      "file": "20260913010000_improvement_document_completion.sql",
+      "sha256": "5b08cc1e78959400e382df656c025b4504571c86e06ed2062161bbdb48ca65ad"
     }
   ]
 }

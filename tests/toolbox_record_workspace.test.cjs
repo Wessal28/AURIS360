@@ -61,7 +61,7 @@ test('session and register changes during record/history loads invalidate the re
 });
 test('explicit read-only adapter permits only copy and successful editor handoff with intentional view change',async()=>{
   const r=runtime();let valid=true,opened=0;await r.api.open('talk-1',{assertContext:()=>{if(!valid)throw Error('Register changed');},openEditor:async value=>{assert.equal(value.companyId,'co-a');opened++;valid=false;}});
-  assert.equal(r.adapters['toolbox-record'].explicitOnly,true);assert.equal(r.adapters['toolbox-record'].canEdit(),false);assert.equal(r.options.availableActions.join(','),'copy,open');
+  assert.equal(r.adapters['toolbox-record'].explicitOnly,true);assert.equal(r.adapters['toolbox-record'].canEdit(),false);assert.equal(r.options.availableActions.join(','),'copy,photo,open');
   await r.options.onAction('copy',source,record);assert.equal(r.clipboard,'TBT-001');
   for(const key of ['approve','edit','delete','confirm'])await assert.rejects(r.options.onAction(key,source,record),/unavailable/);
   assert.equal((await r.options.onAction('open',source,record)).close,true);assert.equal(opened,1);
