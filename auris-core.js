@@ -16682,7 +16682,7 @@ async function raLoadPermitOptions(selected){
 // -- New / Open RA -------------------------------------------------------------
 function raNew(type){
   if(type==='jsa'){jsaNew();return;}
-  raEditingId=null;raEditingType=type||'baseline';raMatrixSnapshot=null;
+  raEditingId=null;raEditingType=type||'baseline';raMatrixSnapshot=null;if(window.AurisRiskLibrary)AurisRiskLibrary.updateLabel();
   raLegalRefs=[];raCurrentRevision=1;
   var cfg=RA_TYPE_CFG[raEditingType]||RA_TYPE_CFG.baseline;
   // Reset form
@@ -16879,7 +16879,7 @@ function raOpen(id){
   if(!x)return;
   var savedMatrix=x.risk_matrix_snapshot||null;
   if(savedMatrix){try{savedMatrix=AurisRiskLibrary.validateMatrix(savedMatrix);}catch(error){toast('Cannot open assessment: invalid saved risk matrix. '+error.message,false);return;}}
-  raMatrixSnapshot=savedMatrix;
+  raMatrixSnapshot=savedMatrix;if(window.AurisRiskLibrary)AurisRiskLibrary.updateLabel();
   raEditingId=id; raEditingType=x.ra_type_v2||x.ra_type||'baseline';
   raCurrentRevision=x.revision||1;
   raLegalRefs=Array.isArray(x.legal_refs)?x.legal_refs:[];
