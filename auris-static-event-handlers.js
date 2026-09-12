@@ -3801,6 +3801,9 @@ aiExtractUploadedDocument(this,'doc-analysis-text','doc-analysis-file-state')
     },
     "h1264": function (event) {
 tbtSave()
+    },
+    "h1265": function (event) {
+chemPreviewSds()
     }
   };
   var eventTypes = ["change","click","dragleave","dragover","drop","input","keydown","mouseout","mouseover"];

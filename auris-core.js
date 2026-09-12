@@ -8124,8 +8124,8 @@ function chemCurrentSdsDocument(createPreviewUrl){
 function chemRefreshSdsPreview(){
   var button=document.getElementById('chem3sds-preview');if(!button)return;
   var available=!!chemCurrentSdsDocument(false);button.hidden=!available;
-  button.onclick=function(){var doc=chemCurrentSdsDocument(true);if(!doc)return toast('No retained SDS document is available to preview.',false);dcOpenViewer(doc);};
 }
+function chemPreviewSds(){var doc=chemCurrentSdsDocument(true);if(!doc)return toast('No retained SDS document is available to preview.',false);dcOpenViewer(doc);}
 async function chemUploadPendingSds(){
   if(!chemPendingSdsFile)return null;
   if(!tok||!ccid())throw new Error('Sign in and select a company before uploading the SDS.');

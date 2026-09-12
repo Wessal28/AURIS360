@@ -29,5 +29,16 @@ function sdsHarness(){
  vm.createContext(c);vm.runInContext(core.slice(start,end),c);return c;
 }
 test('saved SDS preview survives reopening without a selected file',()=>{const c=sdsHarness();assert.equal(c.chemCurrentSdsDocument(false).file_url,'https://storage.example/saved.pdf');c.chemEditId=null;assert.equal(c.chemCurrentSdsDocument(false),null);});
+
+test('SDS preview dispatch survives replacement of the form button',()=>{
+ const c=sdsHarness(),listeners={},opened=[];
+ c.document={addEventListener:(type,handler)=>{listeners[type]=handler;}};
+ c.dcOpenViewer=doc=>opened.push(doc.file_url);
+ vm.runInContext(read('auris-static-event-handlers.js'),c);
+ const id=read('index.html').match(/id="chem3sds-preview" data-auris-onclick="([^"]+)"/)[1];
+ const replacement={nodeType:1,parentElement:null,getAttribute:name=>name==='data-auris-onclick'?id:null};
+ listeners.click({target:replacement});
+ assert.deepEqual(opened,['https://storage.example/saved.pdf']);
+});
 test('SDS upload uses the company path and returns retained metadata',async()=>{const c=sdsHarness();const file={name:'sheet.pdf',type:'application/pdf'};c.chemPendingSdsFile=file;let request;c.fetch=async(url,options)=>{request={url,options};return {ok:true};};const result=await c.chemUploadPendingSds();assert.ok(request.url.includes("documents/company-a/chemical-sds/"));assert.equal(request.options.body,file);assert.equal(request.options.headers.Authorization,'Bearer session');assert.ok(result.sds_file_path.startsWith("company-a/chemical-sds/"));assert.equal(result.sds_file_mime,'application/pdf');});
 test('failed or unauthenticated SDS upload cannot produce a saved document reference',async()=>{const c=sdsHarness();c.chemPendingSdsFile={name:'sheet.pdf',type:'application/pdf'};c.fetch=async()=>({ok:false,status:403,text:async()=> 'Denied'});await assert.rejects(c.chemUploadPendingSds(),/SDS upload failed/);c.tok='';await assert.rejects(c.chemUploadPendingSds(),/Sign in/);});
