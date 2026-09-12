@@ -27,14 +27,14 @@ PR 118 was merged and promoted by the owner. The approved seven-column migration
 
 ## Release evidence
 
-- Draft implementation PR: https://github.com/Wessal28/AURIS360/pull/119
-- Release readiness and migration replay passed on commit 4fbb35f: https://github.com/Wessal28/AURIS360/actions/runs/34717280968
-- Authenticated staging acceptance passed on that commit: https://github.com/Wessal28/AURIS360/actions/runs/34717308871
-- Later work-order summary and photo-panel handoff refinements have passing focused tests; PR checks verify the final revision.
+- Implementation PR: https://github.com/Wessal28/AURIS360/pull/119
+- Release readiness and migration replay passed with 1,285 tests on the final implementation: https://github.com/Wessal28/AURIS360/actions/runs/34717551598
+- Authenticated staging acceptance passed on that commit: https://github.com/Wessal28/AURIS360/actions/runs/34717572018
+- Final refinements include the work-order summary, registered photo action and viewer handoff. All are included in the passing checks above.
 - Staging uses the existing signed-in preview, mirrored from the completion branch: https://auris-360-git-codex-improvemen-be038d-salomon-wesley-s-projects.vercel.app/
 
 ## Production rollout remaining
 
-PR 119 is not merged or promoted. Its additional migration `20260913010000_improvement_document_completion.sql` adds three nullable JSON fields: toolbox attendance_photo, assessment risk_matrix_snapshot, and document template_definition. It has been applied to staging, and all three pass authenticated save/reload checks. Apply it to production before promoting PR 119. It changes no RLS or storage policies and does not rewrite existing records.
+PR 119 is not merged or promoted. Its additional migration `20260913010000_improvement_document_completion.sql` has now been applied to both staging and production under the owner's migration authorization. Production verification returned all three nullable JSON fields: toolbox attendance_photo, assessment risk_matrix_snapshot, and document template_definition. All three pass authenticated staging save/reload checks. The migration changes no RLS or storage policies and does not rewrite existing records. Remaining rollout: merge PR 119 and promote its deployment.
 
 Structured matrix import uses the supported 5x5 scoring model. Company PDF/Word/Excel forms remain layout references; structured JSON templates populate the editable assessment fields. A group photo is supporting attendance evidence and does not fabricate individual confirmations.
