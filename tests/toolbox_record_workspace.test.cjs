@@ -83,3 +83,5 @@ test('new record adapter is ordered and release-required with no business writes
   for(const file of ['sw-assets.js','scripts/verify-production-smoke.cjs','scripts/verify-staging-acceptance.cjs'])assert.match(read(file),/auris-toolbox-record-workspace\.js/);
   assert.doesNotMatch(adapter,/\bfetch\(|\btbtAllData\b|\btbtEdit\(|onTransition|m:['"](POST|PATCH|DELETE)/);
 });
+
+test('attendance photo is a registered action and closes the record panel for the viewer',async()=>{const r=runtime();let viewed;const photo={data:'data:image/jpeg;base64,/9j/2Q==',name:'group.jpg'};r.context.AurisAttendancePhoto={valid:v=>v===photo};r.context.dcOpenViewer=doc=>{viewed=doc;};await r.api.open('talk-1');const action=r.adapters['toolbox-record'].actions.find(a=>a.key==='photo');assert.ok(action);assert.equal(action.when(record),false);assert.equal(action.when({...record,attendance_photo:photo}),true);const result=await r.options.onAction('photo',source,{...record,attendance_photo:photo});assert.equal(result.close,true);assert.equal(viewed.file_url,photo.data);await assert.rejects(r.options.onAction('photo',source,record),/No valid group attendance photo/);});
