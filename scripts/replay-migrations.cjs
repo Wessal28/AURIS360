@@ -127,4 +127,4 @@ console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.po
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_definition.sql')], {
   label: 'atomic KPI transaction behavior'
 });
-run(process.execPath, ['scripts/test-kpi-definition-concurrency.cjs'], {label: 'competing KPI transaction sessions'});
+run(process.execPath, ['scripts/verify-kpi-definition-concurrency.cjs'], {label: 'competing KPI transaction sessions'});
