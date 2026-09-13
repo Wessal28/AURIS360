@@ -303,3 +303,15 @@
 #kpi-edit-modal .kpi-x-planned-months input:focus-visible+span{outline:2px solid #0f8a64;outline-offset:2px}
 #kpi-edit-modal .kpi-x-planned-months small{display:block;margin-top:8px;color:#64748b;font-size:11px;line-height:1.45}
 @media(max-width:620px){#kpi-edit-modal .kpi-x-planned-months>div{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Shared draft controls for the objective and KPI editors. */
+.kpi-editor-draft{margin:12px 20px;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#334155;font-size:13px;flex-shrink:0}
+.kpi-editor-draft p{margin:0 0 8px;line-height:1.5}
+.kpi-editor-draft>div{display:flex;flex-wrap:wrap;gap:8px}
+.kpi-editor-draft button{border:1px solid #94a3b8;border-radius:7px;background:white;color:#0f172a;padding:8px 12px;min-height:36px;font:inherit;cursor:pointer}
+.kpi-editor-draft button:disabled{opacity:.55;cursor:default}
+.kpi-editor-draft button:focus-visible,.kpi-editor-draft summary:focus-visible{outline:3px solid #0d9488;outline-offset:2px}
+.kpi-editor-draft details{margin-top:8px}
+.kpi-editor-draft pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font:inherit;background:white;padding:10px}
+.kpi-editor-draft [hidden]{display:none!important}
+@media(max-width:600px){.kpi-editor-draft{margin:8px 10px;padding:10px}.kpi-editor-draft button{min-height:44px}}

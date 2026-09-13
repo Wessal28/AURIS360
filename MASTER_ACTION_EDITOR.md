@@ -33,3 +33,5 @@ This is the first editor adoption slice, not completion of the broader Odoo prog
 Configured multi-stage approvals remain a separate integration task: the direct MAP buttons block those routes rather than bypass them. UI role checks complement the existing tenant RLS; this release does not add server-side role enforcement to every legacy action writer. Record save, activity/audit history and notification work are separate requests rather than a single transaction. The shared overview can still disclose unavailable optional shared activity/evidence sources; the action's own activity log remains available.
 
 Further programme work includes configuration-consumer verification, reporting/automation/integration adoption, more extraction from core, transactional multi-record recovery and archive/restore, representative-role acceptance and physical Android testing. No claim of a tested backup/restore procedure or complete offline editing is made by this release.
+
+Objective and KPI draft/close/recovery adoption is documented in [KPI_EDITOR_DRAFTS.md](KPI_EDITOR_DRAFTS.md). Server conflict handling and atomic KPI multi-row persistence remain separate work.

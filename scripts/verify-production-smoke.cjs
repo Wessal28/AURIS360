@@ -156,6 +156,8 @@ async function verifyProduction(options, evidence) {
     ['auris-action-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-moc-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'legacyRecord:legacyRecord', 'project:project', 'mount:mount']],
     ['auris-moc-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
+    ['auris-form-draft.js', ["version:'1.0.0'", 'function protect(']],
+    ['kpi-editor-drafts.js', ['function begin(', 'function canSave(', 'Restore draft']],
     ['auris-record-edit-session.js', ["version:'1.0.0'", 'assertCurrent', 'return=representation']],
     ['auris-action-editor.js', ['mapEditorCommit', 'mapEditorWorkflow', 'mapEditorLeave']],
     ['auris-action-editor.css', ['auris-action-edit-toolbar', 'aria-invalid']],

@@ -21,7 +21,7 @@ test('KPI editor exposes metadata, restores browser drafts and keeps approval st
   for(const option of ['Manual entry','AURIS module','Evidence / document'])assert.match(upgrade,new RegExp(option));
   assert.match(upgrade,/function kpiXCaptureEditorDraft\(\)/);
   assert.match(upgrade,/function kpiXRestoreEditorDraft\(kpiId\)/);
-  assert.match(upgrade,/sessionStorage\.setItem\(kpiXEditorDraftKey/);
+  assert.match(upgrade,/KpiEditorDrafts\.capture/);
   assert.match(upgrade,/\['data_missing','in_progress','not_due'\][\s\S]*'not_started'/);
   assert.match(upgrade,/\['not_started','on_track','at_risk','off_track'\]\.indexOf\(derived\)>=0/);
 });
@@ -48,6 +48,6 @@ test('KPI assets are cache-busted and identify the current build',()=>{
   const html=read('index.html'),runtime=read('api/runtime-config.js');
   assert.match(html,/modular-foundation-29/);
   assert.match(runtime,/modular-foundation-29/);
-  assert.match(html,/kpi-module-upgrade\.js\?v=20260911-planned-months-1/);
-  assert.match(html,/kpi-module-upgrade\.css\?v=20260911-planned-months-1/);
+  assert.match(html,/kpi-module-upgrade\.js\?v=20260913-kpi-drafts-1/);
+  assert.match(html,/kpi-module-upgrade\.css\?v=20260913-kpi-drafts-1/);
 });
