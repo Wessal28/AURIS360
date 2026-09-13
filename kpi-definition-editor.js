@@ -64,54 +64,17 @@ function openObjModal(objId) {
   m.querySelector('[data-kpi-objective-message]')?.remove();
   m._kpiObjectiveReturnFocus=document.activeElement;
 
-  // Common: get form references
-  var nameEl  = document.getElementById('obj-name');
-  var codeEl  = document.getElementById('obj-code');
-  var yearEl  = document.getElementById('obj-year');
-  var titleEl = document.getElementById('obj-modal-title');
-  var delBtn  = document.getElementById('obj-delete-btn');
-
-  if (objId && typeof kpiObjectives !== 'undefined') {
-    // -- EDIT MODE -------------------------------------------------
-    var obj = kpiObjectives.find(function(o){ return o.id === objId; });
-    if (!obj) {
-      toast('Objective not found', false);
-      return;
-    }
-
-    // Pre-fill form fields with existing values
-    if (nameEl) nameEl.value = obj.name || '';
-    if (codeEl) codeEl.value = obj.code || '';
-    if (yearEl) yearEl.value = obj.year || new Date().getFullYear();
-
-    // Set selected colour and highlight the matching dot
-    if (typeof kpiSelectedColor !== 'undefined') {
-      kpiSelectedColor = obj.color || '#1D9E75';
-    }
-
-    // Set edit mode markers
-    m.dataset.editId = objId;
-    if (typeof kpiEditObjId !== 'undefined' || true) { kpiEditObjId = objId; }
-    if (titleEl) titleEl.textContent = 'Edit objective';
-    if (delBtn) delBtn.style.display = 'inline-flex';  // override the hidden-by-default archive class
-  } else {
-    // -- CREATE MODE -----------------------------------------------
-    // Clear all fields
-    if (nameEl) nameEl.value = '';
-    if (codeEl) codeEl.value = '';
-    if (yearEl) yearEl.value = String(kpiObjectiveViewYear());
-
-    // Reset selected colour to default green and highlight that dot
-    if (typeof kpiSelectedColor !== 'undefined') {
-      kpiSelectedColor = '#1D9E75';
-    }
-
-    // Clear edit mode markers
-    delete m.dataset.editId;
-    kpiEditObjId = null;
-    if (titleEl) titleEl.textContent = 'Add objective';
-    if (delBtn) delBtn.style.display = 'none';
-  }
+  const obj=objId?kpiObjectives.find(o=>o.id===objId):null;
+  const nameEl=document.getElementById('obj-name'),codeEl=document.getElementById('obj-code'),yearEl=document.getElementById('obj-year');
+  const titleEl=document.getElementById('obj-modal-title'),delBtn=document.getElementById('obj-delete-btn');
+  if(nameEl)nameEl.value=obj?.name||'';
+  if(codeEl)codeEl.value=obj?.code||'';
+  if(yearEl)yearEl.value=obj?(obj.year||new Date().getFullYear()):String(kpiObjectiveViewYear());
+  kpiSelectedColor=obj?.color||'#1D9E75';
+  kpiEditObjId=objId||null;
+  if(objId)m.dataset.editId=objId;else delete m.dataset.editId;
+  if(titleEl)titleEl.textContent=objId?'Edit objective':'Add objective';
+  if(delBtn)delBtn.style.display=objId?'inline-flex':'none';
 
   kpiRenderObjectiveColour();
   // Show the modal
