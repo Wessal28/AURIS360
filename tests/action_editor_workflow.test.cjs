@@ -43,3 +43,10 @@ test('legacy entry points delegate all editor writes to the same persistence bou
   assert.match(core,/async function cycleAction\(id\)\{return mapOpenDetail\(id\);\}/);
   const html=read('index.html');assert.ok(html.indexOf('src="auris-record-edit-session.js')<html.indexOf('src="auris-action-editor.js'));assert.match(html,/id="map-editor-feedback"/);
 });
+test('a restored session hydrates workflow before decisions and rechecks the editor after loading',async()=>{
+  const r=runtime();let hydrated=0,checked=0;const session={assertCurrent(){checked++;}};r.scope.mapEditorSession=session;
+  r.scope.window.AurisWorkflowService=r.scope.AurisWorkflowService={hydrate:async company=>{assert.equal(company,'company-a');hydrated++;}};
+  await r.scope.mapEditorLoadWorkflow(session,'start');assert.equal(hydrated,1);assert.equal(checked,1);
+  r.scope.AurisWorkflowService.hydrate=async()=>{r.scope.mapEditorSession={};};
+  await assert.rejects(r.scope.mapEditorLoadWorkflow(session,'verify'),/editor changed/);
+});

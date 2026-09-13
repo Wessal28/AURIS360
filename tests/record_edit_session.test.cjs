@@ -74,3 +74,8 @@ test('never confirms dropped input fields or an uncertain create changed by some
   await assert.rejects(r.editor.save({title:'New',status:'open'}),/different values/);r.hook=null;
   await assert.rejects(r.editor.save({title:'New',status:'open'}),/different values/);assert.equal(r.calls.filter(c=>c.options).length,1);
 });
+test('lost update replies recover when the server has advanced the revision timestamp',async()=>{
+  const r=runtime();r.hook=async(_,o)=>{if(o){Object.assign(r.rows[0],o.b,{updated_at:'2026-09-13T02:00:00.000001Z'});throw Error('Lost reply');}};
+  await assert.rejects(r.editor.save({title:'Changed'}));r.hook=null;
+  const recovered=await r.editor.save({title:'Changed'});assert.equal(recovered.recovered,true);assert.equal(r.calls.filter(c=>c.options).length,1);
+});

@@ -147,6 +147,14 @@ function mapEditorWorkflow(record,body,command,reason){
   body.status=next;if(command==='start'&&!body.start_date)body.start_date=today;
   return body;
 }
+async function mapEditorLoadWorkflow(session,command){
+  if(command==='save')return;
+  if(!window.AurisWorkflowService)throw new Error('The company workflow is unavailable. Reload and retry.');
+  var context=mapEditorContext();
+  await AurisWorkflowService.hydrate(context.companyId);
+  session.assertCurrent();
+  if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the action.');
+}
 async function mapEditorCommit(command){
   if(!mapEditorSession||mapEditorBusy)return false;
   var session=mapEditorSession,before=session.record(),reason='';
@@ -160,6 +168,7 @@ async function mapEditorCommit(command){
     }
     if(command==='cancel'&&!(await appConfirmAction({title:'Cancel action',message:'Cancel this action and retain its history?',confirmText:'Cancel action',cancelText:'Keep action'})))return false;
     session.assertCurrent();if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the record.');
+    await mapEditorLoadWorkflow(session,command);
     var body=mapEditorWorkflow(before,mapEditorRead(),command,reason);
     mapEditorMessage('Saving action…');
     var result=await session.save(body);session.assertCurrent();
@@ -174,6 +183,7 @@ async function mapEditorCommit(command){
     document.getElementById('map-form3ref').textContent=mapDisplayRef(saved);
     mapRenderWorkflowBar(saved);mapRenderActionButtons(saved);
     var warnings=[];
+    if(result.created||result.recovered){try{connectedRecordsMount('map-connected-records',relationshipEndpoint('action','action_tracker',saved.id,mapDisplayRef(saved)),{allowCreate:true});}catch(_){warnings.push('Reopen the action to load connected records.');}}
     if(!result.unchanged){
       var logNotes=reason||null;
       if(command==='close')logNotes='Closure confirmations: '+['Action completed','Evidence available','Verification completed','Root cause addressed','Similar areas reviewed','No further risk'].filter(function(_,i){return document.getElementById('mcc-'+(i+1))?.checked;}).join('; ')+'. '+(saved.closure_notes||'');
