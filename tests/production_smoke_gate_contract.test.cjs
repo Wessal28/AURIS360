@@ -36,7 +36,7 @@ function fixture(overrides = {}) {
       } });
       if (url.pathname === '/api/runtime-config') return new Response(overrides.runtimeText ?? `window.AURIS_RUNTIME_CONFIG = Object.freeze(${JSON.stringify(runtime)});`);
       const file = url.pathname.slice(1);
-      assert.match(file, /^[a-z0-9-]+\.js$/);
+      assert.match(file, /^[a-z0-9-]+\.(?:js|css)$/);
       return new Response(overrides.assets?.[file] ?? read(file));
     }
   };
@@ -69,13 +69,16 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.status, 'passed');
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
-  assert.equal(result.assets.length, 36);
+  assert.equal(result.assets.length, 39);
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-permit-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-action-record-workspace.js'));
+  assert.ok(response.requests.includes('/auris-record-edit-session.js'));
+  assert.ok(response.requests.includes('/auris-action-editor.js'));
+  assert.ok(response.requests.includes('/auris-action-editor.css'));
   assert.ok(response.requests.includes('/incident-management-upgrade.js'));
   assert.ok(response.requests.includes('/risk-assessment-upgrade.js'));
   assert.ok(response.requests.includes('/sw.js'));

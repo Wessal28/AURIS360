@@ -29,6 +29,7 @@
 <title>AURIS360 v4 - HSE Management Platform</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="auris-action-editor.css?v=20260913-1"/>
 <link rel="stylesheet" href="auris-base.css?v=20260822-1"/>
 <link rel="stylesheet" href="auris-runtime-state.css?v=20260815-2"/>
 <link rel="stylesheet" href="auris-print.css" media="print"/>
@@ -78,6 +79,8 @@
 <script src="auris-priority-module-adapters.js?v=20260901-7"></script>
 <script src="auris-extracted-module-adapters.js?v=20260901-12"></script>
 <script src="auris-applications-admin.js?v=20260901-8"></script>
+<script src="auris-record-edit-session.js?v=20260913-1"></script>
+<script src="auris-action-editor.js?v=20260913-1"></script>
 <script src="auris-core.js?v=20260903-29-improvement-260910-1"></script>
 <script src="kpi-definition-editor.js?v=20260911-planned-months-1"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20260911-planned-months-1">
@@ -8371,11 +8374,13 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="auris-map-s-c9dc9b5648">
 <button class="btn auris-map-s-5c09edd131" data-auris-onclick="h0934"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="map-del-btn" class="btn auris-map-s-0e610f7b67" data-auris-onclick="h0935"><i class="ti ti-trash"></i></button>
+<button id="map-del-btn" aria-label="Cancel action" title="Cancel action and retain history" class="btn auris-map-s-0e610f7b67" data-auris-onclick="h0935"><i class="ti ti-trash"></i></button>
 <button class="btn auris-map-s-791af40dd7" data-auris-onclick="h0936"><i class="ti ti-robot"></i>AI review</button>
 <button class="btn auris-map-s-5c09edd131" data-auris-onclick="h0937"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
+<div class="auris-action-edit-toolbar"><span id="map-editor-state" role="status" aria-live="polite"></span><button type="button" class="btn" id="map-editor-discard">Discard and reload</button></div>
+<div id="map-editor-feedback" class="auris-action-edit-feedback" role="status" aria-live="polite"></div>
 <!-- Workflow bar -->
 <div id="map-workflow-bar" class="auris-map-s-42926a8d3d"></div>
 </div>
@@ -8537,7 +8542,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="card">
 <div class="card-title">Effectiveness</div>
-<div class="auris-map-s-46744debb8">After closure: rate how effective this action was</div>
+<div class="auris-map-s-46744debb8">Record observed effectiveness while completing the action</div>
 <div id="map-effectiveness-stars" class="auris-map-s-3239efcd3d">
 <span class="auris-map-s-9463ff4798" data-auris-onclick="h0948">?</span>
 <span class="auris-map-s-9463ff4798" data-auris-onclick="h0949">?</span>

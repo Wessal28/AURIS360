@@ -73,9 +73,9 @@ for (const [moduleName, from, to] of [
   assert.strictEqual(context.coreWorkflowDirectEditAllowed(moduleName, from, to), false, `${moduleName}: ${from} -> ${to} must not be completed through a status dropdown`);
 }
 
-assert.match(functionSource('mapSave'), /coreWorkflowRequireDirectEdit\(['"]actions['"]/);
+assert.match(functionSource('mapSave'), /mapEditorCommit\('save'\)/);
 for (const name of ['mapChangeStatus', 'mapApproveVerification', 'mapFailVerification', 'mapApproveClosure', 'mapRejectClosure']) {
-  assert.match(functionSource(name), /coreWorkflowRequireTransition\(['"]actions['"]/, `${name} must enforce the action workflow`);
+  assert.match(functionSource(name), /mapEditorCommit\(/, `${name} must use the guarded editor workflow`);
 }
 for (const name of ['imsSave', 'imsDelete', 'evQuickClose']) {
   assert.match(functionSource(name), /coreWorkflowRequireTransition\(['"]events['"]/, `${name} must enforce the incident workflow`);
@@ -87,9 +87,8 @@ for (const name of ['raApproveCurrent', 'raRejectCurrent', 'raReleaseForEdit']) 
   assert.match(functionSource(name), /coreWorkflowRequireTransition\(['"]risk['"]/, `${name} must enforce the risk workflow`);
 }
 
-assert.match(functionSource('mapChangeStatus'), /map_activity_log[\s\S]*mapAudit[\s\S]*mapQueueActionNotice/);
-assert.match(functionSource('mapApproveVerification'), /map_activity_log[\s\S]*mapAudit[\s\S]*mapQueueActionNotice/);
-assert.match(functionSource('mapApproveClosure'), /map_activity_log[\s\S]*mapAudit[\s\S]*mapQueueActionNotice/);
+assert.match(functionSource('mapEditorWorkflow'), /coreWorkflowRequireTransition\(['"]actions['"]/);
+assert.match(functionSource('mapEditorCommit'), /map_activity_log[\s\S]*mapAudit[\s\S]*mapQueueActionNotice/);
 assert.match(functionSource('evSave'), /source_module:['"]event['"][\s\S]*source_id:savedId/);
 assert.match(functionSource('auditSave'), /source_module:['"]inspection['"][\s\S]*source_id:savedId/);
 assert.match(functionSource('raApproveCurrent'), /raCloseApprovalRequest\(['"]approved['"]\)[\s\S]*raAudit\(['"]approve['"][\s\S]*raQueueStatusNotice/);

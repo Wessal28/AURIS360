@@ -126,10 +126,10 @@ test('legacy editor rechecks company after loading people and before filling or 
   const core = read('auris-core.js');
   const edit = core.slice(core.indexOf('async function mapEdit('), core.indexOf('async function mapPopulatePeopleSelects('));
   let release, writes = 0, company = 'co-a';
-  const context = { mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
+  const context = { mapEditorLeave:async()=>true,mapEditorOpening:0,api:async()=>[record],mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
     mapPopulatePeopleSelects: () => new Promise(resolve => { release = resolve; }), document: { getElementById: () => { writes++; return {}; } } };
   vm.runInNewContext(edit, context);
-  const opening = context.mapEdit('action-1', current); company = 'co-b'; release();
+  const opening = context.mapEdit('action-1', current); await new Promise(resolve=>setImmediate(resolve));company = 'co-b'; release();
   await assert.rejects(opening, /account or company changed/); assert.equal(writes, 0);
 });
 
@@ -143,4 +143,16 @@ test('deployment and list navigation wire the reviewed adapter without replacing
   assert.match(handlers, /"r0089"[\s\S]*?mapOpenSourceRecord\(args\[0\]\)/);
   assert.match(read('sw-assets.js'), /auris-action-record-workspace\.js/);
   assert.doesNotMatch(read('auris-action-record-workspace.js'), /\bfetch\(|\bmapAllData\b|\bmapEdit\(|\bprof\b/);
+});
+
+test('editor hydration displays zero costs and preserves the saved department without applying a people default',async()=>{
+  const core=read('auris-core.js'),edit=core.slice(core.indexOf('async function mapEdit('),core.indexOf('async function mapPopulatePeopleSelects('));
+  const fields={};const get=id=>fields[id]||(fields[id]={value:'',style:{},options:[],checked:false});
+  const saved={...record,estimated_cost:0,actual_cost:0,department:'Saved department',priority:'medium'};
+  const noop=()=>{};
+  const context={mapEditorLeave:async()=>true,mapEditorOpening:0,api:async()=>[saved],mapAllData:[],ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,
+    mapPopulatePeopleSelects:async()=>{},document:{getElementById:get},MAP_PRIORITY_CFG:{medium:{color:'#123456'}},MAP_TYPE_CFG:{corrective:{emoji:'',label:'Corrective'}},mapDisplayRef:()=> 'MAP-001',isMgr:()=>true,
+    mapUpdateProgress:noop,mapUpdateEffectivenessStars:noop,mapEditorSetPersonValue:noop,mapRenderWorkflowBar:noop,mapRenderActionButtons:noop,connectedRecordsMount:noop,relationshipEndpoint:noop,mapFormTab:noop,mapEditorBegin:noop,mapLoadLog:noop};
+  vm.runInNewContext(edit,context);await context.mapEdit(saved.id,current);
+  assert.equal(get('mf-est-cost').value,0);assert.equal(get('mf-act-cost').value,0);assert.equal(get('mf-dept').value,'Saved department');assert.equal(get('mcc-1').checked,false);
 });
