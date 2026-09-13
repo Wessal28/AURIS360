@@ -12719,6 +12719,10 @@ const [objectives,kpis,indicators,monthly]=await Promise.all([
 ]);
 kpiEntryCheckContext(context);
 if(![objectives,kpis,indicators,monthly].every(Array.isArray))throw new Error('The saved value could not be reloaded.');
+if(context.expectedResult){
+  const expected=context.expectedResult,current=monthly.find(r=>r.id===expected.id);
+  if(!current||current.result_revision!==expected.result_revision||current.actual!==expected.actual||current.comment!==expected.comment||current.ytd!==expected.ytd)throw new Error('The monthly result changed again during refresh. Reload to review the latest version.');
+}
 const entryPresent=monthly.some(row=>row.indicator_id===context.indicatorId&&Number(row.month)===context.month);
 if(context.operation==='clear'){
   if(entryPresent)throw new Error('The cleared monthly result is still present in the refreshed data.');
@@ -12732,6 +12736,7 @@ kpiObjectives=objectives.filter(o=>!/^\[Archived/i.test(String(o.name||'')));kpi
 function kpiOpenEntry(indicatorId,kpiId,month){
 const modal=document.getElementById('kpi-entry-modal');
 if(modal?._kpiXEntryBusy)return false;
+if(modal?._kpiEntryUncertain&&modal.style.display!=='none'){kpiEntryFeedback('Close this form and reload to review the latest result. Your entered text is retained for copying.');return false;}
 if(modal?._kpiEntryCleared&&modal.style.display!=='none'){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return false;}
 if(modal?._kpiEntrySaved&&modal.style.display!=='none'){kpiEntryFeedback('This value is already saved. Close this form and reload before opening another entry.');return false;}
 if(!kpiCanEdit()){toast('Only managers can enter KPI monthly values.',false);return false;}
@@ -12742,19 +12747,19 @@ if(modal){
   if(!modal.contains(document.activeElement))modal._kpiEntryReturnFocus=document.activeElement;
   kpiEntryBindDialog(modal);
   (modal._kpiEntryDisabled||[]).forEach(item=>{item.node.disabled=item.disabled;});
-  modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;modal._kpiEntryCleared=false;
+  modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;modal._kpiEntryCleared=false;modal._kpiEntryUncertain=false;
   modal.querySelector('[data-kpi-entry-message]')?.remove();
 }
 kpiEntryIndicatorId=indicatorId;
 kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
 kpiEntryMonth=month;
-if(modal)modal._kpiEntryContext={companyId:kpiEntryCompany(),actorId:prof?.id,kpiId,indicatorId,year:kpiEntryYear,month};
 document.getElementById('entry-modal-title').textContent='Enter value - '+KPI_MONTHS[month-1]+' '+kpiEntryYear;
 document.getElementById('entry-kpi-name').textContent=k.name+' - '+ind.name;
 const methodLabel={sum:'YTD = cumulative sum',average:'YTD = average of months entered',last:'YTD = last value entered',max:'YTD = maximum value',min:'YTD = minimum value'}[ind.ytd_method||'sum'];
 document.getElementById('entry-kpi-target').textContent='Target: '+kpiFmtTarget(ind)+' | '+methodLabel;
 document.getElementById('entry-month-label').textContent='Actual value for '+KPI_MONTHS[month-1];
 const ex=kpiMonthlyData[indicatorId]?.[month];
+if(modal)modal._kpiEntryContext={companyId:kpiEntryCompany(),actorId:prof?.id,kpiId,indicatorId,year:kpiEntryYear,month,definitionRevision:k.definition_revision,expectedId:ex?.id||null,expectedRevision:ex?.result_revision??null};
 document.getElementById('entry-actual').value=ex?.actual!==null&&ex?.actual!==undefined?ex.actual:'';
 const previewYTD=kpiCalcYTD(indicatorId,month,ex?.actual||0);
 document.getElementById('entry-ytd').value=previewYTD!==null?previewYTD:'';
@@ -12771,9 +12776,37 @@ if(clearBtn)clearBtn.style.display=ex?'flex':'none';
 openKpiModal('kpi-entry-modal');
 document.getElementById('entry-modal-title').focus();
 }
+function kpiMonthlyFailure(error,operation){
+const detail=String(error?.message||error),reasons={
+ AURIS_KPI_MONTHLY_CONFLICT:'This monthly result changed after you opened it.',AURIS_KPI_EDIT_CONFLICT:'The KPI definition changed after you opened it.',
+ AURIS_KPI_ANNUAL_RESULT_EXISTS:'This annual indicator already has a result in another month.',AURIS_KPI_MONTHLY_DENIED:'Your permission to report monthly results has changed.',
+ AURIS_KPI_MANUAL_SOURCE_REQUIRED:'Use the governed source or override controls for this automatic result.',AURIS_KPI_REVIEW_IN_PROGRESS:'Monthly reporting is frozen while the KPI is under review or archived.',
+ AURIS_KPI_YEAR_MISMATCH:'The reporting year has changed.',AURIS_KPI_NOT_FOUND:'This KPI is no longer available.',AURIS_KPI_INDICATOR_MISMATCH:'This indicator is no longer available.',
+ AURIS_KPI_HISTORY_SCOPE_MISMATCH:'The stored monthly history needs an administrator to check its company links.',AURIS_KPI_MONTHLY_NOT_FOUND:'The monthly result is no longer available.',
+ AURIS_KPI_FUTURE_PERIOD:'Choose an elapsed reporting month.',AURIS_KPI_UNPLANNED_PERIOD:'Choose a planned reporting month.',
+ AURIS_KPI_EXPLANATION_REQUIRED:'Performance explanation and root cause are required for an At Risk or Off Track result.',AURIS_KPI_INVALID_RESULT:'Enter a valid value and explanation.'};
+const key=Object.keys(reasons).find(code=>detail.includes(code));
+return key?'No changes were applied. '+reasons[key]+' Close and reload to review the latest record; your entered text is retained for copying.':operation+' could not be confirmed. Close and reload to check the stored result before trying again. '+detail;
+}
+async function kpiMutateMonthly(context,operation,entry){
+kpiEntryCheckContext(context);
+if(!Number.isSafeInteger(context.definitionRevision)||context.definitionRevision<1||
+ (context.expectedId&&(!Number.isSafeInteger(context.expectedRevision)||context.expectedRevision<1)))throw new Error('Reload the KPI to obtain its current reporting version before saving or clearing.');
+const result=await api('/rpc/mutate_kpi_monthly_result',{m:'POST',p:'return=representation',b:{p_company_id:context.companyId,p_kpi_id:context.kpiId,p_indicator_id:context.indicatorId,p_year:context.year,p_month:context.month,
+ p_expected_definition_revision:context.definitionRevision,p_expected_id:context.expectedId,p_expected_revision:context.expectedRevision,p_operation:operation,p_entry:entry||{}}});
+const scoped=row=>row&&row.company_id===context.companyId&&row.indicator_id===context.indicatorId&&row.year===context.year&&Number.isInteger(row.month)&&row.month>=1&&row.month<=12&&typeof row.id==='string'&&Number.isSafeInteger(row.result_revision)&&row.result_revision>0;
+const row=result?.result,expectedComment=operation==='save'?[entry.explanation.trim(),entry.root.trim()?'Root cause: '+entry.root.trim():'',entry.evidence.trim()?'Evidence: '+entry.evidence.trim():''].filter((v,index)=>index===0||v).join('\n')||null:null;
+if(!result||result.operation!==operation||result.indicator_id!==context.indicatorId||result.year!==context.year||result.month!==context.month||
+ result.kpi?.id!==context.kpiId||result.kpi?.company_id!==context.companyId||result.kpi?.year!==context.year||result.kpi?.definition_revision!==context.definitionRevision||
+ !Array.isArray(result.monthly)||result.monthly.some(r=>!scoped(r))||new Set(result.monthly.map(r=>r.month)).size!==result.monthly.length||
+ (operation==='save'?(!scoped(row)||row.month!==context.month||row.actual!==entry.actual||row.comment!==expectedComment||
+   (context.expectedId&&(row.id!==context.expectedId||row.result_revision<=context.expectedRevision))||!result.monthly.some(r=>JSON.stringify(r)===JSON.stringify(row))):
+   (row!==null||result.monthly.some(r=>r.month===context.month))))throw new Error('The server did not confirm the complete monthly transaction.');
+return result;
+}
 async function kpiSaveEntry(options){
 const modal=document.getElementById('kpi-entry-modal'),context=modal?._kpiEntryContext;
-if(modal?._kpiEntryClearing)return {saved:false,complete:false};
+if(!modal||modal.style.display==='none'||modal._kpiEntryClearing||modal._kpiEntryUncertain)return {saved:false,complete:false};
 if(modal?._kpiEntryCleared){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return {saved:false,complete:false};}
 let saved=false,writeStarted=false;
 try{
@@ -12785,38 +12818,20 @@ const ind=kpiIndicators.find(x=>x.id===indicatorId&&x.kpi_id===kpiId),k=kpiKPIs.
 if(!ind||!k||(k.company_id&&k.company_id!==companyId))throw new Error('The selected KPI is unavailable. Close and reload before entering data.');
 const actual=document.getElementById('entry-actual').value;
 if(actual===''||!Number.isFinite(Number(actual)))throw new Error('Please enter a valid value.');
-const manualYtd=document.getElementById('entry-ytd').value;
-const autoYTD=kpiCalcYTD(indicatorId,month,parseFloat(actual));
-let ytd=manualYtd!==''&&manualYtd!==String(autoYTD)?parseFloat(manualYtd):autoYTD;
-if(ytd===null)ytd=parseFloat(actual);
-if(!Number.isFinite(ytd))throw new Error('Please enter a valid YTD value or leave it blank.');
-const comment=typeof options?.comment==='string'?options.comment:document.getElementById('entry-comment').value;
-const existing=kpiMonthlyData[indicatorId]?.[month];
+const entry={actual:Number(actual),explanation:document.getElementById('entry-comment').value,root:document.getElementById('entry-root-cause')?.value||'',evidence:document.getElementById('entry-evidence')?.value||''};
 writeStarted=true;
-if(existing){
-await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+month,{m:'PATCH',p:'return=minimal',b:{actual:parseFloat(actual),ytd:ytd,comment:comment||null}});
-}else{
-await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:indicatorId,year:year,month:month,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:companyId}});
-}
+const result=await kpiMutateMonthly(context,'save',entry);
 saved=true;modal._kpiEntrySaved=true;
 kpiEntryCheckContext(context);
-if(!kpiMonthlyData[indicatorId])kpiMonthlyData[indicatorId]={};
-kpiMonthlyData[indicatorId][month]={...existing,indicator_id:indicatorId,year,month,company_id:companyId,actual:parseFloat(actual),ytd,comment:comment||null};
-if(ind&&k){
-const prog=kpiGetProgress(ind,ytd);
-let status='not_started';
-if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
-await api('/kpis_v2?id=eq.'+k.id,{m:'PATCH',p:'return=representation',b:{status,updated_at:new Date().toISOString()}});
-kpiEntryCheckContext(context);
-await kpiRecalcAllYTD(indicatorId,year,context);
-}
-kpiEntryCheckContext(context);
-await kpiLoadAll(context);
+kpiMonthlyData[indicatorId]=Object.fromEntries(result.monthly.map(r=>[r.month,r]));
+Object.assign(k,result.kpi);
+await kpiLoadAll({...context,expectedResult:result.result});
 kpiEntryCheckContext(context);
 if(!options?.deferClose){toast('Value saved!');closeKpiModal('kpi-entry-modal');}
 return {saved:true,complete:true};
 }catch(e){
-kpiEntryFeedback((saved?'Value saved, but the summary or follow-up could not be completed. Close this form and reload to check the result; do not enter it again. ':writeStarted?'Save could not be confirmed. Check the existing monthly result before retrying. ':'')+String(e?.message||e));
+if(writeStarted&&!saved)modal._kpiEntryUncertain=true;
+kpiEntryFeedback(saved?'Value and totals saved, but the display could not refresh. Close this form and reload to check the result; do not enter it again. '+String(e?.message||e):writeStarted?kpiMonthlyFailure(e,'Save'):String(e?.message||e));
 return {saved,complete:false};
 }
 }
@@ -12864,7 +12879,7 @@ for(var mi=0;mi<fresh.length;mi++){
 async function kpiClearEntry(){
 const modal=document.getElementById('kpi-entry-modal');
 if(!modal||modal.style.display==='none'||modal._kpiXEntryBusy)return {cleared:false,complete:false};
-if(modal._kpiEntrySaved||modal._kpiEntryCleared){
+if(modal._kpiEntrySaved||modal._kpiEntryCleared||modal._kpiEntryUncertain){
   kpiEntryFeedback('This entry already has a completed write. Close this form and reload before clearing or entering another result.');
   return {cleared:!!modal._kpiEntryCleared,complete:false};
 }
@@ -12893,24 +12908,24 @@ try{
   checkClear();
   document.getElementById('entry-modal-title').focus();
   writeStarted=true;
-  await api('/kpi_monthly_data?indicator_id=eq.'+encodeURIComponent(context.indicatorId)+'&year=eq.'+context.year+'&month=eq.'+context.month+'&company_id=eq.'+encodeURIComponent(context.companyId),{m:'DELETE'});
+  const result=await kpiMutateMonthly(context,'clear',{});
   cleared=true;modal._kpiEntryCleared=true;
   kpiEntryCheckContext(context);
-  if(kpiMonthlyData[context.indicatorId])delete kpiMonthlyData[context.indicatorId][context.month];
-  await kpiRecalcAllYTD(context.indicatorId,context.year,context);
-  kpiEntryCheckContext(context);
+  kpiMonthlyData[context.indicatorId]=Object.fromEntries(result.monthly.map(r=>[r.month,r]));
+  Object.assign(k,result.kpi);
   await kpiLoadAll(context);
   kpiEntryCheckContext(context);
   toast('Data cleared!');closeKpiModal('kpi-entry-modal');
   return {cleared:true,complete:true};
 }catch(error){
-  kpiEntryFeedback((cleared?'Data cleared, but the summary or refresh could not be completed. Close this form and reload to check the result; do not clear or enter it again. ':writeStarted?'Clear could not be confirmed. Check the existing monthly result before retrying. ':'')+String(error?.message||error));
+  if(writeStarted&&!cleared)modal._kpiEntryUncertain=true;
+  kpiEntryFeedback(cleared?'Data cleared and totals recalculated, but the display could not refresh. Close this form and reload to check the result. '+String(error?.message||error):writeStarted?kpiMonthlyFailure(error,'Clear'):String(error?.message||error));
   return {cleared,complete:false};
 }finally{
   if(controls){
     modal._kpiXEntryBusy=false;modal._kpiEntryClearing=false;
-    controls.forEach(item=>{item.node.disabled=cleared&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
-    if(!cleared)modal._kpiEntryDisabled=null;
+    controls.forEach(item=>{item.node.disabled=(cleared||modal._kpiEntryUncertain)&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+    if(!cleared&&!modal._kpiEntryUncertain)modal._kpiEntryDisabled=null;
     const clearButton=document.getElementById('kpi-clear-btn');
     if(cancelled&&kpiEntryContextMatches(context)&&modal.style.display!=='none'&&clearButton?.isConnected&&!clearButton.disabled)clearButton.focus();
   }

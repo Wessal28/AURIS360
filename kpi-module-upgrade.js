@@ -586,6 +586,7 @@ function kpiXInstallHooks(){
     window.kpiSaveEntry=async function(){
       var modal=document.getElementById('kpi-entry-modal');
       if(!modal||modal._kpiXEntryBusy)return {saved:false,complete:false};
+      if(modal._kpiEntryUncertain){kpiEntryFeedback('Close this form and reload to review the stored result. Your entered text is retained for copying.');return {saved:false,complete:false};}
       if(modal._kpiEntryCleared){kpiEntryFeedback('This value was cleared. Close this form and reload before entering another result.');return {saved:false,complete:false};}
       if(modal._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
       modal.querySelector('[data-kpi-entry-message]')?.remove();
@@ -605,21 +606,9 @@ function kpiXInstallHooks(){
         kpiXValidatePlannedEntry(kpi,selectedMonth,indicatorId);
         if(recordedMonth&&recordedMonth!==selectedMonth)throw new Error('This annual KPI already has a result in '+KPI_X_MONTHS[recordedMonth-1]+'. Clear that result before selecting another reporting month.');
         if(['at_risk','off_track'].indexOf(status)>=0&&(!comment.value.trim()||!root.value.trim()))throw new Error('Performance explanation and root cause are required for an At Risk or Off Track result.');
-        var savedComment=original.trim()+(root&&root.value.trim()?'\nRoot cause: '+root.value.trim():'')+(evidence&&evidence.value.trim()?'\nEvidence: '+evidence.value.trim():'');
-        var result=await kpiXLegacy.saveEntry.call(this,{deferClose:true,comment:savedComment});
+        var result=await kpiXLegacy.saveEntry.call(this,{deferClose:true});
         if(!result||result.saved!==true||result.complete!==true)return result||{saved:false,complete:false};
         kpiEntryCheckContext(context);
-        var savedRow=((typeof kpiMonthlyData!=='undefined'&&kpiMonthlyData[indicatorId])||{})[selectedMonth];
-        if(savedRow&&kpiXIsAnnual(kpi)&&selectedMonth<reportingMonth&&typeof auditLogEvent==='function')await auditLogEvent('late_entry','kpi','Annual KPI result entered for an earlier reporting month',{kpi_id:kpi&&kpi.id,kpi_code:kpi&&kpi.code,kpi_name:kpi&&kpi.name,indicator_id:indicatorId,indicator_name:ind&&ind.name,reporting_year:selectedYear,reporting_month:selectedMonth,entry_month:reportingMonth,entered_at:new Date().toISOString()},{related_table:'kpi_monthly_data',related_id:savedRow.id||indicatorId,related_ref:(kpi&&kpi.code)||null,company_id:savedRow.company_id||(typeof ccid==='function'?ccid():null)});
-        kpiEntryCheckContext(context);
-        if(kpi&&typeof api==='function'){
-          var refreshed=kpiKPIs.find(function(x){return x.id===kpi.id;})||kpi;
-          var derived=kpiXKpiSnapshot(refreshed,kpiXReportingMonth()).status;
-          if(['not_started','on_track','at_risk','off_track'].indexOf(derived)>=0&&refreshed.status!==derived){
-            await api('/kpis_v2?id=eq.'+refreshed.id,{m:'PATCH',p:'return=minimal',b:{status:derived,updated_at:new Date().toISOString()}});
-            kpiEntryCheckContext(context);refreshed.status=derived;
-          }
-        }
         kpiXRenderAll();toast('Value saved!');closeKpiModal('kpi-entry-modal');
         return result;
       }catch(error){
@@ -627,8 +616,8 @@ function kpiXInstallHooks(){
         return {saved:!!modal._kpiEntrySaved,complete:false};
       }finally{
         comment.value=original;modal._kpiXEntryBusy=false;
-        controls.forEach(function(item){item.node.disabled=modal._kpiEntrySaved&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
-        if(!modal._kpiEntrySaved)modal._kpiEntryDisabled=null;
+        controls.forEach(function(item){item.node.disabled=(modal._kpiEntrySaved||modal._kpiEntryUncertain)&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+        if(!modal._kpiEntrySaved&&!modal._kpiEntryUncertain)modal._kpiEntryDisabled=null;
       }
     };
   }
