@@ -97,8 +97,9 @@ begin
   if p_kpi_id is not null then
     select * into item from public.kpis_v2 where id=p_kpi_id and company_id=p_company_id for update;
     if not found then raise exception 'AURIS_KPI_NOT_FOUND' using errcode='P0002';end if;
+    -- Business conflicts must not use 40001, which PostgREST may retry.
     if item.definition_revision is distinct from p_expected_revision then
-      raise exception 'AURIS_KPI_EDIT_CONFLICT' using errcode='40001';
+      raise exception 'AURIS_KPI_EDIT_CONFLICT' using errcode='PT409';
     end if;
     if coalesce(item.approval_status,'') not in ('draft','rejected','revision_requested') or item.status='archived' then
       raise exception 'AURIS_KPI_DEFINITION_FROZEN' using errcode='42501';
@@ -111,7 +112,7 @@ begin
     select coalesce(jsonb_agg(value order by value->>'id'),'[]') into expected_rows
       from jsonb_array_elements(p_expected_indicators);
     if current_rows is distinct from expected_rows then
-      raise exception 'AURIS_KPI_EDIT_CONFLICT' using errcode='40001';
+      raise exception 'AURIS_KPI_EDIT_CONFLICT' using errcode='PT409';
     end if;
   elsif p_expected_revision is not null or p_expected_indicators<>'[]' then
     raise exception 'AURIS_KPI_INVALID_BASELINE' using errcode='22023';

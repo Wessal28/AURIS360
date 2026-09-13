@@ -52,7 +52,7 @@ begin
   begin
     perform public.save_kpi_definition(tenant,k,rev,baseline,definition,desired);
     raise exception 'Stale revision accepted';
-  exception when serialization_failure then if sqlerrm<>'AURIS_KPI_EDIT_CONFLICT' then raise;end if;end;
+  exception when sqlstate 'PT409' then if sqlerrm<>'AURIS_KPI_EDIT_CONFLICT' then raise;end if;end;
   if before_state is distinct from pg_temp.kpi_snapshot(k) then raise exception 'Conflict changed records';end if;
 
   baseline:=pg_temp.kpi_baseline(k);select definition_revision,to_jsonb(p) into rev,definition from public.kpis_v2 p where id=k;
@@ -105,7 +105,7 @@ begin
   begin
     perform public.save_kpi_definition(tenant,k,prior_revision,baseline,definition,desired);
     raise exception 'Mixed parent/child baseline accepted';
-  exception when serialization_failure then if sqlerrm<>'AURIS_KPI_EDIT_CONFLICT' then raise;end if;end;
+  exception when sqlstate 'PT409' then if sqlerrm<>'AURIS_KPI_EDIT_CONFLICT' then raise;end if;end;
 
   foreach method in array array['sum','average','last','max','min'] loop
     baseline:=pg_temp.kpi_baseline(k);select definition_revision,to_jsonb(p) into rev,definition from public.kpis_v2 p where id=k;
