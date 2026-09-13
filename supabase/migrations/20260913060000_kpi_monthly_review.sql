@@ -64,9 +64,9 @@ begin
 end;$$;
 create trigger trg_00_monthly_review_kpi before insert or update or delete on public.kpis_v2
 for each row execute function public.guard_kpi_monthly_review();
-create trigger trg_00_monthly_review_indicator before insert or update or delete on public.kpi_indicators
+create trigger trg_b_monthly_review_indicator before insert or update or delete on public.kpi_indicators
 for each row execute function public.guard_kpi_monthly_review();
-create trigger trg_00_monthly_review_result before insert or update or delete on public.kpi_monthly_data
+create trigger trg_b_monthly_review_result before insert or update or delete on public.kpi_monthly_data
 for each row execute function public.guard_kpi_monthly_review();
 
 -- The configured person must resolve to exactly one active account in this tenant.
@@ -134,6 +134,7 @@ declare item public.kpi_monthly_reviews; prior public.kpi_monthly_reviews; previ
 begin
   select role into actor_role from public.profiles where id=actor and status='active' and (company_id=p_company_id or role='sephs_admin');
   if actor is null or actor_role is null or not public.auris_can_access_company(p_company_id) then raise exception 'AURIS_MONTH_REVIEW_DENIED' using errcode='42501';end if;
+  if length(coalesce(p_reason,''))>4000 then raise exception 'AURIS_MONTH_REVIEW_REASON' using errcode='22023';end if;
   perform public.lock_kpi_monthly_review(p_company_id);
   select * into item from public.kpi_monthly_reviews where company_id=p_company_id and year=p_year and month=p_month for update;
   prior:=item;
