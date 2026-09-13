@@ -591,7 +591,7 @@ function kpiXInstallHooks(){
       if(modal._kpiEntrySaved){kpiEntryFeedback('This value is already saved. Close this form and reload to check the summary before entering it again.');return {saved:true,complete:false};}
       modal.querySelector('[data-kpi-entry-message]')?.remove();
       var context=modal._kpiEntryContext,comment=document.getElementById('entry-comment'),original=comment.value;
-      var controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(function(node){return {node:node,disabled:node.disabled};});
+      var controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(function(node){return {node:node,disabled:node.disabled,readOnly:node.readOnly};});
       modal._kpiXEntryBusy=true;modal._kpiEntryDisabled=controls;
       controls.forEach(function(item){item.node.disabled=true;});
       // Disabled buttons lose focus in browsers; keep keyboard users inside the pending form.
@@ -616,7 +616,7 @@ function kpiXInstallHooks(){
         return {saved:!!modal._kpiEntrySaved,complete:false};
       }finally{
         comment.value=original;modal._kpiXEntryBusy=false;
-        controls.forEach(function(item){item.node.disabled=(modal._kpiEntrySaved||modal._kpiEntryUncertain)&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+        kpiEntryRestoreControls(controls,modal._kpiEntrySaved||modal._kpiEntryUncertain);
         if(!modal._kpiEntrySaved&&!modal._kpiEntryUncertain)modal._kpiEntryDisabled=null;
       }
     };

@@ -12708,6 +12708,13 @@ if(!alert){
 }
 alert.textContent=message;alert.focus();
 }
+function kpiEntryRestoreControls(controls,locked){
+(controls||[]).forEach(item=>{
+  const text=item.node.matches('input,textarea');
+  item.node.disabled=locked&&!text&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;
+  if(text)item.node.readOnly=locked||!!item.readOnly;
+});
+}
 async function kpiReloadEntryData(context){
 kpiEntryCheckContext(context);
 const scope='&company_id=eq.'+encodeURIComponent(context.companyId),year='&year=eq.'+context.year;
@@ -12746,7 +12753,7 @@ if(!ind||!k)return false;
 if(modal){
   if(!modal.contains(document.activeElement))modal._kpiEntryReturnFocus=document.activeElement;
   kpiEntryBindDialog(modal);
-  (modal._kpiEntryDisabled||[]).forEach(item=>{item.node.disabled=item.disabled;});
+  kpiEntryRestoreControls(modal._kpiEntryDisabled,false);
   modal._kpiEntryDisabled=null;modal._kpiEntrySaved=false;modal._kpiEntryCleared=false;modal._kpiEntryUncertain=false;
   modal.querySelector('[data-kpi-entry-message]')?.remove();
 }
@@ -12899,7 +12906,7 @@ try{
   if(!existing)throw new Error('There is no stored monthly result to clear.');
   if((existing.company_id&&existing.company_id!==context.companyId)||(existing.year&&Number(existing.year)!==context.year))throw new Error('The stored result does not match this company or year. Close and reload.');
   modal.querySelector('[data-kpi-entry-message]')?.remove();
-  controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
+  controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled,readOnly:node.readOnly}));
   modal._kpiXEntryBusy=true;modal._kpiEntryClearing=true;modal._kpiEntryDisabled=controls;
   controls.forEach(item=>{item.node.disabled=true;});
   document.getElementById('entry-modal-title').focus();
@@ -12924,7 +12931,7 @@ try{
 }finally{
   if(controls){
     modal._kpiXEntryBusy=false;modal._kpiEntryClearing=false;
-    controls.forEach(item=>{item.node.disabled=(cleared||modal._kpiEntryUncertain)&&!item.node.matches('[data-auris-onclick="h0143"]')?true:item.disabled;});
+    kpiEntryRestoreControls(controls,cleared||modal._kpiEntryUncertain);
     if(!cleared&&!modal._kpiEntryUncertain)modal._kpiEntryDisabled=null;
     const clearButton=document.getElementById('kpi-clear-btn');
     if(cancelled&&kpiEntryContextMatches(context)&&modal.style.display!=='none'&&clearButton?.isConnected&&!clearButton.disabled)clearButton.focus();
