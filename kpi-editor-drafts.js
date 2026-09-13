@@ -15,7 +15,7 @@ function snapshot(modal){
   var fields={};(objective(modal)?objectiveFields:kpiFields).forEach(function(id){var el=document.getElementById(id);if(el)fields[id]=el.value;});
   if(objective(modal))return {fields:fields,color:kpiSelectedColor};
   var indicators=Array.from(modal.querySelectorAll('#kpi-indicators-list [data-ind-row]')).map(function(row){function value(selector){return row.querySelector(selector)?.value||'';}return {indicatorId:row.getAttribute('data-indicator-id')||'',name:value('.ind-name-input'),target:value('.ind-target-input'),operator:value('.ind-op-input'),unit:value('.ind-unit-input'),ytd:value('.ind-ytd-input')};});
-  return {fields:fields,plannedMonths:root.KpiEditorDraftFields.selectedMonths(),indicators:indicators};
+  return {revision:modal._kpiDefinitionContext?.revision??null,fields:fields,plannedMonths:root.KpiEditorDraftFields.selectedMonths(),indicators:indicators};
 }
 function describe(value){
   var labels={'obj-name':'Objective','obj-code':'Code','obj-year':'Year','kpi-obj-sel':'Objective ID','kpi-code':'Code','kpi-name':'KPI','kpi-description':'Description','kpi-freq':'Frequency','kpi-resp':'Owner','kpi-data-provider':'Data provider','kpi-data-source':'Data source','kpi-reviewer':'Reviewer','kpi-approver':'Approver'};

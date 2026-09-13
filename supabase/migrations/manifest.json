@@ -141,6 +141,11 @@
       "order": 28,
       "file": "20260913020000_action_editor_workflow.sql",
       "sha256": "702e044221c18b6f9095d7a4ca1db8d20021f81d125bea3e991a19b97c2c1339"
+    },
+    {
+      "order": 29,
+      "file": "20260913030000_kpi_atomic_definition_save.sql",
+      "sha256": "ec2aa5e73aa681e0f45f562852873fe3a311ff934b3a123e4e18015bd03ae9a4"
     }
   ]
 }
