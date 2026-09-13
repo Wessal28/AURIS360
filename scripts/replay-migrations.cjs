@@ -132,3 +132,6 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'objective_d
 run(process.execPath, ['scripts/verify-objective-concurrency.cjs'], {label: 'competing objective transaction sessions'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_monthly_atomic.sql')], {label: 'monthly KPI transaction behavior'});
 run(process.execPath, ['scripts/verify-kpi-monthly-concurrency.cjs'], {label: 'competing monthly KPI transaction sessions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_monthly_review.sql')], {label: 'monthly review workflow and protection'});
+run(process.execPath, ['scripts/verify-kpi-review-concurrency.cjs'], {label: 'competing monthly review sessions'});

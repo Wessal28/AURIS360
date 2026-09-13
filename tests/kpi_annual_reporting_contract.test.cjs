@@ -16,8 +16,10 @@ test('annual KPIs expose one editable reporting slot in the current year',()=>{
 
 test('annual result remains the KPI snapshot and satisfies the year-end cycle',()=>{
   assert.match(source,/kpiXDueMonth\(k,month,ind\.id\)/);
-  assert.match(source,/resultMonth=kpiXIsAnnual\(k\)\?kpiXAnnualRecordedMonth\(ind\.id\):month/);
-  assert.match(source,/kpiXIsDue\(k,month\)&&!\(resultMonth&&\(\(kpiMonthlyData\[ind\.id\]\|\|\{\}\)\[resultMonth\]\)\)/);
+  assert.match(source,/window.KpiMonthlyReview.open\(\)/);
+  const sql=fs.readFileSync(path.resolve(__dirname,'..','supabase/migrations/20260913060000_kpi_monthly_review.sql'),'utf8');
+  assert.match(sql,/select min\(a.month\)/);
+  assert.match(sql,/p_month=12 or period.month=p_month/);
 });
 
 test('annual entry can be assigned to an elapsed month without creating a second annual result',()=>{
