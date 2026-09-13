@@ -156,6 +156,11 @@
       "order": 31,
       "file": "20260913050000_kpi_monthly_atomic_save.sql",
       "sha256": "413bf20942e6c62b8142e407eca24c12df69c879a4c6cc01c6df068274d77214"
+    },
+    {
+      "order": 32,
+      "file": "20260913060000_kpi_monthly_review.sql",
+      "sha256": "5ddc43dee31cbf61e9e7012cf24d3d2cb8ff14d4e081097911bcdea3800f7666"
     }
   ]
 }

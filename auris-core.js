@@ -12784,6 +12784,8 @@ openKpiModal('kpi-entry-modal');
 document.getElementById('entry-modal-title').focus();
 }
 function kpiMonthlyFailure(error,operation){
+if(String(error&&error.message||error).includes('AURIS_MONTH_REVIEW_FROZEN'))return 'This result or its YTD history is protected by a monthly review. Request revision or reopening through Review month before editing.';
+if(String(error&&error.message||error).includes('AURIS_MONTH_REVIEW_BUSY'))return 'A monthly review is being updated. Close and reload before trying again.';
 const detail=String(error?.message||error),reasons={
  AURIS_KPI_MONTHLY_CONFLICT:'This monthly result changed after you opened it.',AURIS_KPI_EDIT_CONFLICT:'The KPI definition changed after you opened it.',
  AURIS_KPI_ANNUAL_RESULT_EXISTS:'This annual indicator already has a result in another month.',AURIS_KPI_MONTHLY_DENIED:'Your permission to report monthly results has changed.',
@@ -39266,6 +39268,7 @@ var approvalCenterRows = [];
 var APPROVAL_SOURCE_ADAPTERS = [
   {key:'permit',module:'Permit to Work',table:'permits',page:'permit',statuses:['pending_approval'],status:['status'],ref:['permit_number'],title:['work_description','work_location'],approver:['current_approver_name','approver_name'],due:['approval_due_date','valid_from'],confidentiality:['confidentiality'],stage:'Permit approval'},
   {key:'swms',module:'SWMS / Method Statements',table:'documents',page:'swms',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Method statement review',opener:'swms',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')!==-1||t.indexOf('safe work method')!==-1||t.indexOf('method statement')!==-1;}},
+  {key:'kpi_monthly_review',module:'Objectives & KPIs',table:'kpi_monthly_reviews',page:'kpi',statuses:['submitted','verified','reopen_requested'],status:['status'],ref:['title'],title:['title'],approver:[],due:[],confidentiality:[],stage:'Monthly KPI review',opener:'kpi_monthly_review'},
   {key:'kpi',module:'Objectives & KPIs',table:'kpis_v2',page:'kpi',statuses:['submitted','verified'],status:['approval_status'],ref:['code'],title:['name'],approver:['reviewer','approver'],due:[],confidentiality:[],stage:'KPI governance review',opener:'kpi'},
   {key:'documents',module:'Document Control',table:'documents',page:'documents',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Document review',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')===-1&&t.indexOf('safe work method')===-1&&t.indexOf('method statement')===-1;}},
   {key:'risk',module:'Risk Assessment',table:'risk_assessments',page:'risk',statuses:['pending_review','under_review','pending_approval','review','submitted'],status:['status'],ref:['ra_ref','reference_no'],title:['title','activity'],approver:['reviewer_name','approver_name'],due:['review_date','next_review_date'],confidentiality:['confidentiality'],stage:'Risk review'},
@@ -39341,6 +39344,7 @@ function approvalsAdapterRow(adapter,row){
   var status=approvalsAdapterStatus(row,adapter);if(!status||adapter.filter&&!adapter.filter(row))return null;
   var id=row.id||row.record_id||row.related_id;if(!id)return null;
   var openId=approvalsPick(row,adapter.openId)||id,queueApprover=adapter.key==='kpi'?(status==='submitted'?row.reviewer:row.approver):approvalsPick(row,adapter.approver),queueStage=adapter.key==='kpi'?(status==='submitted'?'KPI verification':'KPI approval'):(adapter.stage||approvalsStatusLabel(status));
+  if(adapter.key==='kpi_monthly_review'){queueApprover=(row.route||{})[status==='submitted'?'reviewer_name':'approver_name'];queueStage=status==='submitted'?'Monthly result verification':status==='verified'?'Monthly result approval':'Monthly reopening request';}
   return {row_key:adapter.table+':'+id,adapter_key:adapter.key,source:adapter.key,module:adapter.module,table:adapter.table,record_id:id,id:id,
     ref:String(approvalsPick(row,adapter.ref)||displayRecordRef(row,['reference_no','reference','code'],'REVIEW-DRAFT')),
     title:String(approvalsPick(row,adapter.title)||adapter.module+' record awaiting review'),status:status,stage:queueStage,step:queueStage,
@@ -39450,6 +39454,7 @@ async function approvalsOpen(rowKey){
   try{
     if(x.opener==='contractor_document'&&typeof cmuOpenDocument==='function'){showPage('contractor',null);return setTimeout(function(){cmuOpenDocument(x.open_id);},350);}
     if(x.opener==='swms'&&typeof swmsOpen==='function'){showPage('swms',null);return setTimeout(function(){swmsOpen(x.open_id);},350);}
+    if(x.opener==='kpi_monthly_review'&&window.KpiMonthlyReview){showPage('kpi',null);return window.KpiMonthlyReview.openRecord(x.open_id,x.company_id);}
     if(x.opener==='kpi'&&typeof kpiXOpenDrawer==='function'){showPage('kpi',null);return setTimeout(function(){kpiXOpenDrawer(x.open_id);},350);}
     if(x.opener==='contractor_profile'&&typeof conOpenDetail==='function'){showPage('contractor',null);return setTimeout(function(){conOpenDetail(x.open_id);},350);}
     if(x.opener==='tools_profile'&&typeof teuOpenProfile==='function'){showPage('tools',null);return setTimeout(function(){teuOpenProfile(x.open_id);},350);}
