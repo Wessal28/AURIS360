@@ -23,7 +23,8 @@ test('KPI editor exposes metadata, restores browser drafts and keeps approval st
   assert.match(upgrade,/function kpiXRestoreEditorDraft\(kpiId\)/);
   assert.match(upgrade,/KpiEditorDrafts\.capture/);
   assert.match(upgrade,/\['data_missing','in_progress','not_due'\][\s\S]*'not_started'/);
-  assert.match(upgrade,/\['not_started','on_track','at_risk','off_track'\]\.indexOf\(derived\)>=0/);
+  const monthlySql=read('supabase/migrations/20260913050000_kpi_monthly_atomic_save.sql');
+  assert.match(monthlySql,/status in \('on_track','at_risk','off_track'\) then status else 'not_started'/);
 });
 
 test('scorecard management controls are compact, labelled icon buttons',()=>{

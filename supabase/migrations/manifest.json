@@ -151,6 +151,11 @@
       "order": 30,
       "file": "20260913040000_objective_definition_save.sql",
       "sha256": "350be4674db5a17fb94a75a228b64d0d87285439969d22d006b5ef51d9801f6b"
+    },
+    {
+      "order": 31,
+      "file": "20260913050000_kpi_monthly_atomic_save.sql",
+      "sha256": "413bf20942e6c62b8142e407eca24c12df69c879a4c6cc01c6df068274d77214"
     }
   ]
 }
