@@ -12,7 +12,7 @@
 #ps-checklist-body .ps-check-comment,#ps-checklist-body .ps-check-item textarea{grid-column:1/-1;font-size:11px}
 #ps-checklist-body .ps-check-answers label{min-height:28px;font-size:11px;padding:2px 6px}
 @media(max-width:600px){#ps-checklist-body .ps-check-item{grid-template-columns:1fr}#ps-checklist-body .ps-check-answers{grid-column:1;grid-row:auto}}
-.auris-app-card[data-nav-key] .auris-app-card-icon{background:transparent!important;box-shadow:none}
+.auris-app-card[data-nav-key] .auris-app-card-icon:has(> .auris-module-icon){background:transparent!important;box-shadow:none}
 
 #page-actions:has(> .auris-module-viewbar) > .auris-map-s-6bf792afaa:has(> #map-tab-all){display:none!important}
 #page-risk:has(> .auris-module-viewbar) div:has(> #ra-ltab-ra){display:none!important}
