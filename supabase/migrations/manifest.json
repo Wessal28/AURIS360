@@ -136,6 +136,11 @@
       "order": 27,
       "file": "20260913010000_improvement_document_completion.sql",
       "sha256": "5b08cc1e78959400e382df656c025b4504571c86e06ed2062161bbdb48ca65ad"
+    },
+    {
+      "order": 28,
+      "file": "20260913020000_action_editor_workflow.sql",
+      "sha256": "702e044221c18b6f9095d7a4ca1db8d20021f81d125bea3e991a19b97c2c1339"
     }
   ]
 }

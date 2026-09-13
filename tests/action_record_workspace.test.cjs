@@ -126,10 +126,10 @@ test('legacy editor rechecks company after loading people and before filling or 
   const core = read('auris-core.js');
   const edit = core.slice(core.indexOf('async function mapEdit('), core.indexOf('async function mapPopulatePeopleSelects('));
   let release, writes = 0, company = 'co-a';
-  const context = { mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
+  const context = { mapEditorLeave:async()=>true,mapEditorOpening:0,api:async()=>[record],mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
     mapPopulatePeopleSelects: () => new Promise(resolve => { release = resolve; }), document: { getElementById: () => { writes++; return {}; } } };
   vm.runInNewContext(edit, context);
-  const opening = context.mapEdit('action-1', current); company = 'co-b'; release();
+  const opening = context.mapEdit('action-1', current); await new Promise(resolve=>setImmediate(resolve));company = 'co-b'; release();
   await assert.rejects(opening, /account or company changed/); assert.equal(writes, 0);
 });
 

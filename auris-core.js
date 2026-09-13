@@ -3273,6 +3273,7 @@ function activatePageNavigation(pageKey, suppliedElement){
 }
 
 function showPage(name,el){
+  if(typeof mapEditorLeave==='function'&&name!=='actions'&&(mapEditorBusy||mapEditorDirty())){mapEditorLeave().then(function(ok){if(ok)showPage(name,el);});return;}
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
   if(!canAccessPage(name)) {
@@ -14726,7 +14727,7 @@ function imsOpenEdit(id){
   document.getElementById('ims-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('ims-start-inv-btn').style.display=x.investigation_required?'inline-flex':'none';
   document.getElementById('ev-type').value=type;
-  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val??'';};
   // Build the datetime-local value robustly. The events table has THREE date columns
   // (event_date as timestamp, event_time as time, event_datetime as timestamp) and
   // historical data is inconsistent - some records have time inside event_date,
@@ -26742,7 +26743,9 @@ async function loadActions(){
   mapShowList();
 }
 
-function mapShowList(){
+async function mapShowList(){
+  if(typeof mapEditorLeave==='function'&&!(await mapEditorLeave()))return;
+  mapEditorInitial=null;mapEditorSession=null;mapEditorOpening++;
   document.getElementById('map-list-view').style.display='block';
   document.getElementById('map-form3view').style.display='none';
   mapLoadList();
@@ -27482,7 +27485,11 @@ function mapRenderWorkflowBar(x){
 }
 
 // -- New / Edit -----------------------------------------------------------------
-function mapNew(){
+async function mapNew(){
+  if(!(await mapEditorLeave()))return;
+  var opening=++mapEditorOpening;
+  try{await mapPopulatePeopleSelects();}catch(error){toastActionError('Open action editor','Master Action Plan',error);return;}
+  if(opening!==mapEditorOpening)return;
   mapEditingId=null;
   document.getElementById('map-form3title').textContent='New Action';
   document.getElementById('map-form3ref').textContent='MAP-AUTO';
@@ -27494,7 +27501,7 @@ function mapNew(){
    'mf-est-cost','mf-act-cost','mf-dept','mf-assigned-by','mf-assigned-date',
    'mf-instructions','mf-esc-reason','mf-progress-notes','mf-evidence',
    'af-comments','mf-verified-date','mf-verif-notes','mf-closure-notes',
-   'mf-closure-rejected'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+   'mf-closure-rejected','mf-closure-date','mf-verif-method','mf-recurrence','mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('mf-type').value='corrective';
   document.getElementById('af-priority').value='medium';
   document.getElementById('af-status').value='open';
@@ -27510,8 +27517,9 @@ function mapNew(){
   document.getElementById('mf-target-date').value=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
   document.getElementById('mf-start-date').value=new Date().toISOString().slice(0,10);
   mapUpdateEffectivenessStars(0);
-  mapPopulatePeopleSelects();
-  fillPersonSelect('mf-assigned-by',prof?.full_name||'');
+  document.getElementById('mf-esc-level').value='0';
+  document.getElementById('mf-verif-status').value='pending';
+  mapEditorSetPersonValue('mf-assigned-by',prof?.full_name||'');
   document.getElementById('map-action-btns').innerHTML='';
   document.getElementById('map-workflow-bar').innerHTML='';
   document.getElementById('map-form3type-label').textContent='New CAPA Action';
@@ -27520,9 +27528,11 @@ function mapNew(){
   document.getElementById('map-form3view').style.display='block';
   connectedRecordsMount('map-connected-records',null,{allowCreate:false});
   mapFormTab('details', document.getElementById('map-ftab-details'));
+  mapEditorBegin(null);
 }
 
 async function mapOpenDetail(id){
+  if(!(await mapEditorLeave()))return;
   if(window.AurisActionRecordWorkspace){
     var listed=(mapAllData||[]).find(function(row){return String(row.id)===String(id)&&String(row.company_id)===String(ccid());});
     try{
@@ -27541,16 +27551,19 @@ async function mapOpenDetail(id){
 }
 
 async function mapEdit(id,expected){
+  if(!(await mapEditorLeave()))throw new Error('Your draft is still open. Save it before opening another action.');
+  var opening=++mapEditorOpening;
   var editorCompany=String(ccid()),editorUser=String(prof?.id||''),editorRole=String(activeRole());
   if(expected&&(expected.companyId!==editorCompany||expected.userId!==editorUser||expected.role!==editorRole))throw new Error('Your account or company changed. Reopen the action.');
-  var x=mapAllData.find(r=>r.id===id);
-  if(!x){try{var d=await api('/action_tracker?id=eq.'+id+cf());x=d?.[0];}catch(ex){}}
+  var d=await api('/action_tracker?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(editorCompany)+'&select=*&limit=1');
+  var x=d?.[0];
   if(!x){if(expected)throw new Error('The action is no longer available.');return;}
   await mapPopulatePeopleSelects();
-  if(String(ccid())!==editorCompany||String(prof?.id||'')!==editorUser||String(activeRole())!==editorRole||String(x.company_id)!==editorCompany||!canAccessPage('actions')){
+  if(opening!==mapEditorOpening||String(x.id)!==String(id)||String(ccid())!==editorCompany||String(prof?.id||'')!==editorUser||String(activeRole())!==editorRole||String(x.company_id)!==editorCompany||!canAccessPage('actions')){
     if(expected)throw new Error('Your account or company changed. Reopen the action.');return;
   }
   mapEditingId=id;
+  var cached=mapAllData.findIndex(function(row){return row.id===id;});if(cached<0)mapAllData.push(x);else mapAllData[cached]=x;
   var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
   var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
   document.getElementById('map-form3banner').style.background='linear-gradient(135deg,'+pc.color+'dd,'+pc.color+')';
@@ -27563,12 +27576,14 @@ async function mapEdit(id,expected){
   gf('mf-title',x.title||x.description);gf('mf-desc',x.description);gf('mf-rootcause',x.root_cause);
   gf('mf-source-ref',x.source_ref||x.source_description);gf('mf-location',x.location);
   gf('mf-start-date',x.start_date);gf('mf-target-date',x.target_date);gf('mf-completed-date',x.completed_date);
-  gf('mf-ext-reason',x.extension_reason);gf('mf-est-cost',x.estimated_cost||'');gf('mf-act-cost',x.actual_cost||'');
+  gf('mf-ext-reason',x.extension_reason);gf('mf-est-cost',x.estimated_cost);gf('mf-act-cost',x.actual_cost);
   gf('mf-dept',x.department||x.dept);gf('mf-assigned-by',x.assigned_by||x.issuer);gf('mf-assigned-date',x.assigned_date);
   gf('mf-instructions',x.instructions);gf('mf-esc-reason',x.escalation_reason);
   gf('mf-progress-notes',x.progress_notes||x.comments);gf('mf-evidence',x.evidence);gf('af-comments',x.comments);
   gf('mf-verified-date',x.verified_date);gf('mf-verif-notes',x.verification_notes);
   gf('mf-verif-method',x.verification_method);
+  gf('mf-closure-date',x.closure_approved_date);
+  ['mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].forEach(function(fid){document.getElementById(fid).checked=false;});
   gf('mf-closure-notes',x.closure_notes);gf('mf-closure-rejected',x.closure_rejected_reason);
   // Selects
   var setS=function(id,val){var el=document.getElementById(id);if(el&&val)el.value=val;};
@@ -27585,11 +27600,10 @@ async function mapEdit(id,expected){
   var eff=parseInt(x.effectiveness_rating)||0;document.getElementById('mf-effectiveness').value=eff;mapUpdateEffectivenessStars(eff);
   // Recurrence
   var recEl=document.getElementById('mf-recurrence');if(recEl)recEl.value=x.recurrence_prevented==null?'':(x.recurrence_prevented?'true':'false');
-  fillPersonSelect('mf-assigned-by',x.assigned_by||x.issuer);
+  mapEditorSetPersonValue('mf-assigned-by',x.assigned_by||x.issuer);
   var assSel=document.getElementById('mf-assigned-to');
   if(assSel&&x.assigned_to_id)assSel.value=x.assigned_to_id;
   else if(assSel&&(x.assigned_to_name||x.responsible)){var optA=Array.from(assSel.options).find(o=>o.text.includes(x.assigned_to_name||x.responsible));if(optA)assSel.value=optA.value;}
-  mapAssignedToSelect();
   var escSel=document.getElementById('mf-escalated-to');if(escSel&&x.escalated_to){var opt=Array.from(escSel.options).find(o=>o.text.includes(x.escalated_to));if(opt)escSel.value=opt.value;}
   var closeSel=document.getElementById('mf-closure-by');if(closeSel&&x.closure_approved_by){var opt2=Array.from(closeSel.options).find(o=>o.text.includes(x.closure_approved_by));if(opt2)closeSel.value=opt2.value;}
   var verifSel=document.getElementById('mf-verified-by');if(verifSel&&x.verified_by){var opt3=Array.from(verifSel.options).find(o=>o.text.includes(x.verified_by));if(opt3)verifSel.value=opt3.value;}
@@ -27600,18 +27614,29 @@ async function mapEdit(id,expected){
   document.getElementById('map-form3view').style.display='block';
   connectedRecordsMount('map-connected-records',relationshipEndpoint('action','action_tracker',x.id,mapDisplayRef(x)),{allowCreate:true});
   mapFormTab('details', document.getElementById('map-ftab-details'));
+  mapEditorSetPersonValue('mf-verified-by',x.verified_by);mapEditorSetPersonValue('mf-closure-by',x.closure_approved_by);
+  mapEditorBegin(x);
   mapLoadLog(id);
 }
 
 async function mapPopulatePeopleSelects(){
-  if(!people||!people.length){try{var d=await api('/people?select=id,first_name,last_name,job_title'+cf());if(d&&d.length)window.people=d;}catch(ex){}}
-  var opts='<option value="">Select person...</option>'+(people||[]).map(function(p){return '<option value="'+p.id+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:''))+'</option>';}).join('');
-  ['mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  var context=mapEditorContext();
+  var rows=await api('/people?select=id,company_id,first_name,last_name,job_title,department,company_name&company_id=eq.'+encodeURIComponent(context.companyId)+'&order=last_name.asc&limit=2000');
+  if(JSON.stringify(context)!==JSON.stringify(mapEditorContext()))throw new Error('Your account or company changed. Reopen the action.');
+  if(!Array.isArray(rows)||rows.some(function(row){return String(row.company_id)!==context.companyId;}))throw new Error('People could not be loaded for this company.');
+  mapEditorPeople=rows;
+  var opts='<option value="">Select person...</option>'+rows.map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:''))+'</option>';}).join('');
+  ['mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by','mf-assigned-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+function mapEditorSetPersonValue(id,value){
+  var el=document.getElementById(id);if(!el)return;el.value='';if(!value)return;
+  var option=Array.from(el.options).find(function(item){return item.value===value||item.text===value;});
+  if(!option){option=document.createElement('option');option.value=value;option.textContent=value;el.appendChild(option);}el.value=option.value;
 }
 
 function mapAssignedToSelect(){
   var assId=document.getElementById('mf-assigned-to')?.value||'';
-  var p=(people||[]).find(function(x){return x.id===assId;});
+  var p=(mapEditorPeople||[]).find(function(x){return x.id===assId;});
   var dept=document.getElementById('mf-dept');
   if(p&&dept)dept.value=p.department||'';
 }
@@ -27622,11 +27647,11 @@ function mapRenderActionButtons(x){
   var btn=function(icon,label,action,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" data-auris-named-action="'+escH(action)+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
   if(x.status==='open')h+=btn('ti-player-play','Start Working','map-start','#185FA5');
   if(x.status==='in_progress')h+=btn('ti-search','Submit for Verification','map-submit-verification','#8B5CF6');
-  if(x.status==='in_progress')h+=btn('ti-check','Mark Complete - Skip to Closure','map-submit-closure','#1D9E75');
-  if(x.status==='pending_verification')h+=btn('ti-certificate','Approve Verification','map-approve-verification','#8B5CF6');
-  if(x.status==='pending_closure')h+=btn('ti-circle-check','Approve Closure','map-approve-closure','#1D9E75');
+  if(x.status==='in_progress'&&x.requires_verification===false)h+=btn('ti-check','Submit for Closure','map-submit-closure','#1D9E75');
+  if(x.status==='pending_verification'&&mapEditorApprover(activeRole()))h+=btn('ti-certificate','Approve Verification','map-approve-verification','#8B5CF6');
+  if(x.status==='pending_closure'&&mapEditorApprover(activeRole()))h+=btn('ti-circle-check','Approve Closure','map-approve-closure','#1D9E75');
   if(['open','in_progress'].includes(x.status))h+=btn('ti-arrow-up','Escalate','map-escalate','#E24B4A');
-  if(x.status!=='closed'&&x.status!=='cancelled')h+=btn('ti-ban','Cancel Action','map-cancel','#6B7280');
+  if(x.status!=='closed'&&x.status!=='cancelled'&&mapEditorManager(activeRole()))h+=btn('ti-ban','Cancel Action','map-cancel','#6B7280');
   el.innerHTML=h;
 }
 
@@ -27744,245 +27769,21 @@ async function mapAIReviewAction(){
     toast('AI action review error: '+(e.message||e),false);
   }
 }
-async function mapSave(draft){
-  if(!workflowCanMutate('actions','actions'))return;
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var assSel=document.getElementById('mf-assigned-to');var assId=assSel?.value||null;
-  var assName='';if(assId){var p=(people||[]).find(x=>x.id===assId);assName=p?(p.last_name+', '+p.first_name):'';}
-  var escSel=document.getElementById('mf-escalated-to');var escName='';
-  if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
-  var closeSel=document.getElementById('mf-closure-by');var closeName='';
-  if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
-  var verifSel=document.getElementById('mf-verified-by');var verifName='';
-  if(verifSel?.value){var vp=(people||[]).find(x=>x.id===verifSel.value);verifName=vp?(vp.last_name+', '+vp.first_name):'';}
-  var body={
-    company_id:ccid(),
-    title:g('mf-title'),description:g('mf-desc')||g('mf-title'),
-    action_type:g('mf-type')||'corrective',priority:g('af-priority')||'medium',
-    status:g('af-status')||'open',
-    root_cause:g('mf-rootcause'),
-    source_type:g('mf-source-type')||'manual',source_module:g('mf-source-type')||'manual',
-    source_ref:g('mf-source-ref'),location:g('mf-location'),
-    start_date:g('mf-start-date')||null,target_date:g('mf-target-date')||null,
-    completed_date:g('mf-completed-date')||null,
-    date_extended:document.getElementById('mf-date-extended')?.checked||false,
-    extension_reason:g('mf-ext-reason'),
-    estimated_cost:parseFloat(g('mf-est-cost'))||null,actual_cost:parseFloat(g('mf-act-cost'))||null,
-    department:g('mf-dept'),
-    assigned_to_id:assId||null,assigned_to_name:assName||null,
-    assignee_organization_snapshot:(people||[]).find(function(p){return p.id===assId;})?.company_name||(people||[]).find(function(p){return p.id===assId;})?.department||null,
-    assignee_role_snapshot:(people||[]).find(function(p){return p.id===assId;})?.job_title||null,
-    responsible:assName||g('mf-assigned-to'),
-    assigned_by:g('mf-assigned-by'),assigned_date:g('mf-assigned-date')||null,
-    instructions:g('mf-instructions'),
-    escalated:document.getElementById('mf-escalated')?.checked||false,
-    escalated_to:escName||null,escalation_level:parseInt(g('mf-esc-level'))||0,
-    escalation_reason:g('mf-esc-reason'),
-    progress_pct:parseInt(document.getElementById('mf-progress')?.value)||0,
-    progress_notes:g('mf-progress-notes'),evidence:g('mf-evidence'),comments:g('af-comments'),
-    requires_verification:document.getElementById('mf-req-verif')?.checked!==false,
-    verified_by:verifName||null,verified_date:g('mf-verified-date')||null,
-    verification_method:g('mf-verif-method'),verification_notes:g('mf-verif-notes'),
-    verification_status:g('mf-verif-status')||'not_required',
-    requires_closure_approval:document.getElementById('mf-req-closure-approval')?.checked||false,
-    closure_approved_by:closeName||null,closure_approved_date:g('mf-closure-date')||null,
-    closure_notes:g('mf-closure-notes'),closure_rejected_reason:g('mf-closure-rejected'),
-    effectiveness_rating:parseInt(document.getElementById('mf-effectiveness')?.value)||null,
-    recurrence_prevented:g('mf-recurrence')===''?null:g('mf-recurrence')==='true',
-    updated_at:new Date().toISOString()
-  };
-  Object.assign(body,locationIdentityPayload(body.location,null));
-  try{
-    var refStr='';
-    if(mapEditingId){
-      var old=mapAllData.find(x=>x.id===mapEditingId)||{};
-      var before=Object.assign({},old);
-      if(!coreWorkflowRequireDirectEdit('actions',before.status||'open',body.status,'Action'))return;
-      await apiWriteWithMissingColumnFallback('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body},'Master action');
-      var idx=mapAllData.findIndex(x=>x.id===mapEditingId);if(idx>=0)Object.assign(mapAllData[idx],body);
-      var after=Object.assign({},before,body,{id:mapEditingId,company_id:before.company_id||body.company_id});
-      var changed=mapChangedFields(before,body);
-      mapAudit('update','Action updated: '+mapDisplayRef(after),after,{changed_fields:changed,before_status:before.status,after_status:after.status,assigned_to:after.assigned_to_name||after.responsible||null});
-      // Log status change
-      if(before.status!==body.status){
-        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:before.status,new_value:body.status}});}catch(ex){}
-      }
-      if(before.assigned_to_id!==body.assigned_to_id || before.assigned_to_name!==body.assigned_to_name || before.responsible!==body.responsible){
-        await mapQueueActionNotice(after,'assigned',{personId:body.assigned_to_id,name:body.assigned_to_name||body.responsible,note:'The action ownership was updated.'});
-      }
-      toast('Action updated!');
-    }else{
-      body.created_by=prof?.id;
-      var res=await apiWriteWithMissingColumnFallback('/action_tracker',{m:'POST',p:'return=representation',b:body},'Master action');
-      if(res?.[0]?.id){
-        var yr=new Date().getFullYear();var typeCode={corrective:'CA',preventive:'PA',improvement:'IA',observation:'OB'}[body.action_type]||'MA';
-        var seq=1;
-        try{
-          var existing=await api('/action_tracker?select=action_ref&company_id=eq.'+ccid()+'&action_ref=like.MAP-'+typeCode+'-'+yr+'-*&order=action_ref.desc&limit=1');
-          if(existing&&existing[0]&&existing[0].action_ref){
-            var match=existing[0].action_ref.match(/MAP-[A-Z]{2}-\d{4}-(\d+)/);
-            if(match)seq=parseInt(match[1],10)+1;
-          }
-        }catch(_){/* fall back to seq=1 */}
-        var ref='MAP-'+typeCode+'-'+yr+'-'+String(seq).padStart(3,'0');
-        await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{action_ref:ref}});
-        res[0].action_ref=ref;mapAllData.unshift(res[0]);mapEditingId=res[0].id;
-        document.getElementById('map-form3ref').textContent=ref;refStr=' Ref: '+ref;
-        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:res[0].id,activity_type:'Action created',performed_by:prof?.full_name||'User',new_value:body.status}});}catch(ex){}
-        var created=Object.assign({},body,res[0],{id:res[0].id,action_ref:ref});
-        mapAudit('create','Action created: '+ref,created,{title:created.title,priority:created.priority,status:created.status,assigned_to:created.assigned_to_name||created.responsible||null,target_date:created.target_date||null});
-        await mapQueueActionNotice(created,'assigned',{personId:created.assigned_to_id,name:created.assigned_to_name||created.responsible,note:'A new Master Action Plan item has been assigned.'});
-      }
-      toast('Action saved!'+refStr);
-      // Update header
-      document.getElementById('map-form3title').textContent=body.title||body.description||'Action';
-      document.getElementById('map-del-btn').style.display=isMgr()?'inline-flex':'none';
-    }
-    if(mapEditingId){
-      var updated=mapAllData.find(x=>x.id===mapEditingId);
-      if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
-    }
-  }catch(e){toastActionError('Save action','Master Action Plan',e);console.error(e);}
-}
-
-// -- Status changes ------------------------------------------------------------
-async function mapChangeStatus(newStatus){
-  if(!workflowCanMutate('actions','actions'))return;
-  var old=mapAllData.find(x=>x.id===mapEditingId)||{};
-  if(!coreWorkflowRequireTransition('actions',old.status||'open',newStatus,'Action'))return;
-  var previousStatus=old.status;
-  var extraBody={status:newStatus,updated_at:new Date().toISOString()};
-  if(newStatus==='in_progress'&&!old.start_date)extraBody.start_date=new Date().toISOString().slice(0,10);
-  if(newStatus==='closed')extraBody.completed_date=new Date().toISOString().slice(0,10);
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:extraBody});
-    Object.assign(old,extraBody);var st=document.getElementById('af-status');if(st)st.value=newStatus;
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:previousStatus,new_value:newStatus}});}catch(ex){}
-    mapAudit('update','Action status changed: '+mapDisplayRef(old),old,{changed_fields:['status'],old_status:previousStatus,new_status:newStatus});
-    await mapQueueActionNotice(old,'status',{personId:old.assigned_to_id,name:old.assigned_to_name||old.responsible,note:'Status changed from '+auditLabel(previousStatus||'open')+' to '+auditLabel(newStatus)+'.'});
-    toast('Status updated to: '+newStatus.replace(/_/g,' '));
-    mapRenderWorkflowBar(old);mapRenderActionButtons(old);
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Update action status','Master Action Plan',e);}
-}
-
-async function mapApproveVerification(){
-  if(!workflowCanMutate('actions','actions'))return;
-  var notesEl=document.getElementById('mf-verif-notes');var verifEl=document.getElementById('mf-verified-by');
-  var currentVerification=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
-  if(!coreWorkflowRequireTransition('actions',currentVerification.status||'open','pending_closure','Action'))return;
-  var notes=notesEl?.value?.trim();if(!notes){toast('Please add verification notes before approving',false);return;}
-  var verifSel=document.getElementById('mf-verified-by');var verifName='';
-  if(verifSel?.value){var p=(people||[]).find(x=>x.id===verifSel.value);verifName=p?(p.last_name+', '+p.first_name):'';}
-  var body={status:'pending_closure',verification_status:'passed',verified_date:new Date().toISOString().slice(0,10),verified_by:verifName||prof?.full_name||'Verifier',verification_notes:notes,updated_at:new Date().toISOString()};
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    var stEl=document.getElementById('af-status');if(stEl)stEl.value='pending_closure';
-    var vsEl=document.getElementById('mf-verif-status');if(vsEl)vsEl.value='passed';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification approved - ready for closure',performed_by:verifName||prof?.full_name||'User'}});}catch(ex){}
-    mapAudit('update','Action verification approved: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['verification_status','status'],verification_status:'passed',verification_by:verifName||prof?.full_name||'User'});
-    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'verification',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Verification has been approved and the action is ready for closure.'});
-    toast('Verification approved - action moved to Pending Closure');
-    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
-    mapFormTab('closure',document.getElementById('map-ftab-closure'));
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Approve action verification','Master Action Plan',e);}
-}
-
-async function mapFailVerification(){
-  if(!workflowCanMutate('actions','actions'))return;
-  var currentFailedVerification=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
-  if(!coreWorkflowRequireTransition('actions',currentFailedVerification.status||'open','in_progress','Action'))return;
-  var reason=await appPrompt({title:'Verification failed',message:'Reason for verification failure. What needs to be done again?',placeholder:'Reason',multiline:true});if(!reason)return;
-  var body={status:'in_progress',verification_status:'failed',verification_notes:(document.getElementById('mf-verif-notes')?.value||'')+'\nFAILED: '+reason,updated_at:new Date().toISOString()};
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification failed - action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
-    mapAudit('update','Action verification failed: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['verification_status','status','verification_notes'],verification_status:'failed',reason:reason});
-    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'verification',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Verification failed: '+reason});
-    toast('Verification failed - action reopened for further work');
-    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Reject action verification','Master Action Plan',e);}
-}
-
-async function mapApproveClosure(){
-  if(!workflowCanMutate('actions','actions'))return;
-  var currentClosure=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
-  if(!coreWorkflowRequireTransition('actions',currentClosure.status||'open','closed','Action'))return;
-  var closeName='';var closeSel=document.getElementById('mf-closure-by');
-  if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
-  var notes=document.getElementById('mf-closure-notes')?.value?.trim();
-  var checked=['mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].filter(function(id){return document.getElementById(id)?.checked;}).length;
-  if(checked<3){toast('Please confirm at least 3 closure checklist items before approving closure',false);return;}
-  var body={status:'closed',closure_approved_by:closeName||prof?.full_name||'Approver',closure_approved_date:new Date().toISOString().slice(0,10),closure_notes:notes||'',completed_date:new Date().toISOString().slice(0,10),progress_pct:100,updated_at:new Date().toISOString()};
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    var stEl=document.getElementById('af-status');if(stEl)stEl.value='closed';
-    document.getElementById('mf-progress').value=100;mapUpdateProgress(100);
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action CLOSED - closure approved by '+(closeName||'User'),performed_by:closeName||prof?.full_name||'User'}});}catch(ex){}
-    mapAudit('complete','Action closed: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['status','completed_date','closure_approved_by','progress_pct'],closure_approved_by:closeName||prof?.full_name||'User'});
-    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'closure',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Action closure has been approved.'});
-    toast('Action closed and approved');
-    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Approve action closure','Master Action Plan',e);}
-}
-
-async function mapRejectClosure(){
-  if(!workflowCanMutate('actions','actions'))return;
-  var currentRejectedClosure=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
-  if(!coreWorkflowRequireTransition('actions',currentRejectedClosure.status||'open','in_progress','Action'))return;
-  var reason=document.getElementById('mf-closure-rejected')?.value?.trim();
-  if(!reason)reason=await appPrompt({title:'Reject closure',message:'Reason for rejecting closure',placeholder:'Reason',multiline:true});if(!reason)return;
-  var body={status:'in_progress',closure_rejected_reason:reason,updated_at:new Date().toISOString()};
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Closure REJECTED - action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
-    mapAudit('update','Action closure rejected: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['status','closure_rejected_reason'],reason:reason});
-    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'closure',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Closure rejected: '+reason});
-    toast('Closure rejected - action reopened. Please address the rejection reason.');
-    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Reject action closure','Master Action Plan',e);}
-}
-
-async function mapTriggerEscalation(){
-  if(!workflowCanMutate('actions','actions'))return;
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(mapEditingId||''))){
-    toast('Save the action before triggering escalation.',false);
-    return;
-  }
-  var escSel=document.getElementById('mf-escalated-to');var escName='';
-  if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
-  var reason=document.getElementById('mf-esc-reason')?.value?.trim();
-  if(!escName){toast('Please select the person to escalate to first',false);return;}
-  if(!reason){toast('Please enter the escalation reason',false);return;}
-  var level=parseInt(document.getElementById('mf-esc-level')?.value)||1;
-  var body={escalated:true,escalated_to:escName,escalation_level:level,escalation_reason:reason,escalated_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-  try{
-    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action ESCALATED to Level '+level+' - '+escName,performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
-    mapAudit('update','Action escalated: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['escalated','escalated_to','escalation_level','escalation_reason'],level:level,escalated_to:escName,reason:reason});
-    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'escalation',{personId:escSel?.value||null,name:escName,note:'Escalated to Level '+level+': '+reason});
-    toast('Action escalated to: '+escName);
-    document.getElementById('mf-escalated').checked=true;
-    mapLoadLog(mapEditingId);
-  }catch(e){toastActionError('Escalate action','Master Action Plan',e);}
-}
+async function mapSave(){return mapEditorCommit('save');}
+async function mapChangeStatus(newStatus){return mapEditorCommit({in_progress:'start',pending_verification:'submit_verification',pending_closure:'submit_closure',cancelled:'cancel'}[newStatus]||'invalid');}
+async function mapApproveVerification(){return mapEditorCommit('verify');}
+async function mapFailVerification(){return mapEditorCommit('fail_verification');}
+async function mapApproveClosure(){return mapEditorCommit('close');}
+async function mapRejectClosure(){return mapEditorCommit('reject_closure');}
+async function mapTriggerEscalation(){return mapEditorCommit('escalate');}
 
 // -- Activity Log --------------------------------------------------------------
 async function mapLoadLog(id){
   var el=document.getElementById('map-log-content');if(!el)return;
+  var context=mapEditorContext(),opening=mapEditorOpening;
   try{
-    var d=await api('/map_activity_log?action_id=eq.'+id+'&order=performed_at.desc');
+    var d=await api('/map_activity_log?action_id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(context.companyId)+'&order=performed_at.desc&limit=100');
+    if(opening!==mapEditorOpening||id!==mapEditingId||JSON.stringify(context)!==JSON.stringify(mapEditorContext()))return;
     if(!d||!d.length){el.innerHTML='<div class="card"><div style="text-align:center;padding:20px;color:var(--text2)">No activity recorded yet</div></div>';return;}
     var h='<div class="card" style="padding:0;overflow:hidden">'
       +'<div style="padding:10px 16px;background:#1a3a5c;color:#fff;font-weight:700">Activity Log</div>';
@@ -27996,45 +27797,15 @@ async function mapLoadLog(id){
         +'</div>';
     });
     h+='</div>';el.innerHTML=h;
-  }catch(e){el.innerHTML='<div class="card"><div style="color:var(--text2);padding:12px">Activity log unavailable</div></div>';}
+  }catch(e){if(opening===mapEditorOpening&&id===mapEditingId&&JSON.stringify(context)===JSON.stringify(mapEditorContext()))el.innerHTML='<div class="card"><div style="color:var(--text2);padding:12px">Activity log unavailable</div></div>';}
 }
 
 // -- Delete --------------------------------------------------------------------
-async function mapDelete(){
-  if(!workflowCanMutate('actions','actions'))return;
-  if(!mapEditingId)return;
-  var current=mapAllData.find(x=>x.id===mapEditingId)||{};
-  if(current.status!=='cancelled'){
-    if(!(await appConfirmAction({title:'Cancel action',message:'Cancel this action instead of deleting it?',detail:'The action remains available for audit history and can be reviewed later. Permanent delete is only available after an action is cancelled.',confirmText:'Cancel action',cancelText:'Back'})))return;
-    try{
-      await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
-      var previous=current.status;Object.assign(current,{status:'cancelled',updated_at:new Date().toISOString()});
-      try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action cancelled instead of deleted',performed_by:prof?.full_name||'User',old_value:previous,new_value:'cancelled'}});}catch(ex){}
-      mapAudit('update','Action cancelled: '+mapDisplayRef(current),current,{changed_fields:['status'],old_status:previous,new_status:'cancelled'});
-      await mapQueueActionNotice(current,'cancelled',{personId:current.assigned_to_id,name:current.assigned_to_name||current.responsible,note:'Action was cancelled and retained for audit history.'});
-      toast('Action cancelled and kept for audit history');
-      mapShowList();
-    }catch(e){toastActionError('Delete action','Master Action Plan',e);}
-    return;
-  }
-  if(!(await appConfirmDelete('action','This action is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
-  api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
-    mapAudit('delete','Cancelled action permanently deleted: '+mapDisplayRef(current),current,{status:current.status,title:current.title||current.description||null});
-    mapAllData=mapAllData.filter(x=>x.id!==mapEditingId);
-    toast('Cancelled action permanently deleted');mapEditingId=null;mapShowList();
-  }).catch(function(e){toastActionError('Delete action','Master Action Plan',e);});
-}
+async function mapDelete(){return mapEditorCommit('cancel');}
 
 // Keep legacy function aliases for backward compatibility with auto-actions from other modules
 function saveAction(){mapSave();}
-function cycleAction(id, currentStatus){
-  if(!workflowCanMutate('actions','actions'))return;
-  var next={open:'in_progress',in_progress:'pending_closure',pending_closure:'closed',closed:'closed'}[currentStatus]||'in_progress';
-  api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:next,updated_at:new Date().toISOString()}}).then(function(){
-    var x=mapAllData.find(r=>r.id===id);if(x){x.status=next;mapAudit('update','Action status changed: '+mapDisplayRef(x),x,{changed_fields:['status'],old_status:currentStatus,new_status:next});mapQueueActionNotice(x,'status',{personId:x.assigned_to_id,name:x.assigned_to_name||x.responsible,note:'Status changed from '+auditLabel(currentStatus||'open')+' to '+auditLabel(next)+'.'}).catch(function(){});}mapRenderList();mapLoadList();
-    toast('Status updated!');
-  }).catch(function(e){toastActionError('Cycle action status','Master Action Plan',e);});
-}
+async function cycleAction(id){return mapOpenDetail(id);}
 
 // ===== DOC_JS.JS =====
 // ===================================================================
