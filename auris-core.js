@@ -43014,7 +43014,12 @@ function fireEquipStatusBadge(s) {
 if(window.AurisPlatformServices){
   window.AurisPlatformServices.configure({
     auth:{
-      current:function(){return {profile:prof,company:co,role:activeRole()};},
+      current:function(){
+        var companyId=ccid(),company=sidebarViewedCompany();
+        // Shared workspaces must use the same selected tenant as API reads and writes.
+        company=companyId?(company&&String(company.id)===String(companyId)?company:{id:companyId}):null;
+        return {profile:prof,company:company,role:activeRole()};
+      },
       isAuthenticated:function(){return !!(tok&&prof);},
       signIn:async function(credentials){var data=await authQ('/token?grant_type=password',credentials||{});await authOnSignIn(data);return data;},
       signOut:function(){return doLogout();},
