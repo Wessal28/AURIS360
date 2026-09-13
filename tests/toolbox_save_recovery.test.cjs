@@ -43,7 +43,7 @@ function editor(options = {}) {
     api: async (url, request) => {
       calls.push({ url, method: request.m, body: structuredClone(request.b) });
       if (options.pause) await options.pause;
-      if (options.missingColumn && Object.hasOwn(request.b, options.missingColumn)) {
+      if (options.missingColumn && Object.hasOwn(request.b||{}, options.missingColumn)) {
         throw new Error(`Could not find the '${options.missingColumn}' column of 'toolbox_talks' in the schema cache`);
       }
       if (request.m === 'POST' && url === '/toolbox_talks') {
@@ -135,3 +135,7 @@ test('baseline plus repair migration provide every field submitted by both toolb
     for (const key of Object.keys(app.calls[0].body)) assert.ok(columns.has(key), `Missing toolbox column: ${key}`);
   }
 });
+
+test('editing an existing talk transfers newly added actions with the exact source ID',async()=>{const app=editor({editId:'existing-talk',actions:true});await app.context.tbtSave();const action=app.calls.find(c=>c.url==='/action_tracker');assert.equal(action.body.source_id,'existing-talk');assert.equal(action.body.company_id,'company-a');assert.equal(app.backCount(),1);});
+test('action transfer failure retains the saved talk and retry does not duplicate it',async()=>{const app=editor({actions:true});const base=app.context.api;let fail=true;app.context.api=async(url,request)=>{if(url==='/action_tracker'&&fail)throw Error('Temporary action service failure');return base(url,request);};await app.context.tbtSave();assert.equal(app.records.length,1);assert.equal(app.context.tbtEditId,'saved-talk');assert.equal(app.backCount(),0);assert.match(app.messages.at(-1).message,/talk saved, but some Master Action Plan actions were not transferred/);fail=false;await app.context.tbtSave();assert.equal(app.records.length,1);assert.equal(app.calls.filter(c=>c.url==='/action_tracker').length,1);assert.equal(app.backCount(),1);});
+test('retry skips actions already recorded for the same source and company',async()=>{const app=editor({editId:'existing-talk',actions:true});const base=app.context.api;app.context.api=async(url,request)=>url.startsWith('/action_tracker?')?[{description:'Replace damaged gloves'}]:base(url,request);await app.context.tbtSave();assert.equal(app.calls.filter(c=>c.url==='/action_tracker').length,0);assert.equal(app.backCount(),1);});

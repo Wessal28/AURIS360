@@ -13294,6 +13294,7 @@ function wsGetCurrent(){return wsAllData.find(function(r){return r.id===wsCurren
 function wsOpenToolboxTalk(){
   var x=wsGetCurrent();
   wsTbtSavedId=null;
+  if(typeof AurisAttendancePhoto!=='undefined')AurisAttendancePhoto.mount('work-tbt',document.getElementById('ws-tbt-form'),null);
   document.getElementById('ws-detail-view').style.display='none';
   document.getElementById('ws-tbt-form').style.display='block';
 
@@ -13347,7 +13348,7 @@ function wsOpenPreStart(){
         var loc=document.getElementById('ps-location');if(loc)loc.value=x.location||'';
         if(x.ra_ref)fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref);
         var ptw=document.getElementById('ps-ptw-ref');if(ptw)ptw.value=x.permit_ref||'';
-        var tm=document.getElementById('ps-team');if(tm)tm.value=x.team_members||'';
+        var tm=document.getElementById('ps-team');if(tm)psPopulateTeam(x.team_members||'');
         if(x.supervisor_id)fillPersonSelect('ps-supervisor',pname(x.supervisor_id));
       },100);
     },150);
@@ -13427,7 +13428,7 @@ async function wsSaveToolboxTalk(){
     return {person_id:person?.id||null,name:a.name,signed:!!a.signed,confirmed_at:a.signed?(signedAt||new Date().toISOString()):null,confirmation_method:a.signed?'in_person':null};
   });
   var body={
-    company_id:ccid(),work_schedule_id:wsCurrentId,title:title,talk_date:g('tbt-date'),
+    company_id:ccid(),work_schedule_id:wsCurrentId,title:title,topic_category:'safety_general',talk_date:g('tbt-date'),
     conducted_by_id:conductedById||null,conducted_by_name:conductedByName||null,
     presenter:conductedByName||null,presenter_person_id:conductedById||null,
     location:g('tbt-location'),work_location:g('tbt-location'),
@@ -13439,6 +13440,7 @@ async function wsSaveToolboxTalk(){
     signed_by:g('tbt-sign-name'),signed_at:confirmed?(signedAt||new Date().toISOString()):null,
     status:confirmed?'completed':'draft',updated_at:new Date().toISOString()
   };
+  try{if(typeof AurisAttendancePhoto!=='undefined')body.attendance_photo=AurisAttendancePhoto.get('work-tbt');}catch(photoError){toast(photoError.message,false);return;}
   wsTbtSavePending=true;
   try{
     var savedId=wsTbtSavedId;
@@ -14002,26 +14004,21 @@ async function wsOpenLinkedRecord(kind,value){
       }
       if(p&&typeof ptwShowDetail==='function'){wsSetRecordReturnContext('ptw',wsCurrentId,'preview');setTimeout(function(){ptwShowDetail(p.id);},150);return;}
     }
-    if(kind==='tbt'){
-      showPage('meetings',document.querySelector('[onclick*="\'meetings\'"]'));
-      var t=(tbtAllData||[]).find(function(r){return r.id===value||r.tbt_ref===value;});
-      if(!t){
-        var tbts=await api('/toolbox_talks?select=*'+cf()+'&or=(id.eq.'+wsRestEqValue(value)+',tbt_ref.eq.'+wsRestEqValue(value)+')&limit=1').catch(function(){return[];});
-        t=tbts&&tbts[0];
-        if(t&&!(tbtAllData||[]).some(function(r){return r.id===t.id;}))tbtAllData.unshift(t);
+    if(kind==='tbt'||kind==='prestart'||kind==='site'){
+      var company=String(ccid()||''),user=String(prof?.id||''),work=wsCurrentId;
+      var page=kind==='tbt'?'meetings':'inspection';
+      if(!canAccessPage(page))throw new Error('Access to the linked module is required.');
+      function guard(){if(company!==String(ccid()||'')||user!==String(prof?.id||'')||work!==wsCurrentId||!canAccessPage(page))throw new Error('Account, company or work order changed. Reopen the record.');}
+      var uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+      var table=kind==='tbt'?'toolbox_talks':'inspections',field=uuid?'id':kind==='tbt'?'tbt_ref':'reference_no';
+      var records=await api('/'+table+'?select=*&company_id=eq.'+encodeURIComponent(company)+'&'+field+'=eq.'+wsRestEqValue(value)+'&limit=1');
+      guard();var record=records&&records[0];if(!record)throw new Error('Linked record not found or access denied.');
+      if(kind==='tbt'){
+        if(!window.AurisToolboxRecordWorkspace)throw new Error('Toolbox viewer is unavailable. Reload the page.');
+        return window.AurisToolboxRecordWorkspace.open(String(record.id),{reference:record.tbt_ref||'',topics:TBT_TOPIC_CFG,assertContext:guard});
       }
-      setTimeout(function(){if(typeof mtgSwitchTab==='function')mtgSwitchTab('tbt',document.getElementById('mtg-tab-tbt'));if(t&&typeof tbtEdit==='function')setTimeout(function(){tbtEdit(t.id);},150);},150);
-      return;
-    }
-    if(kind==='prestart'||kind==='site'){
-      showPage('inspection',document.querySelector('[onclick*="\'inspection\'"]'));
-      var a=(auditAllData||[]).find(function(r){return r.id===value||r.reference_no===value;});
-      if(!a){
-        var audits=await api('/inspections?select=*'+cf()+'&or=(id.eq.'+wsRestEqValue(value)+',reference_no.eq.'+wsRestEqValue(value)+')&limit=1').catch(function(){return[];});
-        a=audits&&audits[0];
-        if(a&&!(auditAllData||[]).some(function(r){return r.id===a.id;}))auditAllData.unshift(a);
-      }
-      if(a&&typeof auditOpenReadOnly==='function'){wsSetRecordReturnContext(kind,wsCurrentId,'preview');setTimeout(function(){auditOpenReadOnly(a.id);},150);return;}
+      auditAllData=auditAllData.filter(function(r){return String(r.id)!==String(record.id);});auditAllData.push(record);
+      auditOpenReadOnly(record.id);return;
     }
     if(kind==='event'){
       showPage('events',document.querySelector('[onclick*="\'events\'"]'));
@@ -16366,6 +16363,7 @@ function raShowLibrary(){
 
 // -- List Tab ------------------------------------------------------------------
 function raListTab(tab, btn){
+  if(window.AurisModuleLayout)AurisModuleLayout.setView('risk',tab==='ra'?'register':tab);
   raCurrentListTab=tab;
   document.querySelectorAll('[id^="ra-ltab-"]').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -16433,7 +16431,8 @@ function raRiskLevelFromScore(score){
   score=parseInt(score||0);
   return score>=20?'Critical':score>=12?'Very High':score>=6?'High':score>=3?'Medium':score>0?'Low':'';
 }
-function raRiskLevelFromFactors(severity, likelihood){
+var raMatrixSnapshot=null;
+function raRiskLevelFromFactors(severity, likelihood, snapshot){
   var s=Math.max(1,Math.min(5,parseInt(severity||1)));
   var p=Math.max(1,Math.min(5,parseInt(likelihood||1)));
   var matrix=[
@@ -16443,6 +16442,8 @@ function raRiskLevelFromFactors(severity, likelihood){
     ['Low','Medium','High','High','Very High'],
     ['Medium','High','High','Very High','Very High']
   ];
+  var selectedMatrix=arguments.length>2?snapshot:raMatrixSnapshot;
+  if(selectedMatrix)matrix=AurisRiskLibrary.validateMatrix(selectedMatrix).cells;
   return matrix[p-1][s-1]||raRiskLevelFromScore(s*p);
 }
 function raRiskMatrixHtml(){
@@ -16460,6 +16461,7 @@ function raRiskMatrixHtml(){
     ['4','Likely','Will probably occur in most circumstances (>65% - <95%)'],
     ['5','Almost Certain','Expected to occur in most circumstances (>95%)']
   ];
+  if(raMatrixSnapshot){var savedMatrix=AurisRiskLibrary.validateMatrix(raMatrixSnapshot);severity=savedMatrix.severity.map(function(v,i){return [String(i+1),escH(v),'Company matrix: '+escH(savedMatrix.name)];});likelihood=savedMatrix.likelihood.map(function(v,i){return [String(i+1),escH(v),'Company matrix: '+escH(savedMatrix.name)];});}
   var h='<div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:12px;margin-bottom:12px">'
     +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;background:#F8FBFF;font-weight:900;color:#185FA5">Severity criteria</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:11px"><tbody>'
@@ -16680,7 +16682,7 @@ async function raLoadPermitOptions(selected){
 // -- New / Open RA -------------------------------------------------------------
 function raNew(type){
   if(type==='jsa'){jsaNew();return;}
-  raEditingId=null;raEditingType=type||'baseline';
+  raEditingId=null;raEditingType=type||'baseline';raMatrixSnapshot=null;if(window.AurisRiskLibrary)AurisRiskLibrary.updateLabel();
   raLegalRefs=[];raCurrentRevision=1;
   var cfg=RA_TYPE_CFG[raEditingType]||RA_TYPE_CFG.baseline;
   // Reset form
@@ -16875,6 +16877,9 @@ function raUpdateQualityPanel(){
 function raOpen(id){
   var x=raAllData.find(function(r){return r.id===id;});
   if(!x)return;
+  var savedMatrix=x.risk_matrix_snapshot||null;
+  if(savedMatrix){try{savedMatrix=AurisRiskLibrary.validateMatrix(savedMatrix);}catch(error){toast('Cannot open assessment: invalid saved risk matrix. '+error.message,false);return;}}
+  raMatrixSnapshot=savedMatrix;if(window.AurisRiskLibrary)AurisRiskLibrary.updateLabel();
   raEditingId=id; raEditingType=x.ra_type_v2||x.ra_type||'baseline';
   raCurrentRevision=x.revision||1;
   raLegalRefs=Array.isArray(x.legal_refs)?x.legal_refs:[];
@@ -17192,7 +17197,8 @@ async function raSave(targetStatus){
   var maxRR=0;var maxLvl='Low';
   rows.forEach(function(r){
     var rr=parseInt(r.rr||0);
-    if(rr>maxRR){maxRR=rr;maxLvl=r.rl||'Low';}
+    if(rr>maxRR)maxRR=rr;
+    if(['Very Low','Low','Medium','High','Very High'].indexOf(r.rl)>['Very Low','Low','Medium','High','Very High'].indexOf(maxLvl))maxLvl=r.rl;
   });
   var body={
     company_id:ccid(),
@@ -17217,7 +17223,7 @@ async function raSave(targetStatus){
     revision_notes:g('ra-rev-notes'),
     rejection_reason:g('ra-rejection-reason'),
     legal_refs:raLegalRefs,
-    rows:rows,baseline_rows:rows,
+    rows:rows,baseline_rows:rows,risk_matrix_snapshot:raMatrixSnapshot,
     overall_risk_level:maxLvl,overall_risk_score:maxRR,
     status:status,
     revision:raCurrentRevision,
@@ -17228,6 +17234,7 @@ async function raSave(targetStatus){
   var woSel=document.getElementById('ra-linked-wo');
   if(woSel&&woSel.value)body.work_order_id=woSel.value;
   try{
+    if(raMatrixSnapshot){AurisRiskLibrary.validateMatrix(raMatrixSnapshot);await api('/risk_assessments?select=risk_matrix_snapshot&company_id=eq.'+encodeURIComponent(ccid())+'&limit=0');}
     var savedRecord=null;
     if(raEditingId){
       await apiWriteWithMissingColumnFallback('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body},'Risk assessment');
@@ -27115,7 +27122,7 @@ async function mapOpenSourceRecord(id,expected){
   assertSourceSession();
   var x=(mapAllData||[]).find(function(r){return r.id===id;});
   if(x&&String(x.company_id||'')!==String(ccid()||''))throw new Error('This action is outside the selected company.');
-  if(!x||!x.source_ref){if(typeof toast==='function')toast('No linked source record available for this action.',false);return;}
+  if(!x||(!x.source_ref&&!x.source_id)){if(typeof toast==='function')toast('No linked source record available for this action.',false);return;}
   var adapter=mapSourceAdapter(x);
   var pageKey=adapter&&adapter.page;
   if(!pageKey){if(typeof toast==='function')toast('Source module could not be identified. Use the source reference to search manually.',false);return;}
@@ -28504,10 +28511,19 @@ function dcPreviewCurrent(){
 }
 
 /* -- INLINE VIEWER ------------------------------------------------- */
-var dcViewerGeneration=0,dcPdfTask=null;
+var dcViewerGeneration=0,dcPdfTask=null,dcInlinePdfUrl=null;
+function dcInlinePdfBlob(value){
+  if(!/^data:application\/pdf;base64,/i.test(String(value||'')))return null;
+  var encoded=value.slice(value.indexOf(',')+1);
+  if(encoded.length>18*1024*1024||!/^[A-Za-z0-9+/\r\n]*={0,2}$/.test(encoded))throw new Error('Invalid PDF attachment.');
+  var decoded=atob(encoded);if(decoded.slice(0,5)!=='%PDF-')throw new Error('Attachment is not a PDF.');
+  var bytes=new Uint8Array(decoded.length);for(var i=0;i<decoded.length;i++)bytes[i]=decoded.charCodeAt(i);
+  return new Blob([bytes],{type:'application/pdf'});
+}
 function dcStopPdfPreview(){
   dcViewerGeneration++;
   if(dcPdfTask){var task=dcPdfTask;dcPdfTask=null;Promise.resolve(task.destroy()).catch(function(){});}
+  if(dcInlinePdfUrl){URL.revokeObjectURL(dcInlinePdfUrl);dcInlinePdfUrl=null;}
 }
 async function dcRenderPdfPreview(body,url,generation){
   var current=function(){return generation===dcViewerGeneration;};
@@ -28549,12 +28565,15 @@ async function dcRenderPdfPreview(body,url,generation){
 }
 function dcOpenViewer(doc){
   if(!doc || !doc.file_url){ toast('No file attached to this document',false); return; }
+  var inlinePdf;
+  try{inlinePdf=dcInlinePdfBlob(doc.file_url);}catch(error){toast(error.message,false);return;}
+  if(inlinePdf){dcStopPdfPreview();dcInlinePdfUrl=URL.createObjectURL(inlinePdf);doc=Object.assign({},doc,{file_url:dcInlinePdfUrl,file_mime:'application/pdf'});}
   var name = doc.file_name || doc.title || doc.file_url.split('/').pop();
   var mime = (doc.file_mime || dcMimeFromName(name)).toLowerCase();
   var url  = aurisSafeMediaUrl(doc.file_url,'document');
   if(!url){ toast('This file URL is not permitted. Use HTTPS or an approved uploaded file.',false); return; }
   var isVideo = dcLooksLikeVideo(url, mime, name);
-  dcStopPdfPreview();
+  if(!inlinePdf)dcStopPdfPreview();
   var generation=dcViewerGeneration;
 
   document.getElementById('dc-viewer-title').textContent = name;
@@ -31342,6 +31361,7 @@ function tbtBack(){
 
 function tbtNew(){
   tbtEditId=null;
+  if(typeof AurisAttendancePhoto!=='undefined')AurisAttendancePhoto.mount('tbt',document.getElementById('tbtf-attendees-list')?.parentElement,null);
   document.getElementById('tbt-form3title').textContent='New Toolbox Talk';
   document.getElementById('tbt-form3ref').textContent='TBT-AUTO';
   document.getElementById('tbt-del-btn').style.display='none';
@@ -31364,6 +31384,7 @@ function tbtNew(){
 function tbtEdit(id){
   var x=tbtAllData.find(r=>r.id===id);if(!x)return;
   tbtEditId=id;
+  if(typeof AurisAttendancePhoto!=='undefined')AurisAttendancePhoto.mount('tbt',document.getElementById('tbtf-attendees-list')?.parentElement,x.attendance_photo);
   document.getElementById('tbt-form3title').textContent=x.title||'Edit TBT';
   document.getElementById('tbt-form3ref').textContent=x.tbt_ref||'-';
   document.getElementById('tbt-del-btn').style.display=isMgr()?'inline-flex':'none';
@@ -31680,17 +31701,12 @@ async function tbtSave(){
   var linkedWork=tbtSelectedWork();
   var cleanNotes=tbtStripLinkedWork(g('tbtf-notes')||'');
   var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),presenter_person_id:personFromValue(g('tbtf-presenter'))?.id||null,attendee_person_ids:attendees.map(function(a){return a.person_id;}).filter(Boolean),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  try{if(typeof AurisAttendancePhoto!=='undefined')body.attendance_photo=AurisAttendancePhoto.get('tbt');}catch(photoError){toast(photoError.message,false);return;}
   tbtSavePending=true;
   try{
     if(tbtEditId){
       await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
       toast('TBT updated!');
-      // Auto-create MAP actions for any new action items
-      for(var act of actions_raised){
-        if(act.description&&!tbtEditId){
-          try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act.description,description:act.description,source_type:'toolbox_talk',source_module:'meeting',priority:'medium',status:'open',assigned_to_name:act.assigned_to||null,target_date:act.due_date||null,created_by:prof?.id}});}catch(ex){}
-        }
-      }
     }else{
       body.created_by=prof?.id;
       // Persist the reference with the talk: a schema error must not leave a
@@ -31703,14 +31719,26 @@ async function tbtSave(){
         tbtEditId=res[0].id;
         document.getElementById('tbt-form3ref').textContent=ref;
         toast('TBT saved! Ref: '+ref);
-        // Auto-create MAP actions
-        for(var act2 of actions_raised){
-          if(act2.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_id:res[0].id,source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
-          }
-        }
+
       }
     }
+    // Retry only missing source-linked actions; an edited talk can add actions too.
+    try{
+      var actionCompany=body.company_id,actionActor=prof?.id;
+      var assertActionContext=function(){if(ccid()!==actionCompany||prof?.id!==actionActor)throw new Error('Company or account changed. Reopen the talk.');};
+      assertActionContext();
+      if(actions_raised.length){
+        var existingActions=await api('/action_tracker?select=id,description,title&company_id=eq.'+encodeURIComponent(actionCompany)+'&source_type=eq.toolbox_talk&source_id=eq.'+encodeURIComponent(tbtEditId),{m:'GET'});
+        assertActionContext();
+        var known=new Set((existingActions||[]).map(function(a){return String(a.description||a.title||'').trim();}));
+        for(var action of actions_raised){
+          if(known.has(action.description.trim()))continue;
+          assertActionContext();
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:actionCompany,title:action.description,description:action.description,source_type:'toolbox_talk',source_module:'meeting',source_id:tbtEditId,source_ref:body.tbt_ref||document.getElementById('tbt-form3ref')?.textContent||null,priority:'medium',status:'open',assigned_to_name:action.assigned_to||null,target_date:action.due_date||null,created_by:actionActor}});
+          assertActionContext();known.add(action.description.trim());
+        }
+      }
+    }catch(actionError){toast('Toolbox talk saved, but some Master Action Plan actions were not transferred: '+actionError.message+'. Save this talk again to retry missing actions.',false);return;}
     tbtBack();
   }catch(e){toastActionError('Save toolbox talk','Toolbox Talk',e);}
   finally{tbtSavePending=false;}
@@ -34264,8 +34292,17 @@ function psBindFormLabels(){
     if(label&&input?.id)label.htmlFor=input.id;
   });
 }
+function psPopulateTeam(value){
+  var select=document.getElementById('ps-team');if(!select)return;
+  var names=String(value||'').split(/[,\n]/).map(function(n){return n.trim();}).filter(Boolean);
+  select.innerHTML='';var seen=new Set();
+  tenantPeople().forEach(function(person){var name=wsTeamMemberName(person);if(!name)return;var option=document.createElement('option');option.value=String(person.id);option.textContent=name;option.selected=names.includes(name);select.appendChild(option);seen.add(name);});
+  names.filter(function(name){return !seen.has(name);}).forEach(function(name){var option=document.createElement('option');option.value='legacy:'+name;option.textContent=name;option.selected=true;select.appendChild(option);});
+}
+function psTeamValue(){return Array.from(document.getElementById('ps-team')?.selectedOptions||[]).map(function(o){return o.textContent;}).join(', ');}
 function psNew(){
   if(window.psSaving)return;
+  psPopulateTeam('');
   window.psFormContext={company:ccid(),id:null};
   window.psLegacySignDate=null;
   psFormError('');psResetSupplementary();psBindFormLabels();
@@ -34288,6 +34325,17 @@ function psNew(){
   document.getElementById('ps-form3view').style.display='block';
 }
 
+async function psOpenReadOnly(id){
+  var company=String(ccid()||''),user=String(prof?.id||'');
+  if(!company||!user||!canAccessPage('inspection'))return;
+  try{
+    var rows=await api('/inspections?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(company)+'&limit=1');
+    if(company!==String(ccid()||'')||user!==String(prof?.id||'')||!canAccessPage('inspection'))return;
+    if(!rows?.[0]||String(rows[0].company_id)!==company)throw new Error('Inspection not found or access denied.');
+    auditAllData=auditAllData.filter(function(x){return String(x.id)!==String(id);});auditAllData.push(rows[0]);
+    auditOpenReadOnly(id);
+  }catch(error){toastActionError('View pre-start','Inspections',error);}
+}
 function psOpen(id){
   if(window.psSaving)return;
   var company=ccid();
@@ -34316,7 +34364,7 @@ function psOpenData(x){
   var dt=x.inspection_date||x.if_date||'';
   gf('ps-date',dt?dt+'T'+(x.inspection_time||'08:00'):new Date().toISOString().slice(0,16));
   gf('ps-duration',x.duration_hours||''); fillPersonSelect('ps-supervisor',x.inspector||x.supervisor||'');
-  gf('ps-team',x.team_members||''); fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
+  psPopulateTeam(x.team_members||''); fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
   gf('ps-tbt-topics',x.tbt_topics||''); gf('ps-decision-notes',x.decision_notes||'');
   gf('ps-sign-name',x.sign_inspector||'');
   if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.prestart_signed_at||'';
@@ -34354,7 +34402,7 @@ async function psSave(){
     location:g('ps-location'),inspection_date:dt?dt.split('T')[0]:null,if_date:dt?dt.split('T')[0]:null,
     inspection_time:dt?dt.split('T')[1]:null,duration_hours:g('ps-duration')?parseFloat(g('ps-duration')):null,
     inspector:g('ps-supervisor'),supervisor:g('ps-supervisor'),if_by:g('ps-supervisor'),
-    team_members:g('ps-team'),ra_ref:g('ps-ra-ref'),ptw_ref:g('ps-ptw-ref'),
+    team_members:psTeamValue(),ra_ref:g('ps-ra-ref'),ptw_ref:g('ps-ptw-ref'),
     tbt_done:document.getElementById('ps-tbt-done')?.checked||false,tbt_topics:g('ps-tbt-topics'),
     stop_work_briefed:document.getElementById('ps-stop-work')?.checked||false,
     decision:dec,decision_notes:g('ps-decision-notes'),
@@ -40072,7 +40120,7 @@ function printIncidentReport(invId) {
   aurisPrint(html, 'Incident Report - ' + (inv.inv_ref||invId.substring(0,8)));
 }
 
-function raRiskMatrixPrintHtml(){
+function raRiskMatrixPrintHtml(snapshot){
   var severity=[
     ['1','Negligible','First aid case, temporary stakeholder impact, minor asset damage or local mention'],
     ['2','Minor','Medical treatment injury, local concern under 1 week clean-up, asset loss under 5%'],
@@ -40087,8 +40135,9 @@ function raRiskMatrixPrintHtml(){
     ['4','Likely','Will probably occur (>65% - <95%)'],
     ['5','Almost Certain','Expected in most circumstances (>95%)']
   ];
+  if(snapshot){var savedMatrix=AurisRiskLibrary.validateMatrix(snapshot);severity=savedMatrix.severity.map(function(v,i){return [String(i+1),escH(v),'Company matrix: '+escH(savedMatrix.name)];});likelihood=savedMatrix.likelihood.map(function(v,i){return [String(i+1),escH(v),'Company matrix: '+escH(savedMatrix.name)];});}
   var riskCell=function(score,s,p){
-    var level=raRiskLevelFromFactors(s,p);
+    var level=raRiskLevelFromFactors(s,p,snapshot||null);
     var cfg={Low:['#D1FAE5','#065F46'],Medium:['#FEF3C7','#92400E'],High:['#FFEDD5','#C2410C'],'Very High':['#FEE2E2','#B91C1C'],Critical:['#7F1D1D','#fff']}[level]||['#F3F4F6','#374151'];
     return '<td style="padding:5px;border:1px solid #fff;text-align:center;background:'+cfg[0]+';color:'+cfg[1]+';font-weight:900">'+score+'<div style="font-size:7pt;font-weight:700">'+level+'</div></td>';
   };
@@ -40203,7 +40252,7 @@ function printRiskAssessment(raId) {
     + '</div>'
 
     + '<div class="rpt-section"><div class="rpt-section-title grey">Risk Matrix & Assessment Criteria</div>'
-    + raRiskMatrixPrintHtml()
+    + raRiskMatrixPrintHtml(ra.risk_matrix_snapshot||null)
     + '</div>'
 
     + '<div class="rpt-section"><div class="rpt-section-title blue">RAMS Linkage & Legal References</div>'

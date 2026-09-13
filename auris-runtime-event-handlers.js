@@ -317,7 +317,7 @@ syncChk(args[0],'i')
 syncChk(args[0],'n')
     },
     "r0106": function (event, args) {
-psOpen(args[0])
+psOpenReadOnly(args[0])
     },
     "r0107": function (event, args) {
 usersProfileSwitch(args[0])

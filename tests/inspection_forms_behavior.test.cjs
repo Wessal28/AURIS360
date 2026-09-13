@@ -10,11 +10,12 @@ function harness() {
   const calls = [], notices = [];
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, { id, value: '', checked: false, disabled: false, hidden: true, textContent: '', style: {},
-      innerHTML: '', addEventListener() {}, focus() {}, scrollIntoView() {}, setAttribute() {},
+      children: [], get innerHTML(){return this._html||'';},set innerHTML(v){this._html=v;this.children=[];},appendChild(v){this.children.push(v);},get selectedOptions(){return this.children.filter(v=>v.selected);}, addEventListener() {}, focus() {}, scrollIntoView() {}, setAttribute() {},
       querySelectorAll() { return []; }, querySelector() { return null; } });
     return nodes.get(id);
   }
-  const ctx = { window: {}, document: { getElementById: node, querySelectorAll: () => [], querySelector: () => ({value:'hold'}) },
+  const ctx = { window: {}, document: { createElement:()=>({}), getElementById: node, querySelectorAll: () => [], querySelector: () => ({value:'hold'}) },
+    tenantPeople:()=>[{id:'person-a',first_name:'Test',last_name:'Worker'}],wsTeamMemberName:p=>p.first_name+' '+p.last_name,
     prof: {id:'actor',full_name:'Test Supervisor'}, auditAllData: [], AUDIT_DEFAULT_CHECKLISTS: {},
     fillPersonSelect: (id,v) => node(id).value=v, fillRiskAssessmentSelect: (id,v) => node(id).value=v,
     ccid: ()=>'company-a', cf: ()=>'&company_id=eq.company-a', isMgr:()=>true, workflowCanMutate:()=>true,
@@ -150,3 +151,5 @@ test('additive migration covers every field sent by the pre-start form',async()=
   assert.doesNotMatch(migration,/^\s*(drop|delete|update|insert|grant|create policy)\b/im);
   assert.match(migration,/notify pgrst/);
 });
+
+test('pre-start team selects employees and preserves historical names',()=>{const h=harness();h.ctx.psPopulateTeam('Test Worker, Previous Employee');assert.equal(h.node('ps-team').children.length,2);assert.equal(h.ctx.psTeamValue(),'Test Worker, Previous Employee');h.node('ps-team').children[0].selected=false;assert.equal(h.ctx.psTeamValue(),'Previous Employee');h.ctx.psNew();assert.equal(h.ctx.psTeamValue(),'');});
