@@ -146,6 +146,11 @@
       "order": 29,
       "file": "20260913030000_kpi_atomic_definition_save.sql",
       "sha256": "1862be6a095d13b894b0250785c11c557eff88fb6b99e5b2b1ac3597cd1799da"
+    },
+    {
+      "order": 30,
+      "file": "20260913040000_objective_definition_save.sql",
+      "sha256": "350be4674db5a17fb94a75a228b64d0d87285439969d22d006b5ef51d9801f6b"
     }
   ]
 }

@@ -20,6 +20,6 @@ The objective and indicator browser fixtures load the full feature files and rea
 
 ## Remaining work
 
-KPI server revision checks and atomic parent/indicator persistence are now implemented in [KPI_ATOMIC_SAVE.md](KPI_ATOMIC_SAVE.md). Objective saves still need server conflict protection. This draft layer does not provide offline sync, cross-device recovery or completion of the whole Odoo-style roadmap.
+KPI server revision checks and atomic parent/indicator persistence are now implemented in [KPI_ATOMIC_SAVE.md](KPI_ATOMIC_SAVE.md). Objective server revision checks and atomic saves are documented in [OBJECTIVE_ATOMIC_SAVE.md](OBJECTIVE_ATOMIC_SAVE.md). This draft layer does not provide offline sync, cross-device recovery or completion of the whole Odoo-style roadmap.
 
 Shared form adoption remains for Incidents, Risk, Inspections and Documents, followed by further configuration/reporting/integration adoption and representative role/device acceptance.

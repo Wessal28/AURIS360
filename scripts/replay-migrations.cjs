@@ -128,3 +128,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_
   label: 'atomic KPI transaction behavior'
 });
 run(process.execPath, ['scripts/verify-kpi-definition-concurrency.cjs'], {label: 'competing KPI transaction sessions'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'objective_definition.sql')], {label: 'objective transaction behavior'});
+run(process.execPath, ['scripts/verify-objective-concurrency.cjs'], {label: 'competing objective transaction sessions'});
