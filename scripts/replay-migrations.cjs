@@ -124,3 +124,7 @@ const drift = ['tables', 'policies', 'routines']
 if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
 
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_definition.sql')], {
+  label: 'atomic KPI transaction behavior'
+});
+run(process.execPath, ['scripts/verify-kpi-definition-concurrency.cjs'], {label: 'competing KPI transaction sessions'});

@@ -20,6 +20,6 @@ The objective and indicator browser fixtures load the full feature files and rea
 
 ## Remaining work
 
-Draft baseline comparison uses the values loaded into the editor, not an authoritative fresh server read. Concurrent saves and KPI parent/indicator writes still need a separate server transaction and conflict-resolution slice. This release does not claim atomic multi-row persistence, offline sync, cross-device recovery or completion of the whole Odoo-style roadmap.
+KPI server revision checks and atomic parent/indicator persistence are now implemented in [KPI_ATOMIC_SAVE.md](KPI_ATOMIC_SAVE.md). Objective saves still need server conflict protection. This draft layer does not provide offline sync, cross-device recovery or completion of the whole Odoo-style roadmap.
 
 Shared form adoption remains for Incidents, Risk, Inspections and Documents, followed by further configuration/reporting/integration adoption and representative role/device acceptance.

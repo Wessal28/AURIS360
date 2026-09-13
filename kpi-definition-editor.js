@@ -333,7 +333,7 @@ if(kpiId&&(!selected||(selected.company_id&&selected.company_id!==companyId)||(w
 modal._kpiDefinitionControls?.forEach(item=>{item.node.disabled=item.disabled;});
 modal._kpiDefinitionWritten=false;modal._kpiDefinitionControls=null;
 modal.querySelector('[data-kpi-definition-message]')?.remove();
-modal._kpiDefinitionContext={companyId,actorId,year:kpiObjectiveViewYear(),kpiId,role:typeof activeRole==='function'?String(activeRole()):''};
+modal._kpiDefinitionContext={companyId,actorId,year:kpiObjectiveViewYear(),kpiId,role:typeof activeRole==='function'?String(activeRole()):'',revision:selected?.definition_revision??null,indicators:kpiIndicators.filter(i=>i.kpi_id===kpiId).map(i=>{const copy=JSON.parse(JSON.stringify(i));delete copy.created_at;return copy;})};
 modal._kpiDefinitionReturnFocus=document.activeElement;
 modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','kpi-modal-title');
 document.getElementById('kpi-modal-title').setAttribute('tabindex','-1');
@@ -428,7 +428,7 @@ const modal=document.getElementById('kpi-edit-modal'),context=modal?._kpiDefinit
 if(!modal||modal.style.display==='none'||modal._kpiDefinitionBusy)return {complete:false};
 if(window.KpiEditorDrafts&&!KpiEditorDrafts.canSave(modal))return {complete:false};
 if(modal._kpiDefinitionWritten)return {complete:false};
-let controls=null,writeStarted=false,parentSaved=false;
+let controls=null,writeStarted=false,confirmed=false;
 try{
  kpiDefinitionCheckContext(context);
  if(['kpi-resp','kpi-data-provider','kpi-reviewer','kpi-approver'].some(id=>document.getElementById(id)?.getAttribute('aria-busy')==='true'))throw new Error('The people list is still loading. Wait for it to finish, then save again.');
@@ -450,6 +450,7 @@ try{
  const body={company_id:context.companyId,objective_id:objId,code:field('kpi-code'),name,description:field('kpi-description')||null,frequency:field('kpi-freq'),responsible:field('kpi-resp')||null,data_provider:field('kpi-data-provider')||null,data_source:field('kpi-data-source')||null,reviewer:field('kpi-reviewer')||null,approver:field('kpi-approver')||null,approval_status:original?.approval_status||'draft',status:kpiStorageStatus(original?.status||field('kpi-status')),year:context.year};
  if(typeof window.kpiXPlannedMonthsValue==='function')body.planned_months=window.kpiXPlannedMonthsValue(body.frequency);
  if(!original)body.created_by=context.actorId;
+ if(context.kpiId&&(!Number.isSafeInteger(context.revision)||context.revision<1||!Array.isArray(context.indicators)))throw new Error('Reload Objectives & KPIs before editing. This form needs the latest saved revision.');
  const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
  modal.querySelector('[data-kpi-definition-message]')?.remove();
  controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
@@ -470,38 +471,24 @@ try{
   if(data.length){const error=new Error('Cannot remove "'+ind.name+'" because it has monthly records. Restore its row below, then rename the existing row to preserve its history.');error.indicatorToRestore=ind;throw error;}
  }
  kpiDefinitionCheckContext(context);
- writeStarted=true;modal._kpiDefinitionWritten=true;
  if(window.KpiEditorDrafts)KpiEditorDrafts.protect(modal);
- const parent=await api(context.kpiId?'/kpis_v2?id=eq.'+encodeURIComponent(context.kpiId)+scope:'/kpis_v2',{m:context.kpiId?'PATCH':'POST',p:'return=representation',b:body});
- if(!kpiDefinitionRowsMatch(parent,body)||(context.kpiId&&parent[0].id!==context.kpiId))throw new Error('The saved KPI identity or fields could not be confirmed.');
- parentSaved=true;
- const kpiId=parent[0].id,kpiScope='&kpi_id=eq.'+encodeURIComponent(kpiId)+scope;
- const saved=[];
- for(const ind of indicators){
-  kpiDefinitionCheckContext(context);
-  const expected={...ind.body,kpi_id:kpiId,company_id:context.companyId};
-  const response=await api(ind.indicatorId?'/kpi_indicators?id=eq.'+encodeURIComponent(ind.indicatorId)+kpiScope:'/kpi_indicators',{m:ind.indicatorId?'PATCH':'POST',p:'return=representation',b:expected});
-  if(!kpiDefinitionRowsMatch(response,expected)||(ind.indicatorId&&response[0].id!==ind.indicatorId))throw new Error('A saved indicator could not be confirmed.');
-  saved.push(response[0]);
- }
- for(const ind of removed){
-  kpiDefinitionCheckContext(context);
-  const response=await api('/kpi_indicators?id=eq.'+encodeURIComponent(ind.id)+kpiScope,{m:'DELETE',p:'return=representation'});
-  if(!Array.isArray(response)||response.length!==1||response[0].id!==ind.id)throw new Error('Removal of the unused indicator could not be confirmed.');
- }
- for(const ind of saved){
-  kpiDefinitionCheckContext(context);
-  await kpiRecalcAllYTD(ind.id,context.year,{...context,operation:'definition',definitionContext:context},ind);
- }
+ writeStarted=true;modal._kpiDefinitionWritten=true;
+ const result=await api('/rpc/save_kpi_definition',{m:'POST',b:{
+  p_company_id:context.companyId,p_kpi_id:context.kpiId||null,p_expected_revision:context.kpiId?context.revision:null,
+  p_expected_indicators:context.kpiId?context.indicators:[],p_definition:body,
+  p_indicators:indicators.map(ind=>({...ind.body,id:ind.indicatorId||null}))
+ }});
  kpiDefinitionCheckContext(context);
- const [freshParent,freshIndicators,freshMonthly]=await Promise.all([
-  api('/kpis_v2?id=eq.'+encodeURIComponent(kpiId)+scope+'&select=*'),
-  api('/kpi_indicators?kpi_id=eq.'+encodeURIComponent(kpiId)+scope+'&select=*&order=sort_order'),
-  api('/kpi_monthly_data?indicator_id=in.('+saved.map(i=>encodeURIComponent(i.id)).join(',')+')'+scope+'&year=eq.'+context.year+'&select=*')
- ]);
- kpiDefinitionCheckContext(context);
- if(!kpiDefinitionRowsMatch(freshParent,{...body,id:kpiId})||!Array.isArray(freshIndicators)||freshIndicators.length!==saved.length||!saved.every(i=>kpiDefinitionRowsMatch(freshIndicators.filter(r=>r.id===i.id),{id:i.id,name:i.name,target_value:i.target_value,target_operator:i.target_operator,unit:i.unit,ytd_method:i.ytd_method,sort_order:i.sort_order,kpi_id:kpiId,company_id:context.companyId})))throw new Error('The refreshed KPI definition does not match the saved rows.');
- if(!Array.isArray(freshMonthly)||freshMonthly.some(r=>!saved.some(i=>i.id===r.indicator_id)||r.company_id!==context.companyId||Number(r.year)!==context.year))throw new Error('Monthly history could not be refreshed safely.');
+ const freshParent=result?.kpi?[result.kpi]:[],freshIndicators=result?.indicators,freshMonthly=result?.monthly;
+ const kpiId=freshParent[0]?.id;
+ if(!kpiDefinitionRowsMatch(freshParent,{...body,...(context.kpiId?{id:context.kpiId}:{})})
+   ||!Number.isSafeInteger(freshParent[0].definition_revision)||freshParent[0].definition_revision<=(context.revision||0)
+   ||!Array.isArray(freshIndicators)||freshIndicators.length!==indicators.length
+   ||new Set(freshIndicators.map(i=>i.id)).size!==indicators.length
+   ||!indicators.every((ind,index)=>kpiDefinitionRowsMatch([freshIndicators[index]],{...ind.body,kpi_id:kpiId,company_id:context.companyId,...(ind.indicatorId?{id:ind.indicatorId}:{})})))throw new Error('The server did not confirm the complete KPI definition and indicators.');
+ if(!Array.isArray(freshMonthly)||freshMonthly.some(r=>!freshIndicators.some(i=>i.id===r.indicator_id)||r.company_id!==context.companyId||Number(r.year)!==context.year))throw new Error('Monthly history could not be refreshed safely.');
+ confirmed=true;
+ const saved=freshIndicators;
  kpiKPIs=kpiKPIs.filter(k=>k.id!==kpiId).concat(freshParent);
  kpiIndicators=kpiIndicators.filter(i=>i.kpi_id!==kpiId).concat(freshIndicators);
  existing.concat(saved).forEach(i=>{delete kpiMonthlyData[i.id];});
@@ -514,8 +501,11 @@ try{
 }catch(error){
  modal.dataset.saveFailed='true';
  const detail=String(error?.message||error).includes('kpis_v2_status_check')?'The calculated display status cannot be stored. Your entered information is still open; reload and check the KPI before retrying.':String(error?.message||error);
- kpiDefinitionFeedback((parentSaved?'Some KPI changes were saved, but the operation did not complete. Close and reload this KPI to review the saved rows before editing again. ':writeStarted?'Save could not be confirmed. Close and check existing KPIs before trying again. ':'')+detail,error.indicatorToRestore);
- return {complete:false,partial:writeStarted};
+ const conflict=detail.includes('AURIS_KPI_EDIT_CONFLICT');
+ const reasons={AURIS_KPI_SAVE_DENIED:'Your permission to save this KPI has changed.',AURIS_KPI_NOT_FOUND:'This KPI is no longer available.',AURIS_KPI_DEFINITION_FROZEN:'This KPI is now in review, approved, locked or archived.',AURIS_KPI_YEAR_MISMATCH:'The reporting year has changed.',AURIS_KPI_OBJECTIVE_REQUIRED:'Choose an available objective in the same reporting year.',AURIS_KPI_INDICATOR_MISMATCH:'An indicator no longer belongs to this KPI.',AURIS_KPI_INDICATOR_HAS_HISTORY:'An indicator you removed now has monthly records. Keep its original row to preserve that history.',AURIS_KPI_HISTORY_SCOPE_MISMATCH:'The stored monthly history needs an administrator to check its company links.'};
+ const rejected=Object.keys(reasons).find(key=>detail.includes(key));
+ kpiDefinitionFeedback(conflict?'This KPI changed after you opened it. No changes from this save were applied. Close and reload to review the latest version; your entered text is retained for copying.':rejected?'No changes were applied. '+reasons[rejected]+' Close and reload to review the KPI. ':(confirmed?'The complete KPI was saved, but the display could not refresh. Close and reload before editing again. ':writeStarted?'Save could not be confirmed. Close and check the KPI before trying again. ':'')+detail,error.indicatorToRestore);
+ return {complete:false,unconfirmed:writeStarted};
 }finally{
  modal._kpiDefinitionBusy=false;
  if(controls)controls.forEach(item=>{item.node.disabled=writeStarted&&modal.style.display!=='none'&&!item.node.matches('[data-auris-onclick="h0139"]')?true:item.disabled;});
