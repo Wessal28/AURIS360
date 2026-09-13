@@ -52,7 +52,7 @@ async function compete(firstSql,secondSql,conflict){
   const ind={target_operator:op,target_value:10,target_value_max:20},config={targets:{at_risk_percent:risk}},expected=context.evaluateMonthly(ind,value,10,config);
   vectors.push({ind,value,config,expected:{status:expected.status,score:expected.score}});
  }
- const scores=JSON.parse(query(`select jsonb_agg(public.kpi_monthly_score(jsonb_populate_record(null::public.kpi_indicators,v->'ind'),(v->>'value')::numeric,10,v->'config') order by n) from jsonb_array_elements(${q(JSON.stringify(vectors))}::jsonb) with ordinality a(v,n);`));
+ const scores=JSON.parse(query(`select jsonb_agg(public.kpi_monthly_score(v->'ind',(v->>'value')::numeric,10,v->'config') order by n) from jsonb_array_elements(${q(JSON.stringify(vectors))}::jsonb) with ordinality a(v,n);`));
  scores.forEach((score,n)=>assert.deepEqual(score,vectors[n].expected,JSON.stringify(vectors[n])));
  console.log('Monthly status parity passed: '+scores.length+' operator and configuration comparisons.');
  console.log('Monthly concurrency passed: same-month create/edit, clear versus save, different-month totals, legacy revision, definition edits and annual uniqueness.');

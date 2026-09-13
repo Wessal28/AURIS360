@@ -40,14 +40,15 @@ begin
   insert into public.kpi_monthly_data(company_id,kpi_id,indicator_id,year,month,actual,ytd,comment,entered_by)
     values(tenant,k,ind,2026,1,2,2,'Keep evidence and authorship',actor),
       (tenant,k,ind,2026,8,4,6,'August evidence',actor),(tenant,k,ind,2025,12,9,9,'Previous year',actor);
-  select jsonb_agg(to_jsonb(m)-'ytd' order by id) into before_actual from public.kpi_monthly_data m where indicator_id=ind;
+  select jsonb_agg(to_jsonb(m)-array['ytd','result_revision'] order by id) into before_actual from public.kpi_monthly_data m where indicator_id=ind;
   baseline:=pg_temp.kpi_baseline(k);select definition_revision,to_jsonb(p) into rev,definition from public.kpis_v2 p where id=k;
   desired:=jsonb_build_array((baseline->0)||'{"name":"Renamed measure","ytd_method":"average"}');
   result:=public.save_kpi_definition(tenant,k,rev,baseline,definition||'{"name":"Changed KPI"}',desired);
   if result->'indicators'->0->>'id'<>ind::text or result->'indicators'->0->>'name'<>'Renamed measure'
     or (select ytd from public.kpi_monthly_data where indicator_id=ind and year=2026 and month=8)<>3 then raise exception 'Rename/YTD failed';end if;
-  select jsonb_agg(to_jsonb(m)-'ytd' order by id) into after_actual from public.kpi_monthly_data m where indicator_id=ind;
+  select jsonb_agg(to_jsonb(m)-array['ytd','result_revision'] order by id) into after_actual from public.kpi_monthly_data m where indicator_id=ind;
   if before_actual is distinct from after_actual then raise exception 'Definition save altered actual/history/authorship';end if;
+  if (select result_revision from public.kpi_monthly_data where indicator_id=ind and year=2026 and month=8)<>2 then raise exception 'Changed totals did not advance monthly revision';end if;
   before_state:=pg_temp.kpi_snapshot(k);
   begin
     perform public.save_kpi_definition(tenant,k,rev,baseline,definition,desired);

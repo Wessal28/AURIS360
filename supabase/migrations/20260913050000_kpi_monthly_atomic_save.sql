@@ -46,10 +46,10 @@ begin
 end;$$;
 
 -- Same operator and threshold rules as kpiXEvaluate; never supplied by the caller.
-create or replace function public.kpi_monthly_score(i public.kpi_indicators, actual numeric, previous numeric, config jsonb)
+create or replace function public.kpi_monthly_score(i jsonb, actual numeric, previous numeric, config jsonb)
 returns jsonb language plpgsql immutable set search_path=public,pg_temp as $$
 declare
-  op text:=coalesce(i.target_operator,'gte'); target numeric:=i.target_value; ceiling numeric:=i.target_value_max;
+  op text:=coalesce(i->>'target_operator','gte'); target numeric:=(i->>'target_value')::numeric; ceiling numeric:=(i->>'target_value_max')::numeric;
   ok boolean:=false; near boolean:=false; score numeric:=0; gap numeric; status text;
   risk numeric:=coalesce((config#>>'{targets,at_risk_percent}')::numeric,85);
 begin
@@ -102,7 +102,7 @@ begin
       if not found then snap:=jsonb_build_object('status',case when due>compilation_month then 'in_progress' else 'data_missing' end,'score',null);
       else
         select actual into previous from public.kpi_monthly_data where indicator_id=i.id and company_id=k.company_id and year=k.year and month<due order by month desc limit 1;
-        snap:=public.kpi_monthly_score(i,m.actual,previous,config);
+        snap:=public.kpi_monthly_score(to_jsonb(i),m.actual,previous,config);
       end if;
     end if;
     statuses:=array_append(statuses,snap->>'status');
@@ -170,7 +170,7 @@ begin
   config:=coalesce(config,'{}');
   if p_operation='save' then
     select m.actual into previous from public.kpi_monthly_data m where indicator_id=i.id and company_id=p_company_id and year=p_year and month<p_month order by month desc limit 1;
-    evaluation:=public.kpi_monthly_score(i,input_actual,previous,config);
+    evaluation:=public.kpi_monthly_score(to_jsonb(i),input_actual,previous,config);
     if evaluation->>'status' in ('at_risk','off_track') and (nullif(btrim(p_entry->>'explanation'),'') is null or nullif(btrim(p_entry->>'root'),'') is null) then raise exception 'AURIS_KPI_EXPLANATION_REQUIRED' using errcode='22023';end if;
     if original.id is null then
       insert into public.kpi_monthly_data(company_id,kpi_id,indicator_id,year,month,actual,comment,entered_by)
@@ -212,7 +212,7 @@ begin
 end;$$;
 
 revoke all on function public.advance_kpi_monthly_revision() from public,anon,authenticated;
-revoke all on function public.kpi_monthly_score(public.kpi_indicators,numeric,numeric,jsonb) from public,anon,authenticated;
+revoke all on function public.kpi_monthly_score(jsonb,numeric,numeric,jsonb) from public,anon,authenticated;
 revoke all on function public.kpi_monthly_status(public.kpis_v2,jsonb,integer,integer) from public,anon,authenticated;
 revoke all on function public.mutate_kpi_monthly_result(uuid,uuid,uuid,integer,integer,bigint,uuid,integer,text,jsonb) from public,anon;
 grant execute on function public.mutate_kpi_monthly_result(uuid,uuid,uuid,integer,integer,bigint,uuid,integer,text,jsonb) to authenticated;
