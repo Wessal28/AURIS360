@@ -37,6 +37,7 @@ function mapEditorRefresh(){
     el.disabled=mapEditorBusy;
     if(handler==='h0937'||handler==='h0936')el.disabled=mapEditorBusy||!contextValid||terminal||(review&&!mapEditorApprover(context.role));
     if(['h0953','h0954','h0955','h0956'].includes(handler))el.disabled=mapEditorBusy||!contextValid||!mapEditorApprover(context.role)||(Number(handler.slice(1))<955?status!=='pending_verification':status!=='pending_closure');
+    if(el.closest('#map-effectiveness-stars'))el.disabled=mapEditorBusy||!contextValid||terminal||review;
     if(handler==='h0946')el.disabled=mapEditorBusy||!contextValid||!['open','in_progress'].includes(status);
     if(action==='map-cancel'||handler==='h0935')el.disabled=mapEditorBusy||!contextValid||!mapEditorManager(context.role)||terminal;
   });
@@ -122,6 +123,7 @@ function mapEditorWorkflow(record,body,command,reason){
   if(command==='cancel'&&!mapEditorManager(role))throw new Error('A manager must cancel this action.');
   if(command==='submit_closure'&&record.requires_verification!==false)throw new Error('Verification is required before this action can proceed to closure.');
   if(command==='submit_verification'||command==='submit_closure'){if(body.progress_pct!==100)mapEditorFieldError('mf-progress','Set progress to 100% before submitting completed work.');if(!body.evidence)mapEditorFieldError('mf-evidence','Add completion evidence before submitting this action.');}
+  if(command==='submit_verification')Object.assign(body,{verification_status:'pending',verified_by:null,verified_date:null});
   if(command==='verify'){if(!body.verification_notes)mapEditorFieldError('mf-verif-notes','Add verification notes before approving.');Object.assign(body,{verification_status:'passed',verified_by:actor,verified_date:today});}
   if(command==='fail_verification')Object.assign(body,{verification_status:'failed',verification_notes:(body.verification_notes||'')+'\nFAILED: '+reason,verified_by:actor,verified_date:today});
   if(command==='close'){
@@ -175,6 +177,13 @@ async function mapEditorCommit(command){
     if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the record to verify the save.');
     var saved=result.record;mapEditingId=saved.id;
     var index=mapAllData.findIndex(function(x){return x.id===saved.id;});if(index<0)mapAllData.unshift(saved);else mapAllData[index]=saved;
+    Object.keys(MAP_EDITOR_FIELDS).forEach(function(id){
+      var key=MAP_EDITOR_FIELDS[id],el=document.getElementById(id);if(!el||!Object.prototype.hasOwnProperty.call(saved,key))return;
+      if(el.type==='checkbox')el.checked=!!saved[key];
+      else el.value=key==='recurrence_prevented'?(saved[key]==null?'':String(saved[key])):key==='effectiveness_rating'?(saved[key]||0):(saved[key]??'');
+    });
+    mapEditorSetPersonValue('mf-assigned-to',saved.assigned_to_id,saved.assigned_to_name||saved.responsible);mapEditorSetPersonValue('mf-assigned-by',saved.assigned_by);
+    mapEditorSetPersonValue('mf-escalated-to',saved.escalated_to);mapUpdateEffectivenessStars(saved.effectiveness_rating||0);
     [['af-status',saved.status],['mf-verif-status',saved.verification_status],['mf-verified-date',saved.verified_date],['mf-closure-date',saved.closure_approved_date],['mf-completed-date',saved.completed_date],['mf-progress',saved.progress_pct],['mf-verif-notes',saved.verification_notes],['mf-closure-rejected',saved.closure_rejected_reason]].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1]??'';});
     document.getElementById('mf-escalated').checked=!!saved.escalated;
     mapEditorSetPersonValue('mf-verified-by',saved.verified_by);mapEditorSetPersonValue('mf-closure-by',saved.closure_approved_by);

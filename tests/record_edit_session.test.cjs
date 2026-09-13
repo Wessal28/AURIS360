@@ -79,3 +79,13 @@ test('lost update replies recover when the server has advanced the revision time
   await assert.rejects(r.editor.save({title:'Changed'}));r.hook=null;
   const recovered=await r.editor.save({title:'Changed'});assert.equal(recovered.recovered,true);assert.equal(r.calls.filter(c=>c.options).length,1);
 });
+test('recovery keeps unrelated concurrent edits instead of replaying untouched form fields',async()=>{
+  const r=runtime({...initial,description:'Original notes'});r.hook=async(_,o)=>{if(o){Object.assign(r.rows[0],o.b,{description:'Other writer notes',updated_at:'server-revision'});throw Error('Lost reply');}};
+  await assert.rejects(r.editor.save({title:'Changed',description:'Original notes'}));r.hook=null;
+  const recovered=await r.editor.save({title:'Changed',description:'Original notes'});assert.equal(recovered.recovered,true);assert.equal(recovered.record.description,'Other writer notes');assert.equal(r.calls.filter(c=>c.options).length,1);
+});
+test('recovery blocks a newly edited field when a competing writer changed the same field',async()=>{
+  const r=runtime({...initial,description:'Original notes'});r.hook=async(_,o)=>{if(o){Object.assign(r.rows[0],o.b,{description:'Other writer notes',updated_at:'server-revision'});throw Error('Lost reply');}};
+  await assert.rejects(r.editor.save({title:'Changed',description:'Original notes'}));r.hook=null;
+  await assert.rejects(r.editor.save({title:'Changed',description:'New draft notes'}),/changed after/);assert.equal(r.calls.filter(c=>c.options).length,1);
+});

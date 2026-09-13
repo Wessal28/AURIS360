@@ -7,3 +7,12 @@
 #map-form3view :is(input,select,textarea):disabled{background:#f1f5f9;color:#475569;opacity:1}
 #map-workflow-bar{overflow-x:auto}
 @media(max-width:700px){#map-form3view .form3row{display:grid!important;grid-template-columns:minmax(0,1fr)!important}#map-form3view :is(input,select,textarea){max-width:100%;min-width:0}#map-form3banner{flex-wrap:wrap}#map-form3view [id^=map-fview-]>div{max-width:100%}}
+
+#map-effectiveness-stars .map-effectiveness-star{border:0;background:transparent;color:#b7791f;font-size:28px;padding:4px;cursor:pointer}
+#map-effectiveness-stars .map-effectiveness-star:focus-visible{outline:2px solid #185fa5;outline-offset:2px}
+
+#map-form3view{container:action-editor / inline-size;min-width:0}
+#map-form3view>.auris-map-s-6bf792afaa{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px}
+#map-form3view .mtg-tab{min-width:0;white-space:normal}
+#map-form3view .form3group{min-width:0}
+@container action-editor (max-width:760px){#map-form3view :is(.auris-map-s-5571af1e74,.auris-map-s-67e92fd3c7,.form3row){grid-template-columns:minmax(0,1fr)!important}}

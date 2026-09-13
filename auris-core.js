@@ -14727,7 +14727,7 @@ function imsOpenEdit(id){
   document.getElementById('ims-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('ims-start-inv-btn').style.display=x.investigation_required?'inline-flex':'none';
   document.getElementById('ev-type').value=type;
-  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val??'';};
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   // Build the datetime-local value robustly. The events table has THREE date columns
   // (event_date as timestamp, event_time as time, event_datetime as timestamp) and
   // historical data is inconsistent - some records have time inside event_date,
@@ -27572,7 +27572,7 @@ async function mapEdit(id,expected){
   document.getElementById('map-form3type-label').textContent=typeCfg.emoji+' '+typeCfg.label+' Action';
   document.getElementById('map-del-btn').style.display=isMgr()?'inline-flex':'none';
   // Fill fields
-  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val??'';};
   gf('mf-title',x.title||x.description);gf('mf-desc',x.description);gf('mf-rootcause',x.root_cause);
   gf('mf-source-ref',x.source_ref||x.source_description);gf('mf-location',x.location);
   gf('mf-start-date',x.start_date);gf('mf-target-date',x.target_date);gf('mf-completed-date',x.completed_date);
@@ -27614,6 +27614,7 @@ async function mapEdit(id,expected){
   document.getElementById('map-form3view').style.display='block';
   connectedRecordsMount('map-connected-records',relationshipEndpoint('action','action_tracker',x.id,mapDisplayRef(x)),{allowCreate:true});
   mapFormTab('details', document.getElementById('map-ftab-details'));
+  mapEditorSetPersonValue('mf-assigned-to',x.assigned_to_id,x.assigned_to_name||x.responsible);
   mapEditorSetPersonValue('mf-verified-by',x.verified_by);mapEditorSetPersonValue('mf-closure-by',x.closure_approved_by);
   mapEditorBegin(x);
   mapLoadLog(id);
@@ -27628,10 +27629,11 @@ async function mapPopulatePeopleSelects(){
   var opts='<option value="">Select person...</option>'+rows.map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:''))+'</option>';}).join('');
   ['mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by','mf-assigned-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
 }
-function mapEditorSetPersonValue(id,value){
+function mapEditorSetPersonValue(id,value,label){
   var el=document.getElementById(id);if(!el)return;el.value='';if(!value)return;
-  var option=Array.from(el.options).find(function(item){return item.value===value||item.text===value;});
-  if(!option){option=document.createElement('option');option.value=value;option.textContent=value;el.appendChild(option);}el.value=option.value;
+  var person=mapEditorPeople.find(function(p){return p.id===value||(p.last_name+', '+p.first_name)===value;});
+  var option=Array.from(el.options).find(function(item){return item.value===value||item.text===value||(person&&item.value===person.id);});
+  if(!option){option=document.createElement('option');option.value=value;option.textContent=label||value;el.appendChild(option);}el.value=option.value;
 }
 
 function mapAssignedToSelect(){
@@ -27677,7 +27679,7 @@ function mapUpdateProgress(val){
   var bar=document.getElementById('mf-progress-bar');if(bar)bar.style.width=val+'%';
   var card=document.getElementById('map-progress-status-card');
   if(card){
-    var icon=val===100?'?':val>=75?'*':val>=50?'?':val>=25?'*':'*';
+    var icon='<i class="ti '+(val===100?'ti-circle-check':'ti-clock')+'" aria-hidden="true"></i>';
     var msg=val===100?'Complete - ready for verification':'In progress - '+val+'% done';
     var color=val===100?'#1D9E75':val>=75?'#185FA5':val>=50?'#EF9F27':'#6B7280';
     card.innerHTML='<div style="font-size:40px;margin-bottom:8px">'+icon+'</div><div style="font-weight:700;font-size:14px;color:'+color+'">'+msg+'</div>';
@@ -27685,13 +27687,14 @@ function mapUpdateProgress(val){
 }
 
 function mapSetEffectiveness(val){
+  if(document.getElementById('mf-effectiveness').disabled)return;
   document.getElementById('mf-effectiveness').value=val;
-  mapUpdateEffectivenessStars(val);
+  mapUpdateEffectivenessStars(val);mapEditorRefresh();
 }
 function mapUpdateEffectivenessStars(val){
   var el=document.getElementById('map-effectiveness-stars');if(!el)return;
   el.innerHTML=[1,2,3,4,5].map(function(i){
-    return '<span style="cursor:pointer;color:'+(i<=val?'#EF9F27':'#d1d5db')+';font-size:24px" data-auris-runtime-onclick="r0093" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'">'+(i<=val?'?':'?')+'</span>';
+    return '<button type="button" class="map-effectiveness-star" aria-label="Rate effectiveness '+i+' out of 5" aria-pressed="'+(i===Number(val))+'" data-auris-runtime-onclick="r0093" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'">'+(i<=val?'&#9733;':'&#9734;')+'</button>';
   }).join('');
 }
 

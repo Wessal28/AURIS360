@@ -21,6 +21,7 @@ function create(options){
     try{
       var body=copy(input),created=!baseline.id;
       delete body.id;delete body.company_id;delete body.created_by;delete body.updated_at;delete body.created_at;
+      var submitted=copy(body);
       if(created){baseline.id=options.uuid();baseline.company_id=context.companyId;pending={kind:'create',body:null};}
       // Resolve an uncertain response before retrying. A retained id makes create retries safe.
       if(pending&&pending.body){
@@ -28,8 +29,15 @@ function create(options){
         if(recovered.length){
           var row=exact(recovered);
           if(Object.keys(pending.body).every(function(key){return key==='updated_at'||equal(row[key],pending.body[key]);})){
+            var attempted=pending.input||pending.body,delta={};
+            Object.keys(body).forEach(function(key){
+              if(equal(body[key],attempted[key]))return;
+              if(!equal(row[key],attempted[key]))throw new Error('This record changed after the previous save. Your draft is retained. Discard and reload to review it.');
+              delta[key]=body[key];
+            });
             baseline=copy(row);pending=null;
-            if(Object.keys(body).every(function(key){return equal(row[key],body[key]);}))return {record:copy(row),recovered:true};
+            if(!Object.keys(delta).length)return {record:copy(row),recovered:true};
+            body=delta;
           }
           if(pending&&pending.kind==='create')throw new Error('This action was created, but now contains different values. Reopen it before continuing.');
         }
@@ -43,7 +51,7 @@ function create(options){
       }
       body.updated_at=options.now();
       if(created){body.id=baseline.id;body.company_id=context.companyId;body.created_by=context.userId;}
-      pending={kind:created?'create':'update',body:copy(body)};
+      pending={kind:created?'create':'update',body:copy(body),input:submitted};
       assertCurrent();
       var url=created?'/'+options.table:path()+'&updated_at='+(baseline.updated_at?'eq.'+encodeURIComponent(baseline.updated_at):'is.null')+'&status='+(baseline.status?'eq.'+encodeURIComponent(baseline.status):'is.null');
       var result=await options.request(url,{m:created?'POST':'PATCH',p:'return=representation',b:body});

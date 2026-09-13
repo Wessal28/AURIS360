@@ -14,6 +14,10 @@ test('submission requires completion and evidence; save keeps the workflow uncha
   assert.throws(()=>r.run(row,{progress_pct:100},'submit_verification'),/evidence/);
   assert.equal(r.run(row,{...completed,status:'in_progress'},'save').status,'in_progress');
 });
+test('resubmission resets the previous verification result without erasing its history',()=>{
+  const r=runtime();const submitted=r.run({...row,verification_status:'failed',verified_by:'Previous reviewer'},{...completed,verification_status:'failed',verified_by:'Previous reviewer'},'submit_verification');
+  assert.equal(submitted.verification_status,'pending');assert.equal(submitted.verified_by,null);assert.equal(submitted.verified_date,null);
+});
 test('review commands require both the correct status and an eligible role',()=>{
   for(const command of ['verify','fail_verification','close','reject_closure']){
     const state=command.includes('closure')||command==='close'?'pending_closure':'pending_verification';
