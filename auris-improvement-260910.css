@@ -14,7 +14,7 @@
 @media(max-width:600px){#ps-checklist-body .ps-check-item{grid-template-columns:1fr}#ps-checklist-body .ps-check-answers{grid-column:1;grid-row:auto}}
 .auris-app-card[data-nav-key] .auris-app-card-icon{background:transparent!important;box-shadow:none}
 
-#page-actions:has(> .auris-module-viewbar) .auris-map-s-6bf792afaa{display:none!important}
+#page-actions:has(> .auris-module-viewbar) > .auris-map-s-6bf792afaa:has(> #map-tab-all){display:none!important}
 #page-risk:has(> .auris-module-viewbar) div:has(> #ra-ltab-ra){display:none!important}
 .auris-risk-library-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .auris-risk-library-dialog{max-width:min(94vw,900px);max-height:85vh;overflow:auto;border:1px solid var(--border);border-radius:12px;padding:20px}
