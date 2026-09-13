@@ -77,7 +77,7 @@ function mapEditorFieldError(id,message){
   var el=document.getElementById(id);if(el){var panel=el.closest('[id^="map-fview-"]');if(panel){var tab=panel.id.replace('map-fview-','');mapFormTab(tab,document.getElementById('map-ftab-'+tab));}el.setAttribute('aria-invalid','true');el.focus();}
   throw new Error(message);
 }
-function mapEditorRead(){
+function mapEditorRead(command){
   var form=mapEditorForm(),record=mapEditorSession.record(),body={},numbers=['estimated_cost','actual_cost','escalation_level','progress_pct','effectiveness_rating'];
   document.querySelectorAll('#map-form3view [aria-invalid]').forEach(function(el){el.removeAttribute('aria-invalid');});
   Object.keys(MAP_EDITOR_FIELDS).forEach(function(id){
@@ -89,12 +89,14 @@ function mapEditorRead(){
     else if(typeof value==='string')value=value.trim()||null;
     body[key]=value;
   });
-  if(!String(body.title||'').trim())mapEditorFieldError('mf-title','Enter an action title.');
+  if(record.id&&body.title==null&&form['mf-title']===mapEditorInitial['mf-title'])body.title=String(form['mf-title']||'').trim()||null;
+  var returning=record.id&&['fail_verification','reject_closure','cancel'].includes(command);
+  if(!returning&&!String(body.title||'').trim())mapEditorFieldError('mf-title','Enter an action title.');
   body.description=body.description||body.title;
-  if(!body.target_date)mapEditorFieldError('mf-target-date','Choose a target date.');
-  if(body.start_date&&body.target_date<body.start_date)mapEditorFieldError('mf-target-date','The target date must be on or after the start date.');
-  if(body.date_extended&&!body.extension_reason)mapEditorFieldError('mf-ext-reason','Explain why the target date was extended.');
-  if(body.progress_pct<0||body.progress_pct>100)mapEditorFieldError('mf-progress','Progress must be between 0 and 100.');
+  if(!returning&&!body.target_date)mapEditorFieldError('mf-target-date','Choose a target date.');
+  if(!returning&&body.start_date&&body.target_date<body.start_date)mapEditorFieldError('mf-target-date','The target date must be on or after the start date.');
+  if(!returning&&body.date_extended&&!body.extension_reason)mapEditorFieldError('mf-ext-reason','Explain why the target date was extended.');
+  if(!returning&&(body.progress_pct<0||body.progress_pct>100))mapEditorFieldError('mf-progress','Progress must be between 0 and 100.');
   var assigned=form['mf-assigned-to'];
   if(!record.id||assigned!==mapEditorInitial['mf-assigned-to']){
     var person=mapEditorPeople.find(function(p){return p.id===assigned;});
@@ -171,7 +173,7 @@ async function mapEditorCommit(command){
     if(command==='cancel'&&!(await appConfirmAction({title:'Cancel action',message:'Cancel this action and retain its history?',confirmText:'Cancel action',cancelText:'Keep action'})))return false;
     session.assertCurrent();if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the record.');
     await mapEditorLoadWorkflow(session,command);
-    var body=mapEditorWorkflow(before,mapEditorRead(),command,reason);
+    var body=mapEditorWorkflow(before,mapEditorRead(command),command,reason);
     mapEditorMessage('Saving action…');
     var result=await session.save(body);session.assertCurrent();
     if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the record to verify the save.');

@@ -54,3 +54,11 @@ test('a restored session hydrates workflow before decisions and rechecks the edi
   r.scope.AurisWorkflowService.hydrate=async()=>{r.scope.mapEditorSession={};};
   await assert.rejects(r.scope.mapEditorLoadWorkflow(session,'verify'),/editor changed/);
 });
+
+test('legacy description-only actions hydrate a title and incomplete reviews can return for correction',()=>{
+  const r=runtime();const form={'mf-title':'Legacy description','mf-desc':'Legacy description'};
+  r.scope.mapEditorForm=()=>form;r.scope.mapEditorInitial={...form};r.scope.document.querySelectorAll=()=>[];
+  const legacy={id:'legacy',status:'pending_closure',title:null,description:'Legacy description',target_date:null};r.scope.mapEditorSession={record:()=>legacy};
+  const returned=r.scope.mapEditorRead('reject_closure');assert.equal(returned.title,'Legacy description');assert.equal(returned.target_date,null);
+  assert.throws(()=>r.scope.mapEditorRead('save'),/target date/);
+});
