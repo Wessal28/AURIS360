@@ -13,7 +13,7 @@ function busy(modal){return modal._kpiObjectiveBusy||modal._kpiDefinitionBusy;}
 function written(modal){return modal._kpiObjectiveSaved||modal._kpiObjectiveUncertain||modal._kpiDefinitionWritten;}
 function snapshot(modal){
   var fields={};(objective(modal)?objectiveFields:kpiFields).forEach(function(id){var el=document.getElementById(id);if(el)fields[id]=el.value;});
-  if(objective(modal))return {fields:fields,color:kpiSelectedColor};
+  if(objective(modal))return {revision:modal._kpiObjectiveContext?.revision??null,fields:fields,color:kpiSelectedColor};
   var indicators=Array.from(modal.querySelectorAll('#kpi-indicators-list [data-ind-row]')).map(function(row){function value(selector){return row.querySelector(selector)?.value||'';}return {indicatorId:row.getAttribute('data-indicator-id')||'',name:value('.ind-name-input'),target:value('.ind-target-input'),operator:value('.ind-op-input'),unit:value('.ind-unit-input'),ytd:value('.ind-ytd-input')};});
   return {revision:modal._kpiDefinitionContext?.revision??null,fields:fields,plannedMonths:root.KpiEditorDraftFields.selectedMonths(),indicators:indicators};
 }

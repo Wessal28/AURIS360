@@ -64,58 +64,21 @@ function openObjModal(objId) {
   m.querySelector('[data-kpi-objective-message]')?.remove();
   m._kpiObjectiveReturnFocus=document.activeElement;
 
-  // Common: get form references
-  var nameEl  = document.getElementById('obj-name');
-  var codeEl  = document.getElementById('obj-code');
-  var yearEl  = document.getElementById('obj-year');
-  var titleEl = document.getElementById('obj-modal-title');
-  var delBtn  = document.getElementById('obj-delete-btn');
-
-  if (objId && typeof kpiObjectives !== 'undefined') {
-    // -- EDIT MODE -------------------------------------------------
-    var obj = kpiObjectives.find(function(o){ return o.id === objId; });
-    if (!obj) {
-      toast('Objective not found', false);
-      return;
-    }
-
-    // Pre-fill form fields with existing values
-    if (nameEl) nameEl.value = obj.name || '';
-    if (codeEl) codeEl.value = obj.code || '';
-    if (yearEl) yearEl.value = obj.year || new Date().getFullYear();
-
-    // Set selected colour and highlight the matching dot
-    if (typeof kpiSelectedColor !== 'undefined') {
-      kpiSelectedColor = obj.color || '#1D9E75';
-    }
-
-    // Set edit mode markers
-    m.dataset.editId = objId;
-    if (typeof kpiEditObjId !== 'undefined' || true) { kpiEditObjId = objId; }
-    if (titleEl) titleEl.textContent = 'Edit objective';
-    if (delBtn) delBtn.style.display = 'inline-flex';  // override the hidden-by-default archive class
-  } else {
-    // -- CREATE MODE -----------------------------------------------
-    // Clear all fields
-    if (nameEl) nameEl.value = '';
-    if (codeEl) codeEl.value = '';
-    if (yearEl) yearEl.value = String(kpiObjectiveViewYear());
-
-    // Reset selected colour to default green and highlight that dot
-    if (typeof kpiSelectedColor !== 'undefined') {
-      kpiSelectedColor = '#1D9E75';
-    }
-
-    // Clear edit mode markers
-    delete m.dataset.editId;
-    kpiEditObjId = null;
-    if (titleEl) titleEl.textContent = 'Add objective';
-    if (delBtn) delBtn.style.display = 'none';
-  }
+  const obj=objId?kpiObjectives.find(o=>o.id===objId):null;
+  const nameEl=document.getElementById('obj-name'),codeEl=document.getElementById('obj-code'),yearEl=document.getElementById('obj-year');
+  const titleEl=document.getElementById('obj-modal-title'),delBtn=document.getElementById('obj-delete-btn');
+  if(nameEl)nameEl.value=obj?.name||'';
+  if(codeEl)codeEl.value=obj?.code||'';
+  if(yearEl)yearEl.value=obj?(obj.year||new Date().getFullYear()):String(kpiObjectiveViewYear());
+  kpiSelectedColor=obj?.color||'#1D9E75';
+  kpiEditObjId=objId||null;
+  if(objId)m.dataset.editId=objId;else delete m.dataset.editId;
+  if(titleEl)titleEl.textContent=objId?'Edit objective':'Add objective';
+  if(delBtn)delBtn.style.display=objId?'inline-flex':'none';
 
   kpiRenderObjectiveColour();
   // Show the modal
-  m._kpiObjectiveContext={companyId:kpiObjectiveCompany(),actorId:prof.id,viewYear:kpiObjectiveViewYear(),editId:kpiEditObjId||null,role:typeof activeRole==='function'?String(activeRole()):''};
+  m._kpiObjectiveContext={companyId:kpiObjectiveCompany(),actorId:prof.id,viewYear:kpiObjectiveViewYear(),editId:kpiEditObjId||null,revision:objId?obj.definition_revision:null,role:typeof activeRole==='function'?String(activeRole()):''};
   m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-labelledby','obj-modal-title');
   ['obj-code','obj-year','obj-name'].forEach(id=>document.getElementById(id)?.parentElement.querySelector('label')?.setAttribute('for',id));
   m.querySelector('[data-auris-onclick="h0129"]').setAttribute('aria-label','Close objective');
@@ -141,8 +104,13 @@ function kpiObjectiveCheckContext(context){
   if(!kpiCanEdit())throw new Error('Only authorised managers can save objectives.');
   if(context.editId&&!modal._kpiObjectiveSaved&&!kpiObjectives.some(obj=>obj.id===context.editId&&obj.company_id===context.companyId))throw new Error('The objective is no longer available for this company. Close and reload before editing it.');
 }
-function kpiObjectiveMatches(row,payload,id){
-  return !!row&&!!row.id&&(!id||row.id===id)&&row.company_id===payload.company_id&&Number(row.year)===payload.year&&row.name===payload.name&&String(row.code)===payload.code&&row.color===payload.color;
+function kpiObjectiveMatches(row,payload,id,revision){
+  return !!row&&!!row.id&&(!id||row.id===id)&&row.company_id===payload.company_id&&Number(row.year)===payload.year&&row.name===payload.name&&String(row.code)===payload.code&&row.color===payload.color&&Number.isSafeInteger(row.definition_revision)&&row.definition_revision===revision;
+}
+function kpiObjectiveSaveError(error){
+  const message=String(error?.message||error);
+  const known={AURIS_OBJECTIVE_EDIT_CONFLICT:'This objective changed after you opened it. No changes from this save were applied. Close and reload to review the latest version.',AURIS_OBJECTIVE_YEAR_HAS_KPIS:'This objective has linked KPIs. Keep its reporting year; create a separate objective for another year.',AURIS_OBJECTIVE_ARCHIVED:'This objective was archived. Close and reload the objective list.',AURIS_OBJECTIVE_NOT_FOUND:'This objective is no longer available. Close and reload the objective list.',AURIS_OBJECTIVE_SAVE_DENIED:'Your account no longer has permission to save this objective.',AURIS_OBJECTIVE_INVALID_DEFINITION:'Check the objective name, reporting year and colour before saving.'};
+  const code=Object.keys(known).find(key=>message.includes(key));return code?known[code]:null;
 }
 async function kpiSaveObjective() {
   const modal=document.getElementById('obj-modal'),context=modal?._kpiObjectiveContext;
@@ -155,38 +123,34 @@ async function kpiSaveObjective() {
     const name=document.getElementById('obj-name').value.trim(),year=Number(document.getElementById('obj-year').value);
     if(!name)throw new Error('Please enter an objective name.');
     if(!Number.isInteger(year)||year<1900||year>9999)throw new Error('Choose a valid reporting year.');
-    let code=document.getElementById('obj-code').value.trim();
+    if(context.editId&&(!Number.isSafeInteger(context.revision)||context.revision<1))throw new Error('Reload objectives before editing. The server revision is unavailable; the objective save migration may be required.');
+    if(!/^#[0-9a-f]{6}$/i.test(kpiSelectedColor||''))throw new Error('Choose a valid objective colour.');
+    if(/^\[Archived/i.test(name))throw new Error('Use Archive to archive an objective. Choose a different name.');
+    const code=document.getElementById('obj-code').value.trim();
     const payload={company_id:context.companyId,name,code,year,color:kpiSelectedColor||'#1D9E75'};
     const scope='&company_id=eq.'+encodeURIComponent(context.companyId);
     modal.querySelector('[data-kpi-objective-message]')?.remove();
     controls=Array.from(modal.querySelectorAll('input,select,textarea,button')).map(node=>({node,disabled:node.disabled}));
     modal._kpiObjectiveControls=controls;modal._kpiObjectiveBusy=true;
     controls.forEach(item=>{item.node.disabled=true;});document.getElementById('obj-modal-title').focus();
-    if(!code){
-      const existing=await api('/objectives?select=code&year=eq.'+year+scope);
-      kpiObjectiveCheckContext(context);
-      if(!Array.isArray(existing))throw new Error('Objective codes could not be loaded. Reload before saving.');
-      let maxCode=0;existing.forEach(obj=>{const n=parseInt(obj.code,10);if(Number.isFinite(n)&&n>maxCode)maxCode=n;});
-      code=String(maxCode+1);payload.code=code;
-    }
     kpiObjectiveCheckContext(context);
-    if(!context.editId)payload.created_by=context.actorId;
     writeStarted=true;
     if(window.KpiEditorDrafts)KpiEditorDrafts.protect(modal);
-    const result=await api(context.editId?'/objectives?id=eq.'+encodeURIComponent(context.editId)+scope:'/objectives',{m:context.editId?'PATCH':'POST',p:'return=representation',b:payload});
-    const rows=Array.isArray(result)?result:result?[result]:[];
-    if(rows.length!==1||!kpiObjectiveMatches(rows[0],payload,context.editId)){
+    const row=await api('/rpc/save_objective_definition',{m:'POST',b:{p_company_id:context.companyId,p_objective_id:context.editId,p_expected_revision:context.revision,p_definition:payload}});
+    const revision=context.editId?context.revision+1:1;
+    if(!code&&typeof row?.code==='string'&&/^[1-9][0-9]*$/.test(row.code))payload.code=row.code;
+    if(!kpiObjectiveMatches(row,payload,context.editId,revision)){
       modal._kpiObjectiveUncertain=true;
       throw new Error('The server did not return the matching objective. Close and reload to check whether it was saved.');
     }
     saved=true;modal._kpiObjectiveSaved=true;
     kpiObjectiveCheckContext(context);
-    const savedId=rows[0].id,verified=await api('/objectives?select=*&id=eq.'+encodeURIComponent(savedId)+scope);
+    const savedId=row.id,verified=await api('/objectives?select=*&id=eq.'+encodeURIComponent(savedId)+scope);
     kpiObjectiveCheckContext(context);
-    if(!Array.isArray(verified)||verified.length!==1||!kpiObjectiveMatches(verified[0],payload,savedId))throw new Error('The saved objective could not be verified in the refreshed data.');
+    if(!Array.isArray(verified)||verified.length!==1||!kpiObjectiveMatches(verified[0],payload,savedId,revision))throw new Error('The saved objective changed again or could not be verified.');
     const objectives=await api('/objectives?select=*'+scope+'&year=eq.'+context.viewYear+'&order=sort_order,code');
     kpiObjectiveCheckContext(context);
-    if(!Array.isArray(objectives)||objectives.some(obj=>obj.company_id!==context.companyId||Number(obj.year)!==context.viewYear)||(year===context.viewYear&&!objectives.some(obj=>kpiObjectiveMatches(obj,payload,savedId))))throw new Error('The objective list could not be refreshed for the selected company and year.');
+    if(!Array.isArray(objectives)||objectives.some(obj=>obj.company_id!==context.companyId||Number(obj.year)!==context.viewYear)||(year===context.viewYear&&!objectives.some(obj=>kpiObjectiveMatches(obj,payload,savedId,revision))))throw new Error('The objective list could not be refreshed for the selected company and year.');
     kpiObjectives=objectives.filter(obj=>!/^\[Archived/i.test(String(obj.name||'')));
     kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
     kpiObjectiveCheckContext(context);
@@ -196,7 +160,7 @@ async function kpiSaveObjective() {
     return {saved:true,complete:true};
   }catch(error){
     if(writeStarted)modal._kpiObjectiveUncertain=true;
-    kpiObjectiveFeedback((saved?'Objective saved, but verification or refresh could not finish. Close this form and reload; do not create it again. ':writeStarted?'Save could not be confirmed. Check existing objectives before retrying. ':'')+String(error?.message||error));
+    kpiObjectiveFeedback(kpiObjectiveSaveError(error)||(saved?'Objective saved, but verification or refresh could not finish. Close this form and reload; do not create it again. ':writeStarted?'Save could not be confirmed. Check existing objectives before retrying. ':'')+String(error?.message||error));
     return {saved,complete:false};
   }finally{
     if(controls){modal._kpiObjectiveBusy=false;controls.forEach(item=>{item.node.disabled=(modal._kpiObjectiveSaved||modal._kpiObjectiveUncertain)&&!item.node.matches('[data-auris-onclick="h0129"]')?true:item.disabled;});if(!modal._kpiObjectiveSaved&&!modal._kpiObjectiveUncertain)modal._kpiObjectiveControls=null;}

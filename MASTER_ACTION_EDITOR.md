@@ -34,4 +34,4 @@ Configured multi-stage approvals remain a separate integration task: the direct 
 
 Further programme work includes configuration-consumer verification, reporting/automation/integration adoption, more extraction from core, transactional multi-record recovery and archive/restore, representative-role acceptance and physical Android testing. No claim of a tested backup/restore procedure or complete offline editing is made by this release.
 
-Objective and KPI draft/close/recovery adoption is documented in [KPI_EDITOR_DRAFTS.md](KPI_EDITOR_DRAFTS.md). KPI server conflict handling and atomic multi-row persistence are documented in [KPI_ATOMIC_SAVE.md](KPI_ATOMIC_SAVE.md); objective server conflicts remain a later slice.
+Objective and KPI draft/close/recovery adoption is documented in [KPI_EDITOR_DRAFTS.md](KPI_EDITOR_DRAFTS.md). KPI server conflict handling and atomic multi-row persistence are documented in [KPI_ATOMIC_SAVE.md](KPI_ATOMIC_SAVE.md); objective server conflicts and atomic saves are documented in [OBJECTIVE_ATOMIC_SAVE.md](OBJECTIVE_ATOMIC_SAVE.md).
