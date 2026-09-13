@@ -471,8 +471,8 @@ try{
   if(data.length){const error=new Error('Cannot remove "'+ind.name+'" because it has monthly records. Restore its row below, then rename the existing row to preserve its history.');error.indicatorToRestore=ind;throw error;}
  }
  kpiDefinitionCheckContext(context);
- writeStarted=true;modal._kpiDefinitionWritten=true;
  if(window.KpiEditorDrafts)KpiEditorDrafts.protect(modal);
+ writeStarted=true;modal._kpiDefinitionWritten=true;
  const result=await api('/rpc/save_kpi_definition',{m:'POST',b:{
   p_company_id:context.companyId,p_kpi_id:context.kpiId||null,p_expected_revision:context.kpiId?context.revision:null,
   p_expected_indicators:context.kpiId?context.indicators:[],p_definition:body,
@@ -502,9 +502,10 @@ try{
  modal.dataset.saveFailed='true';
  const detail=String(error?.message||error).includes('kpis_v2_status_check')?'The calculated display status cannot be stored. Your entered information is still open; reload and check the KPI before retrying.':String(error?.message||error);
  const conflict=detail.includes('AURIS_KPI_EDIT_CONFLICT');
- const rejected=/AURIS_KPI_(SAVE_DENIED|NOT_FOUND|DEFINITION_FROZEN|YEAR_MISMATCH|OBJECTIVE_REQUIRED|INDICATOR_MISMATCH|INDICATOR_HAS_HISTORY|HISTORY_SCOPE_MISMATCH|INVALID_)/.test(detail);
- kpiDefinitionFeedback(conflict?'This KPI changed after you opened it. No changes from this save were applied. Close and reload to review the latest version; your entered text is retained for copying.':rejected?'The server rejected this save; no changes were applied. Close and reload to review the KPI. '+detail:(confirmed?'The complete KPI was saved, but the display could not refresh. Close and reload before editing again. ':writeStarted?'Save could not be confirmed. Close and check the KPI before trying again. ':'')+detail,error.indicatorToRestore);
- return {complete:false,partial:writeStarted};
+ const reasons={AURIS_KPI_SAVE_DENIED:'Your permission to save this KPI has changed.',AURIS_KPI_NOT_FOUND:'This KPI is no longer available.',AURIS_KPI_DEFINITION_FROZEN:'This KPI is now in review, approved, locked or archived.',AURIS_KPI_YEAR_MISMATCH:'The reporting year has changed.',AURIS_KPI_OBJECTIVE_REQUIRED:'Choose an available objective in the same reporting year.',AURIS_KPI_INDICATOR_MISMATCH:'An indicator no longer belongs to this KPI.',AURIS_KPI_INDICATOR_HAS_HISTORY:'An indicator you removed now has monthly records. Keep its original row to preserve that history.',AURIS_KPI_HISTORY_SCOPE_MISMATCH:'The stored monthly history needs an administrator to check its company links.'};
+ const rejected=Object.keys(reasons).find(key=>detail.includes(key));
+ kpiDefinitionFeedback(conflict?'This KPI changed after you opened it. No changes from this save were applied. Close and reload to review the latest version; your entered text is retained for copying.':rejected?'No changes were applied. '+reasons[rejected]+' Close and reload to review the KPI. ':(confirmed?'The complete KPI was saved, but the display could not refresh. Close and reload before editing again. ':writeStarted?'Save could not be confirmed. Close and check the KPI before trying again. ':'')+detail,error.indicatorToRestore);
+ return {complete:false,unconfirmed:writeStarted};
 }finally{
  modal._kpiDefinitionBusy=false;
  if(controls)controls.forEach(item=>{item.node.disabled=writeStarted&&modal.style.display!=='none'&&!item.node.matches('[data-auris-onclick="h0139"]')?true:item.disabled;});
