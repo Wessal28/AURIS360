@@ -4,6 +4,8 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const testFiles = [
+  'tests/form_draft.test.cjs',
+  'tests/kpi_editor_drafts.test.cjs',
   'tests/record_edit_session.test.cjs',
   'tests/action_editor_workflow.test.cjs',
   'tests/inspection_forms_behavior.test.cjs',

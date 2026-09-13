@@ -12545,6 +12545,7 @@ function closeKpiModal(id){
   const e=document.getElementById(id);
   if(id==='kpi-edit-modal'&&e?._kpiDefinitionBusy)return false;
   if(id==='obj-modal'&&e?._kpiObjectiveBusy)return false;
+  if((id==='obj-modal'||id==='kpi-edit-modal')&&window.KpiEditorDrafts&&!KpiEditorDrafts.close(e))return false;
   const editorHadFocus=(id==='obj-modal'||id==='kpi-edit-modal')&&e?.style.display!=='none'&&e?.contains(document.activeElement);
   const editorReturnFocus=id==='obj-modal'?e?._kpiObjectiveReturnFocus:e?._kpiDefinitionReturnFocus;
   const returnFocus=id==='kpi-entry-modal'&&e?.style.display!=='none'&&e?.contains(document.activeElement)?e._kpiEntryReturnFocus:null;
@@ -12581,6 +12582,7 @@ async function kpiArchiveDefinition(kind){
 const objective=kind==='objective',modalId=objective?'obj-modal':'kpi-edit-modal',modal=document.getElementById(modalId);
 const busyKey=objective?'_kpiObjectiveBusy':'_kpiDefinitionBusy',writtenKey=objective?'_kpiObjectiveUncertain':'_kpiDefinitionWritten',controlsKey=objective?'_kpiObjectiveControls':'_kpiDefinitionControls';
 const context=modal?.[objective?'_kpiObjectiveContext':'_kpiDefinitionContext'],id=context?.[objective?'editId':'kpiId'];
+if(window.KpiEditorDrafts&&!KpiEditorDrafts.canSave(modal))return {complete:false};
 if(!modal||modal.style.display==='none'||modal[busyKey]||modal[writtenKey]||(objective&&modal._kpiObjectiveSaved)||!id)return {complete:false};
 const feedback=objective?kpiObjectiveFeedback:kpiDefinitionFeedback,check=()=>objective?kpiObjectiveCheckContext(context):kpiDefinitionCheckContext(context);
 const title=document.getElementById(objective?'obj-modal-title':'kpi-modal-title'),returnFocus=document.activeElement;
@@ -12614,6 +12616,7 @@ try{
  const conditional=(row,keys)=>keys.map(key=>'&'+key+'='+(row[key]==null?'is.null':'eq.'+encodeURIComponent(String(row[key])))).join('');
  const patch=async(url,b,expected)=>{
   check();writeStarted=true;modal[writtenKey]=true;
+  if(window.KpiEditorDrafts)KpiEditorDrafts.protect(modal);
   const rows=await api(url,{m:'PATCH',p:'return=representation',b});
   if(!Array.isArray(rows)||rows.length!==1||!Object.keys(expected).every(key=>(rows[0]?.[key]??null)===(expected[key]??null)))throw new Error('The server did not confirm the matching archive update.');
   confirmed++;check();return rows[0];
@@ -12645,6 +12648,7 @@ try{
  if(objective)kpiObjectives=kpiObjectives.filter(row=>row.id!==id);
  kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
  if(typeof kpiXClearEditorDraft==='function')archivedIds.forEach(kpiXClearEditorDraft);
+ if(window.KpiEditorDrafts)KpiEditorDrafts.complete(modal);
  modal[busyKey]=false;closeKpiModal(modalId);toast(objective?'Objective and its KPIs archived. History retained.':'KPI archived. History retained.');
  return {complete:true,confirmed};
 }catch(error){
@@ -12652,6 +12656,7 @@ try{
  return {complete:false,confirmed};
 }finally{
  if(controls){modal[busyKey]=false;controls.forEach(item=>{item.node.disabled=writeStarted&&!item.node.matches(objective?'[data-auris-onclick="h0129"]':'[data-auris-onclick="h0139"]')?true:item.disabled;});if(!writeStarted)modal[controlsKey]=null;}
+ if(window.KpiEditorDrafts)KpiEditorDrafts.refresh(modal);
  if(cancelled&&returnFocus?.isConnected&&!returnFocus.disabled)returnFocus.focus();
 }
 }

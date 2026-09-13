@@ -4,9 +4,11 @@ const root=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(roo
 const html=read('index.html'),core=read('auris-core.js');
 const start=html.indexOf('<div id="obj-modal"'),end=html.indexOf('<div id="kpi-edit-modal"',start);
 if(start<0||end<0)throw new Error('Objective form markup unavailable');
+const confirmation=html.slice(html.indexOf('<div id="app-confirm3modal"'),html.indexOf('<div id="onboard-modal"'));
 const assets={
- '/':['text/html',read('tests/fixtures/kpi-objective-save.html').replace('<!-- OBJECTIVE_PANEL -->',html.slice(start,end))],
+ '/':['text/html',read('tests/fixtures/kpi-objective-save.html').replace('<!-- OBJECTIVE_PANEL -->',html.slice(start,end)+confirmation)],
  '/fixture-core.js':['text/javascript',core.slice(core.indexOf('function closeKpiModal('),core.indexOf('async function kpiDeleteObjective'))]
 };
-for(const file of ['kpi-definition-editor.js','auris-base.css','auris-kpi-legacy.css','kpi-module-upgrade.css','auris-static-event-handlers.js'])assets['/'+file]=[file.endsWith('.css')?'text/css':'text/javascript',read(file)];
+assets['/fixture-core.js'][1]+=core.slice(core.indexOf('function appConfirm(opts)'),core.indexOf('function appDeleteNeedsTypedConfirm('));
+for(const file of ['kpi-definition-editor.js','auris-form-draft.js','kpi-editor-drafts.js','auris-settings-static.css','auris-base.css','auris-kpi-legacy.css','kpi-module-upgrade.css','auris-static-event-handlers.js'])assets['/'+file]=[file.endsWith('.css')?'text/css':'text/javascript',read(file)];
 http.createServer((req,res)=>{const asset=assets[req.url];if(req.method!=='GET'||!asset){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':asset[0]+'; charset=utf-8','Cache-Control':'no-store'});res.end(asset[1]);}).listen(0,'127.0.0.1',function(){console.log(JSON.stringify({url:'http://127.0.0.1:'+this.address().port,pid:process.pid}));});
