@@ -31,10 +31,39 @@ test('work centre blocks governed mutations offline and requires exact sources',
   await assert.rejects(c.AurisWorkCentre.delegate({module:'events',table:'events',id:'e1'},'user-2','cover'),/Reconnect/);
 });
 
+test('delegation choices are active same-company colleagues and exclude the current user',()=>{
+  const c=serviceContext();
+  const rows=c.AurisWorkCentre._eligibleDelegates([
+    {id:'user-1',company_id:'company-1',full_name:'Current user',status:'active'},
+    {id:'user-2',company_id:'company-1',full_name:'Zed Worker',status:'active'},
+    {id:'user-3',company_id:'company-2',full_name:'Foreign worker',status:'active'},
+    {id:'user-4',company_id:'company-1',full_name:'Inactive worker',status:'inactive'},
+    {id:'user-5',company_id:'company-1',full_name:'Ari Worker',status:'active'}
+  ],'company-1','user-1');
+  assert.deepEqual(rows.map(row=>row.id),['user-5','user-2']);
+});
+
+test('delegation uses a named modal and never asks users for a profile id',()=>{
+  const app=read('auris-work-centre.js');
+  assert.match(app,/data-work-delegate-select/);
+  assert.match(app,/data-work-delegate-reason/);
+  assert.match(app,/\/profiles\?select=id,full_name,email,role,status,company_id/);
+  assert.doesNotMatch(app,/Delegate to profile ID/);
+});
+
+test('comments and evidence use a governed activity composer instead of browser prompts',()=>{
+  const app=read('auris-work-centre.js');
+  assert.match(app,/data-work-activity-composer/);
+  assert.match(app,/data-work-activity-note/);
+  assert.match(app,/data-work-activity-url/);
+  assert.match(app,/openActivityComposer\(key,type\)/);
+  assert.match(app,/Evidence links must use HTTPS/);
+});
+
 test('phase 11 is registered, cache-versioned, responsive and release-verifiable',()=>{
   const html=read('index.html'),registry=read('auris-module-registry.js'),css=read('auris-work-centre.css'),manifest=read('sw-assets.js');
   assert.match(registry,/key:'work'.*loader:'loadWorkCentre'/);
-  assert.match(html,/id="page-work"/);assert.match(html,/auris-work-centre\.js\?v=20260901-11/);assert.match(html,/modular-foundation-(?:11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29)/);
+  assert.match(html,/id="page-work"/);assert.match(html,/auris-work-centre\.js\?v=20260914-12-work-centre/);assert.match(html,/auris-work-centre\.css\?v=20260914-12-work-centre/);assert.match(html,/modular-foundation-(?:11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29)/);
   assert.match(css,/@media\(max-width:800px\)/);assert.match(css,/@media\(max-width:480px\)/);
   assert.match(manifest,/auris-work-centre\.js/);assert.match(manifest,/auris-work-centre\.css/);
 });
