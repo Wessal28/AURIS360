@@ -78,6 +78,7 @@ const testFiles = [
   ,'tests/ohealth_list_workspace.test.cjs'
   ,'tests/emergency_list_workspace.test.cjs'
   ,'tests/esg_list_workspace.test.cjs'
+  ,'tests/noise_list_workspace.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'
   ,'tests/permit_list_workspace.test.cjs'
