@@ -71,6 +71,7 @@
 <script src="auris-fleet-list-workspace.js?v=20260915-1"></script>
 <script src="auris-atex-list-workspace.js?v=20260915-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260916-1"></script>
+<script src="auris-chemical-list-workspace.js?v=20260916-1"></script>
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -3657,6 +3658,15 @@ Offline mode - changes will sync when connection is restored
 <option value="active" selected>Active</option>
 <option value="">All statuses</option>
 <option value="archived">Archived</option>
+</select>
+<select id="chem3attention-filter" class="auris-chemical-s-0e0379d349" data-auris-onchange="h0417" aria-label="Chemical attention">
+<option value="">All attention states</option>
+<option value="critical_risk">Critical risk</option>
+<option value="review_overdue">Review overdue</option>
+<option value="review_due_soon">Review due soon</option>
+<option value="sds_missing">SDS missing</option>
+<option value="sds_stale">SDS stale</option>
+<option value="controls_missing">Controls missing</option>
 </select>
 </div>
 </div>
