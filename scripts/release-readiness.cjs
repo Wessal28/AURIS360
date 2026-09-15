@@ -70,6 +70,7 @@ const testFiles = [
   ,'tests/audit_list_workspace.test.cjs'
   ,'tests/contractor_list_workspace.test.cjs'
   ,'tests/fleet_list_workspace.test.cjs'
+  ,'tests/atex_list_workspace.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'
   ,'tests/permit_list_workspace.test.cjs'

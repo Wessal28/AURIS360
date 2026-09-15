@@ -26387,6 +26387,28 @@ function atexRender(){
   setM('atex-m3oos',atexAreas.filter(x=>x.status==='out_of_service').length);
   setM('atex-m3due',atexAreas.filter(x=>x.status!=='archived'&&x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
   atexRenderZoningPlan();
+  if(window.AurisAtexListWorkspace){
+    try{
+      return window.AurisAtexListWorkspace.mount(el,atexAreas||[],{
+        filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('atex-search',value.search);set('atex-filter-zone',value.zone);set('atex-filter-status',value.status);atexRender();
+        },
+        openRecord:function(id){
+          var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
+          if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('ATEX area details are unavailable. Reload the register.');
+          aurisReadOnlyRecordModal('ATEX area details',row.area_name||'ATEX area',row,[['Status',String(row.status||'controlled').replace(/_/g,' ')],['Location',row.location],['Plant area',row.plant_area],['Zone',String(row.zone_type||'').replace(/_/g,' ')],['Material',String(row.material_type||'').replace(/_/g,' ')],['Substance',row.substance],['Source of release',row.source_of_release],['Ventilation controls',row.ventilation_controls],['Ignition controls',row.ignition_controls],['Detection / monitoring',row.detection_controls],['Next inspection',row.next_inspection_date],['Responsible person',row.responsible_person],['Linked risk assessment',row.linked_ra_ref],['Linked permit',row.linked_permit_ref],['Notes',row.notes]]);
+        },
+        editRecord:function(id){
+          var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof atexEdit!=='function')throw new Error('Manager access is required to edit ATEX areas.');atexEdit(id);
+        }
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('ATEX area register',error.message||String(error));console.error(error);return;}
+  }
   if(!filtered.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0244"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
     return;
