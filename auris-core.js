@@ -23249,6 +23249,10 @@ async function emEqLoadLegacy(){
     var q='/emergency_equipment?select=*'+cf()+'&order=equipment_type,location';
     if(ft)q+='&equipment_type=eq.'+ft;
     var d=await api(q);emEqData=d||[];
+    if(window.AurisEmergencyListWorkspace){
+      try{return window.AurisEmergencyListWorkspace.mount(el,emEqData||[],{filters:{type:ft},canEdit:isMgr(),openRecord:function(id,current){var selected=(emEqData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This emergency equipment is unavailable or outside your company access.');return aurisReadOnlyRecordModal('Emergency equipment details',selected.identifier||selected.equipment_type||'Emergency equipment',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(emEqData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This emergency equipment is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit emergency equipment.');return emEqEdit(id);},onApplyFilters:function(value){var typeEl=document.getElementById('em3eq-filter-type');if(typeEl)typeEl.value=value.type||'';emEqLoad();}});}
+      catch(adapterError){el.innerHTML=registerErrorHtml('emergency equipment register',adapterError.message);return;}
+    }
     var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('em3eq-total',d?d.length:0);setM('em3eq-ok',d?d.filter(x=>x.status==='operational').length:0);setM('em3eq-bad',d?d.filter(x=>x.status!=='operational').length:0);setM('em3eq-due',d?d.filter(x=>(x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon)).length:0);setM('em3eq-fe',d?d.filter(x=>x.equipment_type==='fire_extinguisher').length:0);
