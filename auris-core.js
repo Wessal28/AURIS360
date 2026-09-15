@@ -41080,6 +41080,10 @@ async function loadFire() {
     var el=document.getElementById(id);
     if(el) el.style.display = isMgr() ? 'inline-flex' : 'none';
   });
+  [['fire-cert-search','input'],['fire-cert-filter-type','change'],['fire-cert-filter-status','change'],['fire-cert-filter-attention','change']].forEach(function(pair){
+    var control=document.getElementById(pair[0]);
+    if(control&&!control.dataset.fireWorkspaceBound){control.dataset.fireWorkspaceBound='1';control.addEventListener(pair[1],function(){fireRenderCerts();});}
+  });
   fireSwitchTab(fireCurrentTab, document.getElementById('fire-tab-'+fireCurrentTab));
 }
 
@@ -41131,11 +41135,28 @@ function fireSwitchTab(tab, el) {
 
 // -- Render Certificates -------------------------------------------
 function fireRenderCerts() {
+  fireRenderCertStats();
+  var workspace = document.getElementById('fire-cert-table-wrap');
+  if (window.AurisFireListWorkspace && workspace) {
+    var search=document.getElementById('fire-cert-search')?.value||'';
+    var type=document.getElementById('fire-cert-filter-type')?.value||'';
+    var status=document.getElementById('fire-cert-filter-status')?.value||'';
+    var attention=document.getElementById('fire-cert-filter-attention')?.value||'';
+    var empty=document.getElementById('fire-cert-empty');if(empty)empty.style.display='none';
+    try {
+      return window.AurisFireListWorkspace.mount(workspace,fireAllCerts||[],{
+        filters:{search:search,type:type,status:status,attention:attention},
+        inspections:fireAllInsp||[],equipment:fireAllEquip||[],canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){[['fire-cert-search','search'],['fire-cert-filter-type','type'],['fire-cert-filter-status','status'],['fire-cert-filter-attention','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});fireRenderCerts();},
+        openRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This fire certificate is unavailable or outside your company access.');if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Fire certificate details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Fire certificate details',selected.premises_name||'Fire certificate',selected,[['Certificate number',selected.cert_number],['Type',fireCertTypeLabel(selected.cert_type)],['Address',selected.address],['Occupancy',selected.occupancy_type],['Issuing authority',selected.issuing_authority],['Issue date',selected.issue_date],['Expiry date',selected.expiry_date],['Status',selected.status],['Renewal submitted',selected.renewal_submitted?'Yes':'No'],['Renewal date',selected.renewal_date],['Conditions',selected.conditions],['Notes',selected.notes]]);},
+        editRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit fire certificates.');if(typeof fireShowCertForm!=='function')throw new Error('The fire certificate form is unavailable. Reload the register.');return fireShowCertForm(id);}
+      });
+    } catch(error) {workspace.innerHTML=registerErrorHtml('Fire Certificate register',error.message||String(error));console.error(error);return;}
+  }
   var tbody = document.getElementById('fire-cert-tbody');
   var empty = document.getElementById('fire-cert-empty');
   if (!tbody) return;
   // Stats
-  fireRenderCertStats();
   if (!fireAllCerts.length) {
     tbody.innerHTML = '';
     if (empty) empty.style.display = 'block';
@@ -41193,6 +41214,7 @@ function fireRenderCertStats() {
 }
 
 function fireFilterCerts(q) {
+  if(window.AurisFireListWorkspace){fireRenderCerts();return;}
   q = q.toLowerCase();
   var rows = document.querySelectorAll('#fire-cert-tbody tr');
   rows.forEach(function(r){ r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
