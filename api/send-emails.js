@@ -204,6 +204,7 @@ function preferenceForType(type) {
   if (value.startsWith('investigation')) return 'notify_on_investigation';
   if (value.startsWith('audit') || value.startsWith('inspection')) return 'notify_on_audit';
   if (value === 'action_due_soon' || value === 'action_overdue' || value === 'overdue_digest') return 'notify_on_overdue';
+  if (value === 'kpi_monthly_review_due') return 'notify_on_overdue';
   return null;
 }
 

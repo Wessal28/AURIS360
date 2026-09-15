@@ -161,6 +161,11 @@
       "order": 32,
       "file": "20260913060000_kpi_monthly_review.sql",
       "sha256": "5ddc43dee31cbf61e9e7012cf24d3d2cb8ff14d4e081097911bcdea3800f7666"
+    },
+    {
+      "order": 33,
+      "file": "20260914010000_kpi_monthly_review_delegation.sql",
+      "sha256": "47f846df8f63c9087f4e9c2fe037b3df8e533af3274dd71c48615030e2d2067a"
     }
   ]
 }

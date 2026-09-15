@@ -30,6 +30,24 @@ Validate the baseline and all later migrations:
 npm run migration:validate
 ```
 
+When a new migration is added, refresh the ordered checksum manifest before
+running validation and tests:
+
+```powershell
+npm run migration:write-manifest
+npm run migration:validate
+```
+
+The write command only updates `manifest.json` from the ordered SQL files. It
+does not apply a migration to staging or production.
+
+The monthly-review delegation migration (`20260914010000_kpi_monthly_review_delegation.sql`)
+also defines the shared Work Centre activity and delegation RPCs. It can be
+pasted after the monthly-review migration on a staging project even when the
+earlier Work Centre migration was not replayed; it creates the governed write
+boundary before compiling KPI reassignment. It does not create users, change
+storage permissions, or rewrite existing records.
+
 The required pull-request workflow also replays the complete ordered history on
 a fresh local PostgreSQL service and compares the resulting tables, policies and
 routines with `replay-expectations.json`. The replay command is deliberately
