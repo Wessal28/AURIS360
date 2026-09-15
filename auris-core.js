@@ -23498,6 +23498,10 @@ async function ohMsLoad(){
     var q='/medical_surveillance?select=*'+cf()+'&order=exam_date.desc';
     if(ft&&ft!=='due_60'&&ft!=='overdue')q+='&exam_type=eq.'+ft;
     var d=await api(q);ohMsData=d||[];
+    if(window.AurisOhealthListWorkspace){
+      try{return window.AurisOhealthListWorkspace.mount(el,ohMsData||[],{filters:{type:ft},canEdit:isMgr(),openRecord:function(id,current){var selected=(ohMsData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This medical record is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,employee_name:selected.employee_name,employee_id:selected.employee_id,department:selected.department,job_title:selected.job_title,exam_type:selected.exam_type,exam_date:selected.exam_date,next_exam_date:selected.next_exam_date,fitness_status:selected.fitness_status,follow_up_required:selected.follow_up_required,report_ref:selected.report_ref,status:selected.status};return aurisReadOnlyRecordModal('Medical surveillance details',selected.employee_name||'Medical examination',safe,aurisReadableRecordFields(safe));},editRecord:function(id,current){var selected=(ohMsData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This medical record is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit medical surveillance.');return msEdit(id);},onApplyFilters:function(value){var filterEl=document.getElementById('oh-ms-filter');if(filterEl)filterEl.value=value.type||'';ohMsLoad();}});}
+      catch(adapterError){el.innerHTML=registerErrorHtml('medical surveillance register',adapterError.message);return;}
+    }
     if(ft==='due_60'||ft==='overdue'){
       var today=new Date();today.setHours(0,0,0,0);
       var soon=new Date(today);soon.setDate(soon.getDate()+60);
