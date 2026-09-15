@@ -33189,6 +33189,18 @@ async function auditLoad(typeFilter) {
 
 function auditFilter() {
   var el = document.getElementById('audit-register-list'); if(!el) return;
+  if(window.AurisAuditListWorkspace){
+    try{
+      return window.AurisAuditListWorkspace.mount(el,auditAllData||[],{
+        tab:auditCurrentTab||'all',
+        canEdit:isMgr(),
+        filters:{search:document.getElementById('audit-search')?.value||'',type:document.getElementById('audit-filter-type')?.value||'',status:document.getElementById('audit-filter-status')?.value||'',attention:document.getElementById('audit-filter-attention')?.value||'',score:document.getElementById('audit-filter-score')?.value||'',range:'all'},
+        onApplyFilters:function(value){[['audit-search','search'],['audit-filter-type','type'],['audit-filter-status','status'],['audit-filter-attention','attention'],['audit-filter-score','score']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});auditFilter();},
+        openRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This inspection is unavailable or outside your company access.');return auditOpenReadOnly(id);},
+        editRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this inspection.');return auditOpen(id);}
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Audits &amp; Inspections register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var q = (document.getElementById('audit-search')?.value||'').toLowerCase();
   var ft = document.getElementById('audit-filter-type')?.value||'';
   var fs = document.getElementById('audit-filter-status')?.value||'';

@@ -66,6 +66,7 @@
 <script src="auris-tools-list-workspace.js?v=20260915-1"></script>
 <script src="auris-risk-list-workspace.js?v=20260915-1"></script>
 <script src="auris-incident-list-workspace.js?v=20260915-1"></script>
+<script src="auris-audit-list-workspace.js?v=20260915-1"></script>
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -2537,6 +2538,14 @@
 <option value="">All statuses</option>
 <option value="open">Open</option><option value="in_progress">In Progress</option>
 <option value="completed">Completed</option><option value="closed">Closed</option>
+</select>
+<select id="audit-filter-attention" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit attention">
+<option value="">All attention states</option>
+<option value="overdue">Overdue</option><option value="due_soon">Due soon</option>
+<option value="unplanned">No plan</option><option value="open_findings">Open findings</option><option value="low_score">Low score</option>
+</select>
+<select id="audit-filter-score" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit score">
+<option value="">All scores</option><option value="excellent">80% and above</option><option value="acceptable">60–79%</option><option value="attention">Below 60%</option><option value="unscored">Not scored</option>
 </select>
 </div>
 <div id="audit-filter-label" class="auris-audit-s-7299078644"></div>
