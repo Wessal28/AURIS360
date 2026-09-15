@@ -20945,6 +20945,34 @@ function conFilterRegister(){
   var fst=document.getElementById('con-filter-status')?.value||'';
   var fcat=document.getElementById('con-filter-cat')?.value||'';
   var fcomp=document.getElementById('con-filter-compliance')?.value||'';
+  if(window.AurisContractorListWorkspace){
+    try{
+      return window.AurisContractorListWorkspace.mount(el,conAllData||[],{
+        filters:{search:q,category:fcat,status:fst,compliance:fcomp},
+        canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('con-search',value.search);set('con-filter-cat',value.category);set('con-filter-status',value.status);set('con-filter-compliance',value.compliance);conFilterRegister();
+        },
+        openRecord:function(id){
+          var row=(conAllData||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():'') )throw new Error('This contractor is outside the current company. Reload the register.');
+          if(typeof conOpenDetail!=='function')throw new Error('Contractor details are unavailable. Reload the register.');
+          conOpenDetail(id);
+        },
+        editRecord:function(id){
+          var row=(conAllData||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():'') )throw new Error('This contractor is outside the current company. Reload the register.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof conEdit!=='function')throw new Error('Manager access is required to edit contractors.');
+          conEdit(id);
+        }
+      });
+    }catch(error){
+      el.innerHTML=registerErrorHtml('Contractor register',error.message||String(error));
+      console.error(error);
+      return;
+    }
+  }
   var filtered=conAllData.filter(function(x){
     var expiry=conDateState(x.expiry_date,60);
     var insurance=conDateState(x.insurance_expiry,60);
