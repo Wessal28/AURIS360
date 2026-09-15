@@ -29907,6 +29907,17 @@ async function legalLoadRegister(){
 
 function legalFilterRegister(){
   var el=document.getElementById('lr-table');if(!el)return;
+  if(window.AurisLegalListWorkspace){
+    try{
+      return window.AurisLegalListWorkspace.mount(el,lrAllData||[],{
+        filters:{search:document.getElementById('lr-search')?.value||'',status:document.getElementById('lr-filter-status')?.value||'',archived:document.getElementById('lr-filter-archived')?.value||'',legislation:document.getElementById('lr-filter-leg')?.value||'',category:document.getElementById('lr-filter-cat')?.value||'',attention:document.getElementById('lr-filter-attention')?.value||''},
+        canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){[['lr-search','search'],['lr-filter-status','status'],['lr-filter-archived','archived'],['lr-filter-leg','legislation'],['lr-filter-cat','category'],['lr-filter-attention','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});legalFilterRegister();},
+        openRecord:function(id,current){var selected=(lrAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This legal requirement is unavailable or outside your company access.');if(typeof legalOpenReq==='function')return legalOpenReq(id);if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Legal requirement details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Legal requirement details',selected.title||selected.requirement||'Legal requirement',selected,[['Reference',selected.req_ref],['Legislation',selected.legislation],['Section',selected.section],['Requirement',selected.requirement],['Status',selected.status],['Compliance score',selected.compliance_score],['Controls',selected.controls],['Evidence required',selected.evidence_required],['Responsible person',selected.responsible_person||selected.responsibility],['Review date',selected.review_date],['Notes',selected.notes]]);},
+        editRecord:function(id,current){var selected=(lrAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit legal requirements.');if(typeof legalOpenReq!=='function')throw new Error('The legal requirement form is unavailable. Reload the register.');legalOpenReq(id);if(typeof legalReqEditMode==='function')legalReqEditMode(true);}
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('Legal Compliance',error.message||String(error));console.error(error);return;}
+  }
   var q=(document.getElementById('lr-search')?.value||'').toLowerCase();
   var fs=document.getElementById('lr-filter-status')?.value||'';
   var fl=document.getElementById('lr-filter-leg')?.value||'';

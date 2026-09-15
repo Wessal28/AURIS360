@@ -69,7 +69,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.status, 'passed');
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
-  assert.equal(result.assets.length, 50);
+  assert.equal(result.assets.length, 51);
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
@@ -83,6 +83,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.ok(response.requests.includes('/auris-atex-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-fire-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-chemical-list-workspace.js'));
+  assert.ok(response.requests.includes('/auris-legal-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-action-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-record-edit-session.js'));

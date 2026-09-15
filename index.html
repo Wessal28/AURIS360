@@ -72,6 +72,7 @@
 <script src="auris-atex-list-workspace.js?v=20260915-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260916-1"></script>
 <script src="auris-chemical-list-workspace.js?v=20260916-1"></script>
+<script src="auris-legal-list-workspace.js?v=20260916-1"></script>
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -3840,6 +3841,15 @@ Offline mode - changes will sync when connection is restored
 <option value="iso">ISO Standards</option>
 <option value="client">Client Standards</option>
 <option value="other">Other</option>
+</select>
+<select id="lr-filter-attention" class="auris-legal-s-d35063206b" data-auris-onchange="h0435" aria-label="Legal requirement attention">
+<option value="">All attention states</option>
+<option value="non_compliant">Non-compliant</option>
+<option value="open_gap">Open gap</option>
+<option value="review_overdue">Review overdue</option>
+<option value="review_due_soon">Review due soon</option>
+<option value="target_overdue">Target overdue</option>
+<option value="assessment_missing">Assessment missing</option>
 </select>
 <button class="btn auris-legal-s-6aa34d7432" id="lr-import-pdf-btn" data-auris-onclick="h0436"><i class="ti ti-file-import"></i>Import Act PDF</button>
 <input type="file" id="lr-pdf-input" class="auris-legal-s-6aa34d7432" accept="application/pdf,.pdf" data-auris-onchange="h0437"/>
