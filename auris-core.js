@@ -25022,6 +25022,19 @@ async function toolsLoadRegister(){
 function toolsFilterRegister(){
   var el=document.getElementById('tools-register-list');
   if(!el)return;
+  if(window.AurisToolsListWorkspace){
+    try{
+      return window.AurisToolsListWorkspace.mount(el,toolsAllData||[],{
+        filters:{search:document.getElementById('tools-search')?.value||'',category:document.getElementById('tools-filter-cat')?.value||'',status:document.getElementById('tools-filter-status')?.value||'',inspection:document.getElementById('tools-filter-inspection')?.value||''},
+        inspections:toolsLastInspectionByTool||{},
+        canEdit:isMgr(),
+        onApplyFilters:function(value){[['tools-search','search'],['tools-filter-cat','category'],['tools-filter-status','status'],['tools-filter-inspection','inspection']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});toolsFilterRegister();},
+        openRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This equipment is unavailable or outside your company access.');return toolsOpenEquipmentDetail(id);},
+        inspectRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||typeof toolsStartInspection!=='function')throw new Error('The equipment inspection form is unavailable. Reload the register.');return toolsStartInspection(id,'register');},
+        editRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this equipment.');return toolsEdit(id);}
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Tools &amp; Equipment register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var search=(document.getElementById('tools-search')?.value||'').toLowerCase();
   var cat=document.getElementById('tools-filter-cat')?.value||'';
   var status=document.getElementById('tools-filter-status')?.value||'';
