@@ -26198,6 +26198,33 @@ function fleetRender(){
   setM('fleet-m3overdue',overdue);
   setM('fleet-m3fuel',Math.round(totalFuel));
   setM('fleet-m3co2',Math.round(totalCo2));
+  if(window.AurisFleetListWorkspace){
+    try{
+      return window.AurisFleetListWorkspace.mount(el,fleetVehicles||[],{
+        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],
+        filters:{search:q,status:statusFilter,check:checkFilter},canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('fleet-search',value.search);set('fleet-filter-status',value.status);set('fleet-filter-check',value.check);fleetRender();
+        },
+        openRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(typeof fleetOpenVehicleDetail!=='function')throw new Error('Vehicle details are unavailable. Reload the fleet.');fleetOpenVehicleDetail(id);
+        },
+        checkRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof fleetMonthlyCheck!=='function')throw new Error('Manager access is required to record a monthly vehicle check.');fleetMonthlyCheck(id);
+        },
+        editRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof fleetEditVehicle!=='function')throw new Error('Manager access is required to edit vehicles.');fleetEditVehicle(id);
+        }
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('Fleet module',error.message||String(error));console.error(error);return;}
+  }
   var rows=fleetVehicles.filter(function(v){
     var li=lastInsp[v.id], lastDt=li&&li.inspection_date?new Date(li.inspection_date):null;
     var days=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
