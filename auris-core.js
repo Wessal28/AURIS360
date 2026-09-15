@@ -10426,6 +10426,10 @@ async function mtgLoadMinutes(){
   try{
     var d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
     mtgMinutesData=d||[];
+    if(window.AurisMeetingsListWorkspace){
+      try{return window.AurisMeetingsListWorkspace.mount(el,mtgMinutesData||[],{canEdit:isMgr(),openRecord:function(id,current){var selected=(mtgMinutesData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('These meeting minutes are unavailable or outside your company access.');return mtgViewMomReadOnly(id);},editRecord:function(id,current){var selected=(mtgMinutesData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('These meeting minutes are unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit meeting minutes.');return mtgOpenMom(id);},onApplyFilters:function(){mtgLoadMinutes();}});}
+      catch(error){el.innerHTML=registerErrorHtml('HSE Meetings register',error.message||String(error));console.error(error);return;}
+    }
     if(!d||!d.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet - schedule a meeting from the Schedule tab.</div>';
       return;
