@@ -80,6 +80,7 @@ const testFiles = [
   ,'tests/esg_list_workspace.test.cjs'
   ,'tests/noise_list_workspace.test.cjs'
   ,'tests/meetings_list_workspace.test.cjs'
+  ,'tests/training_plan_list_workspace.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'
   ,'tests/permit_list_workspace.test.cjs'

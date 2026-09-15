@@ -32505,6 +32505,10 @@ async function tpLoad(){
     var setM=function(id,v,c){var e=document.getElementById(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
     setM('tp-m3planned',planned);setM('tp-m3completed',completed);
     setM('tp-m3progress',progress);setM('tp-m3overdue',overdue,'#E24B4A');
+    if(window.AurisTrainingPlanListWorkspace){
+      try{return window.AurisTrainingPlanListWorkspace.mount(el,tpAllData||[],{records:trainingRecords||[],canEdit:isMgr(),openRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');return aurisReadOnlyRecordModal('Training plan details',selected.training_topic||'Training plan item',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit the training plan.');return tpOpen(id);},onApplyFilters:function(){tpLoad();}});}
+      catch(error){el.innerHTML=registerErrorHtml('register',error.message);console.error(error);return;}
+    }
     if(!tpAllData.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'

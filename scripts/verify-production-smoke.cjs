@@ -179,6 +179,7 @@ async function verifyProduction(options, evidence) {
     ['auris-esg-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'dateState:dateState', 'project:project', 'mount:mount']],
     ['auris-noise-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'dateState:dateState', 'project:project', 'mount:mount']],
     ['auris-meetings-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'dateState:dateState', 'project:project', 'mount:mount']],
+    ['auris-training-plan-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'dateState:dateState', 'project:project', 'mount:mount']],
     ['auris-toolbox-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-toolbox-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-permit-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
