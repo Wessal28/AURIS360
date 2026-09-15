@@ -163,6 +163,8 @@ async function verifyProduction(options, evidence) {
     ['auris-action-editor.css', ['auris-action-edit-toolbar', 'aria-invalid']],
     ['auris-action-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-permit-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
+    ['auris-risk-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'riskSummary:riskSummary', 'project:project', 'mount:mount']],
+    ['auris-incident-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-toolbox-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-toolbox-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],
     ['auris-permit-record-workspace.js', ["version:'1.0.0'", 'explicitOnly:true', 'assertRecord', 'assertSession', 'availableActions', 'open:open', 'load:load']],

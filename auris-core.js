@@ -14635,6 +14635,11 @@ function imsRenderIncidentDashboard(data){
 }
 
 function imsFilterList(){
+  if(window.AurisIncidentListWorkspace){
+    var el=document.getElementById('ims-register-inner')||document.getElementById('ims-register-list');if(!el)return;
+    try{return window.AurisIncidentListWorkspace.mount(el,imsAllData||[],{filters:{search:document.getElementById('ev-search')?.value||'',type:document.getElementById('ev-filter-type')?.value||'',severity:document.getElementById('ev-filter-severity')?.value||'',status:document.getElementById('ev-filter-status')?.value||'',site:document.getElementById('ev-filter-site')?.value||'',department:document.getElementById('ev-filter-department')?.value||'',range:document.getElementById('ev-filter-range')?.value||'year'},openRecord:function(id,current){var selected=(imsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This incident is unavailable or outside your company access.');if(typeof imv2OpenIncidentReadOnly==='function')return imv2OpenIncidentReadOnly(id);if(typeof evOpenDetail==='function')return evOpenDetail(id);throw new Error('The incident record viewer is unavailable. Reload the register.');}});}
+    catch(error){el.innerHTML='<div class="imx-empty"><strong>Incident register could not be displayed</strong><span>'+escH(error.message||error)+'</span></div>';console.error(error);return;}
+  }
   imsRenderIncidentRegister(imsIncidentFiltered());
 }
 
@@ -16432,6 +16437,23 @@ async function raLoadJSAList(){
 
 function raFilterList(){
   var el=document.getElementById('ra-list');if(!el)return;
+  if(window.AurisRiskListWorkspace){
+    try{
+      return window.AurisRiskListWorkspace.mount(el,raAllData||[],{
+        filters:{search:document.getElementById('ra-search')?.value||'',type:document.getElementById('ra-filter-type')?.value||'',status:document.getElementById('ra-filter-status')?.value||'',risk:document.getElementById('ra-filter-risk')?.value||'',scope:'all'},
+        onApplyFilters:function(value){
+          [['ra-search','search'],['ra-filter-type','type'],['ra-filter-status','status'],['ra-filter-risk','risk']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});
+          raFilterList();
+        },
+        openRecord:function(id,current){
+          if(!current||String(current.companyId)!==String(ccid()))throw new Error('Your company changed. Reload the risk register.');
+          var selected=(raAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});
+          if(!selected)throw new Error('This risk assessment is unavailable or outside your company access.');
+          raOpen(selected.id);
+        }
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Risk Assessment register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var q=(document.getElementById('ra-search')?.value||'').toLowerCase();
   var ft=document.getElementById('ra-filter-type')?.value||'';
   var fs=document.getElementById('ra-filter-status')?.value||'';
