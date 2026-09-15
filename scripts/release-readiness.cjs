@@ -81,6 +81,7 @@ const testFiles = [
   ,'tests/noise_list_workspace.test.cjs'
   ,'tests/meetings_list_workspace.test.cjs'
   ,'tests/training_plan_list_workspace.test.cjs'
+  ,'tests/app_launcher_icon_contract.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'
   ,'tests/permit_list_workspace.test.cjs'

@@ -35797,9 +35797,14 @@ function appLauncherToggleFavourite(pageKey){
 function appLauncherCard(module,activePage,favourites){
   var isActive=module.k===activePage;
   var favourite=favourites.indexOf(module.k)!==-1;
-  return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
+  // Mark the launcher card and icon synchronously. The shared icon decorator
+  // also observes the launcher, but cards are rebuilt in one DOM write and
+  // can be painted before that observer runs. Without the explicit key/class
+  // the atlas position selector has no key and the icon appears as a blank
+  // white tile in the app launcher while sidebar artwork still renders.
+  return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" data-nav-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
     +'<button type="button" class="auris-app-favourite'+(favourite?' on':'')+'" data-favourite-key="'+escapeHtml(module.k)+'" aria-label="'+(favourite?'Remove from':'Add to')+' favourites" aria-pressed="'+(favourite?'true':'false')+'"><i class="ti ti-star'+(favourite?'-filled':'')+'"></i></button>'
-    +'<span class="auris-app-card-icon" style="background:'+module.color+'"><i class="ti '+module.i+'"></i></span>'
+    +'<span class="auris-app-card-icon" style="background:'+escapeHtml(module.color||'#185FA5')+'"><i class="ti '+escapeHtml(module.i||'ti-apps')+' auris-module-icon" aria-hidden="true"></i></span>'
     +'<span class="auris-app-card-label">'+escapeHtml(module.l)+'</span></div>';
 }
 function appLauncherRenderApps(query){
