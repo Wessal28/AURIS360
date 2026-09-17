@@ -24423,7 +24423,7 @@ async function ppeLoadCatalogue(){
         +'<td style="padding:10px;min-width:190px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">-</span>')+'</td>'
         +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-ppe-view="catalogue" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="catalogue" data-id="'+x.id+'">Edit</button>':'')+'</td>'
+        +'<td style="padding:10px;text-align:center">'+ppeRecordLink('catalogue',x.id,'view')+''+(isMgr()?''+ppeRecordLink('catalogue',x.id,'edit')+'':'')+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -24494,7 +24494,7 @@ async function ppeLoadInventory(){
         +'<td style="padding:10px">'+escH(x.supplier||'-')+'</td>'
         +'<td style="padding:10px;min-width:180px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;text-align:center">'+stockLabel+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-ppe-view="catalogue" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="catalogue" data-id="'+x.id+'">Edit</button>':'')+'</td>'
+        +'<td style="padding:10px;text-align:center">'+ppeRecordLink('catalogue',x.id,'view')+''+(isMgr()?''+ppeRecordLink('catalogue',x.id,'edit')+'':'')+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -24719,7 +24719,7 @@ async function ppeLoadInspections(){
         +'<td style="padding:8px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.action_taken||'-').replace(/_/g,' '))+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:'+(isDue?'700':'400')+';color:'+(isDue?'var(--red)':'inherit')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB')+(isDue?' ?':''):'-')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-ppe-view="inspections" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="inspections" data-id="'+x.id+'">Edit</button>':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0220"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px">'+ppeRecordLink('inspections',x.id,'view')+''+(isMgr()?''+ppeRecordLink('inspections',x.id,'edit')+'':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0220"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -24832,7 +24832,7 @@ async function ppeLoadReplacements(){
         +'<td style="padding:8px"><span style="background:'+uc[0]+';color:'+uc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+uc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px">'+(x.requested_date?new Date(x.requested_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-ppe-view="replacements" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="replacements" data-id="'+x.id+'">Edit</button>':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0223"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px">'+ppeRecordLink('replacements',x.id,'view')+''+(isMgr()?''+ppeRecordLink('replacements',x.id,'edit')+'':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0223"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}

@@ -9,12 +9,18 @@ document.addEventListener('click',function(event){
   event.preventDefault();event.stopImmediatePropagation();
   ppeRecordWindow(node.dataset.ppeView||node.dataset.ppeEdit,node.dataset.id,node.dataset.ppeEdit?'edit':'view');
 },true);
+function ppeRecordHref(kind,id,mode){
+  var url=new URL(deepLinkRecordUrl({module:'ppe',id:id,table:ppeRecordTable(kind),company_id:ccid()}));
+  url.searchParams.set('ppeWindow','1');url.searchParams.set('ppeMode',mode==='edit'?'edit':'view');
+  return url.toString();
+}
+function ppeRecordLink(kind,id,mode){
+  return '<a class="btn btn-sm" target="_blank" rel="noopener" href="'+escH(ppeRecordHref(kind,id,mode))+'">'+(mode==='edit'?'Edit':'View')+'</a>';
+}
 function ppeRecordWindow(kind,id,mode){
   if(!ppeRecordTable(kind)||!id)return;
   if(mode==='edit'&&!isMgr()){toast('Manager access is required to edit PPE records.',false);return;}
-  var url=new URL(deepLinkRecordUrl({module:'ppe',id:id,table:ppeRecordTable(kind),company_id:ccid()}));
-  url.searchParams.set('ppeWindow','1');url.searchParams.set('ppeMode',mode==='edit'?'edit':'view');
-  var child=window.open(url.toString(),'_blank');
+  var child=window.open(ppeRecordHref(kind,id,mode),'_blank');
   if(!child)toast('Allow popups to open the PPE record in a separate window.',false);
   else child.opener=null;
 }
