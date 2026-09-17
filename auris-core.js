@@ -39867,7 +39867,7 @@ function aurisPrint(html, title, preparedWindow) {
     + '<meta charset="UTF-8">'
     + '<title>' + escH(title) + '</title>'
     + '<link id="auris-print-styles" rel="stylesheet" href="/auris-print.css">'
-    + '</head><body class="'+(isLandscapePrint?'auris-print-landscape':'auris-print-portrait')+'" style="'+printVariables+'">' + html + '</body></html>');
+    + '</head><body class="'+(isLandscapePrint?'auris-print-landscape':'auris-print-portrait')+(/^PPE /.test(printTitle)?' auris-print-ppe':'')+'" style="'+printVariables+'">' + html + '</body></html>');
   w.document.close();
   aurisPrintWindowWhenReady(w,1200);
 }
