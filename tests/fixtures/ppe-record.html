@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><title>PPE record UI check</title><link rel="stylesheet" href="../../auris-ppe-records.css"><style>body{font-family:Arial,sans-serif}.btn{display:inline-block;padding:10px 16px;border:1px solid #bdcfd6;border-radius:8px;background:white;color:#174537;cursor:pointer}.btn-primary{background:#088665;color:white}</style></head><body>
+<script>
+function ccid(){return 'qa-company'}function canAccessPage(){return true}function isMgr(){return true}
+function escH(s){return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function ppeReadCertMeta(row){return {type:'MSB certificate',ref:'MSB-245',issuer:'Mauritius Standards Bureau',url:'https://example.com/certificate.pdf'}}
+function aurisSafeUrl(url){return /^https:\/\//.test(url||'')?url:''}function ppeCertBadge(meta){return '<p>'+escH(meta.ref)+' · '+escH(meta.issuer)+'</p>'}
+function ppeStripCertMeta(x){return x}var PPE_CAT_CFG={fall_protection:{label:'Fall protection'}};
+</script><script src="../../auris-ppe-records.js"></script><script>
+ppeShowRecord('catalogue',{id:'qa-record',company_id:'qa-company',ppe_code:'PPE-FALL-002',name:'Full Body Harness — ref 245',category:'fall_protection',brand:'UDYOGI',model:'SL 245',standard:'MSB',protection_level:'Class A',quantity_total:1,quantity_available:1,quantity_issued:0,quantity_condemned:0,inspection_interval_days:90,status:'active',notes:'Inspect webbing and buckles before each use.'});
+</script></body></html>

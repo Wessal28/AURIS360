@@ -24206,10 +24206,9 @@ function ppeReadCertMeta(row){
     expiryDate:row?.certificate_expiry_date||row?.conformity_expiry_date||'',
     url:row?.certificate_url||row?.conformity_certificate_url||''
   };
-  if(Object.values(direct).some(Boolean))return direct;
   var m=String(row?.notes||'').match(PPE_CERT_META_RE);
-  if(!m)return {};
-  try{return JSON.parse(decodeURIComponent(m[1]))||{};}catch(e){return {};}
+  if(!m)return direct;
+  try{return Object.assign(direct,JSON.parse(decodeURIComponent(m[1]))||{});}catch(e){return direct;}
 }
 function ppeWriteCertMeta(notes,meta){
   var clean=ppeStripCertMeta(notes);
@@ -24267,7 +24266,7 @@ async function loadPPE(){
   aurisBindReadOnlyRows('page-ppe',function(listId,id){
     var sets=[ppeCatData,ppeIssData,ppeInspData,ppeRepData],row=null;
     sets.some(function(rows){row=(rows||[]).find(function(x){return String(x.id)===String(id);});return !!row;});
-    if(row)aurisReadOnlyRecordModal('PPE record details',row.ppe_name||row.name||row.employee_name||'PPE record',row,aurisReadableRecordFields(row));
+    if(row){var kind=listId.includes('cat')||listId.includes('inventory')?'catalogue':listId.includes('insp')?'inspections':listId.includes('rep')?'replacements':'issuance';ppeRecordWindow(kind,row.id,'view');}
   });
   ppeLoadDash();
 }
@@ -24416,7 +24415,7 @@ async function ppeLoadCatalogue(){
       var statusHtml=x.status&&x.status!=='active'
         ? '<span style="background:#f3f4f6;color:#6B7280;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(status)+'</span>'
         : '<span style="background:#EAF3DE;color:#3B6D11;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">Active</span>';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0214">'
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-ppe-view="catalogue">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
         +'<td style="padding:10px;min-width:230px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'-')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([x.sub_category,x.brand,x.model].filter(Boolean).join(' - ')||'-')+'</div></div></div></td>'
         +'<td style="padding:10px"><span style="background:'+cfg.color+'18;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label||x.category||'Other')+'</span></td>'
@@ -24424,7 +24423,7 @@ async function ppeLoadCatalogue(){
         +'<td style="padding:10px;min-width:190px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">-</span>')+'</td>'
         +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0085" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-ppe-view="catalogue" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="catalogue" data-id="'+x.id+'">Edit</button>':'')+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -24484,7 +24483,7 @@ async function ppeLoadInventory(){
       var qty=Number(x.quantity_available||0), reorder=Number(x.reorder_level||0);
       var cert=ppeReadCertMeta(x);
       var stockLabel=qty<=0?'<span class="badge br">Out of stock</span>':qty<=reorder?'<span class="badge ba">Low stock</span>':'<span class="badge bg">OK</span>';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0214">'
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-ppe-view="catalogue">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
         +'<td style="padding:10px;min-width:240px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'-')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(cfg.label||x.category||'Other')+'</div></div></div></td>'
         +'<td style="padding:10px;text-align:center;font-weight:900">'+(x.quantity_total??0)+'</td>'
@@ -24495,7 +24494,7 @@ async function ppeLoadInventory(){
         +'<td style="padding:10px">'+escH(x.supplier||'-')+'</td>'
         +'<td style="padding:10px;min-width:180px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;text-align:center">'+stockLabel+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0085" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-pencil"></i></button></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-ppe-view="catalogue" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="catalogue" data-id="'+x.id+'">Edit</button>':'')+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -24524,7 +24523,7 @@ function ppeCatNew(){
   document.getElementById('pcf-reorder').value='5';document.getElementById('pcf-category').value='head';document.getElementById('pcf-status').value='active';document.getElementById('pcf-has-expiry').checked=false;document.getElementById('pcf-insp-interval').value='90';
   ppeCatShowForm();
 }
-function ppeCatEdit(id){
+function ppeCatEdit(id){if(!isMgr()){toast("Manager access is required to edit PPE records.",false);return;}if(!ppeOpeningLinkedRecord)return ppeRecordWindow("catalogue",id,"edit");
   var x=ppeCatData.find(r=>r.id===id);if(!x)return;
   ppeCatEditId=id;document.getElementById('ppe-cat-form3title').textContent='Edit PPE Type';document.getElementById('ppe-cat-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
@@ -24534,7 +24533,7 @@ function ppeCatEdit(id){
   document.getElementById('pcf-category').value=x.category||'head';document.getElementById('pcf-status').value=x.status||'active';document.getElementById('pcf-has-expiry').checked=!!x.has_expiry;
   ppeCatShowForm();
 }
-async function ppeCatSave(){
+async function ppeCatSave(){if(!isMgr()){toast("Manager access is required to save PPE records.",false);return;}
   var name=document.getElementById('pcf-name')?.value?.trim();if(!name){toast('Please enter PPE name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var certMeta={type:g('pcf-cert-type'),ref:g('pcf-cert-ref'),issuer:g('pcf-cert-issuer'),issueDate:g('pcf-cert-issue'),expiryDate:g('pcf-cert-expiry'),url:g('pcf-cert-url')};
@@ -24560,7 +24559,7 @@ async function ppeLoadIssuance(){
     var q='/ppe_issuance?select=*'+cf()+'&order=issued_date.desc';if(fs)q+='&status=eq.'+fs;
     var d=await api(q);ppeIssData=d||[];
     if(window.AurisPpeListWorkspace){
-      try{return window.AurisPpeListWorkspace.mount(el,ppeIssData||[],{filters:{search:q_param,status:fs},canEdit:isMgr(),openRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');return aurisReadOnlyRecordModal('PPE issuance details',selected.ppe_name||selected.employee_name||'PPE issuance',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit PPE issuance.');return ppeIssEdit(id);},onApplyFilters:function(value){var searchEl=document.getElementById('ppe-iss-search');if(searchEl)searchEl.value=value.search||'';var statusEl=document.getElementById('ppe-iss-filter-status');if(statusEl)statusEl.value=value.status||'';ppeLoadIssuance();}});}
+      try{return window.AurisPpeListWorkspace.mount(el,ppeIssData||[],{filters:{search:q_param,status:fs},canEdit:isMgr(),openRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');return ppeRecordWindow('issuance',selected.id,'view');},editRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit PPE issuance.');return ppeIssEdit(id);},onApplyFilters:function(value){var searchEl=document.getElementById('ppe-iss-search');if(searchEl)searchEl.value=value.search||'';var statusEl=document.getElementById('ppe-iss-filter-status');if(statusEl)statusEl.value=value.status||'';ppeLoadIssuance();}});}
       catch(adapterError){el.innerHTML=registerErrorHtml('PPE issuance register',adapterError.message);return;}
     }
     if(q_param){var ql=q_param.toLowerCase();ppeIssData=ppeIssData.filter(x=>(x.employee_name||'').toLowerCase().includes(ql)||(x.ppe_name||'').toLowerCase().includes(ql)||(x.issuance_ref||'').toLowerCase().includes(ql)||(x.department||'').toLowerCase().includes(ql));}
@@ -24642,7 +24641,7 @@ async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
   }
 }
 
-async function ppeIssNew(){
+async function ppeIssNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
   ppeIssEditId=null;document.getElementById('ppe-iss-form3title').textContent='Issue PPE';document.getElementById('ppe-iss-form3ref').textContent='ISS-AUTO';document.getElementById('ppe-iss-del-btn').style.display='none';
   ['pif-emp-name','pif-emp-id','pif-dept','pif-title','pif-issued-by','pif-size','pif-serial','pif-batch','pif-wo-ref','pif-ra-ref','pif-hazard','pif-notes','pif-return-reason','pif-mfg-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('pif-emp-name');fillPersonSelect('pif-issued-by',prof?.full_name||personFullName(prof));
@@ -24656,7 +24655,7 @@ async function ppeIssNew(){
   ppeIssShowForm();
 }
 
-async function ppeIssEdit(id){
+async function ppeIssEdit(id){if(!isMgr()){toast("Manager access is required to edit PPE records.",false);return;}if(!ppeOpeningLinkedRecord)return ppeRecordWindow("issuance",id,"edit");
   var x=ppeIssData.find(r=>r.id===id);if(!x)return;
   ppeIssEditId=id;document.getElementById('ppe-iss-form3title').textContent='Edit Issuance';document.getElementById('ppe-iss-form3ref').textContent=x.issuance_ref||'-';document.getElementById('ppe-iss-del-btn').style.display=isMgr()?'inline-flex':'none';
   await ppeIssLoadReferenceOptions(x.work_order_ref,x.ra_ref);
@@ -24669,7 +24668,7 @@ async function ppeIssEdit(id){
   ppeIssShowForm();
 }
 
-async function ppeIssSave(){
+async function ppeIssSave(){if(!isMgr()){toast("Manager access is required to save PPE records.",false);return;}
   var emp=document.getElementById('pif-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}
   var ppeSel=document.getElementById('pif-ppe-id');var ppeId=ppeSel?.value||null;
   var ppeName=ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||document.getElementById('pif-ppe-name')?.value||'PPE';
@@ -24720,7 +24719,7 @@ async function ppeLoadInspections(){
         +'<td style="padding:8px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.action_taken||'-').replace(/_/g,' '))+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:'+(isDue?'700':'400')+';color:'+(isDue?'var(--red)':'inherit')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB')+(isDue?' ?':''):'-')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0219"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0220"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-ppe-view="inspections" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="inspections" data-id="'+x.id+'">Edit</button>':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0220"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -24750,7 +24749,7 @@ function ppeInspSelectItem(){
 function ppeInspShowForm(){document.getElementById('ppe-view-inspections').style.display='none';document.getElementById('ppe-insp-form').style.display='block';}
 function ppeInspBack(){document.getElementById('ppe-insp-form').style.display='none';document.getElementById('ppe-view-inspections').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-inspections')?.classList.add('active');ppeLoadInspections();}
 
-async function ppeInspNew(){
+async function ppeInspNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
   ppeInspEditId=null;document.getElementById('ppe-insp-form3title').textContent='New PPE Inspection';document.getElementById('ppe-insp-form3ref').textContent='PPEINSP-AUTO';document.getElementById('ppe-insp-del-btn').style.display='none';
   ['piif-emp-name','piif-dept','piif-inspector','piif-defects','piif-notes','piif-repl-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('piif-emp-name');fillPersonSelect('piif-inspector',prof?.full_name||personFullName(prof));
@@ -24763,7 +24762,7 @@ async function ppeInspNew(){
   ppeInspShowForm();
 }
 
-async function ppeInspEdit(id){
+async function ppeInspEdit(id){if(!isMgr()){toast("Manager access is required to edit PPE records.",false);return;}if(!ppeOpeningLinkedRecord)return ppeRecordWindow("inspections",id,"edit");
   var x=ppeInspData.find(r=>r.id===id);if(!x)return;
   ppeInspEditId=id;document.getElementById('ppe-insp-form3title').textContent='Edit Inspection';document.getElementById('ppe-insp-form3ref').textContent=x.inspection_ref||'-';document.getElementById('ppe-insp-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
@@ -24782,7 +24781,7 @@ async function ppeInspEdit(id){
   ppeInspShowForm();
 }
 
-async function ppeInspSave(){
+async function ppeInspSave(){if(!isMgr()){toast("Manager access is required to save PPE records.",false);return;}
   var inspector=document.getElementById('piif-inspector')?.value?.trim();if(!inspector){toast('Please enter inspector name',false);return;}
   var ppeSel=document.getElementById('piif-ppe-id');var ppeId=ppeSel?.value||null;
   var ppeName=ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE';
@@ -24833,7 +24832,7 @@ async function ppeLoadReplacements(){
         +'<td style="padding:8px"><span style="background:'+uc[0]+';color:'+uc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+uc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px">'+(x.requested_date?new Date(x.requested_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0222"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0223"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-ppe-view="replacements" data-id="'+x.id+'">View</button>'+(isMgr()?'<button class="btn btn-sm" data-ppe-edit="replacements" data-id="'+x.id+'">Edit</button>':'')+''+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0223"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -24842,9 +24841,9 @@ async function ppeLoadReplacements(){
 function ppeRepShowForm(){document.getElementById('ppe-view-replacements').style.display='none';document.getElementById('ppe-rep-form').style.display='block';}
 function ppeRepBack(){document.getElementById('ppe-rep-form').style.display='none';document.getElementById('ppe-view-replacements').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-replacements')?.classList.add('active');ppeLoadReplacements();}
 
-async function ppeRepNew(){ppeRepEditId=null;document.getElementById('ppe-rep-form3title').textContent='New Replacement Request';document.getElementById('ppe-rep-form3ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('prf-emp-name');fillPersonSelect('prf-requested-by',prof?.full_name||personFullName(prof));fillPersonSelect('prf-approved-by');document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
-function ppeRepEdit(id){var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form3title').textContent='Edit Request';document.getElementById('ppe-rep-form3ref').textContent=x.replacement_ref||'-';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);fillPersonSelect('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);fillPersonSelect('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
-async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
+async function ppeRepNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}ppeRepEditId=null;document.getElementById('ppe-rep-form3title').textContent='New Replacement Request';document.getElementById('ppe-rep-form3ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('prf-emp-name');fillPersonSelect('prf-requested-by',prof?.full_name||personFullName(prof));fillPersonSelect('prf-approved-by');document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
+function ppeRepEdit(id){if(!isMgr()){toast("Manager access is required to edit PPE records.",false);return;}if(!ppeOpeningLinkedRecord)return ppeRecordWindow("replacements",id,"edit");var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form3title').textContent='Edit Request';document.getElementById('ppe-rep-form3ref').textContent=x.replacement_ref||'-';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);fillPersonSelect('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);fillPersonSelect('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
+async function ppeRepSave(){if(!isMgr()){toast("Manager access is required to save PPE records.",false);return;}var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
   try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref=await ppeNextRef('ppe_replacements','replacement_ref','REP-'+yr+'-');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});var needsMap=['immediate','urgent'].includes(body.urgency)||body.reason==='inspection_fail';var added=false;if(needsMap){added=await ppeCreateMapAction(ref+' - PPE replacement','PPE replacement required for '+emp+': '+ppeName+' ('+(body.reason||'replacement').replace(/_/g,' ')+'). '+(body.reason_notes||''),body.requested_by||body.approved_by||null,body.urgency==='immediate'?'high':'medium',res[0].id);}toast('Replacement request created! Ref: '+ref+(added?' - action added to MAP.':''));}}ppeRepBack();}catch(e){toastActionError('Save PPE replacement request','PPE Management',e);}
 }
 async function ppeRepDelete(){if(!ppeRepEditId)return;try{var rows=await api('/ppe_replacements?id=eq.'+ppeRepEditId+'&select=status,reason_notes');var current=rows?.[0]||{};if(String(current.status||'').toLowerCase()!=='cancelled'||!ohIsArchivedText(current.reason_notes)){if(!(await appConfirmAction({title:'Cancel PPE replacement?',message:'This replacement request will be cancelled first so the approval and replacement history remains visible.',confirmText:'Cancel request',variant:'danger'})))return;await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',reason_notes:ohArchivedText(current.reason_notes),updated_at:new Date().toISOString()}});toast('PPE replacement cancelled. Use delete again if permanent removal is required.');ppeRepBack();return;}if(!(await appConfirmDelete('cancelled PPE replacement permanently')))return;await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toastActionError('Delete PPE replacement request','PPE Management',e);}}
@@ -38432,6 +38431,7 @@ async function deepLinkResume(reason){
     await new Promise(function(resolve){setTimeout(resolve,360);});
     var opened=false;
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
+    else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
     else{
       var source={source_module:req.goto,source_type:req.goto,source_table:req.table||DEEP_LINK_DEFAULT_TABLES[req.goto]||'',source_id:req.record,source_ref:req.ref||req.record};
@@ -39854,11 +39854,11 @@ function auditExportCsv(){
 // ================================================================
 
 // -- Core print engine --------------------------------------------
-function aurisPrint(html, title) {
+function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
-  var w = window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
+  var isLandscapePrint=(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
   function safePrintColor(value,fallback){return /^#[0-9a-f]{3,8}$/i.test(String(value||''))?String(value):fallback;}
@@ -40624,6 +40624,7 @@ function printRegisterView(title, selector) {
     }
   });
   printCleanRegisterTables(clone);
+  if(/^PPE /.test(title||'')){clone.querySelectorAll('details,summary').forEach(function(el){el.remove();});clone.querySelectorAll('[style]').forEach(function(el){['min-width','max-width','width','overflow','position','left','height','max-height','white-space'].forEach(function(key){el.style.removeProperty(key);});});}
   var cleanText = (clone.textContent || '').replace(/\s+/g, ' ').trim();
   if (!cleanText) {
     clone.innerHTML = '<div class="rpt-empty">No records are available for this view at the time of printing.</div>';

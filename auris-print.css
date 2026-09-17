@@ -88,3 +88,14 @@ body.auris-print-landscape .fire-print-table td { white-space: normal; overflow:
 @page { size: A4; margin: 10mm; }
 body.auris-print-landscape { page: auris-landscape; }
 @page auris-landscape { size: A4 landscape; margin: 8mm; }
+/* Fit the printable area rather than adding padding to the physical page width. */
+body.auris-print-landscape{width:auto}
+body.auris-print-landscape .report-page{width:100%;max-width:281mm!important;min-height:0;padding:6mm;margin:auto}
+body.auris-print-landscape .rpt-section{break-inside:auto}
+body.auris-print-landscape table{width:100%;min-width:0!important;table-layout:auto}
+body.auris-print-landscape th,body.auris-print-landscape td{white-space:normal;overflow-wrap:normal;word-break:normal;vertical-align:top}
+.ppe-record-section{margin:14px 0;break-inside:avoid}
+.ppe-record-section h3{font-size:12pt;margin-bottom:8px;color:#086e55}
+.ppe-record-section dl{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+.ppe-record-field dt{font-size:8pt;color:#64748b;text-transform:capitalize}
+.ppe-record-field dd{font-size:10pt;margin:3px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}

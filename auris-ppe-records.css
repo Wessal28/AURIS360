@@ -1,0 +1,14 @@
+.ppe-record-overlay{position:fixed;inset:0;background:#edf3f7;z-index:1100;overflow:auto;padding:24px;color:#173047}
+.ppe-record-window{max-width:1120px;margin:auto;background:white;border:1px solid #dce7ed;border-radius:18px;box-shadow:0 14px 45px #18364d18;overflow:hidden}
+.ppe-record-window header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;background:#e7f5ef;padding:28px;border-bottom:1px solid #c9e6db}
+.ppe-record-window header p{margin:6px 0;color:#48665e;font-size:13px}
+.ppe-record-window h2{font-size:28px;margin:8px 0;overflow-wrap:anywhere}
+.ppe-record-window nav{display:flex;gap:10px;flex-wrap:wrap;padding:16px 28px;border-bottom:1px solid #e3eaf0}
+.ppe-record-content{padding:24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.ppe-record-section{border:1px solid #e1e9ee;border-radius:12px;padding:20px;min-width:0}
+.ppe-record-section h3{font-size:16px;margin:0 0 16px;color:#086e55}
+.ppe-record-section dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.ppe-record-field dt{font-size:11px;text-transform:capitalize;color:#64748b;margin-bottom:5px}
+.ppe-record-field dd{font-size:14px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.ppe-record-certificate{grid-column:1/-1;background:#f3faf7}
+@media(max-width:720px){.ppe-record-overlay{padding:8px}.ppe-record-content{grid-template-columns:1fr;padding:14px}.ppe-record-window header{padding:18px}.ppe-record-window h2{font-size:22px}}
