@@ -63,6 +63,23 @@
 <script src="auris-permit-record-workspace.js?v=20260908-1"></script>
 <script src="auris-toolbox-list-workspace.js?v=20260908-1"></script>
 <script src="auris-toolbox-record-workspace.js?v=20260908-1"></script>
+<script src="auris-tools-list-workspace.js?v=20260915-1"></script>
+<script src="auris-risk-list-workspace.js?v=20260915-1"></script>
+<script src="auris-incident-list-workspace.js?v=20260915-1"></script>
+<script src="auris-audit-list-workspace.js?v=20260915-1"></script>
+<script src="auris-contractor-list-workspace.js?v=20260915-1"></script>
+<script src="auris-fleet-list-workspace.js?v=20260915-1"></script>
+<script src="auris-atex-list-workspace.js?v=20260915-1"></script>
+<script src="auris-fire-list-workspace.js?v=20260916-1"></script>
+<script src="auris-chemical-list-workspace.js?v=20260916-1"></script>
+<script src="auris-legal-list-workspace.js?v=20260916-1"></script>
+<script src="auris-ppe-list-workspace.js?v=20260916-1"></script>
+<script src="auris-ohealth-list-workspace.js?v=20260916-1"></script>
+<script src="auris-emergency-list-workspace.js?v=20260916-1"></script>
+<script src="auris-esg-list-workspace.js?v=20260916-1"></script>
+<script src="auris-noise-list-workspace.js?v=20260916-1"></script>
+<script src="auris-meetings-list-workspace.js?v=20260916-1"></script>
+<script src="auris-training-plan-list-workspace.js?v=20260916-1"></script>
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -81,7 +98,7 @@
 <script src="auris-applications-admin.js?v=20260901-8"></script>
 <script src="auris-record-edit-session.js?v=20260913-1"></script>
 <script src="auris-action-editor.js?v=20260913-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -109,7 +126,7 @@
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
-<link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1">
+<link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1&launcher-icons-20260916-1">
 <link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
 <link rel="stylesheet" href="auris-view-engine.css?v=20260908-1">
 <link rel="stylesheet" href="auris-record-workspace.css?v=20260908-1">
@@ -2535,6 +2552,14 @@
 <option value="open">Open</option><option value="in_progress">In Progress</option>
 <option value="completed">Completed</option><option value="closed">Closed</option>
 </select>
+<select id="audit-filter-attention" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit attention">
+<option value="">All attention states</option>
+<option value="overdue">Overdue</option><option value="due_soon">Due soon</option>
+<option value="unplanned">No plan</option><option value="open_findings">Open findings</option><option value="low_score">Low score</option>
+</select>
+<select id="audit-filter-score" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit score">
+<option value="">All scores</option><option value="excellent">80% and above</option><option value="acceptable">60–79%</option><option value="attention">Below 60%</option><option value="unscored">Not scored</option>
+</select>
 </div>
 <div id="audit-filter-label" class="auris-audit-s-7299078644"></div>
 </div>
@@ -3642,6 +3667,15 @@ Offline mode - changes will sync when connection is restored
 <option value="">All statuses</option>
 <option value="archived">Archived</option>
 </select>
+<select id="chem3attention-filter" class="auris-chemical-s-0e0379d349" data-auris-onchange="h0417" aria-label="Chemical attention">
+<option value="">All attention states</option>
+<option value="critical_risk">Critical risk</option>
+<option value="review_overdue">Review overdue</option>
+<option value="review_due_soon">Review due soon</option>
+<option value="sds_missing">SDS missing</option>
+<option value="sds_stale">SDS stale</option>
+<option value="controls_missing">Controls missing</option>
+</select>
 </div>
 </div>
 
@@ -3814,6 +3848,15 @@ Offline mode - changes will sync when connection is restored
 <option value="iso">ISO Standards</option>
 <option value="client">Client Standards</option>
 <option value="other">Other</option>
+</select>
+<select id="lr-filter-attention" class="auris-legal-s-d35063206b" data-auris-onchange="h0435" aria-label="Legal requirement attention">
+<option value="">All attention states</option>
+<option value="non_compliant">Non-compliant</option>
+<option value="open_gap">Open gap</option>
+<option value="review_overdue">Review overdue</option>
+<option value="review_due_soon">Review due soon</option>
+<option value="target_overdue">Target overdue</option>
+<option value="assessment_missing">Assessment missing</option>
 </select>
 <button class="btn auris-legal-s-6aa34d7432" id="lr-import-pdf-btn" data-auris-onclick="h0436"><i class="ti ti-file-import"></i>Import Act PDF</button>
 <input type="file" id="lr-pdf-input" class="auris-legal-s-6aa34d7432" accept="application/pdf,.pdf" data-auris-onchange="h0437"/>
@@ -11300,6 +11343,9 @@ I can help you:<br>
     <div class="auris-fire-certificates-s-73f315dd9f">
       <span class="auris-fire-certificates-s-1f435cd084">Fire Certificate Register</span>
       <input type="text" id="fire-cert-search" class="auris-fire-certificates-s-3cab7ef27d" placeholder="Search..." data-auris-oninput="h1241"/>
+      <select id="fire-cert-filter-type" aria-label="Certificate type"><option value="">All types</option><option value="fire_certificate">Fire Certificate</option><option value="fire_precaution">Fire Precaution</option><option value="occupation_permit">Occupation Permit</option><option value="temporary">Temporary</option><option value="other">Other</option></select>
+      <select id="fire-cert-filter-status" aria-label="Certificate status"><option value="">All statuses</option><option value="valid">Valid</option><option value="expiring_soon">Expiring soon</option><option value="expired">Expired</option><option value="suspended">Suspended</option><option value="pending_renewal">Pending renewal</option><option value="archived">Archived</option></select>
+      <select id="fire-cert-filter-attention" aria-label="Certificate attention"><option value="">All attention states</option><option value="expired">Expired</option><option value="expiring_soon">Expiring soon</option><option value="renewal_pending">Renewal pending</option><option value="missing_expiry">Missing expiry</option><option value="suspended">Suspended</option></select>
     </div>
     <div id="fire-cert-table-wrap" class="auris-fire-certificates-s-1b1d75452f">
       <table class="auris-fire-certificates-s-b7aa1ec004">
@@ -11705,7 +11751,7 @@ I can help you:<br>
 <script src="notification-centre.js?v=20260902-1"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>
-<link rel="stylesheet" href="auris-improvement-260910.css?v=20260913-1"><script src="auris-risk-library.js?v=20260913-1"></script>
+<link rel="stylesheet" href="auris-improvement-260910.css?v=20260913-1&launcher-icons-20260916-1"><script src="auris-risk-library.js?v=20260913-1"></script>
 <script src="auris-attendance-photo.js?v=20260913-1"></script>
 <script src="auris-register-columns.js?v=20260913-1"></script></body>
 </html>

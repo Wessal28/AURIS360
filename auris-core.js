@@ -7659,6 +7659,10 @@ if(!el)return;
 try{
 const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
 const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
+if(window.AurisNoiseListWorkspace){
+  try{return window.AurisNoiseListWorkspace.mount(el,d||[],{canEdit:isMgr(),openRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,survey_ref:selected.survey_ref,survey_type:selected.survey_type,site:selected.site,survey_date:selected.survey_date,conducted_by:selected.conducted_by,instrument_used:selected.instrument_used,calibration_date:selected.calibration_date,weather_conditions:selected.weather_conditions,layout_title:selected.layout_title,measurements:selected.measurements,hpe_assessment:selected.hpe_assessment,notes:selected.notes};return aurisReadOnlyRecordModal('Noise survey details',selected.site||'Noise survey',safe,aurisReadableRecordFields(safe));},printRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');return noisePrintSurvey(id);},editRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit noise surveys.');return noiseOpenSurvey(id);},onApplyFilters:function(){loadNoise();}});}
+  catch(error){el.innerHTML=registerErrorHtml('Noise Survey register',error.message||String(error));console.error(error);return;}
+}
 if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
 var now=new Date();
 var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1320px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Layout</th><th>Conducted by</th><th>Points</th><th>Max Leq</th><th>Max LEX,8h</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
@@ -8079,6 +8083,17 @@ function chemDateBadge(x){
 
 function chemRenderTable(){
   var el=document.getElementById('chem3table');if(!el)return;
+  if(window.AurisChemicalListWorkspace){
+    try{
+      return window.AurisChemicalListWorkspace.mount(el,chemData||[],{
+        filters:{search:document.getElementById('chem3search')?.value||'',risk:document.getElementById('chem3risk-filter')?.value||'',status:document.getElementById('chem3status-filter')?.value||'',attention:document.getElementById('chem3attention-filter')?.value||''},
+        canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){[['chem3search','search'],['chem3risk-filter','risk'],['chem3status-filter','status'],['chem3attention-filter','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});chemRenderTable();},
+        openRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This chemical is unavailable or outside your company access.');if(typeof ccuOpenChemicalDetail==='function')return ccuOpenChemicalDetail(id);if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Chemical details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Chemical details',selected.product_name||'Chemical',selected,[['Chemical reference',selected.chemical_ref],['Product name',selected.product_name],['Supplier',selected.supplier],['Manufacturer',selected.manufacturer],['Status',selected.status],['Risk level',selected.risk_level],['Location',selected.location],['Department',selected.department],['Process / use',selected.process_use],['Hazards',Array.isArray(selected.hazard_statements)?selected.hazard_statements.join(', '):selected.hazard_identification],['Existing controls',selected.existing_controls],['PPE required',selected.ppe_required],['SDS revision date',selected.sds_revision_date],['Review date',selected.review_date]]);},
+        editRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit chemicals.');if(typeof chemEdit!=='function')throw new Error('The chemical form is unavailable. Reload the register.');return chemEdit(id);}
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('Chemical Control',error.message||String(error));console.error(error);return;}
+  }
   var q=(document.getElementById('chem3search')?.value||'').toLowerCase();
   var risk=document.getElementById('chem3risk-filter')?.value||'';
   var status=document.getElementById('chem3status-filter')?.value||'';
@@ -10411,6 +10426,10 @@ async function mtgLoadMinutes(){
   try{
     var d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
     mtgMinutesData=d||[];
+    if(window.AurisMeetingsListWorkspace){
+      try{return window.AurisMeetingsListWorkspace.mount(el,mtgMinutesData||[],{canEdit:isMgr(),openRecord:function(id,current){var selected=(mtgMinutesData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('These meeting minutes are unavailable or outside your company access.');return mtgViewMomReadOnly(id);},editRecord:function(id,current){var selected=(mtgMinutesData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('These meeting minutes are unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit meeting minutes.');return mtgOpenMom(id);},onApplyFilters:function(){mtgLoadMinutes();}});}
+      catch(error){el.innerHTML=registerErrorHtml('HSE Meetings register',error.message||String(error));console.error(error);return;}
+    }
     if(!d||!d.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet - schedule a meeting from the Schedule tab.</div>';
       return;
@@ -14635,6 +14654,11 @@ function imsRenderIncidentDashboard(data){
 }
 
 function imsFilterList(){
+  if(window.AurisIncidentListWorkspace){
+    var el=document.getElementById('ims-register-inner')||document.getElementById('ims-register-list');if(!el)return;
+    try{return window.AurisIncidentListWorkspace.mount(el,imsAllData||[],{filters:{search:document.getElementById('ev-search')?.value||'',type:document.getElementById('ev-filter-type')?.value||'',severity:document.getElementById('ev-filter-severity')?.value||'',status:document.getElementById('ev-filter-status')?.value||'',site:document.getElementById('ev-filter-site')?.value||'',department:document.getElementById('ev-filter-department')?.value||'',range:document.getElementById('ev-filter-range')?.value||'year'},openRecord:function(id,current){var selected=(imsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This incident is unavailable or outside your company access.');if(typeof imv2OpenIncidentReadOnly==='function')return imv2OpenIncidentReadOnly(id);if(typeof evOpenDetail==='function')return evOpenDetail(id);throw new Error('The incident record viewer is unavailable. Reload the register.');}});}
+    catch(error){el.innerHTML='<div class="imx-empty"><strong>Incident register could not be displayed</strong><span>'+escH(error.message||error)+'</span></div>';console.error(error);return;}
+  }
   imsRenderIncidentRegister(imsIncidentFiltered());
 }
 
@@ -16432,6 +16456,23 @@ async function raLoadJSAList(){
 
 function raFilterList(){
   var el=document.getElementById('ra-list');if(!el)return;
+  if(window.AurisRiskListWorkspace){
+    try{
+      return window.AurisRiskListWorkspace.mount(el,raAllData||[],{
+        filters:{search:document.getElementById('ra-search')?.value||'',type:document.getElementById('ra-filter-type')?.value||'',status:document.getElementById('ra-filter-status')?.value||'',risk:document.getElementById('ra-filter-risk')?.value||'',scope:'all'},
+        onApplyFilters:function(value){
+          [['ra-search','search'],['ra-filter-type','type'],['ra-filter-status','status'],['ra-filter-risk','risk']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});
+          raFilterList();
+        },
+        openRecord:function(id,current){
+          if(!current||String(current.companyId)!==String(ccid()))throw new Error('Your company changed. Reload the risk register.');
+          var selected=(raAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});
+          if(!selected)throw new Error('This risk assessment is unavailable or outside your company access.');
+          raOpen(selected.id);
+        }
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Risk Assessment register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var q=(document.getElementById('ra-search')?.value||'').toLowerCase();
   var ft=document.getElementById('ra-filter-type')?.value||'';
   var fs=document.getElementById('ra-filter-status')?.value||'';
@@ -20923,6 +20964,34 @@ function conFilterRegister(){
   var fst=document.getElementById('con-filter-status')?.value||'';
   var fcat=document.getElementById('con-filter-cat')?.value||'';
   var fcomp=document.getElementById('con-filter-compliance')?.value||'';
+  if(window.AurisContractorListWorkspace){
+    try{
+      return window.AurisContractorListWorkspace.mount(el,conAllData||[],{
+        filters:{search:q,category:fcat,status:fst,compliance:fcomp},
+        canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('con-search',value.search);set('con-filter-cat',value.category);set('con-filter-status',value.status);set('con-filter-compliance',value.compliance);conFilterRegister();
+        },
+        openRecord:function(id){
+          var row=(conAllData||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():'') )throw new Error('This contractor is outside the current company. Reload the register.');
+          if(typeof conOpenDetail!=='function')throw new Error('Contractor details are unavailable. Reload the register.');
+          conOpenDetail(id);
+        },
+        editRecord:function(id){
+          var row=(conAllData||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():'') )throw new Error('This contractor is outside the current company. Reload the register.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof conEdit!=='function')throw new Error('Manager access is required to edit contractors.');
+          conEdit(id);
+        }
+      });
+    }catch(error){
+      el.innerHTML=registerErrorHtml('Contractor register',error.message||String(error));
+      console.error(error);
+      return;
+    }
+  }
   var filtered=conAllData.filter(function(x){
     var expiry=conDateState(x.expiry_date,60);
     var insurance=conDateState(x.insurance_expiry,60);
@@ -22477,6 +22546,10 @@ async function esgLoadInsp(){
   var el=document.getElementById('esg-insp-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/environmental_inspections?select=*'+cf()+'&order=inspection_date.desc');esgInspData=d||[];
+    if(window.AurisEsgListWorkspace){
+      try{return window.AurisEsgListWorkspace.mount(el,esgInspData||[],{canEdit:isMgr(),openRecord:function(id,current){var selected=(esgInspData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This environmental inspection is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,inspection_date:selected.inspection_date,inspector:selected.inspector,area:selected.area,inspection_type:selected.inspection_type,findings:selected.findings,non_conformances:selected.non_conformances,overall_rating:selected.overall_rating,corrective_actions:selected.corrective_actions,next_inspection_date:selected.next_inspection_date,signed_off:selected.signed_off,notes:selected.notes};return aurisReadOnlyRecordModal('Environmental inspection details',selected.area||'Environmental inspection',safe,aurisReadableRecordFields(safe));},editRecord:function(id,current){var selected=(esgInspData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This environmental inspection is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit environmental inspections.');return esgInspEdit(id);},onApplyFilters:function(){esgLoadInsp();}});}
+      catch(error){el.innerHTML=registerErrorHtml('register',error.message||String(error));console.error(error);return;}
+    }
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No environmental inspections.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0172"><i class="ti ti-plus"></i>New</button>':'')+'</div>';return;}
     var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],unacceptable:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr>'
@@ -23188,6 +23261,10 @@ async function emEqLoadLegacy(){
     var q='/emergency_equipment?select=*'+cf()+'&order=equipment_type,location';
     if(ft)q+='&equipment_type=eq.'+ft;
     var d=await api(q);emEqData=d||[];
+    if(window.AurisEmergencyListWorkspace){
+      try{return window.AurisEmergencyListWorkspace.mount(el,emEqData||[],{filters:{type:ft},canEdit:isMgr(),openRecord:function(id,current){var selected=(emEqData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This emergency equipment is unavailable or outside your company access.');return aurisReadOnlyRecordModal('Emergency equipment details',selected.identifier||selected.equipment_type||'Emergency equipment',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(emEqData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This emergency equipment is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit emergency equipment.');return emEqEdit(id);},onApplyFilters:function(value){var typeEl=document.getElementById('em3eq-filter-type');if(typeEl)typeEl.value=value.type||'';emEqLoad();}});}
+      catch(adapterError){el.innerHTML=registerErrorHtml('emergency equipment register',adapterError.message);return;}
+    }
     var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('em3eq-total',d?d.length:0);setM('em3eq-ok',d?d.filter(x=>x.status==='operational').length:0);setM('em3eq-bad',d?d.filter(x=>x.status!=='operational').length:0);setM('em3eq-due',d?d.filter(x=>(x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon)).length:0);setM('em3eq-fe',d?d.filter(x=>x.equipment_type==='fire_extinguisher').length:0);
@@ -23437,6 +23514,10 @@ async function ohMsLoad(){
     var q='/medical_surveillance?select=*'+cf()+'&order=exam_date.desc';
     if(ft&&ft!=='due_60'&&ft!=='overdue')q+='&exam_type=eq.'+ft;
     var d=await api(q);ohMsData=d||[];
+    if(window.AurisOhealthListWorkspace){
+      try{return window.AurisOhealthListWorkspace.mount(el,ohMsData||[],{filters:{type:ft},canEdit:isMgr(),openRecord:function(id,current){var selected=(ohMsData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This medical record is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,employee_name:selected.employee_name,employee_id:selected.employee_id,department:selected.department,job_title:selected.job_title,exam_type:selected.exam_type,exam_date:selected.exam_date,next_exam_date:selected.next_exam_date,fitness_status:selected.fitness_status,follow_up_required:selected.follow_up_required,report_ref:selected.report_ref,status:selected.status};return aurisReadOnlyRecordModal('Medical surveillance details',selected.employee_name||'Medical examination',safe,aurisReadableRecordFields(safe));},editRecord:function(id,current){var selected=(ohMsData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This medical record is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit medical surveillance.');return msEdit(id);},onApplyFilters:function(value){var filterEl=document.getElementById('oh-ms-filter');if(filterEl)filterEl.value=value.type||'';ohMsLoad();}});}
+      catch(adapterError){el.innerHTML=registerErrorHtml('medical surveillance register',adapterError.message);return;}
+    }
     if(ft==='due_60'||ft==='overdue'){
       var today=new Date();today.setHours(0,0,0,0);
       var soon=new Date(today);soon.setDate(soon.getDate()+60);
@@ -24478,6 +24559,10 @@ async function ppeLoadIssuance(){
   try{
     var q='/ppe_issuance?select=*'+cf()+'&order=issued_date.desc';if(fs)q+='&status=eq.'+fs;
     var d=await api(q);ppeIssData=d||[];
+    if(window.AurisPpeListWorkspace){
+      try{return window.AurisPpeListWorkspace.mount(el,ppeIssData||[],{filters:{search:q_param,status:fs},canEdit:isMgr(),openRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');return aurisReadOnlyRecordModal('PPE issuance details',selected.ppe_name||selected.employee_name||'PPE issuance',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(ppeIssData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This PPE issuance is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit PPE issuance.');return ppeIssEdit(id);},onApplyFilters:function(value){var searchEl=document.getElementById('ppe-iss-search');if(searchEl)searchEl.value=value.search||'';var statusEl=document.getElementById('ppe-iss-filter-status');if(statusEl)statusEl.value=value.status||'';ppeLoadIssuance();}});}
+      catch(adapterError){el.innerHTML=registerErrorHtml('PPE issuance register',adapterError.message);return;}
+    }
     if(q_param){var ql=q_param.toLowerCase();ppeIssData=ppeIssData.filter(x=>(x.employee_name||'').toLowerCase().includes(ql)||(x.ppe_name||'').toLowerCase().includes(ql)||(x.issuance_ref||'').toLowerCase().includes(ql)||(x.department||'').toLowerCase().includes(ql));}
     if(!ppeIssData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No issuance records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0215"><i class="ti ti-plus"></i>Issue PPE</button>':'')+'</div>';return;}
     var stCfg={active:['#EAF3DE','#3B6D11'],returned:['#f3f4f6','#6B7280'],expired:['#FCEBEB','#A32D2D'],lost:['#FCEBEB','#A32D2D'],condemned:['#f3f4f6','#6B7280']};
@@ -25000,6 +25085,19 @@ async function toolsLoadRegister(){
 function toolsFilterRegister(){
   var el=document.getElementById('tools-register-list');
   if(!el)return;
+  if(window.AurisToolsListWorkspace){
+    try{
+      return window.AurisToolsListWorkspace.mount(el,toolsAllData||[],{
+        filters:{search:document.getElementById('tools-search')?.value||'',category:document.getElementById('tools-filter-cat')?.value||'',status:document.getElementById('tools-filter-status')?.value||'',inspection:document.getElementById('tools-filter-inspection')?.value||''},
+        inspections:toolsLastInspectionByTool||{},
+        canEdit:isMgr(),
+        onApplyFilters:function(value){[['tools-search','search'],['tools-filter-cat','category'],['tools-filter-status','status'],['tools-filter-inspection','inspection']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});toolsFilterRegister();},
+        openRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This equipment is unavailable or outside your company access.');return toolsOpenEquipmentDetail(id);},
+        inspectRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||typeof toolsStartInspection!=='function')throw new Error('The equipment inspection form is unavailable. Reload the register.');return toolsStartInspection(id,'register');},
+        editRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this equipment.');return toolsEdit(id);}
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Tools &amp; Equipment register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var search=(document.getElementById('tools-search')?.value||'').toLowerCase();
   var cat=document.getElementById('tools-filter-cat')?.value||'';
   var status=document.getElementById('tools-filter-status')?.value||'';
@@ -26135,6 +26233,33 @@ function fleetRender(){
   setM('fleet-m3overdue',overdue);
   setM('fleet-m3fuel',Math.round(totalFuel));
   setM('fleet-m3co2',Math.round(totalCo2));
+  if(window.AurisFleetListWorkspace){
+    try{
+      return window.AurisFleetListWorkspace.mount(el,fleetVehicles||[],{
+        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],
+        filters:{search:q,status:statusFilter,check:checkFilter},canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('fleet-search',value.search);set('fleet-filter-status',value.status);set('fleet-filter-check',value.check);fleetRender();
+        },
+        openRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(typeof fleetOpenVehicleDetail!=='function')throw new Error('Vehicle details are unavailable. Reload the fleet.');fleetOpenVehicleDetail(id);
+        },
+        checkRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof fleetMonthlyCheck!=='function')throw new Error('Manager access is required to record a monthly vehicle check.');fleetMonthlyCheck(id);
+        },
+        editRecord:function(id){
+          var vehicle=(fleetVehicles||[]).find(function(item){return String(item.id)===String(id);});
+          if(!vehicle||String(vehicle.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This vehicle is outside the current company. Reload the fleet.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof fleetEditVehicle!=='function')throw new Error('Manager access is required to edit vehicles.');fleetEditVehicle(id);
+        }
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('Fleet module',error.message||String(error));console.error(error);return;}
+  }
   var rows=fleetVehicles.filter(function(v){
     var li=lastInsp[v.id], lastDt=li&&li.inspection_date?new Date(li.inspection_date):null;
     var days=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
@@ -26297,6 +26422,28 @@ function atexRender(){
   setM('atex-m3oos',atexAreas.filter(x=>x.status==='out_of_service').length);
   setM('atex-m3due',atexAreas.filter(x=>x.status!=='archived'&&x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
   atexRenderZoningPlan();
+  if(window.AurisAtexListWorkspace){
+    try{
+      return window.AurisAtexListWorkspace.mount(el,atexAreas||[],{
+        filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){
+          var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
+          set('atex-search',value.search);set('atex-filter-zone',value.zone);set('atex-filter-status',value.status);atexRender();
+        },
+        openRecord:function(id){
+          var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
+          if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('ATEX area details are unavailable. Reload the register.');
+          aurisReadOnlyRecordModal('ATEX area details',row.area_name||'ATEX area',row,[['Status',String(row.status||'controlled').replace(/_/g,' ')],['Location',row.location],['Plant area',row.plant_area],['Zone',String(row.zone_type||'').replace(/_/g,' ')],['Material',String(row.material_type||'').replace(/_/g,' ')],['Substance',row.substance],['Source of release',row.source_of_release],['Ventilation controls',row.ventilation_controls],['Ignition controls',row.ignition_controls],['Detection / monitoring',row.detection_controls],['Next inspection',row.next_inspection_date],['Responsible person',row.responsible_person],['Linked risk assessment',row.linked_ra_ref],['Linked permit',row.linked_permit_ref],['Notes',row.notes]]);
+        },
+        editRecord:function(id){
+          var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
+          if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
+          if(!(typeof isMgr==='function'&&isMgr())||typeof atexEdit!=='function')throw new Error('Manager access is required to edit ATEX areas.');atexEdit(id);
+        }
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('ATEX area register',error.message||String(error));console.error(error);return;}
+  }
   if(!filtered.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0244"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
     return;
@@ -29784,6 +29931,17 @@ async function legalLoadRegister(){
 
 function legalFilterRegister(){
   var el=document.getElementById('lr-table');if(!el)return;
+  if(window.AurisLegalListWorkspace){
+    try{
+      return window.AurisLegalListWorkspace.mount(el,lrAllData||[],{
+        filters:{search:document.getElementById('lr-search')?.value||'',status:document.getElementById('lr-filter-status')?.value||'',archived:document.getElementById('lr-filter-archived')?.value||'',legislation:document.getElementById('lr-filter-leg')?.value||'',category:document.getElementById('lr-filter-cat')?.value||'',attention:document.getElementById('lr-filter-attention')?.value||''},
+        canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){[['lr-search','search'],['lr-filter-status','status'],['lr-filter-archived','archived'],['lr-filter-leg','legislation'],['lr-filter-cat','category'],['lr-filter-attention','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});legalFilterRegister();},
+        openRecord:function(id,current){var selected=(lrAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This legal requirement is unavailable or outside your company access.');if(typeof legalOpenReq==='function')return legalOpenReq(id);if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Legal requirement details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Legal requirement details',selected.title||selected.requirement||'Legal requirement',selected,[['Reference',selected.req_ref],['Legislation',selected.legislation],['Section',selected.section],['Requirement',selected.requirement],['Status',selected.status],['Compliance score',selected.compliance_score],['Controls',selected.controls],['Evidence required',selected.evidence_required],['Responsible person',selected.responsible_person||selected.responsibility],['Review date',selected.review_date],['Notes',selected.notes]]);},
+        editRecord:function(id,current){var selected=(lrAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit legal requirements.');if(typeof legalOpenReq!=='function')throw new Error('The legal requirement form is unavailable. Reload the register.');legalOpenReq(id);if(typeof legalReqEditMode==='function')legalReqEditMode(true);}
+      });
+    }catch(error){el.innerHTML=setupFriendlyMessage('Legal Compliance',error.message||String(error));console.error(error);return;}
+  }
   var q=(document.getElementById('lr-search')?.value||'').toLowerCase();
   var fs=document.getElementById('lr-filter-status')?.value||'';
   var fl=document.getElementById('lr-filter-leg')?.value||'';
@@ -32347,6 +32505,10 @@ async function tpLoad(){
     var setM=function(id,v,c){var e=document.getElementById(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
     setM('tp-m3planned',planned);setM('tp-m3completed',completed);
     setM('tp-m3progress',progress);setM('tp-m3overdue',overdue,'#E24B4A');
+    if(window.AurisTrainingPlanListWorkspace){
+      try{return window.AurisTrainingPlanListWorkspace.mount(el,tpAllData||[],{records:trainingRecords||[],canEdit:isMgr(),openRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');return aurisReadOnlyRecordModal('Training plan details',selected.training_topic||'Training plan item',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit the training plan.');return tpOpen(id);},onApplyFilters:function(){tpLoad();}});}
+      catch(error){el.innerHTML=registerErrorHtml('register',error.message);console.error(error);return;}
+    }
     if(!tpAllData.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
@@ -33154,6 +33316,18 @@ async function auditLoad(typeFilter) {
 
 function auditFilter() {
   var el = document.getElementById('audit-register-list'); if(!el) return;
+  if(window.AurisAuditListWorkspace){
+    try{
+      return window.AurisAuditListWorkspace.mount(el,auditAllData||[],{
+        tab:auditCurrentTab||'all',
+        canEdit:isMgr(),
+        filters:{search:document.getElementById('audit-search')?.value||'',type:document.getElementById('audit-filter-type')?.value||'',status:document.getElementById('audit-filter-status')?.value||'',attention:document.getElementById('audit-filter-attention')?.value||'',score:document.getElementById('audit-filter-score')?.value||'',range:'all'},
+        onApplyFilters:function(value){[['audit-search','search'],['audit-filter-type','type'],['audit-filter-status','status'],['audit-filter-attention','attention'],['audit-filter-score','score']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});auditFilter();},
+        openRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This inspection is unavailable or outside your company access.');return auditOpenReadOnly(id);},
+        editRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this inspection.');return auditOpen(id);}
+      });
+    }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Audits &amp; Inspections register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
+  }
   var q = (document.getElementById('audit-search')?.value||'').toLowerCase();
   var ft = document.getElementById('audit-filter-type')?.value||'';
   var fs = document.getElementById('audit-filter-status')?.value||'';
@@ -35623,9 +35797,14 @@ function appLauncherToggleFavourite(pageKey){
 function appLauncherCard(module,activePage,favourites){
   var isActive=module.k===activePage;
   var favourite=favourites.indexOf(module.k)!==-1;
-  return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
+  // Mark the launcher card and icon synchronously. The shared icon decorator
+  // also observes the launcher, but cards are rebuilt in one DOM write and
+  // can be painted before that observer runs. Without the explicit key/class
+  // the atlas position selector has no key and the icon appears as a blank
+  // white tile in the app launcher while sidebar artwork still renders.
+  return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" data-nav-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
     +'<button type="button" class="auris-app-favourite'+(favourite?' on':'')+'" data-favourite-key="'+escapeHtml(module.k)+'" aria-label="'+(favourite?'Remove from':'Add to')+' favourites" aria-pressed="'+(favourite?'true':'false')+'"><i class="ti ti-star'+(favourite?'-filled':'')+'"></i></button>'
-    +'<span class="auris-app-card-icon" style="background:'+module.color+'"><i class="ti '+module.i+'"></i></span>'
+    +'<span class="auris-app-card-icon" style="background:'+escapeHtml(module.color||'#185FA5')+'"><i class="ti '+escapeHtml(module.i||'ti-apps')+' auris-module-icon" aria-hidden="true"></i></span>'
     +'<span class="auris-app-card-label">'+escapeHtml(module.l)+'</span></div>';
 }
 function appLauncherRenderApps(query){
@@ -40956,6 +41135,10 @@ async function loadFire() {
     var el=document.getElementById(id);
     if(el) el.style.display = isMgr() ? 'inline-flex' : 'none';
   });
+  [['fire-cert-search','input'],['fire-cert-filter-type','change'],['fire-cert-filter-status','change'],['fire-cert-filter-attention','change']].forEach(function(pair){
+    var control=document.getElementById(pair[0]);
+    if(control&&!control.dataset.fireWorkspaceBound){control.dataset.fireWorkspaceBound='1';control.addEventListener(pair[1],function(){fireRenderCerts();});}
+  });
   fireSwitchTab(fireCurrentTab, document.getElementById('fire-tab-'+fireCurrentTab));
 }
 
@@ -41007,11 +41190,28 @@ function fireSwitchTab(tab, el) {
 
 // -- Render Certificates -------------------------------------------
 function fireRenderCerts() {
+  fireRenderCertStats();
+  var workspace = document.getElementById('fire-cert-table-wrap');
+  if (window.AurisFireListWorkspace && workspace) {
+    var search=document.getElementById('fire-cert-search')?.value||'';
+    var type=document.getElementById('fire-cert-filter-type')?.value||'';
+    var status=document.getElementById('fire-cert-filter-status')?.value||'';
+    var attention=document.getElementById('fire-cert-filter-attention')?.value||'';
+    var empty=document.getElementById('fire-cert-empty');if(empty)empty.style.display='none';
+    try {
+      return window.AurisFireListWorkspace.mount(workspace,fireAllCerts||[],{
+        filters:{search:search,type:type,status:status,attention:attention},
+        inspections:fireAllInsp||[],equipment:fireAllEquip||[],canEdit:typeof isMgr==='function'&&isMgr(),
+        onApplyFilters:function(value){[['fire-cert-search','search'],['fire-cert-filter-type','type'],['fire-cert-filter-status','status'],['fire-cert-filter-attention','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});fireRenderCerts();},
+        openRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This fire certificate is unavailable or outside your company access.');if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Fire certificate details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Fire certificate details',selected.premises_name||'Fire certificate',selected,[['Certificate number',selected.cert_number],['Type',fireCertTypeLabel(selected.cert_type)],['Address',selected.address],['Occupancy',selected.occupancy_type],['Issuing authority',selected.issuing_authority],['Issue date',selected.issue_date],['Expiry date',selected.expiry_date],['Status',selected.status],['Renewal submitted',selected.renewal_submitted?'Yes':'No'],['Renewal date',selected.renewal_date],['Conditions',selected.conditions],['Notes',selected.notes]]);},
+        editRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit fire certificates.');if(typeof fireShowCertForm!=='function')throw new Error('The fire certificate form is unavailable. Reload the register.');return fireShowCertForm(id);}
+      });
+    } catch(error) {workspace.innerHTML=registerErrorHtml('Fire Certificate register',error.message||String(error));console.error(error);return;}
+  }
   var tbody = document.getElementById('fire-cert-tbody');
   var empty = document.getElementById('fire-cert-empty');
   if (!tbody) return;
   // Stats
-  fireRenderCertStats();
   if (!fireAllCerts.length) {
     tbody.innerHTML = '';
     if (empty) empty.style.display = 'block';
@@ -41069,6 +41269,7 @@ function fireRenderCertStats() {
 }
 
 function fireFilterCerts(q) {
+  if(window.AurisFireListWorkspace){fireRenderCerts();return;}
   q = q.toLowerCase();
   var rows = document.querySelectorAll('#fire-cert-tbody tr');
   rows.forEach(function(r){ r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });

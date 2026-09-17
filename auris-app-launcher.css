@@ -10,8 +10,8 @@
 #modules-menu .auris-app-card{position:relative;min-height:104px;padding:12px 8px 10px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);text-align:center;cursor:pointer}
 #modules-menu .auris-app-card:hover,#modules-menu .auris-app-card:focus-visible{background:#F8FAFC;border-color:#E2E8F0;outline:none}
 #modules-menu .auris-app-card.active{background:#EFF6FF;border-color:#BFDBFE}
-#modules-menu .auris-app-card-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 8px;border-radius:12px;color:#fff;box-shadow:0 8px 18px rgba(15,23,42,.13)}
-#modules-menu .auris-app-card-icon i{font-size:22px}
+#modules-menu .auris-app-card-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 8px;border-radius:12px;color:#fff;background-color:#185FA5;box-shadow:0 8px 18px rgba(15,23,42,.13)}
+#modules-menu .auris-app-card-icon i{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-size:22px}
 #modules-menu .auris-app-card-label{display:block;font-size:11px;font-weight:700;line-height:1.25}
 #modules-menu .auris-app-favourite{position:absolute;top:5px;right:5px;width:24px;height:24px;border:0;background:transparent;color:#94A3B8;border-radius:50%;cursor:pointer}
 #modules-menu .auris-app-favourite:hover{background:#E2E8F0;color:#D97706}
