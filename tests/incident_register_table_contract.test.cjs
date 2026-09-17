@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const core = fs.readFileSync(path.join(root, 'auris-core.js'), 'utf8');
@@ -10,7 +11,19 @@ const css = fs.readFileSync(path.join(root, 'incident-management-upgrade.css'), 
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('Incident Register renders the complete filtered record table instead of dashboard analytics', () => {
-  assert.match(core, /function imsFilterList\(\)\{\s*imsRenderIncidentRegister\(imsIncidentFiltered\(\)\);\s*\}/);
+  const filterSource = core.slice(core.indexOf('function imsFilterList(){'), core.indexOf('// --- REPORT FORM', core.indexOf('function imsFilterList(){')));
+  const records = [{id:'one'}, {id:'two'}];
+  const host = {};
+  let mounted, rendered;
+  const context = {window:{AurisIncidentListWorkspace:{mount:(element,rows)=>{mounted={element,rows};}}}, document:{getElementById:id=>id==='ims-register-inner'?host:null}, imsAllData:records, imsIncidentFiltered:()=>records, imsRenderIncidentRegister:rows=>{rendered=rows;}};
+  vm.runInNewContext(filterSource, context);
+  context.imsFilterList();
+  assert.equal(mounted.element, host);
+  assert.equal(mounted.rows, records, 'shared register receives every record for scoped filtering');
+  assert.equal(rendered, undefined);
+  context.window.AurisIncidentListWorkspace = null;
+  context.imsFilterList();
+  assert.equal(rendered, records, 'legacy fallback retains every filtered record');
   assert.doesNotMatch(core, /function imsFilterList\(\)\{\s*imsRenderIncidentDashboard/);
   assert.match(core, /function imsRenderIncidentRegister\(data\)/);
   assert.match(core, /Incident reference[\s\S]*Actual severity[\s\S]*Potential severity[\s\S]*Investigation[\s\S]*Reported by/);
