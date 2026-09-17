@@ -14,7 +14,7 @@ function ppeRecordWindow(kind,id,mode){
   if(mode==='edit'&&!isMgr()){toast('Manager access is required to edit PPE records.',false);return;}
   var url=new URL(deepLinkRecordUrl({module:'ppe',id:id,table:ppeRecordTable(kind),company_id:ccid()}));
   url.searchParams.set('ppeWindow','1');url.searchParams.set('ppeMode',mode==='edit'?'edit':'view');
-  var child=window.open(url.toString(),'_blank','width=1180,height=860');
+  var child=window.open(url.toString(),'_blank');
   if(!child)toast('Allow popups to open the PPE record in a separate window.',false);
   else child.opener=null;
 }
@@ -87,7 +87,7 @@ function ppePrintRecord(kind,row){
 async function ppePrintEmployee(row){
   var company=String(ccid()),name=row.employee_name;
   if(!name)return;
-  var printWindow=window.open('','_blank','width=1180,height=860');
+  var printWindow=window.open('','_blank');
   if(!printWindow){toast('Allow popups to print employee records.',false);return;}
   printWindow.document.body.textContent='Loading employee PPE records…';
   try{
