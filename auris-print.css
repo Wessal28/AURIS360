@@ -101,3 +101,6 @@ body.auris-print-landscape th,body.auris-print-landscape td{white-space:normal;o
 .ppe-record-field dd{font-size:10pt;margin:3px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 body.auris-print-ppe table{font-size:9pt}
 body.auris-print-ppe th,body.auris-print-ppe td{padding:6px 7px}
+
+/* Equipment reports keep complete history tables readable on landscape pages. */
+.equipment-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.equipment-fields dt{font-weight:700}.equipment-fields dd{margin:4px 0 10px;white-space:pre-wrap;overflow-wrap:anywhere}.equipment-table{overflow:visible!important}.equipment-table table{font-size:9pt}.equipment-table th,.equipment-table td{padding:6px}.equipment-content section{break-inside:auto}
