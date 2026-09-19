@@ -1,0 +1,45 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const source=fs.readFileSync(path.join(__dirname,'../auris-work-schedule-workspace.js'),'utf8');
+const rows=[{id:'wo-1',company_id:'co-a',title:'Service pump',ref_number:'WO-001',supervisor_name:'Ada Smith',status:'in_progress',priority:'high',planned_start:'2026-09-19',planned_end:'2026-09-20',toolbox_talk_id:'11111111-1111-4111-8111-111111111111'},{id:'wo-2',company_id:'co-a',title:'Cancelled job',status:'cancelled',priority:'low',planned_end:'2026-09-01'},{id:'secret',company_id:'co-b',title:'Other company'}];
+function runtime(){
+  const identity={company:{id:'co-a'},profile:{id:'user-a'},role:'manager'},requests=[];let mounted,view,canEdit=true,allowed=true;
+  const context={URL,URLSearchParams,Date,console,location:{search:''},wsAllData:[],wsCurrentId:null,ccid:()=>identity.company.id,isMgr:()=>canEdit,canAccessPage:()=>allowed,toast:()=>{},escH:value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),wsRestEqValue:encodeURIComponent,
+    deepLinkRecordUrl:record=>'https://example.com/?goto='+record.module+'&record='+record.id+'&company='+record.company_id+'&table='+record.table,
+    AurisPlatformServices:{ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:key=>{assert.equal(key,'workschedule');if(!allowed)throw Error('Access denied');}}},
+    AurisViewEngine:{mount:(host,data,options)=>{mounted={data,options};return mounted;}},
+    api:async(url,options)=>{assert.equal(options,undefined,'record viewing never writes');requests.push(url);if(url.startsWith('/work_schedule?'))return [rows[0]];if(url.startsWith('/work_schedule_links?'))return [];if(url.startsWith('/toolbox_talks?'))return [{id:rows[0].toolbox_talk_id,company_id:'co-a',title:'Linked talk'}];throw Error('Unexpected request '+url);},
+    wsEdit:async id=>{view={edit:id};},wsShowDetail:async id=>{view={manage:id};}
+  };context.window=context;vm.createContext(context);vm.runInContext(source,context);context.wsShowReadOnly=(...args)=>{view=args;};
+  return {context,identity,requests,api:context.AurisWorkScheduleWorkspace,mounted:()=>mounted,view:()=>view,viewer:()=>{canEdit=false;},deny:()=>{allowed=false;}};
+}
+test('work filters combine supervisor search, priority and status without leaking other companies',()=>{
+  const r=runtime(),current=r.api.session(),select=filters=>Array.from(r.api.project(rows,current,{filters}),x=>x.id);
+  assert.deepEqual(select({}),['wo-1','wo-2']);assert.deepEqual(select({search:'ada',priority:'high',status:'in_progress'}),['wo-1']);assert.deepEqual(select({search:'ada',priority:'low'}),[]);assert.deepEqual(select({status:'cancelled'}),['wo-2']);
+});
+test('day boundaries include both endpoints and due today is not overdue',()=>{
+  const r=runtime();assert.equal(r.api.onDay(rows[0],'2026-09-20'),true);assert.equal(r.api.onDay(rows[0],'2026-09-21'),false);assert.equal(r.api.onDay({planned_start:'2026-09-20'},'2026-09-20'),true);
+  assert.equal(r.api.overdue(rows[0],new Date(2026,8,20,23,59)),false);assert.equal(r.api.overdue(rows[0],new Date(2026,8,21)),true);assert.equal(r.api.overdue(rows[1],new Date(2026,8,21)),false);
+});
+test('saved filters use the shared register and reject a changed session',()=>{
+  const r=runtime();let applied;r.api.mount({},rows,{canEdit:false,filters:{status:'cancelled'},onApplyFilters:f=>{applied=f;}});const m=r.mounted();assert.equal(m.options.moduleKey,'work-schedule');assert.equal(m.options.actions[1].when(),false);m.options.onApplyFilters({search:'Ada'});assert.equal(applied.search,'Ada');
+  assert.match(m.options.actions[0].href(m.data[0]),/wsMode=view/);r.identity.company.id='co-b';assert.throws(()=>m.options.onApplyFilters({}),/changed/);
+});
+test('read-only rendering escapes record content and creates no editing controls',()=>{
+  const r=runtime(),html=r.context.wsReadOnlyHtml({description:'<img onerror=bad>',requires_ra:false,team_members:['Ada','Ben']});assert.match(html,/&lt;img/);assert.match(html,/Ada, Ben/);assert.match(html,/No<\/dd>/);assert.doesNotMatch(html,/<input|<select|<textarea|contenteditable|<img/);
+});
+test('view loads the exact company record and its links through read-only requests',async()=>{
+  const r=runtime();assert.equal(await r.context.wsOpenRecordRequest({record:'wo-1',company:'co-a',table:'work_schedule'}),true);assert.equal(r.view()[0].id,'wo-1');assert.match(r.requests[0],/id=eq.wo-1&company_id=eq.co-a/);
+  await assert.rejects(r.context.wsOpenRecordRequest({record:'wo-1',company:'co-b'}),/company/);
+});
+test('linked view verifies the parent relationship and module access before opening',async()=>{
+  const r=runtime();r.context.location.search='?wsLinkedKind=tbt&wsLinkedValue='+rows[0].toolbox_talk_id;
+  await r.context.wsOpenRecordRequest({record:'wo-1',company:'co-a'});assert.equal(r.view()[3].row.title,'Linked talk');assert.match(r.requests.at(-1),/toolbox_talks.*company_id=eq.co-a&id=eq/);
+  r.context.location.search='?wsLinkedKind=tbt&wsLinkedValue=unrelated';await assert.rejects(r.context.wsOpenRecordRequest({record:'wo-1'}),/no longer linked/);
+});
+test('edit and manage require manager access, stale responses never open',async()=>{
+  const r=runtime();r.context.location.search='?wsMode=edit';await r.context.wsOpenRecordRequest({record:'wo-1'});assert.equal(r.view().edit,'wo-1');r.viewer();await assert.rejects(r.context.wsOpenRecordRequest({record:'wo-1'}),/Manager/);
+  const stale=runtime();stale.context.api=async()=>{stale.identity.company.id='co-b';return [rows[0]];};await assert.rejects(stale.context.wsOpenRecordRequest({record:'wo-1'}),/changed/);assert.equal(stale.view(),undefined);
+});
+test('additional link failure is disclosed while direct links remain available',async()=>{
+  const r=runtime();r.context.api=async()=>{throw Error('offline');};const data=await r.context.wsReadRecordLinks(rows[0],r.api.session());assert.match(data.warning,/could not be loaded/);assert.equal(data.links[0].kind,'tbt');
+});

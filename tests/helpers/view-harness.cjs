@@ -12,15 +12,15 @@ module.exports=function runtime(){
     get innerHTML(){return markup;},
     set innerHTML(value){
       markup=value;elements=[];
-      for(const match of value.matchAll(/<(button|select|input|details|div)\b([^>]*)>/g)){
+      for(const match of value.matchAll(/<(button|select|input|details|div|a)\b([^>]*)>/g)){
         const attrs={},events={};
         for(const attr of match[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g))attrs[attr[1]]=attr[2]||'';
         const content=match[1]==='select'?value.slice(match.index+match[0].length,value.indexOf('</select>',match.index)):'';
         const options=[...content.matchAll(/<option value="([^"]*)"([^>]*)>/g)];
-        elements.push({attrs,events,value:(options.find(o=>o[2].includes('selected'))||options[0]||[])[1]||attrs.value||'',
+        elements.push({attrs,events,tagName:match[1].toUpperCase(),value:(options.find(o=>o[2].includes('selected'))||options[0]||[])[1]||attrs.value||'',
           checked:Object.hasOwn(attrs,'checked'),disabled:Object.hasOwn(attrs,'disabled'),hidden:Object.hasOwn(attrs,'hidden'),textContent:'',open:false,scrollLeft:0,scrollTop:0,
           getAttribute(name){return attrs[name]??null;},addEventListener(name,fn){events[name]=fn;},
-          fire(name='click'){if(!this.disabled)return events[name]?.();},focus(){document.activeElement=this;}});
+          fire(name='click',event){if(!this.disabled)return events[name]?.(event);},focus(){document.activeElement=this;}});
       }
     },
     querySelector(selector){return elements.find(el=>matches(el,selector))||null;},

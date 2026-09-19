@@ -1,4 +1,14 @@
 const test=require('node:test'),assert=require('node:assert/strict'),runtime=require('./helpers/view-harness.cjs');
+
+test('separate record links navigate natively but stale sessions block navigation',async()=>{
+  const r=runtime();let callbacks=0,blocked=false;
+  r.mount({actions:[{key:'view',label:'View',href:row=>'https://example.com/?record='+row.id}],onAction:()=>callbacks++});
+  const link=r.element('[data-view-action="view"]');assert.equal(link.tagName,'A');assert.equal(link.attrs.target,'_blank');assert.equal(link.attrs.rel,'noopener');
+  await link.fire('click',{preventDefault:()=>{blocked=true;}});assert.equal(blocked,false);assert.equal(callbacks,0);
+  r.identity.companyId='other';await link.fire('click',{preventDefault:()=>{blocked=true;}});assert.equal(blocked,true);assert.match(r.element('[data-view-feedback]').textContent,/changed/);
+  r.identity.companyId='co-a';
+  assert.throws(()=>r.mount({actions:[{key:'view',label:'View',href:()=> 'javascript:alert(1)'}]}),/HTTP/);
+});
 test('datetime fields retain local hours, minutes and timezone while date-only and invalid values stay honest',()=>{
   const r=runtime(),timestamp='2026-09-08T08:45:00+04:00';r.def.fields.push({key:'start',label:'Start',type:'datetime'});r.rows[0].start=timestamp;r.mount();
   const expected=new Date(timestamp).toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});

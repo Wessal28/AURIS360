@@ -13112,6 +13112,8 @@ function wsBadge(val, cfg){
 }
 
 async function loadWorkSchedule(){
+  document.getElementById('ws-record-view')?.remove();
+  wsEditContext=null;
   var addBtn=document.getElementById('ws-add-btn');
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   wsWeekOffset=0;
@@ -13143,22 +13145,30 @@ async function wsLoadList(){
   var el=document.getElementById('ws-list');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var context;
   try{
-    var d=await api('/work_schedule?select=*'+cf()+'&order=planned_start,created_at.desc');
-    wsAllData=d||[];
+    context=AurisWorkScheduleWorkspace.session();
+    var d=await api('/work_schedule?select=*&company_id=eq.'+encodeURIComponent(context.companyId)+'&order=planned_start,created_at.desc');
+    AurisWorkScheduleWorkspace.assertSession(context);
+    wsAllData=(d||[]).filter(function(row){return String(row.company_id)===context.companyId;});
     var today=new Date();
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('ws-m3planned',wsAllData.filter(x=>x.status==='planned'||x.status==='approved').length);
     setM('ws-m3progress',wsAllData.filter(x=>x.status==='in_progress').length);
     setM('ws-m3done',wsAllData.filter(x=>x.status==='completed').length);
-    setM('ws-m3overdue',wsAllData.filter(x=>['planned','approved','in_progress'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<today).length);
+    setM('ws-m3overdue',wsAllData.filter(x=>AurisWorkScheduleWorkspace.overdue(x,today)).length);
     setM('ws-m3hold',wsAllData.filter(x=>x.status==='on_hold').length);
     wsFilter();
-  }catch(e){if(el)el.innerHTML=registerErrorHtml('Work Schedule register',e.message);console.error(e);}
+    if(document.getElementById('ws-week-view')?.style.display==='block')wsRenderWeek();
+  }catch(e){if(context){try{AurisWorkScheduleWorkspace.assertSession(context);}catch(_){return;}}wsAllData=[];if(el)el.innerHTML=registerErrorHtml('Work Schedule register',e.message);console.error(e);}
 }
 
 function wsFilter(){
   var el=document.getElementById('ws-list');if(!el)return;
+  if(window.AurisWorkScheduleWorkspace&&window.AurisViewEngine){
+    window.AurisWorkScheduleWorkspace.mount(el,wsAllData,{canEdit:isMgr(),filters:{search:document.getElementById('ws-search')?.value,status:document.getElementById('ws-filter-status')?.value,priority:document.getElementById('ws-filter-priority')?.value},onApplyFilters:function(f){[['ws-search','search'],['ws-filter-status','status'],['ws-filter-priority','priority']].forEach(function(pair){var node=document.getElementById(pair[0]);if(node)node.value=f[pair[1]]||'';});wsFilter();}});
+    return;
+  }
   var search=(document.getElementById('ws-search')?.value||'').toLowerCase();
   var status=document.getElementById('ws-filter-status')?.value||'';
   var priority=document.getElementById('ws-filter-priority')?.value||'';
@@ -13225,7 +13235,7 @@ function wsRenderWeek(){
   var today=new Date();
   var mon=new Date(today);
   var day=today.getDay();
-  mon.setDate(today.getDate()-(day===0?6:day-1)+(wsWeekOffset*7));
+  mon.setDate(today.getDate()-(day===0?6:day-1)+(wsWeekOffset*7));mon.setHours(0,0,0,0);
   var days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   var labelEl=document.getElementById('ws-week-label');
   var endDay=new Date(mon);endDay.setDate(mon.getDate()+6);
@@ -13234,11 +13244,9 @@ function wsRenderWeek(){
   for(var i=0;i<7;i++){
     var d=new Date(mon);d.setDate(mon.getDate()+i);
     var isToday=d.toDateString()===today.toDateString();
-    var dayStr=d.toISOString().slice(0,10);
+    var dayStr=AurisWorkScheduleWorkspace.localDay(d);
     var dayOrders=wsAllData.filter(function(x){
-      if(!x.planned_start)return false;
-      var s=new Date(x.planned_start);var e=x.planned_end?new Date(x.planned_end):s;
-      return d>=s&&d<=e;
+      return String(x.company_id)===String(ccid())&&AurisWorkScheduleWorkspace.onDay(x,dayStr);
     });
     html+='<div class="card" style="padding:0;overflow:hidden;min-height:120px;border:2px solid '+(isToday?'var(--green)':'var(--border)')+'">'
       +'<div style="padding:6px 10px;background:'+(isToday?'var(--green)':'#f9fafb')+';color:'+(isToday?'#fff':'var(--text2)')+';font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">'
@@ -13246,9 +13254,9 @@ function wsRenderWeek(){
       +'<div style="padding:6px 8px">';
     dayOrders.forEach(function(x){
       var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
-      html+='<div style="background:'+pc[0]+';color:'+pc[1]+';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;margin-bottom:4px;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" '
-        +'data-id="'+x.id+'" data-auris-generated-onclick="g0085" title="'+escH(x.title)+'">'
-        +escH(x.title)+'</div>';
+      html+='<a style="display:block;background:'+pc[0]+';color:'+pc[1]+';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" '
+        +'target="_blank" rel="noopener" href="'+escH(AurisWorkScheduleWorkspace.href(x.id,'view',ccid()))+'" title="'+escH(x.title)+'">'
+        +escH(x.title)+'</a>';
     });
     html+='</div></div>';
   }
@@ -13258,9 +13266,10 @@ function wsRenderWeek(){
 
 // -- DETAIL VIEW --------------------------------------------------------------
 async function wsShowDetail(id){
+  if(!isMgr()){wsRecordWindow(id,'view');return;}
   var x=wsAllData.find(function(r){return r.id===id;});
-  if(!x){try{var d=await api('/work_schedule?id=eq.'+id);x=d?.[0];}catch(e){return;}}
-  if(!x)return;
+  if(!x){try{var d=await api('/work_schedule?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid()));x=d?.[0];}catch(e){return;}}
+  if(!x||String(x.company_id)!==String(ccid()))return;
   wsCurrentId=id;
   ['ws-list-view','ws-week-view','ws-form3view','ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(i){
     var el=document.getElementById(i);if(el)el.style.display='none';
@@ -13572,6 +13581,8 @@ function wsInitTeamMultiSelect(select){if(!select||select.dataset.clickToggleBou
 function wsSelectedTeamNames(){var select=document.getElementById('wsf-team');return select?Array.from(select.selectedOptions).map(function(o){return o.value;}).filter(Boolean).join(', ')||null:null;}
 
 async function wsNew(){
+  if(!isMgr()){toast('Manager access is required to create work orders.',false);return;}
+  var context=AurisWorkScheduleWorkspace.session();
   if(!await wsEnsureWorkOrderPeople())return;
   wsEditingId=null;
   document.getElementById('ws-form3title').textContent='New Work Order';
@@ -13581,6 +13592,7 @@ async function wsNew(){
   ['wsf-title','wsf-desc','wsf-location','wsf-dept','wsf-duration','wsf-notes','wsf-ra-ref','wsf-ptw-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   wsPopulateTeamSelect('');
   await wsLoadReferenceOptions();
+  AurisWorkScheduleWorkspace.assertSession(context);wsEditContext=context;
   ['wsf-start','wsf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var t=document.getElementById('wsf-type');if(t)t.value='maintenance';
   var s=document.getElementById('wsf-status');if(s)s.value='planned';
@@ -13594,8 +13606,11 @@ async function wsNew(){
 }
 
 async function wsEdit(id){
+  if(!isMgr()){toast('Manager access is required to edit work orders.',false);return;}
+  if(!wsOpeningLinkedRecord){wsRecordWindow(id,'edit');return;}
+  var context=AurisWorkScheduleWorkspace.session();
   var x=wsAllData.find(function(r){return r.id===id;});
-  if(!x)return;
+  if(!x||String(x.company_id)!==context.companyId)return;
   if(!await wsEnsureWorkOrderPeople())return;
   wsEditingId=id;
   document.getElementById('ws-form3title').textContent='Edit Work Order';
@@ -13603,6 +13618,7 @@ async function wsEdit(id){
   document.getElementById('ws-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('wsf-ref-display').textContent=x.ref_number||'WO-AUTO';
   await wsLoadReferenceOptions(x.ra_ref,x.permit_ref);
+  AurisWorkScheduleWorkspace.assertSession(context);wsEditContext=context;
   var flds={'wsf-title':'title','wsf-desc':'description','wsf-location':'location','wsf-dept':'department','wsf-duration':'estimated_duration','wsf-notes':'notes','wsf-ra-ref':'ra_ref','wsf-ptw-ref':'permit_ref'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   wsPopulateTeamSelect(x.team_members||'');
@@ -13629,6 +13645,8 @@ function wsFormBack(){
 }
 
 async function wsSave(){
+  if(!wsMaySave())return;
+  var saveContext=wsEditContext,editingId=wsEditingId;
   var title=document.getElementById('wsf-title')?.value?.trim();
   if(!title){toast('Please enter a work order title',false);return;}
   var supId=document.getElementById('wsf-supervisor')?.value||null;
@@ -13653,8 +13671,9 @@ async function wsSave(){
   body.risk_assessment_id=wsRa.id;body.permit_id=wsPermit.id;
   try{
     if(wsEditingId){
-      await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:body},'Work order');
-      var idx=wsAllData.findIndex(function(x){return x.id===wsEditingId;});
+      await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsEditingId+'&company_id=eq.'+encodeURIComponent(wsEditContext.companyId),{m:'PATCH',p:'return=minimal',b:body},'Work order');
+      AurisWorkScheduleWorkspace.assertSession(saveContext);
+      var idx=wsAllData.findIndex(function(x){return x.id===editingId;});
       if(idx>=0)Object.assign(wsAllData[idx],body);
       toast('Work order updated!');
       wsCurrentId=wsEditingId;
@@ -13662,10 +13681,12 @@ async function wsSave(){
     }else{
       body.created_by=prof?.id;
       var res=await apiWriteWithMissingColumnFallback('/work_schedule',{m:'POST',p:'return=representation',b:body},'Work order');
+      AurisWorkScheduleWorkspace.assertSession(saveContext);
       if(res?.[0]){
         // Generate ref number
         var yr=new Date().getFullYear();
         var ref=await nextCompanyRef('work_schedule','ref_number','WO-'+yr+'-');
+        AurisWorkScheduleWorkspace.assertSession(saveContext);
         try{await api('/work_schedule?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});res[0].ref_number=ref;}catch(ex){}
         res[0].ref_number=res[0].ref_number||ref;
         wsAllData.unshift(res[0]);
@@ -13678,6 +13699,8 @@ async function wsSave(){
 }
 
 async function wsDelete(){
+  if(!wsMaySave())return;
+  var deleteContext=wsEditContext;
   if(!wsEditingId)return;
   try{
     var current=wsAllData.find(function(x){return x.id===wsEditingId;})||{};
@@ -13690,7 +13713,9 @@ async function wsDelete(){
         cancelText:'Back',
         variant:'danger'
       })))return;
-      await api('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+      AurisWorkScheduleWorkspace.assertSession(deleteContext);if(!wsMaySave())return;
+      await api('/work_schedule?id=eq.'+wsEditingId+'&company_id=eq.'+encodeURIComponent(deleteContext.companyId),{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+      AurisWorkScheduleWorkspace.assertSession(deleteContext);
       var idx=wsAllData.findIndex(function(x){return x.id===wsEditingId;});
       if(idx>=0)wsAllData[idx].status='cancelled';
       toast('Work order cancelled and kept for audit history');
@@ -13698,7 +13723,9 @@ async function wsDelete(){
       return;
     }
     if(!(await appConfirmDelete('cancelled work order','Permanent deletion should be used only for duplicate/test work orders. Linked records may still refer to this work order.')))return;
-    await api('/work_schedule?id=eq.'+wsEditingId,{m:'DELETE',p:'return=representation'});
+    AurisWorkScheduleWorkspace.assertSession(deleteContext);if(!wsMaySave())return;
+    await api('/work_schedule?id=eq.'+wsEditingId+'&company_id=eq.'+encodeURIComponent(deleteContext.companyId),{m:'DELETE',p:'return=representation'});
+    AurisWorkScheduleWorkspace.assertSession(deleteContext);
     wsAllData=wsAllData.filter(function(x){return x.id!==wsEditingId;});
     toast('Cancelled work order permanently deleted');wsCurrentId=null;wsSetView('list');
   }catch(e){toastActionError('Delete work order','Work Schedule',e);}
@@ -38432,6 +38459,7 @@ async function deepLinkResume(reason){
     var opened=false;
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
+    else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
     else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
     else{
       var source={source_module:req.goto,source_type:req.goto,source_table:req.table||DEEP_LINK_DEFAULT_TABLES[req.goto]||'',source_id:req.record,source_ref:req.ref||req.record};

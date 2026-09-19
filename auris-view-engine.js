@@ -83,6 +83,11 @@ function value(row,field){
 }
 function available(row,options){return (options.actions||[]).filter(function(action){return typeof action.when!=='function'||action.when(row);});}
 function actionButton(row,action,label,options,extra){
+  if(typeof action.href==='function'){
+    var href=String(action.href(row)||'');
+    if(!/^https?:\/\//i.test(href))throw new Error('Record link must use HTTP or HTTPS.');
+    return '<a '+(extra||'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(label)+'</a>';
+  }
   return '<button type="button" '+(extra||'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'">'+esc(label)+'</button>';
 }
 function actions(row,options){return available(row,options).map(function(action){return actionButton(row,action,typeof action.label==='function'?action.label(row):action.label,options);}).join('');}
@@ -170,16 +175,17 @@ function bind(host,rows,options,moduleKey,context,state,ticket){
     if(typeof options.onApplyFilters==='function')options.onApplyFilters(Object.assign({},saved.filters||{}));else rerender('[data-view-saved]');
     if(!persisted)feedback('Browser storage is unavailable. This view is kept only until the application reloads.',false);
   });
-  host.querySelectorAll('[data-view-action]').forEach(function(button){button.addEventListener('click',async function(){
-    if(ticket.busy)return;
+  host.querySelectorAll('[data-view-action]').forEach(function(button){button.addEventListener('click',async function(event){
+    if(ticket.busy){if(event)event.preventDefault();return;}
     try{
       valid();var key=button.getAttribute('data-view-row'),actionKey=button.getAttribute('data-view-action');
       var row=tenantRows(rows,context).find(function(item){return String(item[options.definition.rowKey])===String(key);});
       if(!row||!available(row,options).some(function(action){return action.key===actionKey;}))throw new Error('This record action is unavailable. Reload the register.');
+      if(button.tagName==='A')return;
       var notice=host.querySelector('[data-view-feedback]');if(notice)notice.hidden=true;
       ticket.busy=true;host.querySelectorAll('[data-view-action]').forEach(function(el){el.disabled=true;});
       if(typeof options.onAction==='function')await options.onAction(actionKey,row);
-    }catch(error){if(renders.get(host)===ticket)feedback(error.message||'The action could not be opened.',true);}
+    }catch(error){if(event)event.preventDefault();if(renders.get(host)===ticket)feedback(error.message||'The action could not be opened.',true);}
     finally{ticket.busy=false;if(renders.get(host)===ticket)host.querySelectorAll('[data-view-action]').forEach(function(el){el.disabled=false;});}
   });});
 }
