@@ -216,7 +216,7 @@ async function main() {
     "version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount'
   ]);
   requireMarkers(assetSources.get('auris-tools-list-workspace.js'), 'Tools & Equipment list workspace', [
-    "version:'1.0.0'", 'assertSession', 'inspectionFor:inspectionFor', 'project:project', 'mount:mount'
+    "version:'1.1.0'", 'assertSession', 'inspectionFor:inspectionFor', 'project:project', 'mount:mount'
   ]);
   requireMarkers(assetSources.get('auris-audit-list-workspace.js'), 'Audits & Inspections list workspace', [
     "version:'1.0.0'", 'assertSession', 'scoreSummary:scoreSummary', 'project:project', 'mount:mount'
