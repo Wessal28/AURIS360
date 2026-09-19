@@ -33,3 +33,10 @@ test('shared equipment register exposes exact actions and protects sessions',asy
 test('release wiring publishes the equipment register before the core loader',()=>{
   const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-tools-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisToolsListWorkspace\.mount\(el,toolsAllData/);assert.match(read('sw-assets.js'),/auris-tools-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-tools-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-tools-list-workspace\.js/);assert.doesNotMatch(read('auris-tools-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);
 });
+
+test('staging equipment markers match the deployed adapter',()=>{
+ const checker=read('scripts/verify-staging-acceptance.cjs');
+ const block=checker.match(/requireMarkers\(assetSources\.get\('auris-tools-list-workspace\.js'\)[\s\S]*?\[([\s\S]*?)\]\);/);
+ assert.ok(block,'equipment marker block');
+ for(const match of block[1].matchAll(/"([^"\n]+)"/g))assert.ok(read('auris-tools-list-workspace.js').includes(match[1]),'Missing staging marker: '+match[1]);
+});

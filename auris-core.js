@@ -25116,6 +25116,7 @@ function toolsFilterRegister(){
       return window.AurisToolsListWorkspace.mount(el,toolsAllData||[],{
         filters:{search:document.getElementById('tools-search')?.value||'',category:document.getElementById('tools-filter-cat')?.value||'',status:document.getElementById('tools-filter-status')?.value||'',inspection:document.getElementById('tools-filter-inspection')?.value||''},
         inspections:toolsLastInspectionByTool||{},
+        recordHref:toolsRecordHref,
         canEdit:isMgr(),
         onApplyFilters:function(value){[['tools-search','search'],['tools-filter-cat','category'],['tools-filter-status','status'],['tools-filter-inspection','inspection']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});toolsFilterRegister();},
         openRecord:function(id,current){var selected=(toolsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This equipment is unavailable or outside your company access.');return toolsOpenEquipmentDetail(id);},
@@ -25189,6 +25190,9 @@ function toolsFilterRegister(){
 }
 
 async function toolsOpenEquipmentDetail(id){
+  return toolsRecordWindow(id,'view');
+}
+async function toolsOpenEquipmentDetailLegacy(id){
   var x=toolsAllData.find(function(r){return String(r.id)===String(id);});if(!x)return;
   try{
     var inspections=await api('/tool_inspections?tool_id=eq.'+encodeURIComponent(id)+'&status=eq.active&select=*&order=inspection_date.desc&limit=100')||[];
@@ -25206,6 +25210,7 @@ async function toolsOpenEquipmentDetail(id){
 
 // -- ADD / EDIT FORM ----------------------------------------------------------
 function toolsNew(){
+  toolsRecordEditContext=null;
   toolsFormReturnTab='register';toolsCategoryLocked=false;
   toolsEditingId=null;
   document.getElementById('tools-form3title').textContent='New Equipment';
@@ -25225,6 +25230,8 @@ function toolsNew(){
 }
 
 function toolsEdit(id){
+  if(!isMgr()){toast('Manager access is required to edit equipment.',false);return;}
+  if(!toolsOpeningLinkedRecord)return toolsRecordWindow(id,'edit');
   var x=[].concat(toolsAllData||[],toolsRcdData||[],toolsLiftingData||[]).find(function(r){return String(r.id)===String(id);});
   if(!x)return;
   if(toolsIsRCD(x)){toolsOpenRCDAssetForm(x);return;}
@@ -25275,6 +25282,7 @@ function toolsShowForm(){
 }
 
 function toolsFormBack(){
+  toolsRecordEditContext=null;
   document.getElementById('tools-form').style.display='none';
   var returnTab=toolsFormReturnTab||'register';
   var view=document.getElementById('tools-view-'+returnTab);if(view)view.style.display='block';
@@ -25284,6 +25292,8 @@ function toolsFormBack(){
 }
 
 async function toolsSaveEquipment(){
+  if(!isMgr()){toast('Manager access is required to save equipment.',false);return;}
+  if(toolsRecordEditContext){try{AurisToolsListWorkspace.assertSession(toolsRecordEditContext);}catch(error){toast(error.message,false);return;}}
   var name=document.getElementById('teq-name')?.value?.trim();
   if(!name){toast('Please enter a name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
@@ -38460,6 +38470,7 @@ async function deepLinkResume(reason){
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
+    else if(page==='tools'&&(!req.table||req.table==='tools_register')){opened=await toolsOpenLinkedRecord(req);}
     else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
     else{
       var source={source_module:req.goto,source_type:req.goto,source_table:req.table||DEEP_LINK_DEFAULT_TABLES[req.goto]||'',source_id:req.record,source_ref:req.ref||req.record};
@@ -39885,7 +39896,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};

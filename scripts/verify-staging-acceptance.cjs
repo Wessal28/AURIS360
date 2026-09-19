@@ -131,6 +131,11 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
+  for(const fileName of ['auris-tools-records.js','auris-tools-records.css']){
+    const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
+    requireMarkers(source,fileName,fileName.endsWith('.js')?['toolsOpenLinkedRecord','assertSession']:['equipment-window','equipment-fields']);
+    assetSources.set(fileName,source);
+  }
   for (const fileName of ['auris-work-schedule-workspace.js','auris-work-schedule-workspace.css']) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders });
     requireMarkers(source, fileName, fileName.endsWith('.js') ? ['wsOpenRecordRequest','assertSession'] : ['ws-record-window','ws-record-fields']);
@@ -211,7 +216,7 @@ async function main() {
     "version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount'
   ]);
   requireMarkers(assetSources.get('auris-tools-list-workspace.js'), 'Tools & Equipment list workspace', [
-    "version:'1.0.0'", 'assertSession', 'inspectionFor:inspectionFor', 'project:project', 'mount:mount'
+    "version:'1.1.0'", 'assertSession', 'inspectionFor:inspectionFor', 'project:project', 'mount:mount'
   ]);
   requireMarkers(assetSources.get('auris-audit-list-workspace.js'), 'Audits & Inspections list workspace', [
     "version:'1.0.0'", 'assertSession', 'scoreSummary:scoreSummary', 'project:project', 'mount:mount'
