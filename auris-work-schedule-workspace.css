@@ -1,0 +1,10 @@
+.ws-record-overlay{position:fixed;inset:0;background:#102b46a6;z-index:920;display:grid;place-items:center;padding:24px}
+.ws-record-window{background:#fff;color:#17324c;width:min(1080px,100%);max-height:94vh;border-radius:18px;box-shadow:0 18px 60px #102b464d;display:flex;flex-direction:column;overflow:hidden}
+.ws-record-window header{display:flex;justify-content:space-between;gap:20px;padding:24px;background:#edf7f4;border-bottom:1px solid #dbe8e3;align-items:flex-start}
+.ws-record-window h2{font-size:25px;margin:6px 0;overflow-wrap:anywhere}.ws-record-window p{margin:4px 0}.ws-record-window nav{display:flex;gap:10px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #dbe8e3}.ws-record-window nav:empty{display:none}
+.ws-record-content{overflow:auto;padding:24px}.ws-record-content section{border:1px solid #dce6ef;border-radius:12px;padding:18px;margin-bottom:16px}.ws-record-content h3{margin:0 0 16px;font-size:17px;color:#087b64}
+.ws-record-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0}.ws-record-fields dt{font-size:12px;color:#526780;text-transform:capitalize;font-weight:700}.ws-record-fields dd{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
+.ws-record-links{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0}.ws-record-links a{display:block;border:1px solid #bbded4;background:#f1faf7;border-radius:8px;padding:10px;color:#066b58;text-decoration:none;overflow-wrap:anywhere}
+@media(max-width:640px){.ws-record-overlay{padding:8px}.ws-record-window header,.ws-record-content{padding:16px}.ws-record-fields{grid-template-columns:1fr}.ws-record-window h2{font-size:20px}}
+.ave-actions a[data-view-action]{display:inline-flex;align-items:center;min-height:44px;padding:8px 10px;border:1px solid var(--border,#dce6ef);border-radius:8px;text-decoration:none;color:var(--text,#17324c);background:var(--card,#fff);white-space:nowrap;font-size:13px}
+.ave-link[data-view-action]{display:inline-flex;align-items:center;text-decoration:none}

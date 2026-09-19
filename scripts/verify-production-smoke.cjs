@@ -166,6 +166,8 @@ async function verifyProduction(options, evidence) {
     ['auris-risk-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'riskSummary:riskSummary', 'project:project', 'mount:mount']],
     ['auris-incident-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'project:project', 'mount:mount']],
     ['auris-tools-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'inspectionFor:inspectionFor', 'project:project', 'mount:mount']],
+    ['auris-work-schedule-workspace.js', ['wsOpenRecordRequest', 'assertSession', 'project:project', 'mount:mount']],
+    ['auris-work-schedule-workspace.css', ['ws-record-window', 'ws-record-fields']],
     ['auris-audit-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'scoreSummary:scoreSummary', 'project:project', 'mount:mount']],
     ['auris-contractor-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'dateState:dateState', 'project:project', 'mount:mount']],
     ['auris-fleet-list-workspace.js', ["version:'1.0.0'", 'assertSession', 'checkState:checkState', 'project:project', 'mount:mount']],

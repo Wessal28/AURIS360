@@ -49,7 +49,7 @@
 <script src="auris-application-lifecycle.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
-<script src="auris-view-engine.js?v=20260908-2"></script>
+<script src="auris-view-engine.js?v=20260920-1"></script>
 <script src="auris-module-extraction.js?v=20260901-12"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
@@ -80,6 +80,8 @@
 <script src="auris-noise-list-workspace.js?v=20260916-1"></script>
 <script src="auris-meetings-list-workspace.js?v=20260916-1"></script>
 <script src="auris-training-plan-list-workspace.js?v=20260916-1"></script>
+<script src="auris-work-schedule-workspace.js?v=20260920-1"></script>
+<link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1">
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -100,7 +102,7 @@
 <script src="auris-action-editor.js?v=20260913-1"></script>
 <link rel="stylesheet" href="auris-ppe-records.css?v=20260917-1">
 <script src="auris-ppe-records.js?v=20260917-3"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -1095,7 +1097,7 @@
 <!-- Filter bar -->
 <div class="card auris-work-s-54bb9f1d16">
 <div class="auris-work-s-d5129e1520">
-<input type="text" id="ws-search" class="auris-work-s-11856befbc" placeholder="Search work order, location..." data-auris-oninput="h0149"/>
+<input type="text" id="ws-search" class="auris-work-s-11856befbc" aria-label="Search work orders" placeholder="Search work order, location, supervisor..." data-auris-oninput="h0149"/>
 <select id="ws-filter-status" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All statuses</option>
 <option value="planned">Planned</option>
@@ -1103,6 +1105,7 @@
 <option value="in_progress">In Progress</option>
 <option value="on_hold">On Hold</option>
 <option value="completed">Completed</option>
+<option value="cancelled">Cancelled</option>
 </select>
 <select id="ws-filter-priority" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All priorities</option>
