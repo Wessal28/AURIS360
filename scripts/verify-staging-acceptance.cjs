@@ -131,6 +131,11 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
+  for(const fileName of ['auris-atex-records.js','auris-atex-records.css']){
+    const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
+    requireMarkers(source,fileName,fileName.endsWith('.js')?['atexOpenRecordRequest','atexAssertEditor']:['atex-record-dialog']);
+    assetSources.set(fileName,source);
+  }
   for(const fileName of ['auris-tools-records.js','auris-tools-records.css']){
     const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
     requireMarkers(source,fileName,fileName.endsWith('.js')?['toolsOpenLinkedRecord','assertSession']:['equipment-window','equipment-fields']);
