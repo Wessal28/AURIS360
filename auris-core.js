@@ -8086,10 +8086,11 @@ function chemRenderTable(){
   if(window.AurisChemicalListWorkspace){
     try{
       return window.AurisChemicalListWorkspace.mount(el,chemData||[],{
+        recordHref:chemRecordHref,
         filters:{search:document.getElementById('chem3search')?.value||'',risk:document.getElementById('chem3risk-filter')?.value||'',status:document.getElementById('chem3status-filter')?.value||'',attention:document.getElementById('chem3attention-filter')?.value||''},
         canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){[['chem3search','search'],['chem3risk-filter','risk'],['chem3status-filter','status'],['chem3attention-filter','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});chemRenderTable();},
-        openRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This chemical is unavailable or outside your company access.');if(typeof ccuOpenChemicalDetail==='function')return ccuOpenChemicalDetail(id);if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Chemical details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Chemical details',selected.product_name||'Chemical',selected,[['Chemical reference',selected.chemical_ref],['Product name',selected.product_name],['Supplier',selected.supplier],['Manufacturer',selected.manufacturer],['Status',selected.status],['Risk level',selected.risk_level],['Location',selected.location],['Department',selected.department],['Process / use',selected.process_use],['Hazards',Array.isArray(selected.hazard_statements)?selected.hazard_statements.join(', '):selected.hazard_identification],['Existing controls',selected.existing_controls],['PPE required',selected.ppe_required],['SDS revision date',selected.sds_revision_date],['Review date',selected.review_date]]);},
+        openRecord:function(id){return chemRecordWindow(id,'view');},
         editRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit chemicals.');if(typeof chemEdit!=='function')throw new Error('The chemical form is unavailable. Reload the register.');return chemEdit(id);}
       });
     }catch(error){el.innerHTML=setupFriendlyMessage('Chemical Control',error.message||String(error));console.error(error);return;}
@@ -8154,6 +8155,8 @@ function chemShowForm(){document.getElementById('chem3register-view').style.disp
 async function chemBack(){document.getElementById('chem3form3view').style.display='none';document.getElementById('chem3register-view').style.display='block';await chemLoad();}
 
 function chemNew(){
+  if(!isMgr())return toast('Manager access is required to create chemicals.',false);
+  chemRecordContext=AurisChemicalListWorkspace.session();
   chemEditId=null;
   chemPendingSdsFile=null;
   document.getElementById('chem3form3title').textContent='New Chemical';
@@ -8174,6 +8177,9 @@ function chemNew(){
 }
 
 function chemEdit(id){
+  if(!chemOpeningRecord)return chemRecordWindow(id,'edit');
+  if(!isMgr())throw Error('Manager access is required to edit chemicals.');
+  chemRecordContext=AurisChemicalListWorkspace.session();
   var x=chemData.find(r=>r.id===id);if(!x)return;
   var exp=chemExposureValues(x);
   chemEditId=id;
@@ -8181,7 +8187,7 @@ function chemEdit(id){
   document.getElementById('chem3form3title').textContent=x.product_name||'Edit Chemical';
   document.getElementById('chem3form3ref').textContent=displayRecordRef(x,'chemical_ref','CHEM-DRAFT');
   document.getElementById('chem3del-btn').style.display=isMgr()?'inline-flex':'none';
-  var gf=function(id2,val){var el=document.getElementById(id2);if(el)el.value=val||'';};
+  var gf=function(id2,val){var el=document.getElementById(id2);if(el)el.value=val??'';};
   gf('chem3product',x.product_name);gf('chem3supplier',x.supplier);gf('chem3manufacturer',x.manufacturer);
   gf('chem3sds-date',x.sds_revision_date);gf('chem3sds-file',x.sds_file_name);gf('chem3signal',x.signal_word);
   gf('chem3hazards',x.hazard_identification);gf('chem3hcodes',Array.isArray(x.hazard_statements)?x.hazard_statements.join(', '):x.hazard_statements);
@@ -8414,6 +8420,7 @@ function chemApplySdsText(text,fileName){
 }
 
 async function chemSave(){
+  try{chemAssertEditor();}catch(error){return toast(error.message,false);}
   if(!workflowCanMutate('chemical','chemicals'))return;
   if(!isMgr()){toast('Only managers/admins can save chemicals',false);return;}
   var product=document.getElementById('chem3product')?.value?.trim();
@@ -8424,18 +8431,19 @@ async function chemSave(){
   var reviewDate=g('chem3review');
   if(!reviewDate){var d=new Date();d.setFullYear(d.getFullYear()+1);reviewDate=d.toISOString().slice(0,10);}
   var previous=chemEditId?(chemData.find(function(x){return x.id===chemEditId;})||{}):{};
-  var body={company_id:ccid(),product_name:product,supplier:g('chem3supplier'),manufacturer:g('chem3manufacturer'),sds_file_name:g('chem3sds-file'),sds_file_url:previous.sds_file_url||null,sds_file_path:previous.sds_file_path||null,sds_file_mime:previous.sds_file_mime||null,sds_revision_date:g('chem3sds-date')||null,signal_word:g('chem3signal'),hazard_identification:g('chem3hazards'),hazard_statements:chemSplitList(g('chem3hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem3routes')),exposure_consequences:g('chem3consequences'),first_aid:g('chem3firstaid'),handling_storage:g('chem3handling'),ppe_required:g('chem3ppe'),location:g('chem3location'),department:g('chem3dept'),process_use:g('chem3use'),quantity_stored:g('chem3qty'),persons_exposed:parseInt(g('chem3persons'))||0,exposure_frequency:g('chem3frequency')||'occasional',exposure_duration:g('chem3duration')||'short',task_type:g('chem3task')||'closed_handling',existing_controls:g('chem3controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem3recommendations'),status:g('chem3status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
+  var body={company_id:chemRecordContext.companyId,product_name:product,supplier:g('chem3supplier'),manufacturer:g('chem3manufacturer'),sds_file_name:g('chem3sds-file'),sds_file_url:previous.sds_file_url||null,sds_file_path:previous.sds_file_path||null,sds_file_mime:previous.sds_file_mime||null,sds_revision_date:g('chem3sds-date')||null,signal_word:g('chem3signal'),hazard_identification:g('chem3hazards'),hazard_statements:chemSplitList(g('chem3hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem3routes')),exposure_consequences:g('chem3consequences'),first_aid:g('chem3firstaid'),handling_storage:g('chem3handling'),ppe_required:g('chem3ppe'),location:g('chem3location'),department:g('chem3dept'),process_use:g('chem3use'),quantity_stored:g('chem3qty'),persons_exposed:parseInt(g('chem3persons'))||0,exposure_frequency:g('chem3frequency')||'occasional',exposure_duration:g('chem3duration')||'short',task_type:g('chem3task')||'closed_handling',existing_controls:g('chem3controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem3recommendations'),status:g('chem3status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
   var shouldCreateAction=['high','critical'].includes(r.level)&&previous.risk_level!==r.level;
   var savedChemId=null, savedChemRef=null;
   try{
     var saveCompany=String(ccid()||''),saveUser=String(prof?.id||''),saveEditId=chemEditId;
     var uploaded=await chemUploadPendingSds();
     if(saveCompany!==String(ccid()||'')||saveUser!==String(prof?.id||'')||saveEditId!==chemEditId)throw new Error('The company, account or chemical changed during SDS upload. Reopen the intended chemical before saving.');
+    chemAssertEditor();
     if(uploaded)Object.assign(body,uploaded);
     if(chemEditId){
       var updateBody=Object.assign({},body);
       delete updateBody.company_id;
-      var updated=await api('/chemical_register?id=eq.'+chemEditId,{m:'PATCH',p:'return=representation',b:updateBody});
+      var updated=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId)+'&company_id=eq.'+encodeURIComponent(chemRecordContext.companyId),{m:'PATCH',p:'return=representation',b:updateBody});
       if(Array.isArray(updated)&&!updated.length){throw new Error('row-level security policy blocked chemical update');}
       var original=chemData.find(function(x){return x.id===chemEditId;})||{};
       var saved=Object.assign({},original,updateBody,updated?.[0]||{});
@@ -8448,17 +8456,20 @@ async function chemSave(){
       body.created_by=prof?.id;
       var res=await api('/chemical_register',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
+        chemAssertEditor();
         var ref=await nextCompanyRef('chemical_register','chemical_ref','CHEM-');
-        await api('/chemical_register?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{chemical_ref:ref}});
+        chemAssertEditor();
+        await api('/chemical_register?id=eq.'+encodeURIComponent(res[0].id)+'&company_id=eq.'+encodeURIComponent(chemRecordContext.companyId),{m:'PATCH',p:'return=minimal',b:{chemical_ref:ref}});
         savedChemId=res[0].id;
         savedChemRef=ref;
       }
       toast('Chemical saved');
     }
+    chemAssertEditor();
     if(shouldCreateAction){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:ccid(),title:'Review chemical exposure controls: '+product.substring(0,60),
+          company_id:chemRecordContext.companyId,title:'Review chemical exposure controls: '+product.substring(0,60),
           source_type:'chemical',source_module:'chemical',source_id:savedChemId,source_ref:'Chemical - '+(savedChemRef||product),
           action_type:'corrective',
           description:'Review chemical exposure controls for '+product+' ('+r.level+' risk). '+(g('chem3recommendations')||g('chem3controls')||'Confirm controls, PPE, storage, training and exposure monitoring.'),
@@ -8471,6 +8482,7 @@ async function chemSave(){
 }
 
 async function chemDelete(){
+  try{chemAssertEditor();}catch(error){return toast(error.message,false);}
   if(!workflowCanMutate('chemical','chemicals'))return;
   if(!chemEditId)return;
   if(!isMgr()){toast('Only managers/admins can delete or archive chemicals',false);return;}
@@ -8485,11 +8497,12 @@ async function chemDelete(){
   });
   if(!ok)return;
   try{
+    chemAssertEditor();
     if(current.status!=='archived'&&!isSA()){
-      var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
+      var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId)+'&company_id=eq.'+encodeURIComponent(chemRecordContext.companyId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
       if(Array.isArray(archived)&&!archived.length){toast(actionErrorMessage('Archive chemical','Chemical Control','record not found or permission denied'),false);return;}
     }else{
-      var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
+      var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId)+'&company_id=eq.'+encodeURIComponent(chemRecordContext.companyId),{m:'DELETE',p:'return=representation'});
       if(Array.isArray(deleted)&&!deleted.length){toast(actionErrorMessage('Delete chemical','Chemical Control','record not found or permission denied'),false);return;}
     }
     chemData=chemData.filter(function(x){return x.id!==chemEditId;});
@@ -38483,6 +38496,7 @@ async function deepLinkResume(reason){
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
+    else if(page==='chemical'&&(!req.table||req.table==='chemical_register')){opened=await chemOpenRecordRequest(req);}
     else if(page==='fire'&&(!req.table||req.table==='fire_certificates')){opened=await fireOpenRecordRequest(req);}
     else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
     else if(page==='fleet'&&(!req.table||req.table==='tools_register')){opened=await fleetOpenLinkedRecord(req);}
@@ -39912,7 +39926,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=/^(Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(Chemical |Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
