@@ -26272,7 +26272,7 @@ function fleetRender(){
   if(window.AurisFleetListWorkspace){
     try{
       return window.AurisFleetListWorkspace.mount(el,fleetVehicles||[],{
-        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],
+        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],recordHref:fleetRecordHref,
         filters:{search:q,status:statusFilter,check:checkFilter},canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){
           var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
@@ -26360,28 +26360,31 @@ function fleetDetailRows(rows,columns){
 }
 
 function fleetOpenVehicleDetail(id){
+  if(!fleetOpeningLinkedRecord)return fleetRecordWindow(id,'view');
   var v=fleetVehicles.find(function(x){return String(x.id)===String(id);});if(!v)return;
   document.getElementById('fleet-detail-modal')?.remove();
   var inspections=fleetInspections.filter(function(x){return String(x.tool_id)===String(id);});
   var fuel=fleetFuel.filter(function(x){return fleetFuelMatchesVehicle(x,v);});
   var services=fleetServices.filter(function(x){return String(x.equipment_id)===String(id);});
   var modal=document.createElement('div');modal.id='fleet-detail-modal';modal.className='r5-record-modal';
-  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true" aria-label="Vehicle record"><header><div><div class="r5-kicker">Fleet record</div><h2>'+escH(fleetLabel(v))+'</h2><p>'+escH([v.name,v.brand,v.model].filter(Boolean).join(' - '))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><nav class="r5-view-tabs"><button class="active" data-tab="details">Details</button><button data-tab="inspections">Inspection records ('+inspections.length+')</button><button data-tab="fuel">Fuel consumption ('+fuel.length+')</button><button data-tab="services">Servicing records ('+services.length+')</button></nav><section data-panel="details" class="r5-view-panel"><div class="r5-detail-grid">'+[['Registration',v.registration_number],['Reference',v.ref_number],['Make',v.brand],['Model',v.model],['Location',v.location],['Assigned to',v.assigned_to_name||'General use'],['Status',String(v.status||'active').replace(/_/g,' ')],['Notes',v.notes]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div></section><section data-panel="inspections" class="r5-view-panel" hidden>'+fleetDetailRows(inspections,[['Date',function(x){return x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-';}],['Type',function(x){return String(x.inspection_type||'').replace(/_/g,' ');}],['Inspector','inspected_by_name'],['Result','overall_result'],['Defects','defects_found']])+'</section><section data-panel="fuel" class="r5-view-panel" hidden>'+fleetDetailRows(fuel,[['Date',function(x){return x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'-';}],['Quantity (L)','quantity'],['Cost','cost'],['Odometer','odometer'],['CO2 kg','carbon_kg']])+'</section><section data-panel="services" class="r5-view-panel" hidden><div class="r5-panel-actions">'+(isMgr()?'<button class="btn btn-primary r5-add-service"><i class="ti ti-plus"></i>Add servicing record</button>':'')+'</div>'+fleetDetailRows(services,[['Reference','reference'],['Type',function(x){return String(x.maintenance_type||'').replace(/_/g,' ');}],['Status',function(x){return String(x.status||'').replace(/_/g,' ');}],['Planned','planned_date'],['Completed','completed_date'],['Technician','technician'],['Cost','cost']])+'</section><footer><button class="btn" id="r5-fleet-print"><i class="ti ti-printer"></i>Print vehicle record</button>'+(isMgr()?'<button class="btn" id="r5-fleet-edit"><i class="ti ti-edit"></i>Edit vehicle</button>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
+  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true" aria-label="Vehicle record"><header><div><div class="r5-kicker">Fleet record · Read only</div><h2>'+escH(fleetLabel(v))+'</h2><p>'+escH([v.name,v.brand,v.model].filter(Boolean).join(' - '))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><nav class="r5-view-tabs"><button class="active" data-tab="details">Details</button><button data-tab="inspections">Inspection records ('+inspections.length+')</button><button data-tab="fuel">Fuel consumption ('+fuel.length+')</button><button data-tab="services">Servicing records ('+services.length+')</button></nav><section data-panel="details" class="r5-view-panel"><div class="r5-detail-grid">'+[['Registration',v.registration_number],['Reference',v.ref_number],['Make',v.brand],['Model',v.model],['Location',v.location],['Assigned to',v.assigned_to_name||'General use'],['Status',String(v.status||'active').replace(/_/g,' ')],['Notes',v.notes]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div></section><section data-panel="inspections" class="r5-view-panel" hidden>'+fleetDetailRows(inspections,[['Date',function(x){return x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-';}],['Type',function(x){return String(x.inspection_type||'').replace(/_/g,' ');}],['Inspector','inspected_by_name'],['Result','overall_result'],['Defects','defects_found']])+'</section><section data-panel="fuel" class="r5-view-panel" hidden>'+fleetDetailRows(fuel,[['Date',function(x){return x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'-';}],['Quantity (L)','quantity'],['Cost','cost'],['Odometer','odometer'],['CO2 kg','carbon_kg']])+'</section><section data-panel="services" class="r5-view-panel" hidden><div class="r5-panel-actions">'+(isMgr()?'<a class="btn btn-primary" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'service'))+'">Add servicing record in new window</a>':'')+'</div>'+fleetDetailRows(services,[['Reference','reference'],['Type',function(x){return String(x.maintenance_type||'').replace(/_/g,' ');}],['Status',function(x){return String(x.status||'').replace(/_/g,' ');}],['Planned','planned_date'],['Completed','completed_date'],['Technician','technician'],['Cost','cost']])+'</section><footer><button class="btn" id="r5-fleet-print"><i class="ti ti-printer"></i>Print vehicle record</button>'+(isMgr()?'<a class="btn" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'edit'))+'">Edit vehicle in new window</a>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
   document.body.appendChild(modal);
   modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
   modal.querySelectorAll('.r5-view-tabs button').forEach(function(b){b.addEventListener('click',function(){modal.querySelectorAll('.r5-view-tabs button').forEach(function(x){x.classList.toggle('active',x===b);});modal.querySelectorAll('.r5-view-panel').forEach(function(p){p.hidden=p.dataset.panel!==b.dataset.tab;});});});
   modal.querySelector('.r5-add-service')?.addEventListener('click',function(){modal.remove();fleetOpenServiceForm(id);});
   modal.querySelector('#r5-fleet-edit')?.addEventListener('click',function(){modal.remove();fleetOpenVehicleForm(id);});
-  modal.querySelector('#r5-fleet-print')?.addEventListener('click',function(){printRegisterView('Vehicle record - '+fleetLabel(v),'#fleet-detail-modal .r5-record-dialog');});
+  modal.querySelector('#r5-fleet-print')?.addEventListener('click',function(){fleetPrintVehicleRecord(v);});
   modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
 
 function fleetOpenServiceForm(vehicleId){
+  if(!fleetOpeningLinkedRecord)return fleetRecordWindow(vehicleId,'service');
+  var editContext=AurisFleetListWorkspace.session();fleetAssertEditor(editContext);
   var v=fleetVehicles.find(function(x){return String(x.id)===String(vehicleId);});if(!v)return;
   var modal=document.createElement('div');modal.className='r5-record-modal';modal.id='fleet-service-modal';
   modal.innerHTML='<div class="card r5-record-dialog r5-record-form"><header><div><div class="r5-kicker">Fleet maintenance</div><h2>Add servicing record</h2><p>'+escH(fleetLabel(v))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><div class="form3row"><div class="form3group"><label class="form3label">Reference *</label><input id="r5-svc-ref" placeholder="e.g. SVC-2026-014"></div><div class="form3group"><label class="form3label">Service type</label><select id="r5-svc-type"><option value="preventive">Preventive</option><option value="corrective">Corrective</option><option value="breakdown">Breakdown</option><option value="recall">Recall</option><option value="modification">Modification</option></select></div><div class="form3group"><label class="form3label">Status</label><select id="r5-svc-status"><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Planned date</label><input id="r5-svc-planned" type="date"></div><div class="form3group"><label class="form3label">Completed date</label><input id="r5-svc-completed" type="date"></div><div class="form3group"><label class="form3label">Technician / provider</label><input id="r5-svc-tech"></div></div><div class="form3group"><label class="form3label">Work required / problem</label><textarea id="r5-svc-problem"></textarea></div><div class="form3group"><label class="form3label">Work performed</label><textarea id="r5-svc-work"></textarea></div><div class="form3row"><div class="form3group"><label class="form3label">Cost</label><input id="r5-svc-cost" type="number" min="0" step="0.01"></div><div class="form3group"><label class="form3label">Evidence reference</label><input id="r5-svc-evidence"></div></div><footer><button class="btn r5-close">Cancel</button><button class="btn btn-primary r5-save-service"><i class="ti ti-device-floppy"></i>Save servicing record</button></footer></div>';
   document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
-  modal.querySelector('.r5-save-service').addEventListener('click',async function(){var ref=modal.querySelector('#r5-svc-ref').value.trim();if(!ref){toast('Service reference is required.',false);return;}var body={company_id:ccid(),equipment_id:vehicleId,reference:ref,maintenance_type:modal.querySelector('#r5-svc-type').value,status:modal.querySelector('#r5-svc-status').value,planned_date:modal.querySelector('#r5-svc-planned').value||null,completed_date:modal.querySelector('#r5-svc-completed').value||null,technician:modal.querySelector('#r5-svc-tech').value||null,problem_description:modal.querySelector('#r5-svc-problem').value||null,work_performed:modal.querySelector('#r5-svc-work').value||null,cost:parseFloat(modal.querySelector('#r5-svc-cost').value)||null,evidence_reference:modal.querySelector('#r5-svc-evidence').value||null,created_by:prof?.id||null};try{await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:body});toast('Servicing record saved.');modal.remove();await loadFleet();fleetOpenVehicleDetail(vehicleId);}catch(e){toastActionError('Save servicing record','Fleet',e);}});
+  modal.querySelector('.r5-save-service').addEventListener('click',async function(){try{fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}var ref=modal.querySelector('#r5-svc-ref').value.trim();if(!ref){toast('Service reference is required.',false);return;}var body={company_id:ccid(),equipment_id:vehicleId,reference:ref,maintenance_type:modal.querySelector('#r5-svc-type').value,status:modal.querySelector('#r5-svc-status').value,planned_date:modal.querySelector('#r5-svc-planned').value||null,completed_date:modal.querySelector('#r5-svc-completed').value||null,technician:modal.querySelector('#r5-svc-tech').value||null,problem_description:modal.querySelector('#r5-svc-problem').value||null,work_performed:modal.querySelector('#r5-svc-work').value||null,cost:parseFloat(modal.querySelector('#r5-svc-cost').value)||null,evidence_reference:modal.querySelector('#r5-svc-evidence').value||null,created_by:prof?.id||null};try{await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:body});toast('Servicing record saved.');modal.remove();await loadFleet();await fleetOpenLinkedRecord({record:vehicleId,company:editContext.companyId,table:'tools_register',mode:'view'});}catch(e){toastActionError('Save servicing record','Fleet',e);}});
 }
 
 function fleetNewVehicle(){fleetOpenVehicleForm(null);}
@@ -26398,6 +26401,8 @@ function fleetMonthlyCheck(id){
 function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew==='function'){esgFuelNew();var el=document.getElementById('ff-vehicle');if(el)el.value=label||'';}},180);}
 
 function fleetOpenVehicleForm(id){
+  if(id&&!fleetOpeningLinkedRecord)return fleetRecordWindow(id,'edit');
+  var editContext=AurisFleetListWorkspace.session();fleetAssertEditor(editContext);
   var x=(fleetVehicles||[]).find(function(v){return String(v.id)===String(id);})||{};
   document.getElementById('fleet-vehicle-modal')?.remove();
   var modal=document.createElement('div');modal.id='fleet-vehicle-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -26405,9 +26410,10 @@ function fleetOpenVehicleForm(id){
   document.body.appendChild(modal);var status=modal.querySelector('#fleet-v-status');if(status)status.value=x.status||'active';
   modal.querySelectorAll('.fleet-vehicle-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
   modal.querySelector('.fleet-vehicle-save')?.addEventListener('click',async function(){
+    try{fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}
     var name=modal.querySelector('#fleet-v-name')?.value.trim(),reg=modal.querySelector('#fleet-v-reg')?.value.trim();if(!name||!reg){toast('Vehicle name and registration number are required.',false);return;}
     var body={company_id:ccid(),category:'vehicle',is_vehicle:true,name:name,registration_number:reg,brand:modal.querySelector('#fleet-v-brand')?.value||null,model:modal.querySelector('#fleet-v-model')?.value||null,location:modal.querySelector('#fleet-v-location')?.value||null,status:modal.querySelector('#fleet-v-status')?.value||'active',inspection_frequency:'monthly',notes:modal.querySelector('#fleet-v-notes')?.value||null,updated_at:new Date().toISOString()};
-    try{if(id)await api('/tools_register?id=eq.'+encodeURIComponent(id),{m:'PATCH',p:'return=minimal',b:body});else{body.created_by=prof?.id;await api('/tools_register',{m:'POST',p:'return=minimal',b:body});}toast(id?'Vehicle updated.':'Vehicle added to Fleet.');modal.remove();loadFleet();}catch(e){toastActionError('Save vehicle','Fleet',e);}
+    try{if(id)await api('/tools_register?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(editContext.companyId),{m:'PATCH',p:'return=minimal',b:body});else{body.created_by=prof?.id;await api('/tools_register',{m:'POST',p:'return=minimal',b:body});}toast(id?'Vehicle updated.':'Vehicle added to Fleet.');modal.remove();loadFleet();}catch(e){toastActionError('Save vehicle','Fleet',e);}
   });
   modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
@@ -26461,7 +26467,7 @@ function atexRender(){
   if(window.AurisAtexListWorkspace){
     try{
       return window.AurisAtexListWorkspace.mount(el,atexAreas||[],{
-        filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
+        recordHref:atexRecordHref,filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){
           var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
           set('atex-search',value.search);set('atex-filter-zone',value.zone);set('atex-filter-status',value.status);atexRender();
@@ -26469,8 +26475,7 @@ function atexRender(){
         openRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
           if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
-          if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('ATEX area details are unavailable. Reload the register.');
-          aurisReadOnlyRecordModal('ATEX area details',row.area_name||'ATEX area',row,[['Status',String(row.status||'controlled').replace(/_/g,' ')],['Location',row.location],['Plant area',row.plant_area],['Zone',String(row.zone_type||'').replace(/_/g,' ')],['Material',String(row.material_type||'').replace(/_/g,' ')],['Substance',row.substance],['Source of release',row.source_of_release],['Ventilation controls',row.ventilation_controls],['Ignition controls',row.ignition_controls],['Detection / monitoring',row.detection_controls],['Next inspection',row.next_inspection_date],['Responsible person',row.responsible_person],['Linked risk assessment',row.linked_ra_ref],['Linked permit',row.linked_permit_ref],['Notes',row.notes]]);
+          return atexRecordWindow(id,'view');
         },
         editRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
@@ -26542,11 +26547,13 @@ async function atexLoadReferenceOptions(selectedRA,selectedPermit){
 }
 
 async function atexNew(){
+  atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
   atexEditId=null;
   document.getElementById('atex-form3title').textContent='New ATEX Area';
   document.getElementById('atex-del-btn').style.display='none';
   ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   await atexLoadReferenceOptions();
+  atexAssertEditor();
   fillPersonSelect('atex-resp');
   document.getElementById('atex-zone').value='zone_2';
   document.getElementById('atex-material').value='gas_vapour';
@@ -26557,12 +26564,15 @@ async function atexNew(){
 }
 
 async function atexEdit(id){
+  if(!atexOpeningRecord)return atexRecordWindow(id,'edit');
+  atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
   var x=atexAreas.find(r=>r.id===id);if(!x)return;
   atexEditId=id;
   document.getElementById('atex-form3title').textContent='Edit ATEX Area';
   document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
   await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_ref||x.linked_permit_type);
-  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-permit':'linked_permit_type','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
+  atexAssertEditor();
+  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   fillPersonSelect('atex-resp',x.responsible_person||'');
   document.getElementById('atex-zone').value=x.zone_type||'zone_2';
@@ -26574,6 +26584,7 @@ async function atexEdit(id){
 function atexBack(){atexShowForm(false);atexLoadRegister();}
 
 async function atexSave(){
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   if(!isMgr()){toast('Only managers/admins can save ATEX areas',false);return;}
   var name=document.getElementById('atex-name')?.value?.trim();
   if(!name){toast('Please enter area name',false);return;}
@@ -26590,7 +26601,7 @@ async function atexSave(){
   var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
   try{
     if(atexEditId){
-      var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body},'ATEX area');
+      var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'PATCH',p:'return=representation',b:body},'ATEX area');
       if(Array.isArray(updated)&&!updated.length)throw new Error('record not found or permission denied');
       savedAtexRef=updated?.[0]?.area_ref||savedAtexRef;
     }
@@ -26624,6 +26635,7 @@ async function atexSave(){
 }
 
 async function atexDelete(){
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   if(!atexEditId)return;
   if(!isMgr()){toast('Only managers/admins can archive ATEX areas',false);return;}
   var current=atexAreas.find(function(x){return x.id===atexEditId;})||{};
@@ -26637,12 +26649,13 @@ async function atexDelete(){
     danger:true
   });
   if(!ok)return;
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   try{
     if(hard){
-      var deleted=await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=representation'});
+      var deleted=await api('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'DELETE',p:'return=representation'});
       if(Array.isArray(deleted)&&!deleted.length)throw new Error('record not found or permission denied');
     }else{
-      var archived=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
+      var archived=await api('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
       if(Array.isArray(archived)&&!archived.length)throw new Error('record not found or permission denied');
     }
     toast(hard?'Deleted':'Archived');atexBack();
@@ -38471,6 +38484,8 @@ async function deepLinkResume(reason){
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
     else if(page==='fire'&&(!req.table||req.table==='fire_certificates')){opened=await fireOpenRecordRequest(req);}
+    else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
+    else if(page==='fleet'&&(!req.table||req.table==='tools_register')){opened=await fleetOpenLinkedRecord(req);}
     else if(page==='tools'&&(!req.table||req.table==='tools_register')){opened=await toolsOpenLinkedRecord(req);}
     else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
     else{
@@ -39897,7 +39912,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=/^(Fire Certificate |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
