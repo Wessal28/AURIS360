@@ -26467,7 +26467,7 @@ function atexRender(){
   if(window.AurisAtexListWorkspace){
     try{
       return window.AurisAtexListWorkspace.mount(el,atexAreas||[],{
-        filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
+        recordHref:atexRecordHref,filters:{search:q,zone:zone,status:status},canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){
           var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
           set('atex-search',value.search);set('atex-filter-zone',value.zone);set('atex-filter-status',value.status);atexRender();
@@ -26475,8 +26475,7 @@ function atexRender(){
         openRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
           if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
-          if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('ATEX area details are unavailable. Reload the register.');
-          aurisReadOnlyRecordModal('ATEX area details',row.area_name||'ATEX area',row,[['Status',String(row.status||'controlled').replace(/_/g,' ')],['Location',row.location],['Plant area',row.plant_area],['Zone',String(row.zone_type||'').replace(/_/g,' ')],['Material',String(row.material_type||'').replace(/_/g,' ')],['Substance',row.substance],['Source of release',row.source_of_release],['Ventilation controls',row.ventilation_controls],['Ignition controls',row.ignition_controls],['Detection / monitoring',row.detection_controls],['Next inspection',row.next_inspection_date],['Responsible person',row.responsible_person],['Linked risk assessment',row.linked_ra_ref],['Linked permit',row.linked_permit_ref],['Notes',row.notes]]);
+          return atexRecordWindow(id,'view');
         },
         editRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
@@ -26548,11 +26547,13 @@ async function atexLoadReferenceOptions(selectedRA,selectedPermit){
 }
 
 async function atexNew(){
+  atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
   atexEditId=null;
   document.getElementById('atex-form3title').textContent='New ATEX Area';
   document.getElementById('atex-del-btn').style.display='none';
   ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   await atexLoadReferenceOptions();
+  atexAssertEditor();
   fillPersonSelect('atex-resp');
   document.getElementById('atex-zone').value='zone_2';
   document.getElementById('atex-material').value='gas_vapour';
@@ -26563,12 +26564,15 @@ async function atexNew(){
 }
 
 async function atexEdit(id){
+  if(!atexOpeningRecord)return atexRecordWindow(id,'edit');
+  atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
   var x=atexAreas.find(r=>r.id===id);if(!x)return;
   atexEditId=id;
   document.getElementById('atex-form3title').textContent='Edit ATEX Area';
   document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
   await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_ref||x.linked_permit_type);
-  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-permit':'linked_permit_type','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
+  atexAssertEditor();
+  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   fillPersonSelect('atex-resp',x.responsible_person||'');
   document.getElementById('atex-zone').value=x.zone_type||'zone_2';
@@ -26580,6 +26584,7 @@ async function atexEdit(id){
 function atexBack(){atexShowForm(false);atexLoadRegister();}
 
 async function atexSave(){
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   if(!isMgr()){toast('Only managers/admins can save ATEX areas',false);return;}
   var name=document.getElementById('atex-name')?.value?.trim();
   if(!name){toast('Please enter area name',false);return;}
@@ -26596,7 +26601,7 @@ async function atexSave(){
   var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
   try{
     if(atexEditId){
-      var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body},'ATEX area');
+      var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'PATCH',p:'return=representation',b:body},'ATEX area');
       if(Array.isArray(updated)&&!updated.length)throw new Error('record not found or permission denied');
       savedAtexRef=updated?.[0]?.area_ref||savedAtexRef;
     }
@@ -26630,6 +26635,7 @@ async function atexSave(){
 }
 
 async function atexDelete(){
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   if(!atexEditId)return;
   if(!isMgr()){toast('Only managers/admins can archive ATEX areas',false);return;}
   var current=atexAreas.find(function(x){return x.id===atexEditId;})||{};
@@ -26643,12 +26649,13 @@ async function atexDelete(){
     danger:true
   });
   if(!ok)return;
+  try{atexAssertEditor();}catch(error){toast(error.message,false);return;}
   try{
     if(hard){
-      var deleted=await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=representation'});
+      var deleted=await api('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'DELETE',p:'return=representation'});
       if(Array.isArray(deleted)&&!deleted.length)throw new Error('record not found or permission denied');
     }else{
-      var archived=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
+      var archived=await api('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
       if(Array.isArray(archived)&&!archived.length)throw new Error('record not found or permission denied');
     }
     toast(hard?'Deleted':'Archived');atexBack();
@@ -38476,6 +38483,7 @@ async function deepLinkResume(reason){
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
+    else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
     else if(page==='fleet'&&(!req.table||req.table==='tools_register')){opened=await fleetOpenLinkedRecord(req);}
     else if(page==='tools'&&(!req.table||req.table==='tools_register')){opened=await toolsOpenLinkedRecord(req);}
     else if(page==='master-data'&&window.AurisMasterDataCentre){opened=await window.AurisMasterDataCentre.open(req.record);}
@@ -39903,7 +39911,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=/^(Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
