@@ -170,6 +170,7 @@ async function verifyProduction(options, evidence) {
     ['auris-work-schedule-workspace.css', ['ws-record-window', 'ws-record-fields']],
     ['auris-tools-records.js', ['toolsOpenLinkedRecord', 'assertSession', 'toolsReadHistory']],
     ['auris-tools-records.css', ['equipment-window', 'equipment-fields']],
+    ['auris-fire-records.js', ['fireOpenRecordRequest','fireAssertEditor']],
     ['auris-atex-records.js', ['atexOpenRecordRequest','atexAssertEditor']],
     ['auris-atex-records.css', ['atex-record-dialog']],
     ['auris-fleet-records.js', ['fleetOpenLinkedRecord','fleetAssertEditor']],

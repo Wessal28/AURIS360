@@ -38483,6 +38483,7 @@ async function deepLinkResume(reason){
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
+    else if(page==='fire'&&(!req.table||req.table==='fire_certificates')){opened=await fireOpenRecordRequest(req);}
     else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
     else if(page==='fleet'&&(!req.table||req.table==='tools_register')){opened=await fleetOpenLinkedRecord(req);}
     else if(page==='tools'&&(!req.table||req.table==='tools_register')){opened=await toolsOpenLinkedRecord(req);}
@@ -39911,7 +39912,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=/^(ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
@@ -41256,9 +41257,9 @@ function fireRenderCerts() {
     try {
       return window.AurisFireListWorkspace.mount(workspace,fireAllCerts||[],{
         filters:{search:search,type:type,status:status,attention:attention},
-        inspections:fireAllInsp||[],equipment:fireAllEquip||[],canEdit:typeof isMgr==='function'&&isMgr(),
+        recordHref:fireRecordHref,inspections:fireAllInsp||[],equipment:fireAllEquip||[],canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){[['fire-cert-search','search'],['fire-cert-filter-type','type'],['fire-cert-filter-status','status'],['fire-cert-filter-attention','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});fireRenderCerts();},
-        openRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This fire certificate is unavailable or outside your company access.');if(typeof aurisReadOnlyRecordModal!=='function')throw new Error('Fire certificate details are unavailable. Reload the register.');return aurisReadOnlyRecordModal('Fire certificate details',selected.premises_name||'Fire certificate',selected,[['Certificate number',selected.cert_number],['Type',fireCertTypeLabel(selected.cert_type)],['Address',selected.address],['Occupancy',selected.occupancy_type],['Issuing authority',selected.issuing_authority],['Issue date',selected.issue_date],['Expiry date',selected.expiry_date],['Status',selected.status],['Renewal submitted',selected.renewal_submitted?'Yes':'No'],['Renewal date',selected.renewal_date],['Conditions',selected.conditions],['Notes',selected.notes]]);},
+        openRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This fire certificate is unavailable or outside your company access.');return fireRecordWindow(id,'view');},
         editRecord:function(id,current){var selected=(fireAllCerts||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit fire certificates.');if(typeof fireShowCertForm!=='function')throw new Error('The fire certificate form is unavailable. Reload the register.');return fireShowCertForm(id);}
       });
     } catch(error) {workspace.innerHTML=registerErrorHtml('Fire Certificate register',error.message||String(error));console.error(error);return;}
@@ -42147,6 +42148,8 @@ async function fireRenderDashboard() {
 
 // -- Certificate Form ----------------------------------------------
 function fireShowCertForm(id) {
+  if(id&&!fireOpeningRecord)return fireRecordWindow(id,'edit');
+  fireRecordContext=AurisFireListWorkspace.session();fireAssertEditor();
   fireEditCertId = id;
   var modal = document.getElementById('fire-cert-modal');
   var title = document.getElementById('fire-cert-modal-title');
@@ -42172,8 +42175,8 @@ function fireShowCertForm(id) {
     document.getElementById('fc-premises').value    = c.premises_name||'';
     document.getElementById('fc-address').value     = c.address||'';
     document.getElementById('fc-occupancy').value   = c.occupancy_type||'';
-    document.getElementById('fc-area').value        = c.floor_area||'';
-    document.getElementById('fc-maxocc').value      = c.max_occupancy||'';
+    document.getElementById('fc-area').value        = c.floor_area??'';
+    document.getElementById('fc-maxocc').value      = c.max_occupancy??'';
     document.getElementById('fc-authority').value   = c.issuing_authority||'Mauritius Fire & Rescue Service';
     document.getElementById('fc-status').value      = c.status||'valid';
     document.getElementById('fc-issue-date').value  = c.issue_date||'';
@@ -42188,12 +42191,13 @@ function fireShowCertForm(id) {
 }
 
 async function fireSaveCert() {
+  try{fireAssertEditor();}catch(error){toast(error.message,false);return;}
   var premises = document.getElementById('fc-premises').value.trim();
   var expiry   = document.getElementById('fc-expiry-date').value;
   if (!premises) { toast('Premises name is required', false); return; }
   if (!expiry)   { toast('Expiry date is required', false); return; }
 
-  var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var cid = fireRecordContext.companyId;
   var body = {
     company_id:          cid,
     cert_number:         document.getElementById('fc-number').value.trim()||null,
@@ -42217,7 +42221,7 @@ async function fireSaveCert() {
 
   try {
     if (fireEditCertId) {
-      await api('/fire_certificates?id=eq.'+fireEditCertId, {m:'PATCH', p:'return=minimal', b:body});
+      await api('/fire_certificates?id=eq.'+fireEditCertId+'&company_id=eq.'+encodeURIComponent(fireRecordContext.companyId), {m:'PATCH', p:'return=minimal', b:body});
       toast('Certificate updated');
     } else {
       body.created_by = prof.id;

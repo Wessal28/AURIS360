@@ -131,6 +131,9 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
+  const fireRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-fire-records.js'),{headers:previewHeaders});
+  requireMarkers(fireRecordSource,'Fire certificate records',['fireOpenRecordRequest','fireAssertEditor']);
+  assetSources.set('auris-fire-records.js',fireRecordSource);
   for(const fileName of ['auris-atex-records.js','auris-atex-records.css']){
     const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
     requireMarkers(source,fileName,fileName.endsWith('.js')?['atexOpenRecordRequest','atexAssertEditor']:['atex-record-dialog']);
