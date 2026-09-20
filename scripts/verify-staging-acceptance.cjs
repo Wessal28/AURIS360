@@ -134,6 +134,11 @@ async function main() {
   for(const fileName of ['auris-atex-records.js','auris-atex-records.css']){
     const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
     requireMarkers(source,fileName,fileName.endsWith('.js')?['atexOpenRecordRequest','atexAssertEditor']:['atex-record-dialog']);
+    assetSources.set(fileName, source);
+  }
+  for(const fileName of ['auris-fleet-records.js','auris-fleet-records.css']){
+    const source=await responseText(deployedAssetUrl(appHtml,preview,fileName),{headers:previewHeaders});
+    requireMarkers(source,fileName,fileName.endsWith('.js')?['fleetOpenLinkedRecord','fleetAssertEditor']:['fleet-readonly-window']);
     assetSources.set(fileName,source);
   }
   for(const fileName of ['auris-tools-records.js','auris-tools-records.css']){
