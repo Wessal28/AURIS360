@@ -134,6 +134,9 @@ async function main() {
   const emergencyRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-emergency-records.js'),{headers:previewHeaders});
   requireMarkers(emergencyRecordSource,'Emergency equipment records',['emEqOpenRecordRequest','emEqAssertEditor']);
   assetSources.set('auris-emergency-records.js',emergencyRecordSource);
+  const chemicalRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-chemical-records.js'),{headers:previewHeaders});
+  requireMarkers(chemicalRecordSource,'Chemical records',['chemOpenRecordRequest','chemAssertEditor']);
+  assetSources.set('auris-chemical-records.js',chemicalRecordSource);
   const fireRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-fire-records.js'),{headers:previewHeaders});
   requireMarkers(fireRecordSource,'Fire certificate records',['fireOpenRecordRequest','fireAssertEditor']);
   assetSources.set('auris-fire-records.js',fireRecordSource);

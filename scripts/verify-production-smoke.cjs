@@ -171,6 +171,7 @@ async function verifyProduction(options, evidence) {
     ['auris-tools-records.js', ['toolsOpenLinkedRecord', 'assertSession', 'toolsReadHistory']],
     ['auris-tools-records.css', ['equipment-window', 'equipment-fields']],
     ['auris-emergency-records.js', ['emEqOpenRecordRequest','emEqAssertEditor']],
+    ['auris-chemical-records.js', ['chemOpenRecordRequest','chemAssertEditor']],
     ['auris-fire-records.js', ['fireOpenRecordRequest','fireAssertEditor']],
     ['auris-atex-records.js', ['atexOpenRecordRequest','atexAssertEditor']],
     ['auris-atex-records.css', ['atex-record-dialog']],
