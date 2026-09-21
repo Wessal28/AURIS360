@@ -23346,6 +23346,7 @@ async function emEqLoad(){
     setM('em3eq-bad',d?d.filter(function(x){return x.status!=='operational';}).length:0);
     setM('em3eq-due',d?d.filter(function(x){return (x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon);}).length:0);
     setM('em3eq-fe',d?d.filter(function(x){return x.equipment_type==='fire_extinguisher';}).length:0);
+    if(window.AurisEmergencyListWorkspace)return emEqMountRegister(el,emEqData,ft);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-fire-extinguisher"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0190"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
     var eqIcon={fire_extinguisher:'ti-fire-extinguisher',fire_hose:'ti-flame',first_aid_kit:'ti-first-aid-kit',aed:'ti-heartbeat',eyewash:'ti-eye',spill_kit:'ti-droplet',ppe_kit:'ti-shield',alarm_panel:'ti-bell-ringing',emergency_light:'ti-bulb',pa_system:'ti-speakerphone',stretcher:'ti-bed',oxygen_kit:'ti-wind',other:'ti-package'};
     var condCfg={excellent:['#EAF3DE','#3B6D11'],good:['#EAF3DE','#3B6D11'],fair:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],condemned:['#FCEBEB','#A32D2D']};
@@ -23372,32 +23373,36 @@ async function emEqLoad(){
 
 function emEqShowForm(){['em3view-equipment'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('em3eq-form').style.display='block';}
 function emEqBack(){document.getElementById('em3eq-form').style.display='none';document.getElementById('em3view-equipment').style.display='block';document.querySelectorAll('#page-emergency [id^="em3tab-"]').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em3tab-equipment');if(tab)tab.classList.add('active');emEqLoad();}
-function emEqNew(){emEqEditId=null;document.getElementById('em3eq-form3title').textContent='Add Emergency Equipment';document.getElementById('em3eq-del-btn').style.display='none';['eqf-id','eqf-building','eqf-floor','eqf-location','eqf-serviced-by','eqf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['eqf-last-insp','eqf-next-insp','eqf-last-svc','eqf-next-svc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('eqf-type').value='fire_extinguisher';document.getElementById('eqf-condition').value='good';document.getElementById('eqf-status').value='operational';emEqShowForm();}
-async function emEqEdit(id){var x=emEqData.find(r=>r.id===id);if(!x)return;emEqEditId=id;document.getElementById('em3eq-form3title').textContent='Edit Equipment';document.getElementById('em3eq-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('eqf-id',x.identifier);gf('eqf-building',x.building);gf('eqf-floor',x.floor);gf('eqf-location',x.location);gf('eqf-serviced-by',x.serviced_by);gf('eqf-notes',x.notes);gf('eqf-last-insp',x.last_inspection);gf('eqf-next-insp',x.next_inspection);gf('eqf-last-svc',x.last_service);gf('eqf-next-svc',x.next_service);document.getElementById('eqf-type').value=x.equipment_type||'fire_extinguisher';document.getElementById('eqf-condition').value=x.condition||'good';document.getElementById('eqf-status').value=x.status||'operational';emEqShowForm();}
+function emEqNew(){if(!isMgr())return toast('Manager access is required to add equipment.',false);emEqRecordContext=AurisEmergencyListWorkspace.session();emEqEditId=null;document.getElementById('em3eq-form3title').textContent='Add Emergency Equipment';document.getElementById('em3eq-del-btn').style.display='none';['eqf-id','eqf-building','eqf-floor','eqf-location','eqf-serviced-by','eqf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['eqf-last-insp','eqf-next-insp','eqf-last-svc','eqf-next-svc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('eqf-type').value='fire_extinguisher';document.getElementById('eqf-condition').value='good';document.getElementById('eqf-status').value='operational';emEqShowForm();}
+async function emEqEdit(id){if(!emEqOpeningRecord)return emEqRecordWindow(id,'edit');if(!isMgr())throw Error('Manager access is required to edit equipment.');emEqRecordContext=AurisEmergencyListWorkspace.session();var x=emEqData.find(r=>r.id===id);if(!x)return;emEqEditId=id;document.getElementById('em3eq-form3title').textContent='Edit Equipment';document.getElementById('em3eq-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('eqf-id',x.identifier);gf('eqf-building',x.building);gf('eqf-floor',x.floor);gf('eqf-location',x.location);gf('eqf-serviced-by',x.serviced_by);gf('eqf-notes',x.notes);gf('eqf-last-insp',x.last_inspection);gf('eqf-next-insp',x.next_inspection);gf('eqf-last-svc',x.last_service);gf('eqf-next-svc',x.next_service);document.getElementById('eqf-type').value=x.equipment_type||'fire_extinguisher';document.getElementById('eqf-condition').value=x.condition||'good';document.getElementById('eqf-status').value=x.status||'operational';emEqShowForm();}
 async function emEqSave(){
+  try{emEqAssertEditor();}catch(error){return toast(error.message,false);}
+  var saveContext=emEqRecordContext;
   var loc=document.getElementById('eqf-location')?.value?.trim();
   if(!loc){toast('Please enter location',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};
+  var body={company_id:saveContext.companyId,equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};
   var needsAction=body.status!=='operational'||['poor','condemned'].includes(body.condition);
   try{
     var savedId=emEqEditId;
     if(emEqEditId){
       var oldEq=emEqData.find(function(x){return x.id===emEqEditId;})||{};
-      await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});
+      var updated=await api('/emergency_equipment?id=eq.'+encodeURIComponent(savedId)+'&company_id=eq.'+encodeURIComponent(saveContext.companyId),{m:'PATCH',p:'return=representation',b:body});
+      AurisEmergencyListWorkspace.assertSession(saveContext);
+      if(!updated||!updated.length)throw Error('Equipment was not updated. Reload and check your access.');
       emAudit('update','Emergency equipment updated','emergency_equipment',Object.assign({},oldEq,body,{id:emEqEditId}),{previous_status:oldEq.status||null,new_status:body.status,condition:body.condition});
       toast('Updated!'+(needsAction?' Please ensure corrective action is tracked.':''));
     }else{
       body.created_by=prof?.id;
       var res=await api('/emergency_equipment',{m:'POST',p:'return=representation',b:body});
-      savedId=res?.[0]?.id||null;
+      AurisEmergencyListWorkspace.assertSession(saveContext);savedId=res?.[0]?.id||null;if(!savedId)throw Error('Equipment was not saved. Reload and check your access.');
       emAudit('create','Emergency equipment added','emergency_equipment',res?.[0]||body,{condition:body.condition,status:body.status});
       toast('Equipment added!');
     }
     if(needsAction&&savedId){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:ccid(),source_module:'emergency',source_id:savedId,
+          company_id:saveContext.companyId,source_module:'emergency',source_id:savedId,
           source_ref:(body.identifier||body.equipment_type||'Emergency equipment')+' - Emergency equipment',
           description:'Emergency equipment requires action: '+(body.notes||body.condition+' / '+body.status),
           responsible:body.serviced_by||null,priority:body.condition==='condemned'?'high':'medium',status:'open',created_by:prof?.id
@@ -23408,8 +23413,8 @@ async function emEqSave(){
     emEqBack();
   }catch(e){toastActionError('Save emergency equipment','Emergency Management',e);}
 }
-async function emEqDelete(){if(!emEqEditId)return;try{var rows=await api('/emergency_equipment?id=eq.'+emEqEditId+'&select=*');var current=rows?.[0]||{};if(current.status!=='out_of_service'){if(!(await appConfirmAction({title:'Take equipment out of service',message:'Take this emergency equipment out of service instead of deleting it?',detail:'Equipment history should be retained for inspection, maintenance and readiness evidence.',confirmText:'Out of service',cancelText:'Back'})))return;var outBody={status:'out_of_service',condition:current.condition==='condemned'?'condemned':'poor',updated_at:new Date().toISOString()};await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:outBody});emAudit('out_of_service','Emergency equipment taken out of service','emergency_equipment',Object.assign({},current,outBody),{previous_status:current.status||null});toast('Equipment marked out of service');emEqBack();return;}if(!(await appConfirmDelete('emergency equipment','This equipment is already out of service. Permanent deletion should be used only for duplicate/test records.')))return;await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'DELETE'});emAudit('delete','Emergency equipment permanently deleted','emergency_equipment',current,{reason:'duplicate_or_test_record'});toast('Deleted!');emEqBack();}catch(e){toastActionError('Delete emergency equipment','Emergency Management',e);}}
-async function emEqDeleteRow(id){try{var current=emEqData.find(x=>x.id===id)||{};if(current.status!=='out_of_service'){if(!(await appConfirmAction({title:'Take equipment out of service',message:'Take this emergency equipment out of service instead of deleting it?',detail:'Equipment history should be retained for inspection, maintenance and readiness evidence.',confirmText:'Out of service',cancelText:'Back'})))return;var outBody={status:'out_of_service',condition:current.condition==='condemned'?'condemned':'poor',updated_at:new Date().toISOString()};await api('/emergency_equipment?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:outBody});emAudit('out_of_service','Emergency equipment taken out of service','emergency_equipment',Object.assign({},current,outBody),{previous_status:current.status||null});toast('Equipment marked out of service');emEqLoad();return;}if(!(await appConfirmDelete('emergency equipment','This equipment is already out of service. Permanent deletion should be used only for duplicate/test records.')))return;await api('/emergency_equipment?id=eq.'+id,{m:'DELETE'});emAudit('delete','Emergency equipment permanently deleted','emergency_equipment',current,{reason:'duplicate_or_test_record'});emEqData=emEqData.filter(x=>x.id!==id);toast('Deleted!');emEqLoad();}catch(e){toastActionError('Delete emergency equipment','Emergency Management',e);}}
+async function emEqDelete(){if(!emEqEditId)return;try{emEqAssertEditor();if(await emEqRemoveRecord(emEqEditId,emEqRecordContext))emEqBack();}catch(e){toastActionError('Delete emergency equipment','Emergency Management',e);}}
+async function emEqDeleteRow(id){try{if(await emEqRemoveRecord(id))emEqLoad();}catch(e){toastActionError('Delete emergency equipment','Emergency Management',e);}}
 
 // ===== OH_JS.JS =====
 // ===================================================================
@@ -38496,6 +38501,7 @@ async function deepLinkResume(reason){
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
+    else if(page==='emergency'&&req.table==='emergency_equipment'){opened=await emEqOpenRecordRequest(req);}
     else if(page==='chemical'&&(!req.table||req.table==='chemical_register')){opened=await chemOpenRecordRequest(req);}
     else if(page==='fire'&&(!req.table||req.table==='fire_certificates')){opened=await fireOpenRecordRequest(req);}
     else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
@@ -39926,7 +39932,7 @@ function auditExportCsv(){
 function aurisPrint(html, title, preparedWindow) {
   var printTitle=String(title||'');
   var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
-  var isLandscapePrint=/^(Chemical |Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
+  var isLandscapePrint=/^(Emergency Equipment |Chemical |Fire Certificate |ATEX Area |Fleet |Equipment |Tools & Equipment|Tool Inspection|Lifting Accessories|Statutory Equipment|Personal Tool)/.test(printTitle)||(/^PPE /.test(printTitle)&&printTitle!=='PPE Record')||isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report')||printTitle.toLowerCase().includes('kpi scorecard');
   var w = preparedWindow || window.open('', '_blank', isLandscapePrint?'width='+Math.max(1280,screen.availWidth)+',height='+Math.max(820,screen.availHeight)+',left=0,top=0':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};

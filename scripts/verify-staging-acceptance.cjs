@@ -131,6 +131,9 @@ async function main() {
   requireMarkers(appHtml, 'Preview shell', ['name="auris-build"', 'id="page-executive"', 'id="page-kpi"', 'id="page-documents"']);
 
   const assetSources = new Map();
+  const emergencyRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-emergency-records.js'),{headers:previewHeaders});
+  requireMarkers(emergencyRecordSource,'Emergency equipment records',['emEqOpenRecordRequest','emEqAssertEditor']);
+  assetSources.set('auris-emergency-records.js',emergencyRecordSource);
   const chemicalRecordSource=await responseText(deployedAssetUrl(appHtml,preview,'auris-chemical-records.js'),{headers:previewHeaders});
   requireMarkers(chemicalRecordSource,'Chemical records',['chemOpenRecordRequest','chemAssertEditor']);
   assetSources.set('auris-chemical-records.js',chemicalRecordSource);
