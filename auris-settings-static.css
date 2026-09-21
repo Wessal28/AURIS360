@@ -176,3 +176,5 @@
 #settings-rollout-control-card.auris-settings-s-6aa34d7432{display:none}
 #settings-system3health-card.auris-settings-s-6aa34d7432{display:none}
 #settings-workflow-card.auris-settings-s-6aa34d7432{display:none}
+
+.settings-navigation{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.settings-navigation [aria-pressed="true"]{background:var(--primary,#087f70);color:white}.settings-section[hidden]{display:none}
