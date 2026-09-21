@@ -10929,22 +10929,34 @@ async function rolloutRecordHealthEvent(eventType,payload){
 }
 window.addEventListener('error',function(event){try{var active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'app',message=String(event.message||'Unexpected module error').slice(0,300);rolloutRecordHealthEvent('module_error',{module_key:moduleKey,severity:'error',fingerprint:['module-error',moduleKey,message].join(':'),detail:{message:message}});}catch(_){}});
 
-function loadSettings(){
-if(isAdm())document.getElementById('logo-settings').style.display='block';
+var settingsLoadedGroups={};
+function settingsGroups(){return [["company","Company",["branding-studio"],isAdm()],["workflows","Workflows & approvals",["settings-workflow-studio-card","settings-automation-centre-card","settings-workflow-card"],isAdm()||activeRole()==='hse_manager'],["notifications","Notifications",["settings-notif-card"],isAdm()],["modules","Module configuration",["settings-custom3fields-card"],isAdm()||activeRole()==='hse_manager'],["data","Data administration",["settings-relationship-repair-card","settings-person-identity-card"],systemHealthCanView()],["personal","My profile & offline drafts",["settings-profile-card","settings-offline-drafts-card"],true],["support","Support",["settings-resilience-simulation-card","settings-rollout-control-card","settings-rollback-rehearsal-card","settings-system3health-card","settings-client-demo-card","settings-application-lifecycle-card","settings-security-readiness-card","settings-offline-sync-diagnostic-card"],systemHealthCanView()]];}
+function settingsSelectGroup(requested){
+var page=document.getElementById('page-settings'),nav=document.getElementById('settings-navigation');
+if(!nav){nav=document.createElement('nav');nav.id='settings-navigation';nav.className='settings-navigation';nav.setAttribute('aria-label','Settings sections');page.insertBefore(nav,page.children[1]);}
+var groups=settingsGroups(),selected=groups.find(function(g){return g[0]===requested&&g[3];})||groups.find(function(g){return g[3];});nav.replaceChildren();
+groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(!panel){panel=document.createElement('section');panel.id='settings-section-'+g[0];panel.className='settings-section';panel.setAttribute('aria-label',g[1]);page.appendChild(panel);g[2].forEach(function(id){var card=document.getElementById(id);if(card)panel.appendChild(card);});}panel.hidden=!g[3]||g[0]!==selected[0];if(!g[3])return;var button=document.createElement('button');button.type='button';button.className='btn';button.textContent=g[1];button.setAttribute('aria-pressed',String(g[0]===selected[0]));button.setAttribute('aria-controls',panel.id);button.addEventListener('click',function(){loadSettings(g[0]);});nav.appendChild(button);});return selected[0];
+}
+function loadSettings(requestedGroup){
+if(!requestedGroup)settingsLoadedGroups={};
+var group=settingsSelectGroup(requestedGroup);
+if(settingsLoadedGroups[group])return;
+settingsLoadedGroups[group]=true;
+document.getElementById('logo-settings').style.display='none';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+escH(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+escH(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
-try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
-try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
-try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
-try{ loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
-try{ loadPersonIdentityReconciliation(false); }catch(e){ console.error('loadPersonIdentityReconciliation:',e); }
-try{ loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
-try{var lifecycleCard=document.getElementById('settings-application-lifecycle-card'),lifecycleHost=document.getElementById('application-lifecycle-body'),lifecycleAllowed=isSA()||isAdm()||activeRole()==='hse_manager';if(lifecycleCard)lifecycleCard.style.display=lifecycleAllowed?'block':'none';if(lifecycleAllowed&&lifecycleHost&&window.AurisApplicationLifecycle)window.AurisApplicationLifecycle.renderOperations(lifecycleHost,ccid()).catch(function(){});}catch(e){console.error('applicationLifecycle:',e);}
-try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
-try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
-try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
-try{ if(typeof renderResilienceSimulation==='function')renderResilienceSimulation(); }catch(e){ console.error('renderResilienceSimulation:',e); }
-try{ if(typeof renderOfflineSyncDiagnostic==='function')renderOfflineSyncDiagnostic(); }catch(e){ console.error('renderOfflineSyncDiagnostic:',e); }
-try{ if(typeof renderRollbackRehearsal==='function')renderRollbackRehearsal(); }catch(e){ console.error('renderRollbackRehearsal:',e); }
+try{ if(group==='company')brandInit(); }catch(e){ console.error('brandInit:',e); }
+try{ if(group==='support')loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
+try{ if(group==='support')loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
+try{ if(group==='data')loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
+try{ if(group==='data')loadPersonIdentityReconciliation(false); }catch(e){ console.error('loadPersonIdentityReconciliation:',e); }
+try{ if(group==='support')loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
+if(group==='support')try{var lifecycleCard=document.getElementById('settings-application-lifecycle-card'),lifecycleHost=document.getElementById('application-lifecycle-body'),lifecycleAllowed=isSA()||isAdm()||activeRole()==='hse_manager';if(lifecycleCard)lifecycleCard.style.display=lifecycleAllowed?'block':'none';if(lifecycleAllowed&&lifecycleHost&&window.AurisApplicationLifecycle)window.AurisApplicationLifecycle.renderOperations(lifecycleHost,ccid()).catch(function(){});}catch(e){console.error('applicationLifecycle:',e);}
+try{ if(group==='modules')loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
+try{ if(group==='personal')offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
+try{ if(group==='support')renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
+try{ if(group==='support'&&typeof renderResilienceSimulation==='function')renderResilienceSimulation(); }catch(e){ console.error('renderResilienceSimulation:',e); }
+try{ if(group==='support'&&typeof renderOfflineSyncDiagnostic==='function')renderOfflineSyncDiagnostic(); }catch(e){ console.error('renderOfflineSyncDiagnostic:',e); }
+try{ if(group==='support'&&typeof renderRollbackRehearsal==='function')renderRollbackRehearsal(); }catch(e){ console.error('renderRollbackRehearsal:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -10953,12 +10965,12 @@ var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
 var studioCard=document.getElementById('settings-workflow-studio-card'),studioHost=document.getElementById('workflow-studio-body'),studioAllowed=isAdm()||activeRole()==='hse_manager';
 if(studioCard)studioCard.classList.toggle('auris-workflow-studio-card-visible',studioAllowed);
-if(studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return ccid();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
+if(group==='workflows'&&studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return ccid();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
 var automationCard=document.getElementById('settings-automation-centre-card'),automationHost=document.getElementById('automation-centre-body'),automationAllowed=isAdm()||activeRole()==='hse_manager';
 if(automationCard)automationCard.style.display=automationAllowed?'block':'none';
-if(automationAllowed&&automationHost&&window.AurisAutomationCentre)window.AurisAutomationCentre.mount(automationHost,{companyId:function(){return ccid();},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(e){automationHost.innerHTML=registerErrorHtml('Automation Centre',e.message);});
-if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
-if(isAdm()) loadNotifSettings();
+if(group==='workflows'&&automationAllowed&&automationHost&&window.AurisAutomationCentre)window.AurisAutomationCentre.mount(automationHost,{companyId:function(){return ccid();},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(e){automationHost.innerHTML=registerErrorHtml('Automation Centre',e.message);});
+if(group==='workflows'&&(isAdm()||activeRole()==='hse_manager')) loadPeopleCache().then(function(){loadApprovalWorkflows();});
+if(group==='notifications'&&isAdm()) loadNotifSettings();
 }
 
 function systemHealthCanView(){
@@ -11485,7 +11497,7 @@ async function loadCustomFieldSettings(){
 function customRenderFieldSettings(moduleKey,rows){
   var el=document.getElementById('custom3fields-settings-body');
   if(!el)return;
-  var moduleOptions=CUSTOM_FIELD_MODULES.map(function(m){
+  var moduleOptions=CUSTOM_FIELD_MODULES.filter(function(m){return !m.future;}).map(function(m){
     return '<option value="'+escH(m.key)+'" '+(moduleKey===m.key?'selected':'')+' '+(m.future?'disabled':'')+'>'+escH(m.label)+(m.future?' - coming next':'')+'</option>';
   }).join('');
   var table='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Field</th><th style="padding:9px;text-align:left">Type</th><th style="padding:9px;text-align:left">Required</th><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>';

@@ -10846,7 +10846,7 @@ I can help you:<br>
 
     <!-- RIGHT: live preview -->
     <div class="auris-settings-s-6aadb64fbb">
-      <div class="auris-settings-s-6a5d85b93f">Live preview</div>
+      <div class="auris-settings-s-6a5d85b93f">Appearance preview — sample controls</div>
 
       <!-- Sidebar preview -->
       <div class="auris-settings-s-03833c9ef7">
@@ -10865,7 +10865,7 @@ I can help you:<br>
           <div class="auris-settings-s-e3d185a48f">
             <div class="auris-settings-s-405e2d2b03">Dashboard</div>
             <div class="auris-settings-s-4d67e17d03">
-              <button id="prev-btn" class="auris-settings-s-049a510eb6">Primary CTA</button>
+              <button disabled aria-label="Sample primary button" id="prev-btn" class="auris-settings-s-049a510eb6">Primary CTA</button>
               <span id="prev-badge" class="auris-settings-s-6afb9fabb9">Badge</span>
             </div>
             <div class="auris-settings-s-2569355785">
@@ -10894,7 +10894,7 @@ I can help you:<br>
         <div class="auris-settings-s-aab1afd32b">Login screen</div>
         <div id="prev-login-logo" class="auris-settings-s-71c0747dfd">AURIS360</div>
         <div id="prev-login-tag" class="auris-settings-s-3f3fba55c7">HSE Management Platform</div>
-        <div class="auris-settings-s-43a97fe494"><button class="auris-settings-s-e82d776d31">Sign in</button></div>
+        <div class="auris-settings-s-43a97fe494"><button disabled aria-label="Sample sign-in button" class="auris-settings-s-e82d776d31">Sign in</button></div>
       </div>
     </div>
   </div>
@@ -10902,7 +10902,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-brand-drop.css"/>
 <link rel="stylesheet" href="auris-mobile-final-polish.css"/>
 
-<div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+<div class="card" id="settings-profile-card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
 
 <div class="card auris-settings-s-6aa34d7432" id="settings-rollout-control-card">
   <div class="auris-settings-s-59b6f24660">
@@ -10920,8 +10920,8 @@ I can help you:<br>
 <div class="card auris-settings-s-6aa34d7432" id="settings-system3health-card">
   <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-heartbeat auris-settings-s-f9faa54401"></i>System Health &amp; Setup</div>
-      <div class="auris-settings-s-3d962333c1">Internal finalisation check for database tables, permissions, notification queue, offline drafts and core setup readiness.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-heartbeat auris-settings-s-f9faa54401"></i>Basic connectivity checks</div>
+      <div class="auris-settings-s-3d962333c1">Checks basic database access and setup. Passing these checks does not verify every feature or workflow.</div>
     </div>
     <button class="btn" data-auris-onclick="h1210"><i class="ti ti-refresh"></i>Refresh checks</button>
   </div>
@@ -10934,7 +10934,6 @@ I can help you:<br>
       <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-link auris-settings-s-4957b28e9a"></i>Relationship Health &amp; Repair</div>
       <div class="auris-settings-s-3d962333c1">Validate both endpoints, distinguish retired records from broken or unresolved links, and repair relationships without silently deleting history.</div>
     </div>
-    <button class="btn" data-auris-onclick="h1211"><i class="ti ti-refresh"></i>Validate now</button>
   </div>
   <div id="relationship-repair-body"><div class="loading">Loading relationship health...</div></div>
 </div>
@@ -10945,7 +10944,6 @@ I can help you:<br>
       <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-user-search auris-settings-s-ca98ae97df"></i>People Identity Reconciliation</div>
       <div class="auris-settings-s-3d962333c1">Link ambiguous legacy names to verified People records, retain historical snapshots and review possible duplicate profiles without automatic merging.</div>
     </div>
-    <button class="btn" data-auris-onclick="h1212"><i class="ti ti-refresh"></i>Rescan records</button>
   </div>
   <div id="person-identity-reconciliation-body"><div class="loading">Loading identity reconciliation...</div></div>
 </div>
