@@ -25,3 +25,5 @@ html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{con
 
 .ws-record-window header p{font-size:12px;line-height:1.35}.ws-record-window header,.ws-record-window nav{flex-shrink:0}.ws-record-content{min-height:0}
 @media(min-width:900px){.ws-record-content .inspection-report-item .inspection-report-fields{grid-template-columns:minmax(100px,1fr) minmax(180px,2fr) minmax(80px,.6fr) minmax(140px,1.4fr);gap:12px}}
+
+.ws-related-records [data-ws-related]{cursor:pointer}.ws-related-records [data-ws-related]:hover,.ws-related-records .ws-related-active{background:#e5f4ef}.ws-related-records [data-ws-related]:focus-visible{outline:2px solid #087b64;outline-offset:-2px}.ws-related-records>p{font-size:12px;color:#526a80}.ws-related-records .ws-linked-table{max-height:180px;overflow:auto}
