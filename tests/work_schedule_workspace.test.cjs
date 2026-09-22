@@ -66,3 +66,11 @@ test('register view uses the existing authenticated page and never opens a brows
  const r=runtime();r.context.open=()=>{throw Error('Unexpected browser window');};r.api.mount({},rows,{canEdit:true});const m=r.mounted();await m.options.onAction('view',m.data[0]);assert.equal(r.view()[0].id,'wo-1');assert.ok(m.options.actions.every(action=>!action.href));
  r.context.location.search='?wsMode=edit';await r.context.wsRecordWindow('wo-1','view');assert.equal(r.view()[0].id,'wo-1');
 });
+
+test('linked toolbox form renders attendance without internal metadata or JSON',()=>{
+ const r=runtime();const html=r.context.wsLinkedRecordHtml({info:{table:'toolbox_talks'},row:{tbt_ref:'TBT-001',title:'Safety',created_at:'PRIVATE_DATE',presenter_person_id:'PRIVATE_ID',attendees:[{name:'Ada',signed:true,person_id:'SECRET_ID'},{name:'Ben',signed:false}]}});
+ assert.match(html,/<table>/);assert.match(html,/Ada/);assert.match(html,/Not confirmed/);assert.doesNotMatch(html,/PRIVATE|SECRET|person_id|created_at|updated_at/);
+});
+test('linked inspections use the existing inspection report form',()=>{
+ const r=runtime();let received;r.context.auditInspectionReportHTML=row=>{received=row;return 'Inspection form';};const row={reference_no:'WI-001',items:[]};assert.equal(r.context.wsLinkedRecordHtml({info:{table:'inspections'},row}),'Inspection form');assert.equal(received,row);
+});

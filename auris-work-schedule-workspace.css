@@ -10,3 +10,5 @@
 .ave-link[data-view-action]{display:inline-flex;align-items:center;text-decoration:none}
 
 html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{content:"Opening work order…";position:fixed;inset:0;display:grid;place-items:center;background:#f5f8fa;color:#087b64;font:600 18px system-ui;z-index:2147483647}
+
+.ws-linked-table{overflow:auto}.ws-linked-table table{width:100%;border-collapse:collapse}.ws-linked-table th,.ws-linked-table td{text-align:left;padding:10px;border-bottom:1px solid #dce6ef}.ws-linked-table th{background:#edf7f4}
