@@ -169,3 +169,52 @@
  #mobile-modules-grid .mf-module-heading{grid-column:1/-1;font-size:14px;margin:16px 4px 4px;color:#087b64}
  #mobile-field-dialog .mf-grid{margin:12px 0}
 }
+/* Compact phone controls; keep touch targets large without oversized artwork. */
+@media (max-width: 768px) {
+  html, body, #app .main, #app .page, #app .page.active {
+    touch-action: auto !important;
+  }
+  #app .main { overflow-x: clip !important; }
+  #app .page { font-size: 13px; line-height: 1.4; }
+  #app .page .page-title, #app .page h1 { font-size: 20px !important; line-height: 1.25 !important; }
+  #app .page .card { padding: 12px !important; border-radius: 12px !important; }
+  #app .page .auris-module-header { padding: 12px !important; gap: 10px !important; }
+  #app .page .auris-module-mark { width: 32px; height: 32px; flex-basis: 32px; border-radius: 9px; }
+  #app .page .auris-module-mark i { font-size: 20px; }
+  #app .page .auris-module-breadcrumb { margin-bottom: 4px; flex-wrap: wrap; }
+  #app .page .auris-module-meta { display: none; }
+  #app .page .auris-module-title-row { gap: 8px; }
+  #app .page .auris-module-subtitle { font-size: 12px; line-height: 1.4; }
+  #app .page .auris-module-viewbar { touch-action: auto !important; }
+  #app .page .auris-module-viewbar .auris-module-view { flex-basis: 125px; padding: 8px; }
+  #app .page .auris-module-view-copy strong { font-size: 12px; }
+  #app .page .auris-module-view-copy small { display: none; }
+  #page-actions .auris-map-s-f17e623d95 { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  #page-actions .auris-map-s-f17e623d95 .card { margin: 0 !important; min-height: 74px !important; overflow-wrap: anywhere; }
+  #page-actions .auris-map-s-f17e623d95 .card::before, #page-actions .auris-map-s-f17e623d95 .card::after { display: none !important; }
+  #page-actions [id^="map-m3"] { font-size: 24px !important; line-height: 1.2 !important; }
+  #page-actions .auris-map-s-4422804ebb { font-size: 11px !important; white-space: normal !important; }
+  #mobile-bottom3nav { min-height: 60px !important; padding: 4px 6px calc(4px + env(safe-area-inset-bottom,0px)) !important; }
+  #mobile-bottom3nav .mob-nav-btn { min-height: 48px !important; gap: 3px !important; padding: 4px !important; }
+  #mobile-bottom3nav .mob-nav-btn span { font-size: 10px !important; line-height: 1.2; }
+  #mobile-bottom3nav .mob-nav-btn i, #mobile-bottom3nav .mob-nav-btn i::before { width: 22px !important; height: 22px !important; min-width: 22px !important; font-size: 22px !important; background-size: contain !important; }
+  #mobile-bottom3nav .mf-report { transform: none; border-radius: 10px; }
+  #mobile-modules-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 6px !important; padding: 10px !important; align-content: start; }
+  #mobile-modules-grid .mf-module-heading { grid-column: 1/-1 !important; font-size: 12px !important; margin: 10px 2px 3px !important; }
+  #mobile-modules-grid .mob-module-btn { flex-direction: row !important; justify-content: flex-start !important; min-height: 48px !important; gap: 8px !important; padding: 8px !important; }
+  #mobile-modules-grid .mob-module-icon-shell { width: 24px !important; height: 24px !important; flex: 0 0 24px; }
+  #mobile-modules-grid .mob-module-icon-shell i, #mobile-modules-grid .mob-module-icon-shell i::before { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: 24px !important; background-size: contain !important; }
+  #mobile-modules-grid .mob-module-label { font-size: 12px !important; text-align: left; }
+  #mobile-modules-panel > :first-child { padding: 10px 14px !important; }
+  .mf-hero { padding: 14px; margin-bottom: 12px; }
+  .mf-hero h2 { font-size: 20px; margin: 6px 0 12px; }
+  .mf-home h3 { font-size: 15px; margin: 14px 0 8px; }
+  .mf-grid { gap: 8px; }
+  #app .mf-tile { font-size: 13px !important; min-height: 48px !important; padding: 10px; }
+  #mobile-field-dialog { box-sizing: border-box; margin: auto; padding: 14px; max-height: calc(100dvh - 24px); font: 13px/1.45 system-ui; touch-action: auto; overscroll-behavior: contain; }
+  #mobile-field-dialog h2 { font-size: 18px; }
+  #mobile-field-dialog button { font-size: 13px; overflow-wrap: anywhere; }
+  #app .ai-panel { pointer-events: none; }
+  #app .ai-window.open { pointer-events: auto; }
+  #app .ai-toggle { pointer-events: auto; width: 44px !important; height: 44px !important; min-height: 44px !important; box-shadow: 0 2px 8px #17324c22 !important; }
+}
