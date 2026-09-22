@@ -2128,6 +2128,7 @@ function authSaveSession(session) {
 }
 
 function authClearSession() {
+  if(typeof mobileFieldClose==='function')mobileFieldClose();
   if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();
   _authSessionGeneration++;
   if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
@@ -38870,7 +38871,8 @@ var MOBILE_MODULES=window.AurisModuleRegistry.list().filter(function(module){ret
 var MODULE_COLORS=window.AurisModuleRegistry.list().reduce(function(colors,module){colors[module.key]=module.color;return colors;},{});
 
 function mobileApplyAccess() {
-  ['dashboard','events','observation','kpi'].forEach(function(page){
+  mobileFieldMount();
+  ['dashboard','actions'].forEach(function(page){
     var btn=document.getElementById('mob-btn-'+page);
     if(btn) btn.style.display = (typeof canAccessPage !== 'function' || canAccessPage(page)) ? 'flex' : 'none';
   });
@@ -38932,6 +38934,7 @@ function mobileNavTo(page, title, btnEl) {
   mobileCloseModules();
   mobileCloseSidebar();
   showPage(page, null);
+  if(page==='dashboard'&&window.innerWidth<=768){mobileFieldMount();mobileFieldRefresh();}
 }
 
 function mobileSetBottomNavActive(page, btnEl) {
@@ -39051,10 +39054,13 @@ function mobileCloseModules(immediate) {
 function mobileRenderModulesGrid() {
   var grid = document.getElementById('mobile-modules-grid');
   if (!grid) return;
-  var html = '';
-  for (var i = 0; i < MOBILE_MODULES.length; i++) {
-    var m = MOBILE_MODULES[i];
+  var html = '',lastGroup='';
+  var mobileGroups={risk:'Risk & operations',inspection:'Risk & operations',sop:'Risk & operations',permit:'Risk & operations',moc:'Risk & operations',workschedule:'Risk & operations',events:'Events & actions',observation:'Events & actions',actions:'Events & actions',emergency:'Events & actions',training:'People',meetings:'People',people:'People',tools:'Assets',fleet:'Assets',fire:'Assets',chemical:'Assets',contractors:'Assets',ohealth:'Occupational health',noise:'Occupational health',ppe:'Occupational health',documents:'Documents'};
+  var ordered=MOBILE_MODULES.filter(function(m){return !['admin','integrations','audit','users','master-data','settings'].includes(m.k);}).slice().sort(function(a,b){return (mobileGroups[a.k]||'Other modules').localeCompare(mobileGroups[b.k]||'Other modules');});
+  for (var i = 0; i < ordered.length; i++) {
+    var m = ordered[i];
     if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
+    var group=mobileGroups[m.k]||'Other modules';if(group!==lastGroup){html+='<h3 class="mf-module-heading">'+escH(group)+'</h3>';lastGroup=group;}
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
     html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" data-nav-key="' + m.k + '" class="mob-module-btn"'
@@ -43150,3 +43156,85 @@ if(window.AurisApplicationLifecycle&&window.AurisApplicationLifecyclePersistence
   window.AurisApplicationLifecycle.configurePersistence(window.AurisApplicationLifecyclePersistence);
   window.addEventListener('error',function(event){try{var companyId=ccid(),active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'dashboard';if(!companyId)return;var safe=window.AurisApplicationLifecycle.redactError(event.error||event.message);window.AurisApplicationLifecycle.recordHealth({companyId:companyId,moduleKey:moduleKey,eventType:'module_failure',severity:'warning',errorCode:safe.code,safeContext:{message:safe.message},releaseSha:window.__AURIS_RUNTIME_CONFIG__&&window.__AURIS_RUNTIME_CONFIG__.releaseSha||''}).catch(function(){});}catch(_){}});
 }
+
+/* Mobile field interface: existing governed forms remain the source of truth. */
+var mobileFieldState={context:'',site:'',rows:{},errors:[],generation:0};
+function mobileFieldContext(){return String(ccid()||'')+':'+String(prof&&prof.id||'')+':'+activeRole();}
+function mobileFieldManager(){return ['admin','sephs_admin','hse_manager','site_manager','executive'].indexOf(activeRole())!==-1;}
+function mobileFieldButton(label,action,value){return '<button type="button" class="mf-tile" data-mf-action="'+escH(action)+'" data-mf-value="'+escH(value||'')+'">'+escH(label)+'</button>';}
+function mobileFieldMount(){
+ if(window.innerWidth>768||!prof)return;
+ var panel=document.querySelector('.mobile-home-panel');if(!panel)return;
+ panel.classList.add('mf-home');
+ if(mobileFieldState.context!==mobileFieldContext()){mobileFieldState={context:mobileFieldContext(),site:'',rows:{},errors:[],generation:mobileFieldState.generation+1};mobileFieldRefresh();}
+ document.getElementById('mob-btn-actions').hidden=!canAccessPage('actions');
+ document.getElementById('mob-btn-report').hidden=!canAccessPage('events')&&!canAccessPage('observation');
+ mobileFieldHome();
+}
+function mobileFieldRows(key){return (mobileFieldState.rows[key]||[]).filter(function(r){return !mobileFieldState.site||String(r.site||r.site_name||r.location||'')===mobileFieldState.site;});}
+function mobileFieldHome(){
+ var panel=document.querySelector('.mobile-home-panel');if(!panel||!prof)return;
+ var hour=new Date().getHours(),greeting=hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
+ var sites=[];Object.keys(mobileFieldState.rows).forEach(function(k){mobileFieldState.rows[k].forEach(function(r){var site=r.site||r.site_name||r.location;if(typeof site==='string'&&site&&!sites.includes(site))sites.push(site);});});
+ var h='<div class="mf-hero"><small>AURIS360 · '+(mobileFieldManager()?'Management overview':'Field workspace')+'</small><h2>'+greeting+', '+escH((prof.full_name||'').split(' ')[0]||'welcome')+'</h2><label>Site / area<select data-mf-site><option value="">All accessible sites</option>'+sites.sort().map(function(site){return '<option '+(site===mobileFieldState.site?'selected ':'')+'value="'+escH(site)+'">'+escH(site)+'</option>';}).join('')+'</select></label><p>'+(!navigator.onLine?'Offline — saved drafts remain on this device.':'Connected · '+escH(co&&co.name||'Selected company'))+'</p></div>';
+ h+='<div class="mf-section-heading"><h3>Today</h3>'+mobileFieldButton('Refresh','refresh')+'</div><div class="mf-grid">';
+ var actions=mobileFieldRows('actions').filter(function(r){return !['closed','completed','cancelled'].includes(r.status);});
+ if(canAccessPage('actions'))h+=mobileFieldButton((mobileFieldState.rows.actions?actions.filter(function(r){return dashIsOverdue(r.target_date||r.due_date);}).length:'—')+' overdue actions','nav','actions');
+ if(canAccessPage('inspection'))h+=mobileFieldButton((mobileFieldState.rows.inspections?mobileFieldRows('inspections').filter(function(r){return String(r.inspection_date||r.if_date||'').slice(0,10)===new Date().toLocaleDateString('en-CA');}).length:'—')+' inspections today','nav','inspection');
+ if(canAccessPage('meetings'))h+=mobileFieldButton((mobileFieldState.rows.talks?mobileFieldRows('talks').filter(function(r){return String(r.talk_date).slice(0,10)===new Date().toLocaleDateString('en-CA');}).length:'—')+' toolbox talks today','nav','meetings');
+ if(canAccessPage('approvals'))h+=mobileFieldButton('Review approvals','nav','approvals');
+ if(mobileFieldManager()&&canAccessPage('events'))h+=mobileFieldButton((mobileFieldState.rows.events?mobileFieldRows('events').filter(function(r){return r.severity==='critical'&&!['closed','cancelled'].includes(r.status);}).length:'—')+' critical events','nav','events');
+ if(mobileFieldManager()&&canAccessPage('executive'))h+=mobileFieldButton('Executive dashboard','nav','executive');
+ h+='</div><p class="mf-note">Summary of up to 200 recent accessible records per category. Refresh to update.</p>';
+ if(mobileFieldState.errors.length)h+='<p role="status" class="mf-warning">Unable to load: '+escH(mobileFieldState.errors.join(', '))+'. Retry with Refresh.</p>';
+ h+='<h3>Quick actions</h3><div class="mf-grid">';
+ [['Report hazard','report','unsafe_condition','events'],['Inspection','inspection','','inspection'],['Risk assessment','risk','','risk'],['Toolbox talk','talk','','meetings'],['Scan QR','qr','',''],['Emergency','nav','emergency','emergency'],['My training','nav','training','training']].forEach(function(a){if(!a[3]||canAccessPage(a[3]))h+=mobileFieldButton(a[0],a[1],a[2]);});
+ h+='</div><h3>'+(mobileFieldManager()?'Open actions':'My actions')+'</h3>';
+ h+=actions.length?actions.slice(0,6).map(function(r){return '<article class="mf-action"><strong>'+escH(r.description||r.title||r.action_ref||'Action')+'</strong><p>'+escH(r.priority||'Normal')+' · Due '+escH(r.target_date||r.due_date||'not set')+'</p>'+mobileFieldButton('View / update','action',r.id)+'</article>';}).join(''):'<p class="mf-note">'+(mobileFieldState.rows.actions?'No open actions in this selection.':'Refresh to load your actions.')+'</p>';
+ panel.innerHTML=h;
+ panel.querySelector('[data-mf-site]').addEventListener('change',function(e){mobileFieldState.site=e.target.value;mobileFieldHome();});
+}
+async function mobileFieldRefresh(){
+ if(!prof||!ccid())return;var context=mobileFieldContext(),generation=++mobileFieldState.generation;
+ var specs=[['actions','action_tracker','actions'],['inspections','inspections','inspection'],['talks','toolbox_talks','meetings']].concat(mobileFieldManager()?[['events','events','events']]:[]).filter(function(s){return canAccessPage(s[2]);});
+ var results=await Promise.allSettled(specs.map(function(s){var q='/'+s[1]+'?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&order=created_at.desc&limit=200';if(s[0]==='actions'&&!mobileFieldManager())q+='&assigned_to_id=eq.'+encodeURIComponent(prof.id);return api(q);}));
+ if(context!==mobileFieldContext()||generation!==mobileFieldState.generation)return;
+ mobileFieldState.errors=[];mobileFieldState.rows={};results.forEach(function(r,i){if(r.status==='fulfilled')mobileFieldState.rows[specs[i][0]]=(r.value||[]).filter(function(row){return String(row.company_id)===String(ccid());});else mobileFieldState.errors.push(specs[i][0]);});mobileFieldHome();
+}
+var mobileFieldReturnFocus=null,mobileFieldQrStream=null,mobileFieldQrTimer=null;
+function mobileFieldClose(){clearTimeout(mobileFieldQrTimer);if(mobileFieldQrStream)mobileFieldQrStream.getTracks().forEach(function(t){t.stop();});mobileFieldQrStream=null;document.getElementById('mobile-field-dialog')?.remove();if(mobileFieldReturnFocus&&mobileFieldReturnFocus.isConnected)mobileFieldReturnFocus.focus();}
+function mobileFieldDialog(title,html){
+ mobileFieldClose();mobileFieldReturnFocus=document.activeElement;
+ var dialog=document.createElement('dialog');dialog.id='mobile-field-dialog';dialog.innerHTML='<header><h2>'+escH(title)+'</h2><button type="button" data-mf-action="close">Close</button></header>'+html;
+ document.body.appendChild(dialog);dialog.addEventListener('cancel',function(e){e.preventDefault();mobileFieldClose();});dialog.showModal();
+}
+function mobileFieldReports(){var h='<p>Choose a report. Photos, location, voice notes and saved drafts are available in the reporting form.</p><div class="mf-grid">';
+ if(canAccessPage('events'))[['Incident','injury'],['Near miss','near_miss'],['Hazard / unsafe condition','unsafe_condition'],['Unsafe act','unsafe_act'],['Environmental event','environmental']].forEach(function(a){h+=mobileFieldButton(a[0],'report',a[1]);});
+ if(canAccessPage('tools'))h+=mobileFieldButton('Equipment defect','nav','tools');
+ if(canAccessPage('observation'))h+=mobileFieldButton('Observation','observation');mobileFieldDialog('Quick report',h+'</div>');}
+function mobileFieldMore(){mobileFieldDialog('More','<div class="mf-grid">'+mobileFieldButton('My profile & offline drafts','personal')+mobileFieldButton('Sync saved drafts','sync')+(canAccessPage('approvals')?mobileFieldButton('Approvals & notifications','nav','approvals'):'')+(canAccessPage('settings')?mobileFieldButton('Settings','nav','settings'):'')+'</div><p class="mf-note">Incident and observation drafts with photos support offline capture. Other workflows require a connection; keep unsaved forms open until saved.</p>');}
+function mobileFieldQrUrl(value){var url=new URL(value,location.origin);if(url.origin!==location.origin||!url.searchParams.get('record')||!url.searchParams.get('goto'))throw Error('Scan an AURIS360 record code for this environment.');if(!canAccessPage(url.searchParams.get('goto')))throw Error('Your role cannot open this module.');return url;}
+async function mobileFieldQrOpen(value){try{var url=mobileFieldQrUrl(value);mobileFieldClose();history.pushState(null,'',url.pathname+url.search);await deepLinkResume('mobile-qr');}catch(e){toast(e.message,false);}}
+async function mobileFieldQr(){
+ mobileFieldDialog('Scan an AURIS360 record','<video id="mf-qr-video" playsinline muted></video><p id="mf-qr-help">Point the camera at an AURIS360 record code.</p><label>Or paste a record link<input id="mf-qr-link" type="url" placeholder="https://…"></label>'+mobileFieldButton('Open record link','qr-link'));
+ var dialog=document.getElementById('mobile-field-dialog');
+ if(!window.BarcodeDetector||!navigator.mediaDevices){document.getElementById('mf-qr-help').textContent='Use your phone camera to scan the code, or paste its link below.';return;}
+ try{var detector=new BarcodeDetector({formats:['qr_code']}),stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});if(!dialog.isConnected){stream.getTracks().forEach(function(t){t.stop();});return;}mobileFieldQrStream=stream;var video=document.getElementById('mf-qr-video');video.srcObject=stream;await video.play();async function scan(){if(!dialog.isConnected)return;try{var codes=await detector.detect(video);if(codes.length){await mobileFieldQrOpen(codes[0].rawValue);return;}}catch(e){}mobileFieldQrTimer=setTimeout(scan,450);}scan();}catch(e){if(dialog.isConnected)document.getElementById('mf-qr-help').textContent='Camera unavailable. Use your phone camera or paste a record link.';}
+}
+async function mobileFieldAct(action,value){
+ if(!prof)return;
+ if(action==='close'){mobileFieldClose();return;}
+ if(action==='reports'){mobileFieldReports();return;}if(action==='more'){mobileFieldMore();return;}if(action==='qr'){mobileFieldQr();return;}if(action==='qr-link'){mobileFieldQrOpen(document.getElementById('mf-qr-link').value);return;}
+ if(action==='refresh'){await mobileFieldRefresh();return;}
+ if(action==='sync'){await offlineSyncNow();toast('Sync checked. Review offline drafts for any items still pending.');return;}
+ mobileFieldClose();
+ var page=({report:'events',observation:'observation',inspection:'inspection',risk:'risk',talk:'meetings',personal:'settings',action:'actions'})[action]||value;
+ if(!canAccessPage(page))throw Error('Your role cannot access this module.');mobileNavTo(page,page.replace(/-/g,' '),null);
+ if(action==='report'){imsNewIncident();imsSelectType(value);if(mobileFieldState.site)document.getElementById('ev-location').value=mobileFieldState.site;}
+ if(action==='observation')obsNew();if(action==='inspection')inspNew();if(action==='risk')raNew();if(action==='talk')tbtNew();if(action==='personal')loadSettings('personal');if(action==='action')await mapEdit(value);
+}
+document.addEventListener('click',function(e){var button=e.target.closest('[data-mf-action]');if(!button)return;Promise.resolve(mobileFieldAct(button.dataset.mfAction,button.dataset.mfValue)).catch(function(error){toast(error.message,false);});});
+window.addEventListener('offline',function(){if(window.innerWidth<=768&&prof)mobileFieldHome();});
+window.addEventListener('online',function(){if(window.innerWidth<=768&&prof)mobileFieldRefresh();});
+
+window.matchMedia('(max-width:768px)').addEventListener('change',function(e){if(e.matches)mobileFieldMount();else mobileFieldClose();});
