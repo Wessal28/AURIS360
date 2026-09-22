@@ -3,7 +3,7 @@ const source=fs.readFileSync(path.join(__dirname,'../auris-work-schedule-workspa
 const rows=[{id:'wo-1',company_id:'co-a',title:'Service pump',ref_number:'WO-001',supervisor_name:'Ada Smith',status:'in_progress',priority:'high',planned_start:'2026-09-19',planned_end:'2026-09-20',toolbox_talk_id:'11111111-1111-4111-8111-111111111111'},{id:'wo-2',company_id:'co-a',title:'Cancelled job',status:'cancelled',priority:'low',planned_end:'2026-09-01'},{id:'secret',company_id:'co-b',title:'Other company'}];
 function runtime(){
   const identity={company:{id:'co-a'},profile:{id:'user-a'},role:'manager'},requests=[];let mounted,view,canEdit=true,allowed=true;
-  const context={URL,URLSearchParams,Date,console,location:{search:''},wsAllData:[],wsCurrentId:null,ccid:()=>identity.company.id,isMgr:()=>canEdit,canAccessPage:()=>allowed,toast:()=>{},escH:value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),wsRestEqValue:encodeURIComponent,
+  const context={document:{getElementById:()=>null},URL,URLSearchParams,Date,console,location:{search:''},wsAllData:[],wsCurrentId:null,ccid:()=>identity.company.id,isMgr:()=>canEdit,canAccessPage:()=>allowed,toast:()=>{},escH:value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),wsRestEqValue:encodeURIComponent,
     deepLinkRecordUrl:record=>'https://example.com/?goto='+record.module+'&record='+record.id+'&company='+record.company_id+'&table='+record.table,
     AurisPlatformServices:{ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:key=>{assert.equal(key,'workschedule');if(!allowed)throw Error('Access denied');}}},
     AurisViewEngine:{mount:(host,data,options)=>{mounted={data,options};return mounted;}},
@@ -22,7 +22,7 @@ test('day boundaries include both endpoints and due today is not overdue',()=>{
 });
 test('saved filters use the shared register and reject a changed session',()=>{
   const r=runtime();let applied;r.api.mount({},rows,{canEdit:false,filters:{status:'cancelled'},onApplyFilters:f=>{applied=f;}});const m=r.mounted();assert.equal(m.options.moduleKey,'work-schedule');assert.equal(m.options.actions[1].when(),false);m.options.onApplyFilters({search:'Ada'});assert.equal(applied.search,'Ada');
-  assert.match(m.options.actions[0].href(m.data[0]),/wsMode=view/);r.identity.company.id='co-b';assert.throws(()=>m.options.onApplyFilters({}),/changed/);
+  assert.equal(m.options.actions[0].href,undefined);assert.equal(typeof m.options.onAction,'function');r.identity.company.id='co-b';assert.throws(()=>m.options.onApplyFilters({}),/changed/);
 });
 test('read-only rendering escapes record content and creates no editing controls',()=>{
   const r=runtime(),html=r.context.wsReadOnlyHtml({description:'<img onerror=bad>',requires_ra:false,team_members:['Ada','Ben']});assert.match(html,/&lt;img/);assert.match(html,/Ada, Ben/);assert.match(html,/No<\/dd>/);assert.doesNotMatch(html,/<input|<select|<textarea|contenteditable|<img/);
@@ -60,4 +60,9 @@ test('reference lookup rejects another company record',async()=>{
 test('work order startup mask is removed on completion and has a bounded fallback',()=>{
  let timer,removed=false;const r=runtime();r.context.location.search='?wsMode=view';r.context.document={documentElement:{classList:{add:()=>{},remove:()=>{removed=true;}}}};r.context.setTimeout=(fn,ms)=>{timer=fn;assert.equal(ms,30000);return 1;};r.context.clearTimeout=()=>{};
  vm.runInNewContext(source,r.context);assert.equal(removed,false);timer();assert.equal(removed,true);
+});
+
+test('register view uses the existing authenticated page and never opens a browser window',async()=>{
+ const r=runtime();r.context.open=()=>{throw Error('Unexpected browser window');};r.api.mount({},rows,{canEdit:true});const m=r.mounted();await m.options.onAction('view',m.data[0]);assert.equal(r.view()[0].id,'wo-1');assert.ok(m.options.actions.every(action=>!action.href));
+ r.context.location.search='?wsMode=edit';await r.context.wsRecordWindow('wo-1','view');assert.equal(r.view()[0].id,'wo-1');
 });

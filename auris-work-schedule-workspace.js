@@ -50,7 +50,8 @@ function href(id,mode,company,linked){
 function mount(host,rows,options){
   options=options||{};var current=session(),data=project(rows,current,options);
   return root.AurisViewEngine.mount(host,data,{moduleKey:'work-schedule',label:'Work Schedule',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),
-    actions:['view','edit','manage'].map(function(key){return {key:key,label:{view:'View',edit:'Edit',manage:'Manage work'}[key],when:function(){return key==='view'||options.canEdit===true;},href:function(row){return href(row.id,key,current.companyId);}};}),
+    actions:['view','edit','manage'].map(function(key){return {key:key,label:{view:'View',edit:'Edit',manage:'Manage work'}[key],when:function(){return key==='view'||options.canEdit===true;}};}),
+    onAction:async function(key,row){assertSession(current);await wsRecordWindow(row.id,key);},
     onApplyFilters:function(value){assertSession(current);options.onApplyFilters(filters(value));}
   });
 }
@@ -62,11 +63,11 @@ function wsMaySave(){
   try{if(!isMgr()||!wsEditContext)throw Error('Reopen the work order with manager access before saving.');AurisWorkScheduleWorkspace.assertSession(wsEditContext);return true;}
   catch(e){toast(e.message,false);return false;}
 }
-function wsRecordWindow(id,mode){
-  var current=AurisWorkScheduleWorkspace.session();
-  if(mode!=='view'&&!isMgr())throw Error('Manager access is required to change work orders.');
-  var child=window.open(AurisWorkScheduleWorkspace.href(id,mode,current.companyId),'_blank');
-  if(child)child.opener=null;else toast('Allow popups to open the work order in a separate window.',false);
+async function wsRecordWindow(id,mode){
+  try{
+    var current=AurisWorkScheduleWorkspace.session();
+    return await wsOpenRecordRequest({record:id,table:'work_schedule',company:current.companyId,mode:mode||'view'});
+  }catch(e){toast(e.message,false);return false;}
 }
 var WS_RECORD_LINKS={tbt:{label:'Toolbox talk',module:'meetings',table:'toolbox_talks',ref:'tbt_ref'},prestart:{label:'Pre-start check',module:'inspection',table:'inspections',ref:'reference_no'},site:{label:'Site inspection',module:'inspection',table:'inspections',ref:'reference_no'},ra:{label:'Risk assessment',module:'risk',table:'risk_assessments',ref:'ra_ref'},ptw:{label:'Permit to work',module:'permit',table:'permits',ref:'permit_number'},event:{label:'Incident / hazard',module:'events',table:'events',ref:'event_ref'}};
 function wsRecordLinks(row,extra){
@@ -114,7 +115,7 @@ function wsShowReadOnly(row,current,linkData,linked){
   document.getElementById('page-workschedule').appendChild(host);
   host.querySelector('[data-ws-close]').addEventListener('click',function(){host.remove();});
   host.addEventListener('keydown',function(event){if(event.key==='Escape')host.remove();if(event.key==='Tab'){var items=Array.from(host.querySelectorAll('button,a[href]')),first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
-  host.addEventListener('click',function(event){if(!event.target.closest('a'))return;try{AurisWorkScheduleWorkspace.assertSession(current);}catch(e){event.preventDefault();host.remove();toast(e.message,false);}},true);
+  host.addEventListener('click',async function(event){var anchor=event.target.closest('a');if(!anchor)return;event.preventDefault();try{AurisWorkScheduleWorkspace.assertSession(current);var params=new URL(anchor.href).searchParams;await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:params.get('wsMode')||'view',linked:params.has('wsLinkedKind')?{kind:params.get('wsLinkedKind'),value:params.get('wsLinkedValue')}:null});}catch(e){event.preventDefault();host.remove();toast(e.message,false);}},true);
   host.querySelector('button').focus();
 }
 async function wsOpenRecordRequest(req){
@@ -125,17 +126,18 @@ async function wsOpenRecordRequest(req){
   AurisWorkScheduleWorkspace.assertSession(current);
   var row=(rows||[]).find(function(item){return String(item.id)===String(req.record)&&String(item.company_id)===current.companyId;});
   if(!row)return false;
-  var query=new URLSearchParams(location.search),mode=query.get('wsMode')||'view';
+  var query=new URLSearchParams(location.search),mode=req.mode||query.get('wsMode')||'view';
   wsAllData=wsAllData.filter(function(item){return String(item.company_id)===current.companyId&&String(item.id)!==String(row.id);});wsAllData.push(row);wsCurrentId=row.id;
   if(mode==='edit'||mode==='manage'){
     if(!isMgr())throw Error('Manager access is required to change work orders.');
+    document.getElementById('ws-record-view')?.remove();
     wsOpeningLinkedRecord=true;
     try{if(mode==='edit')await wsEdit(row.id);else await wsShowDetail(row.id);}finally{wsOpeningLinkedRecord=false;}
     return true;
   }
-  var data=await wsReadRecordLinks(row,current),kind=query.get('wsLinkedKind'),linked=null;
+  var data=await wsReadRecordLinks(row,current),kind=req.mode?(req.linked&&req.linked.kind):query.get('wsLinkedKind'),linked=null;
   if(kind){
-    var selected=data.links.find(function(link){return link.kind===kind&&link.value===query.get('wsLinkedValue');});
+    var selected=data.links.find(function(link){return link.kind===kind&&link.value===(req.linked?req.linked.value:query.get('wsLinkedValue'));});
     if(!selected)throw Error('This record is no longer linked to the work order.');
     var info=WS_RECORD_LINKS[kind];if(!canAccessPage(info.module))throw Error('Access to the linked module is required.');
     var field=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.value)?'id':info.ref;
