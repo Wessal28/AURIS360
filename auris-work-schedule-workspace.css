@@ -8,3 +8,5 @@
 @media(max-width:640px){.ws-record-overlay{padding:8px}.ws-record-window header,.ws-record-content{padding:16px}.ws-record-fields{grid-template-columns:1fr}.ws-record-window h2{font-size:20px}}
 .ave-actions a[data-view-action]{display:inline-flex;align-items:center;min-height:44px;padding:8px 10px;border:1px solid var(--border,#dce6ef);border-radius:8px;text-decoration:none;color:var(--text,#17324c);background:var(--card,#fff);white-space:nowrap;font-size:13px}
 .ave-link[data-view-action]{display:inline-flex;align-items:center;text-decoration:none}
+
+html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{content:"Opening work order…";position:fixed;inset:0;display:grid;place-items:center;background:#f5f8fa;color:#087b64;font:600 18px system-ui;z-index:2147483647}
