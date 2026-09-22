@@ -84,3 +84,8 @@ test('linked dialog Back returns to parent work order in read-only mode',async()
  r.context.wsShowReadOnly(rows[0],r.api.session(),{links:[]},{info:{table:'toolbox_talks',ref:'tbt_ref',label:'Toolbox talk'},row:{tbt_ref:'TBT-001'}});
  assert.match(host.innerHTML,/Back to work order/);await listeners.back();assert.equal(request.record,'wo-1');assert.equal(request.mode,'view');assert.equal(request.company,'co-a');assert.equal(button.disabled,false);
 });
+
+test('related records list includes every linked type and escapes reference text',()=>{
+ const r=runtime(),links=[{kind:'tbt',value:'t1',ref:'TBT-001'},{kind:'prestart',value:'p1',ref:'PS-001'},{kind:'site',value:'s1',ref:'<WI-001>'}];
+ const html=r.context.wsRelatedRecordsHtml({links},null);assert.equal((html.match(/data-ws-related=/g)||[]).length,3);assert.match(html,/Toolbox talk/);assert.match(html,/Pre-start check/);assert.match(html,/Site inspection/);assert.match(html,/&lt;WI-001&gt;/);assert.doesNotMatch(html,/target="_blank"/);
+});

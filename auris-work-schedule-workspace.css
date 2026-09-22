@@ -1,9 +1,9 @@
 .ws-record-overlay{position:fixed;inset:0;background:#102b46a6;z-index:920;display:grid;place-items:center;padding:24px}
 .ws-record-window{background:#fff;color:#17324c;width:min(1080px,100%);max-height:94vh;border-radius:18px;box-shadow:0 18px 60px #102b464d;display:flex;flex-direction:column;overflow:hidden}
-.ws-record-window header{display:flex;justify-content:space-between;gap:20px;padding:24px;background:#edf7f4;border-bottom:1px solid #dbe8e3;align-items:flex-start}
-.ws-record-window h2{font-size:25px;margin:6px 0;overflow-wrap:anywhere}.ws-record-window p{margin:4px 0}.ws-record-window nav{display:flex;gap:10px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #dbe8e3}.ws-record-window nav:empty{display:none}
-.ws-record-content{overflow:auto;padding:24px}.ws-record-content section{border:1px solid #dce6ef;border-radius:12px;padding:18px;margin-bottom:16px}.ws-record-content h3{margin:0 0 16px;font-size:17px;color:#087b64}
-.ws-record-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0}.ws-record-fields dt{font-size:12px;color:#526780;text-transform:capitalize;font-weight:700}.ws-record-fields dd{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
+.ws-record-window header{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;background:#edf7f4;border-bottom:1px solid #dbe8e3;align-items:flex-start}
+.ws-record-window h2{font-size:20px;margin:3px 0;overflow-wrap:anywhere}.ws-record-window p{margin:4px 0}.ws-record-window nav{display:flex;gap:10px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid #dbe8e3}.ws-record-window nav:empty{display:none}
+.ws-record-content{overflow:auto;padding:12px}.ws-record-content section{border:1px solid #dce6ef;border-radius:12px;padding:12px;margin-bottom:10px}.ws-record-content h3{margin:0 0 10px;font-size:15px;color:#087b64}
+.ws-record-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}.ws-record-fields dt{font-size:12px;color:#526780;text-transform:capitalize;font-weight:700}.ws-record-fields dd{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
 .ws-record-links{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0}.ws-record-links a{display:block;border:1px solid #bbded4;background:#f1faf7;border-radius:8px;padding:10px;color:#066b58;text-decoration:none;overflow-wrap:anywhere}
 @media(max-width:640px){.ws-record-overlay{padding:8px}.ws-record-window header,.ws-record-content{padding:16px}.ws-record-fields{grid-template-columns:1fr}.ws-record-window h2{font-size:20px}}
 .ave-actions a[data-view-action]{display:inline-flex;align-items:center;min-height:44px;padding:8px 10px;border:1px solid var(--border,#dce6ef);border-radius:8px;text-decoration:none;color:var(--text,#17324c);background:var(--card,#fff);white-space:nowrap;font-size:13px}
@@ -13,12 +13,17 @@ html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{con
 
 .ws-linked-table{overflow:auto}.ws-linked-table table{width:100%;border-collapse:collapse}.ws-linked-table th,.ws-linked-table td{text-align:left;padding:10px;border-bottom:1px solid #dce6ef}.ws-linked-table th{background:#edf7f4}
 /* Inspection reports also appear inside Work Schedule, outside their module styles. */
-.ws-record-content .inspection-report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px;margin:0}
+.ws-record-content .inspection-report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin:0}
 .ws-record-content .inspection-report-fields>div{min-width:0}
-.ws-record-content .inspection-report-fields dt{font-size:12px;font-weight:700;color:#526a80;margin-bottom:6px}
-.ws-record-content .inspection-report-fields dd{margin:0;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
-.ws-record-content .inspection-report-item{padding:18px;margin:14px 0;border:1px solid #dce6ef;border-radius:10px;background:#f8fbfc}
-.ws-record-content .inspection-report-item h4{margin:0 0 16px;font-size:16px;color:#17324c}
+.ws-record-content .inspection-report-fields dt{font-size:12px;font-weight:700;color:#526a80;margin-bottom:3px}
+.ws-record-content .inspection-report-fields dd{margin:0;font-size:13px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.ws-record-content .inspection-report-item{padding:10px 12px;margin:8px 0;border:1px solid #dce6ef;border-radius:10px;background:#f8fbfc}
+.ws-record-content .inspection-report-item h4{margin:0 0 8px;font-size:14px;color:#17324c}
 .ws-record-window header>div{flex:1;min-width:0}
 .ws-record-window header>button{flex-shrink:0}
 @media(max-width:640px){.ws-record-content .inspection-report-fields{grid-template-columns:1fr}.ws-record-window header{flex-wrap:wrap}.ws-record-window header>div{flex-basis:100%}}
+
+.ws-record-window header p{font-size:12px;line-height:1.35}.ws-record-window header,.ws-record-window nav{flex-shrink:0}.ws-record-content{min-height:0}
+@media(min-width:900px){.ws-record-content .inspection-report-item .inspection-report-fields{grid-template-columns:minmax(100px,1fr) minmax(180px,2fr) minmax(80px,.6fr) minmax(140px,1.4fr);gap:12px}}
+
+.ws-related-records [data-ws-related]{cursor:pointer}.ws-related-records [data-ws-related]:hover,.ws-related-records .ws-related-active{background:#e5f4ef}.ws-related-records [data-ws-related]:focus-visible{outline:2px solid #087b64;outline-offset:-2px}.ws-related-records>p{font-size:12px;color:#526a80}.ws-related-records .ws-linked-table{max-height:180px;overflow:auto}
