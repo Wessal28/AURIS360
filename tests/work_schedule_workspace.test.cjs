@@ -43,3 +43,21 @@ test('edit and manage require manager access, stale responses never open',async(
 test('additional link failure is disclosed while direct links remain available',async()=>{
   const r=runtime();r.context.api=async()=>{throw Error('offline');};const data=await r.context.wsReadRecordLinks(rows[0],r.api.session());assert.match(data.warning,/could not be loaded/);assert.equal(data.links[0].kind,'tbt');
 });
+
+test('linked labels resolve readable references without changing exact record IDs',async()=>{
+ const r=runtime(),id=rows[0].toolbox_talk_id;
+ r.context.api=async url=>url.startsWith('/toolbox_talks?')?[{id,company_id:'co-a',tbt_ref:'TBT-0042'}]:[];
+ const result=await r.context.wsReadRecordLinks(rows[0],r.context.AurisWorkScheduleWorkspace.session());
+ assert.equal(result.links[0].ref,'TBT-0042');assert.equal(result.links[0].value,id);
+ r.context.api=async()=>{throw Error('offline');};
+ const fallback=await r.context.wsReadRecordLinks(rows[0],r.context.AurisWorkScheduleWorkspace.session());
+ assert.equal(fallback.links[0].ref,'Reference unavailable');assert.equal(fallback.links[0].value,id);
+});
+test('reference lookup rejects another company record',async()=>{
+ const r=runtime();r.context.api=async url=>url.startsWith('/toolbox_talks?')?[{id:rows[0].toolbox_talk_id,company_id:'co-b',tbt_ref:'PRIVATE'}]:[];
+ const result=await r.context.wsReadRecordLinks(rows[0],r.context.AurisWorkScheduleWorkspace.session());assert.equal(result.links[0].ref,'Reference unavailable');
+});
+test('work order startup mask is removed on completion and has a bounded fallback',()=>{
+ let timer,removed=false;const r=runtime();r.context.location.search='?wsMode=view';r.context.document={documentElement:{classList:{add:()=>{},remove:()=>{removed=true;}}}};r.context.setTimeout=(fn,ms)=>{timer=fn;assert.equal(ms,30000);return 1;};r.context.clearTimeout=()=>{};
+ vm.runInNewContext(source,r.context);assert.equal(removed,false);timer();assert.equal(removed,true);
+});

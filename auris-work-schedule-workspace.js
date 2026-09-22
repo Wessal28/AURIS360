@@ -1,3 +1,14 @@
+/* Keep authenticated record navigation behind one loading screen. */
+var wsWindowLoadingTimer;
+function wsFinishWindowLoading(){
+  document.documentElement.classList.remove('ws-window-loading');
+  clearTimeout(wsWindowLoadingTimer);
+}
+if(typeof location!=='undefined'&&typeof document!=='undefined'&&new URLSearchParams(location.search).has('wsMode')){
+  document.documentElement.classList.add('ws-window-loading');
+  // Fail open to the normal sign-in/error UI if startup cannot finish.
+  wsWindowLoadingTimer=setTimeout(wsFinishWindowLoading,30000);
+}
 /* Work Schedule register and read-only record windows. */
 (function(root){
 'use strict';
@@ -60,7 +71,7 @@ function wsRecordWindow(id,mode){
 var WS_RECORD_LINKS={tbt:{label:'Toolbox talk',module:'meetings',table:'toolbox_talks',ref:'tbt_ref'},prestart:{label:'Pre-start check',module:'inspection',table:'inspections',ref:'reference_no'},site:{label:'Site inspection',module:'inspection',table:'inspections',ref:'reference_no'},ra:{label:'Risk assessment',module:'risk',table:'risk_assessments',ref:'ra_ref'},ptw:{label:'Permit to work',module:'permit',table:'permits',ref:'permit_number'},event:{label:'Incident / hazard',module:'events',table:'events',ref:'event_ref'}};
 function wsRecordLinks(row,extra){
   var links=[];
-  function add(kind,value,ref){if(!WS_RECORD_LINKS[kind]||!value)return;if(!links.some(function(link){return link.kind===kind&&(link.value===String(value)||ref&&link.ref===ref);}))links.push({kind:kind,value:String(value),ref:ref||String(value)});}
+  function add(kind,value,ref){if(!WS_RECORD_LINKS[kind]||!value)return;if(!links.some(function(link){return link.kind===kind&&(link.value===String(value)||ref&&link.ref===ref);}))links.push({kind:kind,value:String(value),ref:ref||(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(value))?'Reference unavailable':String(value))});}
   (extra||[]).forEach(function(link){add(link.link_type,link.record_id||link.record_ref,link.record_ref);});
   add('tbt',row.toolbox_talk_id);add('prestart',row.prestart_id);add('site',row.site_inspection_id);add('ra',row.risk_assessment_id||row.ra_ref,row.ra_ref);add('ptw',row.permit_id||row.permit_ref,row.permit_ref);add('event',row.linked_event_ref);
   return links;
@@ -74,7 +85,19 @@ async function wsReadRecordLinks(row,current){
   var reverse=await Promise.allSettled(['ra','ptw'].map(function(kind){var info=WS_RECORD_LINKS[kind];return api('/'+info.table+'?select=id,company_id,work_order_id,'+info.ref+'&company_id=eq.'+encodeURIComponent(current.companyId)+'&work_order_id=eq.'+encodeURIComponent(row.id));}));
   AurisWorkScheduleWorkspace.assertSession(current);
   reverse.forEach(function(result,index){var kind=['ra','ptw'][index],info=WS_RECORD_LINKS[kind];if(result.status==='rejected'){warning='Some linked records could not be loaded. Reload to retry.';return;}(result.value||[]).forEach(function(record){if(String(record.company_id)===current.companyId&&String(record.work_order_id)===String(row.id))extra.push({link_type:kind,record_id:record.id,record_ref:record[info.ref]});});});
-  return {links:wsRecordLinks(row,extra),warning:warning};
+  var links=wsRecordLinks(row,extra);
+  await Promise.all(links.map(async function(link){
+    var info=WS_RECORD_LINKS[link.kind];
+    if(link.ref!=='Reference unavailable'||!canAccessPage(info.module))return;
+    try{
+      var records=await api('/'+info.table+'?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&id=eq.'+encodeURIComponent(link.value)+'&limit=1');
+      AurisWorkScheduleWorkspace.assertSession(current);
+      var record=(records||[]).find(function(item){return String(item.id)===link.value&&String(item.company_id)===current.companyId;});
+      if(record&&canAccessPage(info.module))link.ref=record[info.ref]||record.ref_number||record.reference_no||'Reference unavailable';
+    }catch(e){/* Keep the exact link usable even when reference lookup fails. */}
+  }));
+  AurisWorkScheduleWorkspace.assertSession(current);
+  return {links:links,warning:warning};
 }
 function wsRecordFields(row,fields){
   return '<dl class="ws-record-fields">'+fields.map(function(field){var value=row[field[0]];if(typeof value==='boolean')value=value?'Yes':'No';if(Array.isArray(value))value=value.map(function(item){return typeof item==='object'?JSON.stringify(item):item;}).join(', ');if(value&&typeof value==='object')value=JSON.stringify(value);return '<div><dt>'+escH(field[1])+'</dt><dd>'+escH(value==null||value===''?'Not recorded':String(value))+'</dd></div>';}).join('')+'</dl>';

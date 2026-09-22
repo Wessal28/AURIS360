@@ -1825,6 +1825,7 @@ function authShowPanel(name) {
 }
 
 function authShowErr(msg) {
+  if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();
   var err=document.getElementById('login-err');
   if(err){err.textContent=msg;aurisSetDisplay(err,'block');}
   authHideLoading();
@@ -2127,6 +2128,7 @@ function authSaveSession(session) {
 }
 
 function authClearSession() {
+  if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();
   _authSessionGeneration++;
   if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
   _authRefreshPromise=null;
@@ -2460,6 +2462,7 @@ async function authInitSession() {
   var stored = authGetStoredSession();
   if(!stored || !stored.access_token) {
     // No session - show login normally
+    if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();
     aurisSetDisplay('login-screen','flex');
     return;
   }
@@ -38534,7 +38537,7 @@ async function deepLinkResume(reason){
     deepLinkShowNotice('AURIS360 opened the '+page.replace(/-/g,' ')+' module but could not open '+(req.ref||req.record)+'.'+context,true);
     return false;
   }catch(e){deepLinkShowNotice('The linked record could not be opened: '+(e.message||e),true);return false;}
-  finally{deepLinkOpening=false;}
+  finally{deepLinkOpening=false;if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();}
 }
 deepLinkCaptureRequest();
 window.addEventListener('load',function(){deepLinkScheduleResume('page-load');});
