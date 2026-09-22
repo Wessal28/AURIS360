@@ -12,3 +12,13 @@
 html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{content:"Opening work order…";position:fixed;inset:0;display:grid;place-items:center;background:#f5f8fa;color:#087b64;font:600 18px system-ui;z-index:2147483647}
 
 .ws-linked-table{overflow:auto}.ws-linked-table table{width:100%;border-collapse:collapse}.ws-linked-table th,.ws-linked-table td{text-align:left;padding:10px;border-bottom:1px solid #dce6ef}.ws-linked-table th{background:#edf7f4}
+/* Inspection reports also appear inside Work Schedule, outside their module styles. */
+.ws-record-content .inspection-report-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px;margin:0}
+.ws-record-content .inspection-report-fields>div{min-width:0}
+.ws-record-content .inspection-report-fields dt{font-size:12px;font-weight:700;color:#526a80;margin-bottom:6px}
+.ws-record-content .inspection-report-fields dd{margin:0;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.ws-record-content .inspection-report-item{padding:18px;margin:14px 0;border:1px solid #dce6ef;border-radius:10px;background:#f8fbfc}
+.ws-record-content .inspection-report-item h4{margin:0 0 16px;font-size:16px;color:#17324c}
+.ws-record-window header>div{flex:1;min-width:0}
+.ws-record-window header>button{flex-shrink:0}
+@media(max-width:640px){.ws-record-content .inspection-report-fields{grid-template-columns:1fr}.ws-record-window header{flex-wrap:wrap}.ws-record-window header>div{flex-basis:100%}}

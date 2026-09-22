@@ -74,3 +74,13 @@ test('linked toolbox form renders attendance without internal metadata or JSON',
 test('linked inspections use the existing inspection report form',()=>{
  const r=runtime();let received;r.context.auditInspectionReportHTML=row=>{received=row;return 'Inspection form';};const row={reference_no:'WI-001',items:[]};assert.equal(r.context.wsLinkedRecordHtml({info:{table:'inspections'},row}),'Inspection form');assert.equal(received,row);
 });
+
+test('linked dialog Back returns to parent work order in read-only mode',async()=>{
+ const r=runtime(),listeners={};const button={disabled:false,addEventListener:(event,fn)=>{listeners.back=fn;},focus:()=>{}};
+ const host={innerHTML:'',querySelector:selector=>selector==='[data-ws-back]'?button:{addEventListener:()=>{},focus:()=>{}},addEventListener:()=>{},remove:()=>{}};
+ r.context.document={getElementById:id=>id==='page-workschedule'?{appendChild:()=>{}}:null,createElement:()=>host};
+ const start=source.indexOf('function wsShowReadOnly('),end=source.indexOf('async function wsOpenRecordRequest',start);vm.runInContext(source.slice(start,end),r.context);
+ let request;r.context.wsOpenRecordRequest=async req=>{request=req;return true;};
+ r.context.wsShowReadOnly(rows[0],r.api.session(),{links:[]},{info:{table:'toolbox_talks',ref:'tbt_ref',label:'Toolbox talk'},row:{tbt_ref:'TBT-001'}});
+ assert.match(host.innerHTML,/Back to work order/);await listeners.back();assert.equal(request.record,'wo-1');assert.equal(request.mode,'view');assert.equal(request.company,'co-a');assert.equal(button.disabled,false);
+});
