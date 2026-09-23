@@ -197,13 +197,13 @@
   #mobile-bottom3nav { min-height: 60px !important; padding: 4px 6px calc(4px + env(safe-area-inset-bottom,0px)) !important; }
   #mobile-bottom3nav .mob-nav-btn { min-height: 48px !important; gap: 3px !important; padding: 4px !important; }
   #mobile-bottom3nav .mob-nav-btn span { font-size: 10px !important; line-height: 1.2; }
-  #mobile-bottom3nav .mob-nav-btn i, #mobile-bottom3nav .mob-nav-btn i::before { width: 22px !important; height: 22px !important; min-width: 22px !important; font-size: 22px !important; background-size: contain !important; }
+  #mobile-bottom3nav .mob-nav-btn i, #mobile-bottom3nav .mob-nav-btn i::before { width: 22px !important; height: 22px !important; min-width: 22px !important; font-size: 22px !important; }
   #mobile-bottom3nav .mf-report { transform: none; border-radius: 10px; }
   #mobile-modules-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 6px !important; padding: 10px !important; align-content: start; }
   #mobile-modules-grid .mf-module-heading { grid-column: 1/-1 !important; font-size: 12px !important; margin: 10px 2px 3px !important; }
   #mobile-modules-grid .mob-module-btn { flex-direction: row !important; justify-content: flex-start !important; min-height: 48px !important; gap: 8px !important; padding: 8px !important; }
   #mobile-modules-grid .mob-module-icon-shell { width: 24px !important; height: 24px !important; flex: 0 0 24px; }
-  #mobile-modules-grid .mob-module-icon-shell i, #mobile-modules-grid .mob-module-icon-shell i::before { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: 24px !important; background-size: contain !important; }
+  #mobile-modules-grid .mob-module-icon-shell i, #mobile-modules-grid .mob-module-icon-shell i::before { width: 24px !important; height: 24px !important; min-width: 24px !important; font-size: 24px !important; }
   #mobile-modules-grid .mob-module-label { font-size: 12px !important; text-align: left; }
   #mobile-modules-panel > :first-child { padding: 10px 14px !important; }
   .mf-hero { padding: 14px; margin-bottom: 12px; }
@@ -231,4 +231,17 @@
  .mf-active-form > div:not(.card){grid-template-columns:minmax(0,1fr)!important}
  .mf-active-form #audit-type-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .mf-active-form div:has(>table){max-width:100%;overflow-x:auto;touch-action:auto}
+}
+
+/* Scale whole sprites without changing their atlas coordinates. */
+@media(max-width:768px){
+ #mobile-bottom3nav .mob-nav-btn i.auris-module-icon,
+ #mobile-modules-grid .mob-module-icon-shell i.auris-module-icon{width:34px!important;height:34px!important;min-width:34px!important;flex-basis:34px!important;font-size:0!important;zoom:.7}
+}
+#mobile-company-context{display:none}
+@media(max-width:768px){
+ #mobile-company-context:not([hidden]){display:flex;position:fixed;top:calc(52px + env(safe-area-inset-top,0px));left:0;right:0;height:54px;z-index:199;align-items:center;gap:10px;padding:5px 12px;background:#fff;border-bottom:1px solid #d8e4e1}
+ #mobile-company-context label{font-size:12px;font-weight:700;color:#075e54;flex-shrink:0}
+ #mobile-company-select{flex:1;width:0;min-width:0;height:42px;padding:6px 10px;border:1px solid #b7cec6;border-radius:8px;background:#fff;color:#17324c;font-size:16px}
+ #app:has(#mobile-company-context:not([hidden])) .main{top:calc(106px + env(safe-area-inset-top,0px))!important}
 }

@@ -35636,6 +35636,7 @@ function saCompanySetContext(companyId) {
 }
 
 function saCompanyUpdateLabel() {
+  mobileCompanyHeaderSync();
   var lbl = document.getElementById('sa-company-label');
   if(!lbl) return;
   var logo = document.getElementById('sa-company-logo');
@@ -35654,6 +35655,7 @@ function saCompanyUpdateLabel() {
 async function saCompanyInit() {
   // Only run for sephs_admin
   if(!isSA()) {
+    mobileCompanyHeaderSync();
     var w = document.getElementById('sa-company-switcher');
     if(w) w.style.display = 'none';
     return;
@@ -35734,7 +35736,7 @@ async function saCompanyPick(companyId) {
   var activeId = activePage ? activePage.id.replace('page-','') : 'dashboard';
   // Re-show the page (will trigger its loader from showPage's L map)
   if(typeof showPage === 'function') {
-    showPage(activeId, null);
+    await showPage(activeId, null);
   }
 
   // Toast confirmation
@@ -43288,3 +43290,25 @@ function mobileFieldFocusForm(page,id){
  mobileFieldFormObserver.observe(form,{attributes:true,attributeFilter:['style']});
  form.scrollIntoView({block:'start'});
 }
+
+// Persistent viewing context, independent of reporting shortcuts.
+function mobileCompanyHeaderSync(){
+ var row=document.getElementById('mobile-company-context'),select=document.getElementById('mobile-company-select');
+ if(!row||!select)return;
+ row.hidden=!prof||!isSA();if(row.hidden)return;
+ select.innerHTML='<option value="" disabled>Select company</option>'+saCompanyList.map(function(c){return '<option value="'+escH(c.id)+'">'+escH(c.name)+'</option>';}).join('');
+ select.value=sephsCompanyContext||'';
+}
+async function mobileCompanyHeaderPick(id){
+ if(!prof||!isSA()||!id||!saCompanyList.some(function(c){return c.id===id;}))throw Error('Select an accessible company.');
+ if(document.querySelector('.mf-active-form'))throw Error('Save or close the current form before changing company.');
+ mobileFieldState.generation++;mobileFieldState.rows={};mobileFieldState.site='';
+ await saCompanyPick(id||null);
+ mobileCompanyHeaderSync();
+ if(document.getElementById('page-dashboard')?.classList.contains('active'))await mobileFieldRefresh();
+}
+document.addEventListener('change',function(event){
+ if(event.target.id!=='mobile-company-select')return;
+ var select=event.target;select.disabled=true;
+ mobileCompanyHeaderPick(select.value).catch(function(error){toast(error.message,false);}).finally(function(){mobileCompanyHeaderSync();select.disabled=false;});
+});

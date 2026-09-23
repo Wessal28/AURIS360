@@ -12,3 +12,12 @@ test('cancelled navigation and changed company cannot initialize a form',async()
 test('each create shortcut invokes its form after navigation',async()=>{for(const [action,fn] of [['observation','obsNew'],['inspection','inspNew'],['risk','raNew'],['talk','tbtNew']]){const r=launchRuntime(),calls=[];r.mobileNavTo=async()=>{calls.push('ready');return {ok:true};};r[fn]=()=>calls.push(fn);await r.mobileFieldAct(action,'');assert.deepEqual(calls,['ready',fn]);}});
 test('software admin must select a company before creating records',async()=>{const r=launchRuntime();r.isSA=()=>true;r.sephsCompanyContext=null;let selected=false;r.mobileFieldCompanies=async()=>{selected=true;};r.toast=()=>{};r.mobileNavTo=()=>{throw Error('must not navigate');};await r.mobileFieldAct('inspection','');assert.equal(selected,true);});
 test('company selection rejects ordinary users and unlisted company ids',async()=>{const r=launchRuntime();await assert.rejects(r.mobileFieldPickCompany('c2'));r.isSA=()=>true;await assert.rejects(r.mobileFieldPickCompany('c2'));});
+
+test('header company selection uses shared context without navigating to Home',async()=>{
+ const r=launchRuntime();r.isSA=()=>true;r.saCompanyList=[{id:'c2',name:'Company B'}];r.document.querySelector=()=>null;r.document.getElementById=()=>null;r.mobileCompanyHeaderSync=()=>{};
+ let selected;r.saCompanyPick=async id=>{selected=id;};r.mobileNavTo=()=>{throw Error('must keep current module');};r.mobileFieldState.site='Old site';r.mobileFieldState.rows={actions:[{}]};
+ await r.mobileCompanyHeaderPick('c2');assert.equal(selected,'c2');assert.equal(r.mobileFieldState.site,'');assert.equal(Object.keys(r.mobileFieldState.rows).length,0);
+});
+test('header company selection rejects unauthorized, unknown and active-form switches',async()=>{
+ const r=launchRuntime();r.saCompanyList=[{id:'c2'}];await assert.rejects(r.mobileCompanyHeaderPick('c2'));r.isSA=()=>true;await assert.rejects(r.mobileCompanyHeaderPick('other'));await assert.rejects(r.mobileCompanyHeaderPick(''));r.document.querySelector=()=>({});await assert.rejects(r.mobileCompanyHeaderPick('c2'),/Save or close/);
+});
