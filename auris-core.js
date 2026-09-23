@@ -3277,7 +3277,7 @@ function activatePageNavigation(pageKey, suppliedElement){
 }
 
 function showPage(name,el){
-  if(typeof mapEditorLeave==='function'&&name!=='actions'&&(mapEditorBusy||mapEditorDirty())){mapEditorLeave().then(function(ok){if(ok)showPage(name,el);});return;}
+  if(typeof mapEditorLeave==='function'&&name!=='actions'&&(mapEditorBusy||mapEditorDirty())){return mapEditorLeave().then(function(ok){return ok?showPage(name,el):{ok:false,cancelled:true};});}
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
   if(!canAccessPage(name)) {
@@ -3287,6 +3287,8 @@ function showPage(name,el){
   if(window.AurisCommandCentre)window.AurisCommandCentre.recordOpen(name);
 
 closeTransientOverlays();
+if(typeof mobileFieldReleaseForm==='function')mobileFieldReleaseForm();
+var routeReady;
 const activateRoutedPage=function(){
   // Shared page CSS owns visibility; routing only changes the active state.
   document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
@@ -3304,7 +3306,7 @@ var moduleRuntime=window.AurisModuleRuntime;
 if(moduleRuntime){
   try{
     var enabledModules=co&&Array.isArray(co.module_access)?co.module_access:null;
-    var activationResult=moduleRuntime.activate(name,{element:el,loader:pageLoader,activateView:activateRoutedPage,enabledKeys:enabledModules,strictDependencies:false});
+    var activationResult=routeReady=moduleRuntime.activate(name,{element:el,loader:pageLoader,activateView:activateRoutedPage,enabledKeys:enabledModules,strictDependencies:false});
     if(activationResult&&typeof activationResult.then==='function')activationResult.then(activateRoutedPage,function(error){activateRoutedPage();console.error('Module load failed ('+name+'):',error);});
   }catch(error){
     activateRoutedPage();
@@ -3313,7 +3315,7 @@ if(moduleRuntime){
 }else if(pageLoader){
   try{
     activateRoutedPage();
-    var pageLoadResult=pageLoader();
+    var pageLoadResult=routeReady=pageLoader();
     // Some module upgrades mount or rebuild their page synchronously inside
     // the loader. Reassert the route after that work, and once more after an
     // asynchronous loader settles.
@@ -3338,6 +3340,7 @@ if(window.innerWidth<=768){
   // Also scroll the window
   window.scrollTo(0,0);
 }
+return routeReady;
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
@@ -38933,8 +38936,9 @@ function mobileNavTo(page, title, btnEl) {
   mobileSetBottomNavActive(page, btnEl);
   mobileCloseModules();
   mobileCloseSidebar();
-  showPage(page, null);
+  var ready=showPage(page, null);
   if(page==='dashboard'&&window.innerWidth<=768){mobileFieldMount();mobileFieldRefresh();}
+  return ready;
 }
 
 function mobileSetBottomNavActive(page, btnEl) {
@@ -43176,7 +43180,8 @@ function mobileFieldHome(){
  var panel=document.querySelector('.mobile-home-panel');if(!panel||!prof)return;
  var hour=new Date().getHours(),greeting=hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
  var sites=[];Object.keys(mobileFieldState.rows).forEach(function(k){mobileFieldState.rows[k].forEach(function(r){var site=r.site||r.site_name||r.location;if(typeof site==='string'&&site&&!sites.includes(site))sites.push(site);});});
- var h='<div class="mf-hero"><small>AURIS360 · '+(mobileFieldManager()?'Management overview':'Field workspace')+'</small><h2>'+greeting+', '+escH((prof.full_name||'').split(' ')[0]||'welcome')+'</h2><label>Site / area<select data-mf-site><option value="">All accessible sites</option>'+sites.sort().map(function(site){return '<option '+(site===mobileFieldState.site?'selected ':'')+'value="'+escH(site)+'">'+escH(site)+'</option>';}).join('')+'</select></label><p>'+(!navigator.onLine?'Offline — saved drafts remain on this device.':'Connected · '+escH(co&&co.name||'Selected company'))+'</p></div>';
+ var h='<div class="mf-hero"><small>AURIS360 · '+(mobileFieldManager()?'Management overview':'Field workspace')+'</small><h2>'+greeting+', '+escH((prof.full_name||'').split(' ')[0]||'welcome')+'</h2><label>Site / area<select data-mf-site><option value="">All accessible sites</option>'+sites.sort().map(function(site){return '<option '+(site===mobileFieldState.site?'selected ':'')+'value="'+escH(site)+'">'+escH(site)+'</option>';}).join('')+'</select></label><p>'+(!navigator.onLine?'Offline — saved drafts remain on this device.':'Connected · '+escH(mobileFieldCompanyName()))+'</p></div>';
+ if(typeof isSA==='function'&&isSA())h=mobileFieldButton('Company: '+mobileFieldCompanyName(),'companies')+h;
  h+='<div class="mf-section-heading"><h3>Today</h3>'+mobileFieldButton('Refresh','refresh')+'</div><div class="mf-grid">';
  var actions=mobileFieldRows('actions').filter(function(r){return !['closed','completed','cancelled'].includes(r.status);});
  if(canAccessPage('actions'))h+=mobileFieldButton((mobileFieldState.rows.actions?actions.filter(function(r){return dashIsOverdue(r.target_date||r.due_date);}).length:'—')+' overdue actions','nav','actions');
@@ -43210,9 +43215,9 @@ function mobileFieldDialog(title,html){
 }
 function mobileFieldReports(){var h='<p>Choose a report. Photos, location, voice notes and saved drafts are available in the reporting form.</p><div class="mf-grid">';
  if(canAccessPage('events'))[['Incident','injury'],['Near miss','near_miss'],['Hazard / unsafe condition','unsafe_condition'],['Unsafe act','unsafe_act'],['Environmental event','environmental']].forEach(function(a){h+=mobileFieldButton(a[0],'report',a[1]);});
- if(canAccessPage('tools'))h+=mobileFieldButton('Equipment defect','nav','tools');
+ if(canAccessPage('observation'))h+=mobileFieldButton('Equipment defect','observation','unsafe_condition');
  if(canAccessPage('observation'))h+=mobileFieldButton('Observation','observation');mobileFieldDialog('Quick report',h+'</div>');}
-function mobileFieldMore(){mobileFieldDialog('More','<div class="mf-grid">'+mobileFieldButton('My profile & offline drafts','personal')+mobileFieldButton('Sync saved drafts','sync')+(canAccessPage('approvals')?mobileFieldButton('Approvals & notifications','nav','approvals'):'')+(canAccessPage('settings')?mobileFieldButton('Settings','nav','settings'):'')+'</div><p class="mf-note">Incident and observation drafts with photos support offline capture. Other workflows require a connection; keep unsaved forms open until saved.</p>');}
+function mobileFieldMore(){mobileFieldDialog('More','<div class="mf-grid">'+(typeof isSA==='function'&&isSA()?mobileFieldButton('Select company','companies'):'')+mobileFieldButton('My profile & offline drafts','personal')+mobileFieldButton('Sync saved drafts','sync')+(canAccessPage('approvals')?mobileFieldButton('Approvals & notifications','nav','approvals'):'')+(canAccessPage('settings')?mobileFieldButton('Settings','nav','settings'):'')+'</div><p class="mf-note">Incident and observation drafts with photos support offline capture. Other workflows require a connection; keep unsaved forms open until saved.</p>');}
 function mobileFieldQrUrl(value){var url=new URL(value,location.origin);if(url.origin!==location.origin||!url.searchParams.get('record')||!url.searchParams.get('goto'))throw Error('Scan an AURIS360 record code for this environment.');if(!canAccessPage(url.searchParams.get('goto')))throw Error('Your role cannot open this module.');return url;}
 async function mobileFieldQrOpen(value){try{var url=mobileFieldQrUrl(value);mobileFieldClose();history.pushState(null,'',url.pathname+url.search);await deepLinkResume('mobile-qr');}catch(e){toast(e.message,false);}}
 async function mobileFieldQr(){
@@ -43224,17 +43229,62 @@ async function mobileFieldQr(){
 async function mobileFieldAct(action,value){
  if(!prof)return;
  if(action==='close'){mobileFieldClose();return;}
+ if(action==='companies'){await mobileFieldCompanies();return;}
+ if(action==='company'){await mobileFieldPickCompany(value);return;}
  if(action==='reports'){mobileFieldReports();return;}if(action==='more'){mobileFieldMore();return;}if(action==='qr'){mobileFieldQr();return;}if(action==='qr-link'){mobileFieldQrOpen(document.getElementById('mf-qr-link').value);return;}
  if(action==='refresh'){await mobileFieldRefresh();return;}
  if(action==='sync'){await offlineSyncNow();toast('Sync checked. Review offline drafts for any items still pending.');return;}
  mobileFieldClose();
  var page=({report:'events',observation:'observation',inspection:'inspection',risk:'risk',talk:'meetings',personal:'settings',action:'actions'})[action]||value;
- if(!canAccessPage(page))throw Error('Your role cannot access this module.');mobileNavTo(page,page.replace(/-/g,' '),null);
- if(action==='report'){imsNewIncident();imsSelectType(value);if(mobileFieldState.site)document.getElementById('ev-location').value=mobileFieldState.site;}
- if(action==='observation')obsNew();if(action==='inspection')inspNew();if(action==='risk')raNew();if(action==='talk')tbtNew();if(action==='personal')loadSettings('personal');if(action==='action')await mapEdit(value);
+ if(!canAccessPage(page))throw Error('Your role cannot access this module.');
+ var creating=['report','observation','inspection','risk','talk'].includes(action);
+ if(creating&&typeof isSA==='function'&&isSA()&&!sephsCompanyContext){await mobileFieldCompanies();toast('Select a company, then choose your report or inspection.');return;}
+ var context=mobileFieldContext(),ready=await mobileNavTo(page,(window.AurisModuleRegistry&&window.AurisModuleRegistry.get(page)||{}).name||page.replace(/-/g,' '),null);
+ if((ready&&ready.ok===false)||context!==mobileFieldContext()||!canAccessPage(page)||!document.getElementById('page-'+page)?.classList.contains('active'))return;
+ if(action==='report'){imsNewIncident();if(typeof imv2SwitchTab==='function')imv2SwitchTab('report');imsSelectType(value);if(mobileFieldState.site)document.getElementById('ev-location').value=mobileFieldState.site;}
+ if(action==='observation')obsNew(value||undefined);if(action==='inspection')inspNew();if(action==='risk')raNew();if(action==='talk')tbtNew();if(action==='personal')loadSettings('personal');if(action==='action')await mapEdit(value);
+ if(creating)mobileFieldFocusForm(page,({report:'ims-view-report',observation:'obs-form3view',inspection:'audit-form3view',risk:'ra-form3view',talk:'tbt-form'})[action]);
 }
 document.addEventListener('click',function(e){var button=e.target.closest('[data-mf-action]');if(!button)return;Promise.resolve(mobileFieldAct(button.dataset.mfAction,button.dataset.mfValue)).catch(function(error){toast(error.message,false);});});
 window.addEventListener('offline',function(){if(window.innerWidth<=768&&prof)mobileFieldHome();});
 window.addEventListener('online',function(){if(window.innerWidth<=768&&prof)mobileFieldRefresh();});
 
 window.matchMedia('(max-width:768px)').addEventListener('change',function(e){if(e.matches)mobileFieldMount();else mobileFieldClose();});
+
+function mobileFieldCompanyName(){
+ if(typeof isSA==='function'&&isSA())return (typeof saCompanyList!=='undefined'&&saCompanyList.find(function(c){return c.id===sephsCompanyContext;})||{}).name||'Select a company';
+ return co&&co.name||'Selected company';
+}
+async function mobileFieldCompanies(){
+ if(typeof isSA!=='function'||!isSA())throw Error('Company selection is restricted to software administrators.');
+ if(document.querySelector('.mf-active-form'))throw Error('Save or close the current form before changing company.');
+ var user=prof.id,rows=await api('/companies?select=id,name&order=name');
+ if(!prof||prof.id!==user||!isSA())return;
+ mobileFieldCompanyOptions=(rows||[]).filter(function(c){return c.id&&c.name;});
+ mobileFieldDialog('Select company','<p>Reports and inspections will use the selected company.</p><div class="mf-grid">'+mobileFieldCompanyOptions.map(function(c){return mobileFieldButton(c.name,'company',c.id);}).join('')+'</div>');
+}
+var mobileFieldCompanyOptions=[],mobileFieldFormObserver=null;
+async function mobileFieldPickCompany(id){
+ if(typeof isSA!=='function'||!isSA()||!mobileFieldCompanyOptions.some(function(c){return c.id===id;}))throw Error('Select an accessible company.');
+ if(document.querySelector('.mf-active-form'))throw Error('Save or close the current form before changing company.');
+ if(!saCompanyList.some(function(c){return c.id===id;}))saCompanyList.push(mobileFieldCompanyOptions.find(function(c){return c.id===id;}));
+ mobileFieldClose();mobileFieldState.generation++;mobileFieldState.rows={};mobileFieldState.site='';
+ await saCompanyPick(id);
+ await mobileNavTo('dashboard','Home',null);mobileFieldMount();await mobileFieldRefresh();
+}
+function mobileFieldReleaseForm(){
+ if(mobileFieldFormObserver)mobileFieldFormObserver.disconnect();mobileFieldFormObserver=null;
+ document.querySelectorAll('.mf-form-excluded').forEach(function(el){el.classList.remove('mf-form-excluded');});
+ document.querySelectorAll('.mf-active-form').forEach(function(el){el.classList.remove('mf-active-form');});
+ document.querySelectorAll('.mf-form-company').forEach(function(el){el.remove();});
+}
+function mobileFieldFocusForm(page,id){
+ if(window.innerWidth>768)return;
+ var form=document.getElementById(id),root=document.getElementById('page-'+page);if(!form||!root||!root.contains(form))return;
+ mobileFieldReleaseForm();form.classList.add('mf-active-form');
+ var note=document.createElement('p');note.className='mf-form-company';note.textContent='Company: '+mobileFieldCompanyName();form.prepend(note);
+ var node=form;while(node!==root){Array.from(node.parentElement.children).forEach(function(sibling){if(sibling!==node)sibling.classList.add('mf-form-excluded');});node=node.parentElement;}
+ mobileFieldFormObserver=new MutationObserver(function(){if(form.style.display==='none'||!root.classList.contains('active'))mobileFieldReleaseForm();});
+ mobileFieldFormObserver.observe(form,{attributes:true,attributeFilter:['style']});
+ form.scrollIntoView({block:'start'});
+}
