@@ -16,3 +16,5 @@
 .arw-section dl>div:only-child{grid-column:1/-1}
 .arw-panel.arw-loading,.arw-panel.arw-error{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:auto}
 @media(max-width:480px){.arw-panel>nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.arw-panel>nav button{min-width:0;white-space:normal}}
+
+.arw-tab-help{margin:0 0 12px;color:#526780;font-size:13px;line-height:1.4}

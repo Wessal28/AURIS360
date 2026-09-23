@@ -27,3 +27,12 @@ html.ws-window-loading body{visibility:hidden}html.ws-window-loading::before{con
 @media(min-width:900px){.ws-record-content .inspection-report-item .inspection-report-fields{grid-template-columns:minmax(100px,1fr) minmax(180px,2fr) minmax(80px,.6fr) minmax(140px,1.4fr);gap:12px}}
 
 .ws-related-records [data-ws-related]{cursor:pointer}.ws-related-records [data-ws-related]:hover,.ws-related-records .ws-related-active{background:#e5f4ef}.ws-related-records [data-ws-related]:focus-visible{outline:2px solid #087b64;outline-offset:-2px}.ws-related-records>p{font-size:12px;color:#526a80}.ws-related-records .ws-linked-table{max-height:180px;overflow:auto}
+
+.ws-create-actions{background:#f7fbfa;gap:7px!important}.ws-create-actions .btn{min-height:40px}.ws-related-records{margin-top:14px}.ws-related-records .ws-linked-table{max-height:320px}
+
+.auris-camera-dialog{width:min(680px,calc(100vw - 24px));max-height:90dvh;border:0;border-radius:14px;padding:16px;background:#fff;color:#17324c}
+.auris-camera-dialog::backdrop{background:#102b46b8}
+.auris-camera-dialog video{display:block;width:100%;max-height:65dvh;background:#102b46;border-radius:8px;object-fit:contain;margin:12px 0}
+.auris-camera-dialog .auris-camera-controls{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.auris-camera-dialog button{min-height:44px;padding:8px 14px;border:1px solid #b7cec6;border-radius:8px;background:#fff;color:#075e54;cursor:pointer}
+.auris-camera-dialog [data-camera-shoot]{width:100%;background:#087b64;color:#fff;border-color:#087b64}

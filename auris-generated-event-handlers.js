@@ -995,7 +995,7 @@ auditAIApplyReview()
 this.closest('.if-action-row').remove()
     },
     "g0332": function (event) {
-auditAddPhotoRow()
+auditCaptureChecklistPhoto(this)
     },
     "g0333": function (event) {
 findingClose(this.dataset.id)
