@@ -218,3 +218,17 @@
   #app .ai-window.open { pointer-events: auto; }
   #app .ai-toggle { pointer-events: auto; width: 44px !important; height: 44px !important; min-height: 44px !important; box-shadow: 0 2px 8px #17324c22 !important; }
 }
+@media(max-width:768px){
+ .page .mf-form-excluded{display:none!important}
+ .mf-active-form{scroll-margin-top:64px;max-width:100%;min-width:0}
+ .mf-form-company{font-size:13px;font-weight:600;padding:10px 12px;border-radius:8px;background:#e7f5ef;color:#075e54;margin:0 0 10px}
+ .mf-active-form :is(.form3row,.form3row3,.grid2,.grid3){display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+ .mf-active-form :is(input,select,textarea){max-width:100%;box-sizing:border-box}
+ .mf-active-form .card{padding:12px!important}
+}
+@media(max-width:768px){
+ .mf-active-form div{min-width:0;box-sizing:border-box}
+ .mf-active-form > div:not(.card){grid-template-columns:minmax(0,1fr)!important}
+ .mf-active-form #audit-type-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .mf-active-form div:has(>table){max-width:100%;overflow-x:auto;touch-action:auto}
+}
