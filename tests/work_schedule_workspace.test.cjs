@@ -89,3 +89,24 @@ test('related records list includes every linked type and escapes reference text
  const r=runtime(),links=[{kind:'tbt',value:'t1',ref:'TBT-001'},{kind:'prestart',value:'p1',ref:'PS-001'},{kind:'site',value:'s1',ref:'<WI-001>'}];
  const html=r.context.wsRelatedRecordsHtml({links},null);assert.equal((html.match(/data-ws-related=/g)||[]).length,3);assert.match(html,/Toolbox talk/);assert.match(html,/Pre-start check/);assert.match(html,/Site inspection/);assert.match(html,/&lt;WI-001&gt;/);assert.doesNotMatch(html,/target="_blank"/);
 });
+
+test('all saved toolbox talks for a work order appear even when the link table is unavailable',async()=>{
+ const r=runtime(),queries=[];r.context.api=async url=>{
+  queries.push(url);
+  if(url.startsWith('/work_schedule_links?'))throw Error('link table unavailable');
+  if(url.includes('work_schedule_id=eq.wo-1'))return [{id:'talk-a',company_id:'co-a',work_schedule_id:'wo-1',tbt_ref:'TBT-A'},{id:'talk-b',company_id:'co-b',work_schedule_id:'wo-1',tbt_ref:'PRIVATE'}];
+  if(url.includes('notes=ilike.'))return [{id:'talk-c',company_id:'co-a',tbt_ref:'TBT-C',notes:'[AURIS360_LINKED_WORK:{"id":"wo-1"}]'},{id:'talk-d',company_id:'co-a',tbt_ref:'TBT-D',notes:'[AURIS360_LINKED_WORK:{"id":"other"}]'}];
+  return [];
+ };
+ const data=await r.context.wsReadRecordLinks(rows[0],r.api.session());
+ assert.deepEqual(Array.from(data.links.filter(link=>link.kind==='tbt'),link=>link.ref),['TBT-A','TBT-C','Reference unavailable']);
+ assert.ok(queries.every(url=>url.includes('company_id=eq.co-a')));
+});
+test('read-only work order puts creation shortcuts above details and related records below',()=>{
+ const r=runtime(),host={innerHTML:'',querySelector:()=>({addEventListener:()=>{},focus:()=>{}}),addEventListener:()=>{}};
+ r.context.document={getElementById:id=>id==='page-workschedule'?{appendChild:()=>{}}:null,createElement:()=>host};
+ const start=source.indexOf('function wsShowReadOnly('),end=source.indexOf('async function wsOpenRecordRequest',start);vm.runInContext(source.slice(start,end),r.context);
+ r.context.wsShowReadOnly(rows[0],r.api.session(),{links:[]},null);
+ assert.ok(host.innerHTML.indexOf('data-ws-create="tbt"')<host.innerHTML.indexOf('Work details'));
+ assert.ok(host.innerHTML.indexOf('Work details')<host.innerHTML.indexOf('Related HSE records'));
+});

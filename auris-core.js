@@ -13805,32 +13805,44 @@ async function wsOpenRA(){
   },250);
 }
 
-function wsOpenPTW(){
+async function wsOpenPTW(){
   var x=wsGetCurrent();
-  showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
-  if(x.permit_ref)setTimeout(function(){wsOpenLinkedRecord('ptw',x.permit_ref);},250);
+  if(x.permit_ref){await wsOpenLinkedRecord('ptw',x.permit_ref);return;}
+  await showPage('permit',null);
+  wsSetRecordReturnContext('ptw',x.id,'form');
+  ptwNew();
+  await ptwLoadWorkOrderOptions(x.id);
 }
 
 // -- TOOLS & EQUIPMENT for WORK ORDER -----------------------------------------
 let wsTEItems=[]; // [{tool_id, ref, name, category, source:'register'|'manual', checked:false}]
 let wsChkToolId=null, wsChkToolName='', wsChkToolCat='';
 
-function wsOpenToolsCheck(){
-  var x=wsGetCurrent();
+async function wsOpenToolsCheck(){
+  var x=wsGetCurrent(),company=String(ccid()||''),work=String(wsCurrentId||'');
   document.getElementById('ws-detail-view').style.display='none';
   document.getElementById('ws-te-form').style.display='block';
   document.getElementById('ws-te-checklist-view').style.display='none';
   document.getElementById('ws-te-wo-title').textContent=x.title||'Work Order';
   document.getElementById('ws-te-search').value='';
   document.getElementById('ws-te-search-results').innerHTML='';
-  // Load saved items if any
-  wsTELoadItems();
+  try{var tools=await api('/tools_register?select=id,company_id,ref_number,name,category&company_id=eq.'+encodeURIComponent(company)+'&order=name.asc');if(company===String(ccid()||'')&&work===String(wsCurrentId||''))toolsAllData=(tools||[]).filter(function(tool){return String(tool.company_id)===company;});}catch(error){toast('Equipment register could not be loaded. Try again.',false);}
+  await wsTELoadItems();
 }
 
 async function wsTELoadItems(){
-  // Check if work order has saved equipment list in notes or dedicated field
-  // For now render from wsTEItems (session only) + show option to save
-  wsTERenderItems();
+  var company=String(ccid()||''),work=String(wsCurrentId||'');wsTEItems=[];wsTERenderItems();
+  if(!company||!work)return;
+  try{
+    var links=await api('/work_schedule_links?select=record_id,company_id,work_order_id&company_id=eq.'+encodeURIComponent(company)+'&work_order_id=eq.'+encodeURIComponent(work)+'&link_type=eq.equipment');
+    if(company!==String(ccid()||'')||work!==String(wsCurrentId||''))return;
+    var ids=(links||[]).filter(function(link){return String(link.company_id)===company&&String(link.work_order_id)===work&&link.record_id;}).map(function(link){return link.record_id;});
+    if(!ids.length)return;
+    var tools=await api('/tools_register?select=id,company_id,ref_number,name,category&company_id=eq.'+encodeURIComponent(company)+'&id=in.('+ids.map(encodeURIComponent).join(',')+')');
+    if(company!==String(ccid()||'')||work!==String(wsCurrentId||''))return;
+    wsTEItems=(tools||[]).filter(function(tool){return String(tool.company_id)===company&&ids.includes(tool.id);}).map(function(tool){return {tool_id:tool.id,ref:tool.ref_number||'',name:tool.name||'Equipment',category:tool.category||'other',source:'register',checked:false};});
+    wsTERenderItems();
+  }catch(error){toast('Linked equipment could not be loaded. Reload to retry.',false);}
 }
 
 function wsTESearchEquipment(){
@@ -13867,14 +13879,15 @@ function wsTESearchEquipment(){
   el.innerHTML=h;
 }
 
-function wsTEAddFromRegister(toolId){
-  var t=(toolsAllData||[]).find(function(x){return x.id===toolId;});
+async function wsTEAddFromRegister(toolId){
+  var t=(toolsAllData||[]).find(function(x){return x.id===toolId&&String(x.company_id)===String(ccid());});
   if(!t)return;
-  if(wsTEItems.find(function(i){return i.tool_id===toolId;})){toast('Already in list');return;}
-  wsTEItems.push({tool_id:toolId,ref:t.ref_number||'',name:t.name,category:t.category||'other',source:'register',checked:false});
-  wsTERenderItems();
-  wsTESearchEquipment();
-  toast(escH(t.name)+' added to equipment list');
+  if(wsTEItems.some(function(i){return i.tool_id===toolId;})){toast('Already in list');return;}
+  try{
+    await api('/work_schedule_links?on_conflict=work_order_id,link_type,record_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ccid(),work_order_id:wsCurrentId,link_type:'equipment',record_id:toolId,record_ref:t.ref_number||t.name,created_by:prof?.id||null}});
+    wsTEItems.push({tool_id:toolId,ref:t.ref_number||'',name:t.name,category:t.category||'other',source:'register',checked:false});
+    wsTERenderItems();wsTESearchEquipment();toast(t.name+' added to equipment list');
+  }catch(error){toast('Equipment could not be linked. Try again.',false);}
 }
 
 async function wsTEAddManual(){
@@ -13928,9 +13941,13 @@ function wsTERenderItems(){
   el.innerHTML=h;
 }
 
-function wsTERemove(idx){
-  wsTEItems.splice(idx,1);
-  wsTERenderItems();
+async function wsTERemove(idx){
+  var item=wsTEItems[idx];if(!item)return;
+  if(item.tool_id){
+    try{await api('/work_schedule_links?company_id=eq.'+encodeURIComponent(ccid())+'&work_order_id=eq.'+encodeURIComponent(wsCurrentId)+'&link_type=eq.equipment&record_id=eq.'+encodeURIComponent(item.tool_id),{m:'DELETE',p:'return=minimal'});}
+    catch(error){toast('Equipment link could not be removed. Try again.',false);return;}
+  }
+  wsTEItems.splice(idx,1);wsTERenderItems();
 }
 
 async function wsTEOpenChecklist(idx){
@@ -31685,20 +31702,15 @@ async function tbtAIGenerateDraft(){
   }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
 }
 function tbtAddAttendee(){
-  // Work Schedule has its own embedded #tbt-attendees-list. The standalone TBT
-  // page uses #tbtf-attendees-list. Find the visible one so the row appears
-  // where the user is actually looking.
-  var lists = document.querySelectorAll('#tbtf-attendees-list,#tbt-attendees-list');
-  var el = null;
-  for (var i = 0; i < lists.length; i++) {
-    if (lists[i].offsetParent !== null) { el = lists[i]; break; }  // offsetParent === null means hidden
-  }
-  if (!el) el = lists[0];  // fall back to first if nothing is visible
-  if (!el) return;
+  var el=document.querySelector('#tbt-form #tbtf-attendees-list');
+  if(!el)return;
   var idx=el.querySelectorAll('.tbt-att-row').length;
   el.insertAdjacentHTML('beforeend',tbtAttendeeRow('','',idx));
   tbtUpdateCount();
 }
+document.addEventListener('click',function(event){
+  if(event.target.closest('#tbtf-add-attendee'))tbtAddAttendee();
+});
 
 function tbtAddAction(){
   // Same duplicate-ID issue as tbtAddAttendee - find the visible #tbt-actions-list.
@@ -33769,6 +33781,35 @@ function auditAddChecklistRow() {
   if(!window.chkItems) window.chkItems = [];
   window.chkItems.push({ca:'', item:''});
   buildChecklist([]);
+}
+
+// Capture a real image before adding inspection evidence.
+async function aurisTakePhoto(){
+  if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera is unavailable on this device.');
+  var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  var dialog=document.createElement('dialog');dialog.className='auris-camera-dialog';
+  dialog.innerHTML='<div class="auris-camera-controls"><strong>Take photo</strong><button type="button" data-camera-close>Cancel</button></div><video autoplay playsinline muted></video><button type="button" data-camera-shoot>Capture photo</button>';
+  document.body.appendChild(dialog);var video=dialog.querySelector('video');video.srcObject=stream;
+  try{
+    dialog.showModal();await video.play();
+    return await new Promise(function(resolve,reject){
+      function finish(error,result){if(error)reject(error);else resolve(result);dialog.close();}
+      dialog.querySelector('[data-camera-close]').addEventListener('click',function(){finish(Error('Photo cancelled.'));});
+      dialog.addEventListener('cancel',function(event){event.preventDefault();finish(Error('Photo cancelled.'));});
+      dialog.querySelector('[data-camera-shoot]').addEventListener('click',function(){
+        try{var canvas=document.createElement('canvas'),scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));
+          if(!video.videoWidth||!video.videoHeight)throw Error('Camera is not ready. Try again.');
+          canvas.width=Math.max(1,Math.round(video.videoWidth*scale));canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+          canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+          finish(null,canvas.toDataURL('image/jpeg',0.75));}catch(error){finish(error);}
+      });
+    });
+  }finally{stream.getTracks().forEach(function(track){track.stop();});dialog.remove();}
+}
+async function auditCaptureChecklistPhoto(button){
+  var item=button?.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim().slice(0,100)||'Inspection';
+  try{var data=await aurisTakePhoto();auditAddPhotoRow({url:data,file_name:item+' photo.jpg',type:'photo'});toast('Photo captured. Save the inspection to keep it.');}
+  catch(error){if(error.message==='Photo cancelled.')return;auditAddPhotoRow();var rows=document.querySelectorAll('#audit-photos-list>div');rows[rows.length-1]?.querySelector('input[type="file"]')?.click();}
 }
 
 // -- Photos / voice notes ------------------------------------------
