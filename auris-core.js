@@ -202,6 +202,8 @@ if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&
   delete o.b.doc_owner;
   delete o.b.doc_version;
 }
+const accessIssue=window.AurisUserAccess&&window.AurisUserAccess.requestIssue(prof,path,method);
+if(accessIssue)throw new Error(accessIssue);
 const scopeIssue=apiCompanyScopeIssue(path,o,method);
 if(scopeIssue)throw new Error(scopeIssue);
 const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
@@ -1953,11 +1955,12 @@ async function doLogin() {
   var em=document.getElementById('login-email')?.value?.trim();
   var pw=document.getElementById('login-pw')?.value;
   var btn=document.getElementById('login-btn');
-  if(!em||!pw){authShowErr('Please enter your email and password.');return;}
+  if(!em||!pw){authShowErr('Please enter your email or phone number and password.');return;}
   authShowErr(''); authShowLoading('Signing in...');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i>Signing in...';}
   try {
-    var d=await authQ('/token?grant_type=password',{email:em,password:pw});
+    var credentials={password:pw};if(em.indexOf('@')!==-1)credentials.email=em;else credentials.phone=em.replace(/[\s().-]/g,'');
+    var d=await authQ('/token?grant_type=password',credentials);
     await authOnSignIn(d);
     auditLogEvent('login','auth','User signed in',{email:em});
   } catch(e) {
@@ -3142,6 +3145,7 @@ async function loadRolloutRuntimeConfig(){
 //   3. Role allow-list (ROLE_ALLOWED) - does this user's role permit it?
 // sephs_admin bypasses gate 2 (they see everything they manage).
 function canAccessPage(pageKey) {
+  if(window.AurisUserAccess&&!window.AurisUserAccess.allowed(prof,pageKey,'view'))return false;
   // Admin/account pages (Users & Roles, Settings, Companies, Integrations,
   // Executive Dashboard, AI Insights) are platform functions, NOT HSE
   // modules. They bypass the launch flag (Gate 1) and the per-company
@@ -10684,37 +10688,20 @@ if(!p){toast('Person not found',false);return;}
 peopleFillForm(p);
 }
 async function peopleOnboardUser(id){
-if(!peopleCanManage()){toast('Access denied',false);return;}
-if(typeof adminFnCall!=='function'){toast('User administration service is not available yet',false);return;}
-var p=peAllData.find(function(x){return x.id===id;});
-if(!p){toast('Person not found',false);return;}
-var name=peopleName(p);
-var realEmail=isDeliverableEmail(p.email)?String(p.email).trim():'';
-var loginEmail=realEmail||peopleSyntheticEmail(p);
-var role=peopleDefaultUserRole(p);
-try{
-  var existing=await api('/profiles?select=id,email,full_name,role&email=eq.'+encodeURIComponent(loginEmail)+'&limit=1');
-  if(existing&&existing.length){
-    toast('A user account already exists for '+loginEmail,false);
-    return;
-  }
-}catch(ex){}
-if(realEmail){
-  if(!(await appConfirmAction({title:'Onboard person as user',message:'Send a login invitation to '+name+'?',detail:'The invitation will be sent to '+realEmail+' and the account will start with the '+role.replace('_',' ')+' role.',confirmText:'Send invitation',cancelText:'Cancel'})))return;
-  try{
-    await adminFnCall('invite_user',{email:realEmail,full_name:name,role:role,company_id:ccid()});
-    toast('Invitation sent to '+realEmail);
-  }catch(e){toastActionError('Manage user account','People',e);}
-  return;
+if(!peopleCanManage()||!isAdm()){toast('An administrator must onboard user accounts',false);return;}
+var p=peAllData.find(function(x){return x.id===id;});if(!p){toast('Person not found',false);return;}
+var email=isDeliverableEmail(p.email)?String(p.email).trim():'',phone=String(p.phone||'').trim();
+if(!email&&!phone){toast('Add an email or phone number to this person’s profile first',false);peopleEdit(id);return;}
+var channel=email?'email':'phone';
+var contactConfirmed=false;
+if(email&&phone&&window.AurisUserAccess){channel=await window.AurisUserAccess.chooseContact(p);if(!channel)return;contactConfirmed=true;}
+if(!contactConfirmed&&!(await appConfirmAction({title:'Onboard '+peopleName(p),message:channel==='email'?'Send a login invitation to '+email+'?':'Create a phone login for '+phone+'?',detail:channel==='email'?'Their saved profile details will be used.':'A temporary password will be shown for you to share directly. No SMS is sent.',confirmText:'Onboard user',cancelText:'Cancel'})))return;
+try{var response=await fetch('/api/user-administration',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'onboard_person',person_id:p.id,channel:channel})});var result=await response.json();if(!response.ok)throw new Error(result.error||'Onboarding failed');
+if(result.temporary_password)usersShowTempPasswordResult({email:result.login,full_name:peopleName(p)},result.temporary_password);
+toast(result.existing?'This person is already linked to a user account':channel==='email'?'Invitation sent to '+result.login:'Phone login created');
+}catch(e){toastActionError('Onboard user','People',e);}
 }
-var pw=cuGenerateTempPassword();
-if(!(await appConfirmAction({title:'Create login-only account',message:'Create a generated login for '+name+'?',detail:'No real email is recorded for this person. A .local username and temporary password will be created and must be shared directly.',confirmText:'Create account',cancelText:'Cancel'})))return;
-try{
-  await adminFnCall('create_user',{email:loginEmail,password:pw,full_name:name,role:role,company_id:ccid()});
-  usersShowTempPasswordResult({email:loginEmail,full_name:name},pw);
-  toast('Login-only account created');
-}catch(e){toastActionError('Manage user account','People',e);}
-}
+
 function peopleCloseProfile(){
 var modal=document.getElementById('user-profile-modal');
 if(modal)modal.style.display='none';
@@ -10745,7 +10732,7 @@ return '<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
   +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-top:-28px">'
   +'<div style="display:flex;gap:14px;align-items:flex-end"><div style="width:64px;height:64px;border-radius:50%;background:'+typeCfg[0]+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;border:4px solid #fff">'+escH(initials)+'</div>'
   +'<div><div style="font-size:18px;font-weight:800">'+escH(peopleName(p))+'</div><div style="font-size:13px;color:var(--text2)">'+escH(p.email||p.phone||'No contact recorded')+'</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><span class="badge bgr"><i class="ti ti-building"></i> '+escH(p.department||'No department')+'</span><span class="badge bgr"><i class="ti ti-map-pin"></i> '+escH(p.site||'No site')+'</span></div></div></div>'
-  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(p.status==='inactive'?'bgr':'bg')+'">'+escH(p.status||'active')+'</span><span class="badge bgr">'+escH(typeCfg[1])+'</span></div>'
+  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(p.status==='inactive'?'bgr':'bg')+'">'+escH(p.status||'active')+'</span><span class="badge bgr">'+escH(typeCfg[1])+'</span>'+(isAdm()?'<button class="btn btn-sm" type="button" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-user-plus"></i>Onboard user</button>':'')+'</div>'
   +'</div>';
 }
 function peopleProfileDetails(p){
@@ -10836,7 +10823,7 @@ const typeBadge=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb
 const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:700">Inducted</span>':'<span style="color:var(--amber);font-weight:700">Induction pending</span>')+'<br><span style="font-size:11px;color:var(--text2)">Medical: '+dateText(p.medical_fitness_date)+'</span>';
 const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
 const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
-const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':'Create generated login';
+const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':p.phone?'Create phone login':'Add contact details first';
 const profileBtn='<button class="btn btn-sm" data-auris-runtime-onclick="r0035" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-id"></i>Profile</button>';
 const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap">'+profileBtn+'<button class="btn btn-sm" data-auris-runtime-onclick="r0036" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" data-auris-runtime-onclick="r0038" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Reactivate</button>':'<button class="btn btn-sm danger" data-auris-runtime-onclick="r0039" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Deactivate</button>')+'</div>':profileBtn;
 return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
@@ -10941,12 +10928,13 @@ function settingsGroups(){return [["company","Company",["branding-studio"],isAdm
 function settingsSelectGroup(requested){
 var page=document.getElementById('page-settings'),nav=document.getElementById('settings-navigation');
 if(!nav){nav=document.createElement('nav');nav.id='settings-navigation';nav.className='settings-navigation';nav.setAttribute('aria-label','Settings sections');page.insertBefore(nav,page.children[1]);}
-var groups=settingsGroups(),selected=groups.find(function(g){return g[0]===requested&&g[3];})||groups.find(function(g){return g[3];});nav.replaceChildren();
+var groups=settingsGroups().map(function(g){g[3]=g[3]&&(!window.AurisUserAccess||window.AurisUserAccess.allowed(prof,'settings.'+g[0],'view'));return g;}),selected=groups.find(function(g){return g[0]===requested&&g[3];})||groups.find(function(g){return g[3];});nav.replaceChildren();
+if(!selected){groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(panel)panel.hidden=true;});nav.textContent='No Settings sections are available for your account.';return null;}
 groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(!panel){panel=document.createElement('section');panel.id='settings-section-'+g[0];panel.className='settings-section';panel.setAttribute('aria-label',g[1]);page.appendChild(panel);g[2].forEach(function(id){var card=document.getElementById(id);if(card)panel.appendChild(card);});}panel.hidden=!g[3]||g[0]!==selected[0];if(!g[3])return;var button=document.createElement('button');button.type='button';button.className='btn';button.textContent=g[1];button.setAttribute('aria-pressed',String(g[0]===selected[0]));button.setAttribute('aria-controls',panel.id);button.addEventListener('click',function(){loadSettings(g[0]);});nav.appendChild(button);});return selected[0];
 }
 function loadSettings(requestedGroup){
 if(!requestedGroup)settingsLoadedGroups={};
-var group=settingsSelectGroup(requestedGroup);
+var group=settingsSelectGroup(requestedGroup);if(!group)return;
 if(settingsLoadedGroups[group])return;
 settingsLoadedGroups[group]=true;
 document.getElementById('logo-settings').style.display='none';
@@ -34822,6 +34810,7 @@ async function cuLoadCompanies() {
 // Helper: call the admin-users Edge Function with proper auth.
 // Throws on non-OK responses with the error message as .message.
 async function adminFnCall(action, payload) {
+  if(window.AurisUserAccess && !window.AurisUserAccess.allowed(prof,'users',(['invite_user','create_user'].includes(action)?'create':'edit'))) throw new Error('Your user access does not allow this action');
   // Find the anon key (used in the apikey header). The app stores it as KEY.
   var anonKey = (typeof KEY !== 'undefined') ? KEY : null;
   if(!anonKey) {
@@ -35281,6 +35270,7 @@ function usersEdit(id) {
       ? 'This user cannot receive password reset emails. Set a temporary password and give it directly to the user.'
       : 'Use this if the user cannot access their mailbox. A normal email reset remains the preferred option when email works.');
   if(resetBtn) resetBtn.innerHTML = u.id===prof?.id ? '<i class="ti ti-lock"></i>Change my password' : '<i class="ti ti-lock-cog"></i>Set temporary password';
+  if(window.AurisUserAccess)window.AurisUserAccess.mount(u);
   var modal = document.getElementById('user-edit-modal');
   if(modal) modal.style.display = 'flex';
   // Wire role change to show/hide contractor field

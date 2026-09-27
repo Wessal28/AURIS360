@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
 <script src="auris-static-event-handlers.js?v=20260909-indicator-navigation-1"></script>
-<script src="auris-generated-event-handlers.js?v=20260909-indicator-navigation-1&work-record-20260923-1"></script>
+<script src="auris-generated-event-handlers.js?v=20260909-indicator-navigation-1&work-record-20260923-1&people-access-20260927-1"></script>
 <script src="auris-runtime-event-handlers.js?v=20260908-1"></script>
 <script src="auris-module-event-handlers-batch-1.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-2.js?v=20260822-2"></script>
@@ -54,7 +54,7 @@
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
 <script src="auris-approval-centre.js?v=20260901-10"></script>
-<script src="auris-record-workspace.js?v=20260908-1&work-record-20260923-1"></script>
+<script src="auris-record-workspace.js?v=20260908-1&work-record-20260923-1&people-access-20260927-1"></script>
 <script src="auris-action-record-workspace.js?v=20260908-1"></script>
 <script src="auris-action-list-workspace.js?v=20260908-1"></script>
 <script src="auris-moc-list-workspace.js?v=20260908-1"></script>
@@ -80,8 +80,8 @@
 <script src="auris-noise-list-workspace.js?v=20260916-1"></script>
 <script src="auris-meetings-list-workspace.js?v=20260916-1"></script>
 <script src="auris-training-plan-list-workspace.js?v=20260916-1"></script>
-<script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1"></script>
-<link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1">
+<script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1&people-access-20260927-1"></script>
+<link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1&people-access-20260927-1">
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -111,7 +111,9 @@
 <script src="auris-atex-records.js?v=20260920-1"></script>
 <link rel="stylesheet" href="auris-fleet-records.css?v=20260920-1">
 <script src="auris-fleet-records.js?v=20260920-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20260920-1&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1"></script>
+<link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
+<script src="auris-user-access.js?v=20260927-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20260920-1&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -142,7 +144,7 @@
 <link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1&launcher-icons-20260916-1">
 <link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
 <link rel="stylesheet" href="auris-view-engine.css?v=20260908-1">
-<link rel="stylesheet" href="auris-record-workspace.css?v=20260908-1&work-record-20260923-1">
+<link rel="stylesheet" href="auris-record-workspace.css?v=20260908-1&work-record-20260923-1&people-access-20260927-1">
 <link rel="stylesheet" href="auris-reporting-engine.css?v=20260901-17">
 <link rel="stylesheet" href="auris-dashboard-designer.css?v=20260901-18">
 <link rel="stylesheet" href="auris-automation-centre.css?v=20260901-19">
@@ -211,7 +213,7 @@
 <div class="auris-login-s-6137e46433">Sign in to your account</div>
 <div class="form3group">
   <label class="form3label">Email address</label>
-  <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email" data-auris-onkeydown="h0001"/>
+  <input type="text" id="login-email" placeholder="Email or phone with country code" autocomplete="username" data-auris-onkeydown="h0001"/>
 </div>
 <div class="form3group">
   <label class="form3label auris-login-s-99ebfe3d87">
@@ -9656,6 +9658,7 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group auris-users-roles-s-6aa34d7432" id="uem3contractor-row"><label class="form3label">Contractor company</label><input type="text" id="uem3contractor-co"/></div>
 <div class="form3group"><label class="form3label">Status</label>
 <select id="uem3status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+<section id="user-access-controls" aria-label="User module permissions"></section>
 <div id="uem3temp-reset-box" class="auris-users-roles-s-9e902ac354">
 <div class="auris-users-roles-s-dffbf7f64e">
 <div>
@@ -11765,7 +11768,7 @@ I can help you:<br>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>
 <link rel="stylesheet" href="auris-improvement-260910.css?v=20260913-1&launcher-icons-20260916-1"><script src="auris-risk-library.js?v=20260913-1"></script>
-<script src="auris-attendance-photo.js?v=20260913-1&work-record-20260923-1"></script>
+<script src="auris-attendance-photo.js?v=20260913-1&work-record-20260923-1&people-access-20260927-1"></script>
 <script src="auris-register-columns.js?v=20260913-1"></script><link rel="stylesheet" href="auris-mobile-final-polish.css?v=20260923-company-icons-1"/>
 </body>
 </html>
