@@ -124,6 +124,7 @@ const drift = ['tables', 'policies', 'routines']
 if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
 
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_access.sql')], {label: 'People onboarding and user access protection'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_definition.sql')], {
   label: 'atomic KPI transaction behavior'
 });

@@ -91,12 +91,20 @@ begin
     raise exception 'Anonymous definition write accepted';
   exception when insufficient_privilege then if sqlerrm<>'AURIS_KPI_SAVE_DENIED' then raise;end if;end;
   perform set_config('request.jwt.claim.sub',actor::text,true);
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
   update public.profiles set status='inactive' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
   begin
     perform public.save_kpi_definition(tenant,k,rev,baseline,definition,desired);
     raise exception 'Inactive administrator accepted';
   exception when insufficient_privilege then if sqlerrm<>'AURIS_KPI_SAVE_DENIED' then raise;end if;end;
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
   update public.profiles set status='active' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
   if before_state is distinct from pg_temp.kpi_snapshot(k) then raise exception 'Rejected save changed records';end if;
 
   -- The revision catches old REST writers; the child baseline also catches mixed cache reads.

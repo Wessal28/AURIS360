@@ -101,14 +101,26 @@ begin
     perform public.save_objective_definition(foreign_tenant,null,null,definition||jsonb_build_object('company_id',foreign_tenant));
     raise exception 'Foreign tenant save allowed';
   exception when insufficient_privilege then null;end;
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
   update public.profiles set status='inactive' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
   begin
     perform public.save_objective_definition(tenant,null,null,definition);
     raise exception 'Inactive save allowed';
   exception when insufficient_privilege then null;end;
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
   update public.profiles set status='active' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
   foreach permitted_role in array array['manager','admin','sephs_admin'] loop
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
     update public.profiles set role=permitted_role where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
     perform public.save_objective_definition(tenant,null,null,definition||jsonb_build_object('name',permitted_role));
   end loop;
   begin

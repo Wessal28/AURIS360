@@ -79,9 +79,17 @@ begin
  begin perform public.mutate_kpi_monthly_result(tenant,k,i,2025,3,rev,null,null,'save','{"actual":4}');raise exception 'Employee accepted';exception when insufficient_privilege then null;end;
  perform set_config('request.jwt.claim.sub',actor::text,true);
  begin perform public.mutate_kpi_monthly_result(foreign_tenant,k,i,2025,3,rev,null,null,'save','{"actual":4}');raise exception 'Cross-tenant accepted';exception when insufficient_privilege then null;end;
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
  update public.profiles set status='inactive' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
  begin perform public.mutate_kpi_monthly_result(tenant,k,i,2025,3,rev,null,null,'save','{"actual":4}');raise exception 'Inactive actor accepted';exception when insufficient_privilege then null;end;
+
+  -- Fixture maintenance runs without impersonating the account under test.
+  perform set_config('request.jwt.claim.sub','',true);
  update public.profiles set status='active' where id=actor;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
  if baseline is distinct from pg_temp.monthly_snapshot(k) then raise exception 'Denied writer altered data';end if;
  for invalid in select value from jsonb_array_elements('[{}, {"actual":null},{"actual":"NaN"},{"actual":"Infinity"},{"actual":4,"root":null}]') loop
    begin perform public.mutate_kpi_monthly_result(tenant,k,i,2025,3,rev,null,null,'save',invalid);raise exception 'Invalid input accepted';exception when invalid_parameter_value then null;end;
