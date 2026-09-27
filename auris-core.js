@@ -934,6 +934,8 @@ function obsSetFormMode(on) {
 }
 
 function obsSwitchTab(tab, btn) {
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'observation',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'observation');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   obsSetFormMode(false);
   obsCurrentTab = tab;
   document.querySelectorAll('[id^="obs-tab-"]').forEach(t => t.classList.remove('active'));
@@ -3145,7 +3147,7 @@ async function loadRolloutRuntimeConfig(){
 //   3. Role allow-list (ROLE_ALLOWED) - does this user's role permit it?
 // sephs_admin bypasses gate 2 (they see everything they manage).
 function canAccessPage(pageKey) {
-  if(window.AurisUserAccess&&!window.AurisUserAccess.allowed(prof,pageKey,'view'))return false;
+  if(window.AurisUserAccess&&!window.AurisUserAccess.pageAllowed(prof,pageKey))return false;
   // Admin/account pages (Users & Roles, Settings, Companies, Integrations,
   // Executive Dashboard, AI Insights) are platform functions, NOT HSE
   // modules. They bypass the launch flag (Gate 1) and the per-company
@@ -3303,6 +3305,7 @@ const activateRoutedPage=function(){
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
   activatePageNavigation(name,el);
+  if(window.AurisUserAccess)window.AurisUserAccess.activateSections(name);
   return target;
 };
 var pageLoader=moduleLoaderFor(name);
@@ -5326,6 +5329,8 @@ async function loadExecutive() {
 }
 
 function execTab(tab, btn) {
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'executive',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'executive');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="exec-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
   ['overview','safety','compliance','esg','reports'].forEach(function(t){
@@ -8537,6 +8542,8 @@ const COMPLIANCE_STATUS={
 var sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
 
 function sopSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'sop',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'sop');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="sop-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   document.getElementById('sop-view-list').style.display=tab==='list'?'block':'none';
@@ -12572,7 +12579,9 @@ if(c)c.className='ti '+(open?'ti-chevron-up':'ti-chevron-down');
 }
 
 function kpiSwitchTab(tab,btn){
-document.querySelectorAll('.kpi-tab').forEach(t=>{t.style.background='transparent';t.style.color='var(--text2)';});
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'kpi',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'kpi');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
+document.querySelectorAll('.kpi-tab').forEach(t=>{t.classList.toggle('active',t===btn);t.style.background='transparent';t.style.color='var(--text2)';});
 btn.style.background='var(--green)';btn.style.color='#fff';
 document.getElementById('kpi-tab-overview').style.display=tab==='overview'?'block':'none';
 document.getElementById('kpi-tab-monthly').style.display=tab==='monthly'?'block':'none';
@@ -14406,6 +14415,8 @@ function imsSetFormMode(on) {
 }
 
 function imsSwitchTab(tab, btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'events',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'events');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   imsSetFormMode(tab === 'report');
   document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
@@ -14787,7 +14798,8 @@ function imsApplyReportRoleMode(){
   if(lockNote) lockNote.style.display=locked?'block':'none';
 }
 
-function imsNewIncident(){
+function imsNewIncident(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'events','report')){toast('You do not have access to this section',false);return;}
+
   imsEditId=null;
   imsClearPhotos();
   imsClearInlineEvidence();
@@ -20862,6 +20874,8 @@ function conDateState(dateStr,days){
 }
 
 function conSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'contractor',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'contractor');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="con-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['register','score','preassess','eval','atw','incidents'].forEach(function(t){
@@ -21229,7 +21243,8 @@ function conFormBack(){
   conLoadRegister();
 }
 
-function conNew(){
+function conNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'contractor','register')){toast('You do not have access to this section',false);return;}
+
   conEditingId=null;
   document.getElementById('con-form3title').textContent='New Contractor';
   document.getElementById('con-del-btn').style.display='none';
@@ -22118,6 +22133,8 @@ const ENV_CHECKLIST=[
 ];
 
 function esgSwitchTab(tab, btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'esg',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'esg');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="esg-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['dash','waste','hazwaste','fuel','water','spills','inspections'].forEach(function(t){
@@ -22737,6 +22754,7 @@ function emDateState(dateStr,days){
 }
 
 function emSwitchTab(tab, btn){
+ if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'emergency',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'emergency');if(!permitted)return;tab=permitted.id;btn=document.getElementById(permitted.button);}
   document.querySelectorAll('#page-emergency [id^="em3tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['dash','plans','ert','muster','drills','activations','bcp','equipment'].forEach(function(t){
@@ -23468,6 +23486,8 @@ async function loadOHealth(){
 }
 
 function ohSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ohealth',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'ohealth');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="oh-tab-"]').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   ['dash','surveillance','audiometry','spirometry','vaccination','exposure','disease'].forEach(function(t){
@@ -24341,6 +24361,8 @@ async function loadPPE(){
 }
 
 function ppeSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ppe',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'ppe');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   ['dash','catalogue','inventory','issuance','inspections','replacements','expiry'].forEach(function(t){
@@ -24584,7 +24606,8 @@ function ppeCatBack(){
   if(tab==='inventory')ppeLoadInventory();else ppeLoadCatalogue();
 }
 
-function ppeCatNew(){
+function ppeCatNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ppe','catalogue')){toast('You do not have access to this section',false);return;}
+
   ppeCatEditId=null;document.getElementById('ppe-cat-form3title').textContent='New PPE Type';document.getElementById('ppe-cat-del-btn').style.display='none';
   ['pcf-name','pcf-subcat','pcf-brand','pcf-model','pcf-standard','pcf-protection','pcf-hazards','pcf-notes','pcf-location','pcf-supplier','pcf-cert-type','pcf-cert-ref','pcf-cert-issuer','pcf-cert-issue','pcf-cert-expiry','pcf-cert-url'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['pcf-qty-total','pcf-qty-avail'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});
@@ -24710,7 +24733,8 @@ async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
   }
 }
 
-async function ppeIssNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
+async function ppeIssNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ppe','issuance')){toast('You do not have access to this section',false);return;}
+try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
   ppeIssEditId=null;document.getElementById('ppe-iss-form3title').textContent='Issue PPE';document.getElementById('ppe-iss-form3ref').textContent='ISS-AUTO';document.getElementById('ppe-iss-del-btn').style.display='none';
   ['pif-emp-name','pif-emp-id','pif-dept','pif-title','pif-issued-by','pif-size','pif-serial','pif-batch','pif-wo-ref','pif-ra-ref','pif-hazard','pif-notes','pif-return-reason','pif-mfg-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('pif-emp-name');fillPersonSelect('pif-issued-by',prof?.full_name||personFullName(prof));
@@ -24818,7 +24842,8 @@ function ppeInspSelectItem(){
 function ppeInspShowForm(){document.getElementById('ppe-view-inspections').style.display='none';document.getElementById('ppe-insp-form').style.display='block';}
 function ppeInspBack(){document.getElementById('ppe-insp-form').style.display='none';document.getElementById('ppe-view-inspections').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-inspections')?.classList.add('active');ppeLoadInspections();}
 
-async function ppeInspNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
+async function ppeInspNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ppe','inspections')){toast('You do not have access to this section',false);return;}
+try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}
   ppeInspEditId=null;document.getElementById('ppe-insp-form3title').textContent='New PPE Inspection';document.getElementById('ppe-insp-form3ref').textContent='PPEINSP-AUTO';document.getElementById('ppe-insp-del-btn').style.display='none';
   ['piif-emp-name','piif-dept','piif-inspector','piif-defects','piif-notes','piif-repl-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('piif-emp-name');fillPersonSelect('piif-inspector',prof?.full_name||personFullName(prof));
@@ -24910,7 +24935,8 @@ async function ppeLoadReplacements(){
 function ppeRepShowForm(){document.getElementById('ppe-view-replacements').style.display='none';document.getElementById('ppe-rep-form').style.display='block';}
 function ppeRepBack(){document.getElementById('ppe-rep-form').style.display='none';document.getElementById('ppe-view-replacements').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-replacements')?.classList.add('active');ppeLoadReplacements();}
 
-async function ppeRepNew(){try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}ppeRepEditId=null;document.getElementById('ppe-rep-form3title').textContent='New Replacement Request';document.getElementById('ppe-rep-form3ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('prf-emp-name');fillPersonSelect('prf-requested-by',prof?.full_name||personFullName(prof));fillPersonSelect('prf-approved-by');document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
+async function ppeRepNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'ppe','replacements')){toast('You do not have access to this section',false);return;}
+try{await ppeRefreshPeople();}catch(e){toastActionError("Load PPE employees","PPE",e);return;}ppeRepEditId=null;document.getElementById('ppe-rep-form3title').textContent='New Replacement Request';document.getElementById('ppe-rep-form3ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('prf-emp-name');fillPersonSelect('prf-requested-by',prof?.full_name||personFullName(prof));fillPersonSelect('prf-approved-by');document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
 function ppeRepEdit(id){if(!isMgr()){toast("Manager access is required to edit PPE records.",false);return;}if(!ppeOpeningLinkedRecord)return ppeRecordWindow("replacements",id,"edit");var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form3title').textContent='Edit Request';document.getElementById('ppe-rep-form3ref').textContent=x.replacement_ref||'-';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);fillPersonSelect('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);fillPersonSelect('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
 async function ppeRepSave(){if(!isMgr()){toast("Manager access is required to save PPE records.",false);return;}var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
   try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref=await ppeNextRef('ppe_replacements','replacement_ref','REP-'+yr+'-');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});var needsMap=['immediate','urgent'].includes(body.urgency)||body.reason==='inspection_fail';var added=false;if(needsMap){added=await ppeCreateMapAction(ref+' - PPE replacement','PPE replacement required for '+emp+': '+ppeName+' ('+(body.reason||'replacement').replace(/_/g,' ')+'). '+(body.reason_notes||''),body.requested_by||body.approved_by||null,body.urgency==='immediate'?'high':'medium',res[0].id);}toast('Replacement request created! Ref: '+ref+(added?' - action added to MAP.':''));}}ppeRepBack();}catch(e){toastActionError('Save PPE replacement request','PPE Management',e);}
@@ -25094,6 +25120,8 @@ function toolsInspectionState(x,today){
 }
 
 function toolsSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'tools',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'tools');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['register','personal','inspection','lifting','statutory','vehicles','rcd'].forEach(function(t){
@@ -27019,6 +27047,7 @@ async function mapShowList(){
 }
 
 function mapSetView(view, btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'actions',view)){var permitted=window.AurisUserAccess.firstSection(prof,'actions');if(!permitted)return false;view=permitted.id;btn=document.getElementById(permitted.button);}
   mapCurrentView=view;
   if(window.AurisModuleLayout)window.AurisModuleLayout.setView('actions',view);
   document.querySelectorAll('[id^="map-tab-"]').forEach(t=>t.classList.remove('active'));
@@ -28176,6 +28205,8 @@ async function loadDocs(){
 }
 
 function dcSwitchTab(tab, btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'documents',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'documents');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="dc-tab-"]').forEach(t=>t.classList.remove('active'));
   if(btn)btn.classList.add('active');
   ['all','approval','expiry','copies','ack'].forEach(function(t){
@@ -29661,6 +29692,8 @@ async function legalRefreshMetrics(){
 }
 
 function legalSwitchTab(tab,btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'legal',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'legal');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));
   if(btn)btn.classList.add('active');
   ['register','changes','assessments','gaps','calendar','dashboard'].forEach(function(t){
@@ -31300,6 +31333,8 @@ const BULL_TYPE_CFG={
 // Override the existing function
 function mtgSwitchTab(tab, btn){
   tbtListViewGeneration++;
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'meetings',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'meetings');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('[id^="mtg-tab-"]').forEach(t=>{t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   // Hide all views
@@ -32247,6 +32282,8 @@ const LEVEL_COLORS = ['#f3f4f6','#E6F1FB','#FEF9EC','#EAF3DE','#1D9E75'];
 const LEVEL_TEXT   = ['#6B7280','#185FA5','#854F0B','#3B6D11','#fff'];
 
 function trainSwitchTab(tab, btn){
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'training');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   document.querySelectorAll('#page-training [id^="train-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['matrix','competency','induction','plan','followup','elearning','auth','tna'].forEach(function(t){
@@ -32673,7 +32710,8 @@ function tpBack(){
   tpLoad();
 }
 
-function tpNew(){
+function tpNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','plan')){toast('You do not have access to this section',false);return;}
+
   tpEditingId=null;
   document.getElementById('tp-form3title').textContent='New Training';
   document.getElementById('tp-del-btn').style.display='none';
@@ -32914,7 +32952,8 @@ function tfBack(){
   tfLoad();
 }
 
-function tfNew(){
+function tfNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','followup')){toast('You do not have access to this section',false);return;}
+
   tfEditingId=null;
   document.getElementById('tf-form3title').textContent='New Training Record';
   document.getElementById('tf-del-btn').style.display='none';
@@ -33336,6 +33375,8 @@ function auditStartButtonLabel(tab) {
 }
 
 function auditSwitchTab(tab, btn) {
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'inspection',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'inspection');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
+
   auditCurrentTab = tab;
   document.querySelectorAll('[id^="insp-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
@@ -34590,7 +34631,7 @@ const HSE_ROLES = {
   executive:    {label:'Executive Management', emoji:'*', color:'#185FA5',  bg:'#EFF6FF',  level:5, desc:'Board & executive - read-only dashboards, executive reports, ESG'},
   admin:        {label:'Company Admin',         emoji:'*', color:'#374151',  bg:'#f9fafb',  level:5, desc:'Full platform access including system configuration'},
 
-  hse_manager:  {label:'HSE Manager',           emoji:'HSE', color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'Full HSE module access, can manage users and settings'},
+  hse_manager:  {label:'HSE Manager',           emoji:'HSE', color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'HSE operational access; administration is reserved for company administrators'},
   hse_officer:  {label:'HSE Officer',           emoji:'HSE', color:'#0F766E',  bg:'#ECFDF5',  level:4, desc:'Operational HSE access including AI support, inspections, actions and compliance'},
   site_manager: {label:'Site Manager',          emoji:'*',  color:'#9A3412',  bg:'#FFF7ED',  level:3, desc:'Incidents, PTW, inspections, actions and people on their site'},
   auditor:      {label:'Auditor',               emoji:'*', color:'#5B21B6',  bg:'#F5F3FF',  level:3, desc:'Read-only all modules + write access to audits and inspections'},
@@ -36075,7 +36116,7 @@ function applyRoles() {
   };
   Object.entries(navRules).forEach(function(e) {
     var el = document.getElementById(e[0]);
-    if(el) el.style.display = e[1] ? 'flex' : 'none';
+    if(el) el.style.display = e[1] && canAccessPage(navPageKey(el)) ? 'flex' : 'none';
   });
   var aiPanel = document.getElementById('ai-panel');
   if(aiPanel) aiPanel.style.display = (AI_AVAILABLE && canUseAI()) ? 'block' : 'none';
@@ -36958,7 +36999,7 @@ async function adminLoadModuleAccess() {
   var cos = (adminCompaniesData||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
   if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No companies yet</div>'; return; }
   if(window.AurisApplicationsAdmin){
-    window.AurisApplicationsAdmin.renderPortfolio(el,cos,{launchedKeys:moduleLiveKeys(),onRefresh:adminLoadModuleAccess,onConfigure:function(companyId){openModuleAccess(companyId);},onBlocked:function(impact){toast('Application change is blocked: '+impact.blocked.join(', '),false);},onApply:async function(company,impact){var ok=await adminModSave(company.id,impact.next);if(ok){company.module_access=impact.next.slice();toast((impact.action==='enable'?'Installed ':'Uninstalled ')+auditLabel(impact.moduleKey)+(impact.remove.length>1?' with '+(impact.remove.length-1)+' dependent application(s)':''));adminLoadModuleAccess();}}});
+    window.AurisApplicationsAdmin.renderPortfolio(el,cos,{companyId:ccid(),launchedKeys:moduleLiveKeys(),onRefresh:adminLoadModuleAccess,onConfigure:function(companyId){openModuleAccess(companyId);},onBlocked:function(impact){toast('Application change is blocked: '+impact.blocked.join(', '),false);},onApply:async function(company,impact){var ok=await adminModSave(company.id,impact.next);if(ok){company.module_access=impact.next.slice();toast((impact.action==='enable'?'Installed ':'Uninstalled ')+auditLabel(impact.moduleKey)+(impact.remove.length>1?' with '+(impact.remove.length-1)+' dependent application(s)':''));adminLoadModuleAccess();}}});
     return;
   }
   var h='';
@@ -37780,7 +37821,8 @@ function indApplyChecklistTopics(topics){
   });
 }
 
-function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form3title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));indApplyChecklistTopics([]);if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
+function indNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','induction')){toast('You do not have access to this section',false);return;}
+ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form3title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));indApplyChecklistTopics([]);if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
 async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=indCollectChecklistTopics();var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};Object.assign(body,personIdentityPayload(person));body.inducted_by_person_id=personFromValue(body.inducted_by)?.id||null;try{if(window.indEditId){await apiWriteWithMissingColumnFallback('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body},'Induction record');trainingAudit('update','Induction record updated','induction_records',Object.assign({id:window.indEditId},body),{topics_count:topics.length});toast('Updated!');}else{body.created_by=prof?.id;var created=await apiWriteWithMissingColumnFallback('/induction_records',{m:'POST',p:'return=representation',b:body},'Induction record');trainingAudit('create','Induction record created','induction_records',(created&&created[0])||body,{topics_count:topics.length});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
 async function indDelete(){ if(!window.indEditId)return;try{var rows=await api('/induction_records?id=eq.'+window.indEditId+'&select=*');var row=(rows&&rows[0])||{id:window.indEditId};var status=String(row.status||'').toLowerCase();if(!['cancelled','archived'].includes(status)){if(!(await appConfirmAction({title:'Cancel induction record',message:'Cancel this induction record instead of deleting it?',detail:'Induction records are evidence of training. The record will remain available for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel record',cancelText:'Back'})))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',completed:false,updated_at:new Date().toISOString()}});trainingAudit('cancel','Induction record cancelled','induction_records',Object.assign({},row,{status:'cancelled'}),{previous_status:row.status||null});toast('Induction record cancelled');indBack();return;}if(!(await appConfirmDelete('induction record','This record is already cancelled/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});trainingAudit('delete','Induction record permanently deleted','induction_records',row,{previous_status:row.status||null});toast('Deleted!');indBack();}catch(e){toast(actionErrorMessage('Delete induction','Training register',e.message),false);} }
 function elcFillRequiredPeople(selected){
@@ -37812,7 +37854,8 @@ function elcToggleAllPeople(on){
   document.querySelectorAll('.elc-person-check').forEach(function(c){c.checked=!!on;});
   elcSyncPeopleSelectFromChecks();
 }
-function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form3title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-duration','elcf-pass-score','elcf-validity','elcf-url','elcf-roles','elcf-target-date'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var m=document.getElementById('elcf-mandatory');if(m)m.checked=false;var st=document.getElementById('elcf-status');if(st)st.value='active';elcFillRequiredPeople();var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
+function elcNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','elearning')){toast('You do not have access to this section',false);return;}
+ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form3title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-duration','elcf-pass-score','elcf-validity','elcf-url','elcf-roles','elcf-target-date'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var m=document.getElementById('elcf-mandatory');if(m)m.checked=false;var st=document.getElementById('elcf-status');if(st)st.value='active';elcFillRequiredPeople();var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 function elcBaseBody(g,title){return {company_id:ccid(),title:title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};}
 function elcFullBody(g,title){var body=elcBaseBody(g,title);body.category=g('elcf-cat');body.duration_minutes=parseInt(g('elcf-duration'))||null;body.passing_score=parseInt(g('elcf-pass-score'))||null;body.validity_months=parseInt(g('elcf-validity'))||null;body.target_roles=g('elcf-roles');body.mandatory=!!document.getElementById('elcf-mandatory')?.checked;return body;}
@@ -41304,6 +41347,8 @@ function fireAutoUpdateStatus() {
 
 // -- Tab switching -------------------------------------------------
 function fireSwitchTab(tab, el) {
+  if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'fire',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'fire');if(!permitted)return false;tab=permitted.id;el=document.getElementById(permitted.button);}
+
   fireCurrentTab = tab;
   ['certs','inspections','equipment','layout','dashboard'].forEach(function(t){
     var pane = document.getElementById('fire-pane-'+t);
@@ -41941,7 +41986,8 @@ async function fireUploadLayout(input){
     reader.readAsDataURL(file);
   }
 }
-function fireNewLayoutPlan(){
+function fireNewLayoutPlan(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'fire','layout')){toast('You do not have access to this section',false);return;}
+
   fireLayoutCreatingNew=true;
   fireLayoutEditorOpen=true;
   fireLayoutState=fireLayoutEmptyState();

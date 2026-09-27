@@ -171,6 +171,11 @@
       "order": 34,
       "file": "20260927010000_people_onboarding_user_access.sql",
       "sha256": "0130ef8ccc85e26748d99761f947a552e011b411232d3aa8354dc58a997202b9"
+    },
+    {
+      "order": 35,
+      "file": "20260927020000_module_section_access.sql",
+      "sha256": "025cfa118a8049cf3d446b0326b07d7eabbe968ec443e464916cd2462cac2e01"
     }
   ]
 }

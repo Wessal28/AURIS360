@@ -39,6 +39,7 @@ function renderHeader(instance){
 function renderNavigation(instance){
   var nav=instance.navigation;nav.classList.add('auris-module-viewbar');nav.dataset.aurisLayoutNavigation=instance.manifest.key;nav.setAttribute('role','tablist');nav.setAttribute('aria-label',instance.manifest.name+' views');nav.innerHTML='';
   instance.views.forEach(function(view){
+    if(root.AurisUserAccess&&root.AurisUserAccess.currentProfile()&&!root.AurisUserAccess.sectionAllowed(root.AurisUserAccess.currentProfile(),instance.key,view.id))return;
     var button=root.document.createElement('button');button.type='button';button.id=(instance.options.viewIdPrefix||'auris-view-')+view.id;button.className='mtg-tab auris-module-view';button.dataset.viewId=view.id;button.dataset.viewGroup=view.group;button.setAttribute('role','tab');button.setAttribute('title',view.group+' · '+view.label);button.innerHTML='<span class="imx-tab-icon"><i class="ti '+esc(view.icon)+'"></i></span><span class="auris-module-view-copy"><strong>'+esc(view.label)+'</strong><small>'+esc(view.group)+'</small></span>';
     button.addEventListener('click',function(){if(typeof instance.options.onViewChange==='function')instance.options.onViewChange(view.id,button);});
     button.addEventListener('keydown',function(event){if(event.key!=='ArrowRight'&&event.key!=='ArrowLeft')return;event.preventDefault();var index=instance.views.indexOf(view),step=event.key==='ArrowRight'?1:-1,next=(index+step+instance.views.length)%instance.views.length;nav.querySelector('[data-view-id="'+instance.views[next].id+'"]').focus();});
@@ -47,6 +48,7 @@ function renderNavigation(instance){
 }
 function setView(key,viewId){
   var instance=instances[key];if(!instance)return false;
+  if(root.AurisUserAccess&&root.AurisUserAccess.currentProfile()&&!root.AurisUserAccess.sectionAllowed(root.AurisUserAccess.currentProfile(),key,viewId))return false;
   var view=instance.views.find(function(item){return item.id===viewId;});if(!view)return false;
   instance.active=viewId;instance.navigation.querySelectorAll('[data-view-id]').forEach(function(button){var selected=button.dataset.viewId===viewId;button.classList.toggle('active',selected);button.setAttribute('aria-selected',selected?'true':'false');button.tabIndex=selected?0:-1;});
   var label=instance.header.querySelector('[data-layout-current-view]');if(label)label.textContent=view.label;
