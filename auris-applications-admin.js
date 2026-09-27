@@ -1,5 +1,6 @@
 (function(root){
 'use strict';
+var selectedCompanyId='';
 var registry=root.AurisModuleRegistry,runtime=root.AurisModuleRuntime,services=root.AurisPlatformServices;
 if(!registry||!runtime)throw new Error('AURIS Applications administration requires the module registry and runtime.');
 
@@ -39,7 +40,8 @@ function companySection(company,options){
   return '<section class="auris-app-company" data-company-id="'+esc(company.id)+'"><header><div><span class="auris-app-eyebrow">Company applications</span><h3>'+esc(company.name||'Unnamed company')+'</h3></div><div class="auris-app-summary"><span><b>'+diag.counts.installed+'</b> Installed</span><span><b>'+diag.counts.available+'</b> Available</span><span><b>'+diag.counts.blocked+'</b> Blocked</span><span class="'+(diag.healthy?'healthy':'warning')+'"><i class="ti '+(diag.healthy?'ti-heart-check':'ti-alert-triangle')+'"></i>'+(diag.healthy?'Services ready':'Service attention')+'</span></div></header><div class="auris-app-grid">'+apps.map(function(app){return appCard(app,company.id);}).join('')+'</div></section>';
 }
 function renderPortfolio(host,companies,options){
-  options=options||{};host.innerHTML='<div class="auris-applications-toolbar"><div><span class="auris-app-eyebrow">AURIS Applications</span><h2>Install, configure and monitor company applications</h2><p>Dependencies and safe rollback impacts are calculated before access is changed.</p></div><button type="button" data-app-refresh><i class="ti ti-refresh"></i>Refresh</button></div>'+((companies||[]).length?(companies||[]).map(function(company){return companySection(company,options);}).join(''):'<div class="auris-app-empty">No companies are available.</div>');
+  options=options||{};companies=companies||[];var selected=companies.find(function(c){return String(c.id)===selectedCompanyId;})||companies.find(function(c){return String(c.id)===String(options.companyId||'');})||companies[0];selectedCompanyId=selected?String(selected.id):'';host.innerHTML='<div class="auris-applications-toolbar"><div><span class="auris-app-eyebrow">AURIS Applications</span><h2>Install, configure and monitor company applications</h2><p>Dependencies and safe rollback impacts are calculated before access is changed.</p></div><button type="button" data-app-refresh><i class="ti ti-refresh"></i>Refresh</button></div>'+((companies||[]).length?'<label class="auris-company-picker">Company<select data-app-company aria-label="Company module access">'+companies.map(function(c){return '<option value="'+esc(c.id)+'" '+(String(c.id)===selectedCompanyId?'selected':'')+'>'+esc(c.name||'Unnamed company')+'</option>';}).join('')+'</select></label>'+companySection(selected,options):'<div class="auris-app-empty">No companies are available.</div>');
+  var picker=host.querySelector('[data-app-company]');if(picker)picker.addEventListener('change',function(){selectedCompanyId=picker.value;renderPortfolio(host,companies,options);});
   var refresh=host.querySelector('[data-app-refresh]');if(refresh)refresh.addEventListener('click',function(){if(typeof options.onRefresh==='function')options.onRefresh();});
   host.querySelectorAll('[data-app-configure]').forEach(function(button){button.addEventListener('click',function(){var section=button.closest('[data-company-id]');if(typeof options.onConfigure==='function')options.onConfigure(section.dataset.companyId,button.dataset.appConfigure);});});
   host.querySelectorAll('[data-app-toggle]').forEach(function(button){button.addEventListener('click',async function(){
@@ -48,7 +50,7 @@ function renderPortfolio(host,companies,options){
     var impact=plan(app.key,!app.enabled,company.module_access||[],options);if(impact.blocked.length){if(typeof options.onBlocked==='function')options.onBlocked(impact);return;}
     button.disabled=true;try{if(typeof options.onApply==='function')await options.onApply(company,impact);}finally{button.disabled=false;}
   });});
-  return diagnostics((companies&&companies[0]&&companies[0].module_access)||[],options);
+  return diagnostics((selected&&selected.module_access)||[],options);
 }
 
 root.AurisApplicationsAdmin=Object.freeze({version:'1.0.0',normaliseSelection:normaliseSelection,planEnable:planEnable,planDisable:planDisable,plan:plan,catalogue:catalogue,diagnostics:diagnostics,renderPortfolio:renderPortfolio});

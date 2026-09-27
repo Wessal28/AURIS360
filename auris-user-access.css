@@ -1,2 +1,6 @@
 .user-access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;max-height:350px;overflow:auto;margin:12px 0;padding:2px}.user-access-grid fieldset{border:1px solid var(--border);border-radius:8px;padding:8px}.user-access-grid legend{font-size:12px;font-weight:700}.user-access-grid label{display:inline-flex;align-items:center;gap:3px;margin:4px;font-size:12px}.user-access-grid input{width:17px;height:17px;margin:0}#user-access-controls p{font-size:12px;line-height:1.5;color:var(--text2)}
 .user-onboarding-dialog{width:min(480px,calc(100vw - 32px));border:1px solid var(--border);border-radius:12px;padding:20px;color:var(--text);background:var(--surface,#fff)}.user-onboarding-dialog::backdrop{background:rgba(15,23,42,.5)}.user-onboarding-dialog .btn{display:block;width:100%;margin:8px 0;white-space:normal}.user-onboarding-dialog p{font-size:13px;line-height:1.5}.user-access-grid select{width:100%;font-size:12px;min-height:32px;margin-top:5px}
+
+.user-access-grid [hidden]{display:none!important}#user-access-controls>select{width:100%;max-width:480px;padding:9px;border:1px solid var(--border);border-radius:8px}.module-tabs [hidden]{display:none!important}
+
+.mtg-tab[hidden],.kpi-tab[hidden],#ccu-tabs button[hidden]{display:none!important}

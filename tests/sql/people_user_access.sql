@@ -71,4 +71,17 @@ do $$ begin
  begin perform public.user_access_preflight();raise exception 'Read RPC bypassed a hidden module';
  exception when insufficient_privilege then null;end;
 end $$;
+
+select set_config('request.jwt.claim.sub','',true);
+update public.profiles set permissions='{"access_v1":{"ppe.issuance":{"view":false},"ppe":{"edit":false}}}' where id='a0000000-0000-4000-8000-000000000001';
+insert into public.ppe_issuance(company_id,ppe_name,employee_name,issued_date) values ('a0000000-0000-4000-8000-000000000002','Helmet','Access Fixture',current_date);
+grant select,insert,update,delete on public.ppe_issuance to authenticated;
+select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',true);
+set local role authenticated;
+do $$begin
+ if exists(select 1 from public.ppe_issuance where company_id='a0000000-0000-4000-8000-000000000002') then raise exception 'Hidden issuance records disclosed';end if;
+ if public.user_access_allowed('ppe.issuance','view') then raise exception 'Hidden section granted';end if;
+ if public.user_access_allowed('ppe.catalogue','edit') then raise exception 'Parent action restriction bypassed';end if;
+ if not public.user_access_allowed('ppe.catalogue','view') then raise exception 'Unrelated section blocked';end if;
+end $$;
 rollback;
