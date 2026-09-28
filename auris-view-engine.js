@@ -88,7 +88,8 @@ function actionButton(row,action,label,options,extra){
     if(!/^https?:\/\//i.test(href))throw new Error('Record link must use HTTP or HTTPS.');
     return '<a '+(extra||'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(label)+'</a>';
   }
-  return '<button type="button" '+(extra||'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'">'+esc(label)+'</button>';
+  var icon=action.icon&&!extra?safeKey(action.icon):'';
+  return '<button type="button" '+(extra||'')+(icon?' class="ave-icon-action" aria-label="'+esc(label)+'" title="'+esc(label)+'"':'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'">'+(icon?'<i class="ti '+esc(icon)+'" aria-hidden="true"></i>':esc(label))+'</button>';
 }
 function actions(row,options){return available(row,options).map(function(action){return actionButton(row,action,typeof action.label==='function'?action.label(row):action.label,options);}).join('');}
 function cell(row,field,options){
@@ -122,7 +123,7 @@ function toolbar(def,state){
   return '<div class="ave-toolbar"><label>View<select data-view-mode>'+options(def.views.map(function(mode){return {key:mode,label:mode.charAt(0).toUpperCase()+mode.slice(1)};}),state.mode)+'</select></label>'
     +'<label>Group board by<select data-view-group '+(state.mode!=='board'?'disabled':'')+'>'+options(def.fields.filter(function(field){return field.groupable;}),state.groupBy)+'</select></label>'
     +'<label>Sort<select data-view-sort>'+options(def.fields,state.sortBy)+'</select></label><button type="button" data-view-direction aria-label="Toggle sort direction">'+(state.sortDirection==='desc'?'Descending':'Ascending')+'</button>'
-    +'<details class="ave-columns"><summary>Columns / fields</summary><div>'+def.fields.map(function(field){return '<label><input type="checkbox" data-view-column="'+esc(field.key)+'" '+(state.columns.indexOf(field.key)!==-1?'checked':'')+' '+(field.required?'disabled':'')+'>'+esc(field.label)+(field.required?' (required)':'')+'</label>';}).join('')+'<button type="button" data-view-reset-columns>Reset columns</button></div></details>'
+    +'<details class="ave-columns"><summary>Select columns ('+state.columns.length+')</summary><div>'+def.fields.map(function(field){return '<label><input type="checkbox" data-view-column="'+esc(field.key)+'" '+(state.columns.indexOf(field.key)!==-1?'checked':'')+' '+(field.required?'disabled':'')+'>'+esc(field.label)+(field.required?' (required)':'')+'</label>';}).join('')+'<button type="button" data-view-reset-columns>Reset columns</button></div></details>'
     +'<label>View name<input data-view-name maxlength="60" placeholder="e.g. High-priority open actions"></label><button type="button" data-view-save>Save view</button>'
     +'<label>Saved personal views<select data-view-saved><option value="">Select…</option>'+state.saved.map(function(item,index){return '<option value="'+index+'">'+esc(item.name)+'</option>';}).join('')+'</select></label></div>';
 }

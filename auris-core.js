@@ -33394,14 +33394,8 @@ function auditSwitchTab(tab, btn) {
   document.getElementById('audit-view-prestart').style.display  = tab==='prestart' ? 'block' : 'none';
   document.getElementById('audit-view-findings').style.display  = tab==='findings' ? 'block' : 'none';
   document.getElementById('audit-form3view').style.display      = 'none';
-  // Update filter label
-  var cfg = AUDIT_TYPE_CFG[tab];
-  var labelEl = document.getElementById('audit-filter-label');
-  if(labelEl) labelEl.textContent = cfg ? cfg.emoji+' '+cfg.label : '';
-  // Update type filter
-  var typeFilter = document.getElementById('audit-filter-type');
-  if(typeFilter && ['workplace','behavioral','equipment','ppe','fire','environmental'].includes(tab)) typeFilter.value = tab;
-  else if(typeFilter) typeFilter.value = '';
+  var sourceSearch=document.getElementById('audit-search');
+  if(sourceSearch) sourceSearch.value='';
   // Update new button label
   var newBtn = document.getElementById('insp-new-btn');
   if(newBtn) {
@@ -33457,8 +33451,8 @@ function auditFilter() {
       return window.AurisAuditListWorkspace.mount(el,auditAllData||[],{
         tab:auditCurrentTab||'all',
         canEdit:isMgr(),
-        filters:{search:document.getElementById('audit-search')?.value||'',type:document.getElementById('audit-filter-type')?.value||'',status:document.getElementById('audit-filter-status')?.value||'',attention:document.getElementById('audit-filter-attention')?.value||'',score:document.getElementById('audit-filter-score')?.value||'',range:'all'},
-        onApplyFilters:function(value){[['audit-search','search'],['audit-filter-type','type'],['audit-filter-status','status'],['audit-filter-attention','attention'],['audit-filter-score','score']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});auditFilter();},
+        filters:{search:document.getElementById('audit-search')?.value||'',range:'all'},
+        onApplyFilters:function(){var sourceSearch=document.getElementById('audit-search');if(sourceSearch)sourceSearch.value='';auditFilter();},
         openRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This inspection is unavailable or outside your company access.');return auditOpenReadOnly(id);},
         editRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this inspection.');return auditOpen(id);}
       });
