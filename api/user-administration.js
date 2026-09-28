@@ -25,7 +25,7 @@ module.exports=async function(req,res){
       if(!uuid.test(input.user_id||''))failure(400,'Invalid user');
       const target=await one('profiles','id=eq.'+input.user_id);scope(target);
       if(target.id===actor.id||target.role==='sephs_admin')failure(403,'Your own access and SEPHS administrator access are protected');
-      const keys=globalThis.AurisModuleRegistry.keys().concat(['company','workflows','notifications','modules','data','personal','support'].map(k=>'settings.'+k));
+      const keys=globalThis.AurisModuleRegistry.keys().concat(policy.sectionKeys()).concat(['company','workflows','notifications','modules','data','personal','support'].map(k=>'settings.'+k));
       let access;try{access=policy.validate(input.access,keys);}catch(e){failure(400,e.message);}
       const permissions=Object.assign({},target.permissions,{access_v1:access,access_changed_by:actor.id,access_changed_at:new Date().toISOString()});
       await call('/rest/v1/profiles?id=eq.'+target.id,'PATCH',{permissions,updated_at:new Date().toISOString()});
