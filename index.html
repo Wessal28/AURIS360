@@ -2552,34 +2552,7 @@
 
 <!-- -- REGISTER (list view used by all/workplace/equipment etc tabs) -- -->
 <div id="audit-view-register">
-<div class="card auris-audit-s-e2e1112055">
-<div class="auris-audit-s-c9dc9b5648">
-<input type="text" id="audit-search" class="auris-audit-s-05bdd3e62a" placeholder="Search ref, site, type..." data-auris-oninput="h0301"/>
-<select id="audit-filter-type" class="auris-audit-s-d35063206b" data-auris-onchange="h0302">
-<option value="">All types</option>
-<option value="workplace">Workplace</option><option value="behavioral">Behavioral</option>
-<option value="equipment">Equipment</option><option value="ppe">PPE</option>
-<option value="fire">Fire</option><option value="environmental">Environmental</option>
-<option value="iso_audit">ISO Audit</option><option value="internal_audit">Internal Audit</option>
-<option value="supplier_audit">Supplier Audit</option><option value="contractor_audit">Contractor Audit</option>
-<option value="regulatory">Regulatory</option>
-</select>
-<select id="audit-filter-status" class="auris-audit-s-d35063206b" data-auris-onchange="h0302">
-<option value="">All statuses</option>
-<option value="open">Open</option><option value="in_progress">In Progress</option>
-<option value="completed">Completed</option><option value="closed">Closed</option>
-</select>
-<select id="audit-filter-attention" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit attention">
-<option value="">All attention states</option>
-<option value="overdue">Overdue</option><option value="due_soon">Due soon</option>
-<option value="unplanned">No plan</option><option value="open_findings">Open findings</option><option value="low_score">Low score</option>
-</select>
-<select id="audit-filter-score" class="auris-audit-s-d35063206b" data-auris-onchange="h0302" aria-label="Filter audit score">
-<option value="">All scores</option><option value="excellent">80% and above</option><option value="acceptable">60–79%</option><option value="attention">Below 60%</option><option value="unscored">Not scored</option>
-</select>
-</div>
-<div id="audit-filter-label" class="auris-audit-s-7299078644"></div>
-</div>
+<input type="hidden" id="audit-search" data-auris-oninput="h0301"/>
 <div id="audit-register-list"><div class="loading-msg">Loading...</div></div>
 </div>
 

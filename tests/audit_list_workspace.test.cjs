@@ -27,8 +27,14 @@ test('unknown inspection values remain visible without unsafe relabelling',()=>{
   assert.equal(data.length,1);assert.equal(data[0].type,'special review');assert.equal(data[0].status,'awaiting signoff');assert.equal(data[0].score,null);
 });
 test('shared audit register exposes report and manager edit actions and protects sessions',async()=>{
-  const r=runtime(),calls=[];r.api.mount({},rows,{canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'audits-inspections');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','edit']);await m.options.onAction('open',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','in-1','co-a'],['edit','in-1','co-a']]);
+  const r=runtime(),calls=[];r.api.mount({},rows,{canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'audits-inspections');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','edit']);assert.deepEqual(Array.from(m.options.actions,x=>x.icon),['ti-eye','ti-pencil']);await m.options.onAction('open',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','in-1','co-a'],['edit','in-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},rows,{canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}
+});
+test('audit register starts with essential columns and leaves optional columns selectable',()=>{
+  const r=runtime(),fields=r.api.definition().fields;
+  assert.deepEqual(Array.from(fields.filter(x=>!x.hidden),x=>x.key),['reference','title','type','site','inspection_date','score','status']);
+  assert.ok(fields.some(x=>x.key==='inspector'&&x.hidden));
+  const html=read('index.html');assert.doesNotMatch(html,/placeholder="Search ref, site, type/);assert.match(html,/type="hidden" id="audit-search"/);
 });
 test('release wiring publishes the audit register before the core loader',()=>{
   const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-audit-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisAuditListWorkspace\.mount\(el,auditAllData/);for(const file of ['sw-assets.js','scripts/verify-production-smoke.cjs','scripts/verify-staging-acceptance.cjs'])assert.match(read(file),/auris-audit-list-workspace\.js/);assert.doesNotMatch(read('auris-audit-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);
