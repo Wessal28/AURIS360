@@ -21166,8 +21166,15 @@ function auditOpenReadOnly(id){
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
   modal.closeReport=close;
   modal.querySelector('.inspection-report-close').addEventListener('click',close);
+  modal.querySelectorAll('.inspection-photo-preview').forEach(function(button){button.addEventListener('click',function(){
+    var viewer=modal.querySelector('.inspection-photo-viewer');
+    viewer.querySelector('img').src=button.querySelector('img').src;
+    viewer.querySelector('img').alt=button.querySelector('img').alt;
+    viewer.hidden=false;viewer.querySelector('button').focus();
+  });});
+  modal.querySelector('.inspection-photo-viewer button').addEventListener('click',function(){modal.querySelector('.inspection-photo-viewer').hidden=true;});
   modal.addEventListener('keydown',function(ev){
-    if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();close();}
+    if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();if(!modal.querySelector('.inspection-photo-viewer').hidden)modal.querySelector('.inspection-photo-viewer').hidden=true;else close();}
     if(ev.key==='Tab'){
       var buttons=Array.from(modal.querySelectorAll('button,a[href]')).filter(function(el){return !el.disabled;});
       var first=buttons[0],last=buttons[buttons.length-1];
@@ -21185,7 +21192,7 @@ function auditOpenReadOnly(id){
   }).catch(function(){if(modal.isConnected&&String(ccid())===String(company))findings.textContent='Recorded findings could not be loaded. The report may be incomplete. Close and reopen it to retry.';});
 }
 function auditInspectionFieldsHTML(fields){
-  return '<dl class="inspection-report-fields">'+fields.map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(f[1]===null||f[1]===undefined||f[1]===''?'Not recorded':String(f[1]))+'</dd></div>';}).join('')+'</dl>';
+  return '<dl class="inspection-report-fields">'+fields.filter(function(f){return f[1]!==null&&f[1]!==undefined&&f[1]!=='';}).map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(String(f[1]))+'</dd></div>';}).join('')+'</dl>';
 }
 function auditInspectionFindingsHTML(rows){
   return rows.length?rows.map(function(f){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Reference',f.finding_ref],['Type',f.finding_type],['Clause',f.clause],['Finding',f.description],['Evidence',f.evidence],['Corrective action',f.corrective_action],['Assigned to',f.assigned_to],['Status',f.status],['Closed date',f.closed_date]])+'</article>';}).join(''):'<p>No findings recorded.</p>';
@@ -21198,7 +21205,7 @@ function auditInspectionReportHTML(row){
     ['Status',row.status],['Priority',row.priority],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
   ])+'</section><section><h3>Checklist and observations</h3>';
   var items=Array.isArray(row.items)?row.items.filter(function(i){return i&&typeof i==='object';}):[];
-  h+=items.length?items.map(function(c,i){return '<article class="inspection-report-item"><h4>'+escH((i+1)+'. '+(c.item||c.item_name||'Untitled item'))+'</h4>'+auditInspectionFieldsHTML([['Category',c.category||c.ca],['Guidance',c.guidance],['Result',({good:'Good',insufficient:'Insufficient',na:'N/A'})[c.result]||'Not answered'],['Observations / comments',c.observation||c.obs]])+'</article>';}).join(''):'<p>No checklist answers were saved with this record. A score alone cannot reconstruct the checklist.</p>';
+  h+=items.length?'<div class="inspection-report-table-wrap"><table class="inspection-report-table"><thead><tr><th>Item</th><th>Result</th><th>Observations</th></tr></thead><tbody>'+items.map(function(c,i){var result=String(c.result||'').toLowerCase();return '<tr class="inspection-result-'+(result==='insufficient'?'insufficient':result==='good'?'good':'other')+'"><th scope="row"><strong>'+escH((i+1)+'. '+(c.item||c.item_name||'Untitled item'))+'</strong>'+(c.category||c.ca?'<small>'+escH(c.category||c.ca)+'</small>':'')+(c.guidance?'<small>'+escH(c.guidance)+'</small>':'')+'</th><td><span class="inspection-result-badge">'+escH(({good:'Good',insufficient:'Insufficient',na:'N/A'})[result]||'Not answered')+'</span></td><td>'+escH(c.observation||c.obs||'—')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No checklist answers were saved with this record. A score alone cannot reconstruct the checklist.</p>';
   h+='</section><section><h3>Overall observations</h3>'+auditInspectionFieldsHTML([['Positive observations',row.positive_obs||row.if_pos],['Findings / improvements',row.negative_obs||row.if_neg]])+'</section>';
   if(row.inspection_type==='prestart')h+='<section><h3>Pre-start task and controls</h3>'+auditInspectionFieldsHTML([
     ['Activity / task',row.activity||row.site],['Time',row.inspection_time],['Duration (hours)',row.duration_hours],['Supervisor',row.supervisor||row.inspector],['Team members',row.team_members],['Risk assessment',row.ra_ref],['Permit to work',row.ptw_ref],
@@ -21206,14 +21213,16 @@ function auditInspectionReportHTML(row){
     ['Toolbox talk completed',row.tbt_done==null?null:row.tbt_done?'Yes':'No'],['Topics covered',row.tbt_topics],['Stop Work Authority briefing',row.stop_work_briefed==null?null:row.stop_work_briefed?'Yes':'No'],['Decision',row.decision],['Decision notes',row.decision_notes]
   ])+'</section>';
   var actions=Array.isArray(row.action_items)?row.action_items.filter(Boolean):[];
-  h+='<section><h3>Corrective actions</h3>'+(actions.length?actions.map(function(a){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Action',a.description],['Responsible',a.responsible],['Due date',a.target_date]])+'</article>';}).join(''):'<p>No corrective actions recorded.</p>')+'</section>';
+  h+='<section><h3>Corrective actions</h3>'+(actions.length?'<div class="inspection-report-table-wrap"><table class="inspection-report-table"><thead><tr><th>Action</th><th>Responsible</th><th>Due date</th></tr></thead><tbody>'+actions.map(function(a){return '<tr><td>'+escH(a.description||'—')+'</td><td>'+escH(a.responsible||'—')+'</td><td>'+escH(a.target_date||'—')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No corrective actions recorded.</p>')+'</section>';
   var photos=Array.isArray(row.photos)?row.photos.filter(Boolean):[];
-  h+='<section><h3>Evidence attachments</h3>'+(photos.length?'<ul>'+photos.map(function(p){
-    var raw=typeof p==='string'?p:p.url,url=null;try{url=new URL(raw);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)url=null;}catch(_){}
-    var name=typeof p==='object'&&(p.file_name||p.type)||'Attachment';
-    return '<li>'+(url?'<a href="'+escH(url.href)+'" target="_blank" rel="noopener noreferrer">'+escH(name)+'</a>':escH(name)+' — unavailable or unsafe link')+'</li>';
-  }).join('')+'</ul>':'<p>No evidence attachments recorded.</p>')+'</section>';
-  return h+'<section><h3>Sign-off</h3>'+auditInspectionFieldsHTML([['Inspector / supervisor',row.sign_inspector],['Signed',row.prestart_signed_at||row.sign_date],['Reviewer',row.sign_reviewer||row.reviewed_by],['Reviewed',row.sign_reviewer_date||row.reviewed_date]])+'</section>';
+  h+='<section><h3>Evidence attachments</h3>'+(photos.length?'<div class="inspection-photo-grid">'+photos.map(function(p){
+    var raw=typeof p==='string'?p:(p.url||p.file_url||p.data_url||''),url=null;
+    if(/^data:image\/(?:png|jpeg|jpg|webp|gif);base64,[a-z0-9+/=]+$/i.test(raw))url=raw;
+    else try{var parsed=new URL(raw);if(['http:','https:'].includes(parsed.protocol)&&!parsed.username&&!parsed.password)url=parsed.href;}catch(_){}
+    var name=typeof p==='string'?(p.split('/').pop()||'Audit evidence'):(p.file_name||p.name||p.title||'Audit evidence'),image=(typeof p==='object'&&p.type==='photo')||/\.(?:png|jpe?g|webp|gif)(?:$|[?#])/i.test(name)||/^data:image\//i.test(raw);
+    return url&&image?'<button type="button" class="inspection-photo-preview" aria-label="Enlarge '+escH(name)+'"><img src="'+escH(url)+'" alt="'+escH(name)+'" loading="lazy"><span>'+escH(name)+'</span></button>':url?'<a href="'+escH(url)+'" target="_blank" rel="noopener noreferrer">'+escH(name)+'</a>':'<span>'+escH(name)+' — unavailable or unsafe link</span>';
+  }).join('')+'</div>':'<p>No evidence attachments recorded.</p>')+'</section>';
+  return h+'<section><h3>Sign-off</h3>'+auditInspectionFieldsHTML([['Inspector / supervisor',row.sign_inspector],['Signed',row.prestart_signed_at||row.sign_date],['Reviewer',row.sign_reviewer||row.reviewed_by],['Reviewed',row.sign_reviewer_date||row.reviewed_date]])+'</section><div class="inspection-photo-viewer" hidden><button type="button" aria-label="Close enlarged photo">Close photo</button><img alt=""></div>';
 }
 
 // -- CONTRACTOR FORM -----------------------------------------------------------
