@@ -130,7 +130,14 @@ test('report renders every duplicate prompt, multiline text, action and sign-off
 });
 test('report escapes stored text and rejects active evidence URLs',()=>{
   const c=reportContext();const html=c.auditInspectionReportHTML({items:[{item:'<img src=x onerror=alert(1)>',observation:'</dd><script>x</script>'}],photos:[{url:'javascript:alert(1)',file_name:'<svg>'},{url:'https://example.com/evidence?a=1&b=2',file_name:'Safe'}]});
-  assert.doesNotMatch(html,/<script>|<img|<svg>|href="javascript:/);assert.match(html,/&lt;img/);assert.match(html,/noopener noreferrer/);
+  assert.doesNotMatch(html,/<script>|<svg>|(?:href|src)="javascript:/);assert.match(html,/&lt;img/);assert.match(html,/noopener noreferrer/);
+});
+test('report uses compact rows, marks insufficient answers, and previews saved photo data',()=>{
+  const c=reportContext();const html=c.auditInspectionReportHTML({items:[{item:'First aid kit',result:'insufficient',observation:'Restock'}],action_items:[{description:'Restock kit',responsible:'Supervisor',target_date:'2026-10-01'}],photos:[{url:'data:image/png;base64,aGVsbG8=',file_name:'kit.png',type:'photo'}]});
+  assert.match(html,/<table class="inspection-report-table">/);
+  assert.match(html,/inspection-result-insufficient/);
+  assert.match(html,/inspection-photo-preview/);
+  assert.match(html,/<img src="data:image\/png;base64,aGVsbG8="/);
 });
 test('legacy summary-only record is disclosed instead of inventing checklist answers',()=>{
   const c=reportContext();assert.match(c.auditInspectionReportHTML({score_good:21,score_insuf:0}),/score alone cannot reconstruct/);

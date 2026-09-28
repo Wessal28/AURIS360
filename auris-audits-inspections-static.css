@@ -196,6 +196,31 @@
 #audit-inspection-report dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
 #audit-inspection-report .inspection-report-item{padding:16px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--bg,#f8fafc)}
 #audit-inspection-report a{display:inline-flex;align-items:center;min-height:44px;overflow-wrap:anywhere}
+#audit-inspection-report .inspection-report-body{padding-top:4px;font-size:13px}
+#audit-inspection-report h3{font-size:15px;margin:14px 0 7px}
+#audit-inspection-report .inspection-report-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px 14px}
+#audit-inspection-report .inspection-report-fields>div{padding:4px 0}
+#audit-inspection-report dt{font-size:11px;margin-bottom:2px}
+#audit-inspection-report dd{font-size:13px;line-height:1.35}
+#audit-inspection-report .inspection-report-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px}
+#audit-inspection-report .inspection-report-table{width:100%;border-collapse:collapse;table-layout:fixed;text-align:left}
+#audit-inspection-report .inspection-report-table th,#audit-inspection-report .inspection-report-table td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;line-height:1.35}
+#audit-inspection-report .inspection-report-table thead th{background:var(--bg,#f8fafc);color:var(--text2);font-size:11px}
+#audit-inspection-report .inspection-report-table tbody tr:last-child>*{border-bottom:0}
+#audit-inspection-report .inspection-report-table tbody th{font-weight:400;width:48%}
+#audit-inspection-report .inspection-report-table small{display:block;color:var(--text2);font-size:11px;margin-top:2px}
+#audit-inspection-report .inspection-result-insufficient{background:#fff4ed}
+#audit-inspection-report .inspection-result-badge{display:inline-block;padding:2px 7px;border-radius:999px;background:#edf1f5;color:#415164;font-weight:700}
+#audit-inspection-report .inspection-result-insufficient .inspection-result-badge{background:#b42318;color:white}
+#audit-inspection-report .inspection-result-good .inspection-result-badge{background:#e2f4e9;color:#12683b}
+#audit-inspection-report .inspection-photo-grid{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+#audit-inspection-report .inspection-photo-preview{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:110px;padding:4px;border:1px solid var(--border);border-radius:7px;background:var(--card,#fff);cursor:pointer;color:inherit;text-align:left}
+#audit-inspection-report .inspection-photo-preview img{width:100px;height:76px;object-fit:cover;border-radius:4px}
+#audit-inspection-report .inspection-photo-preview span{font-size:11px;overflow-wrap:anywhere}
+#audit-inspection-report .inspection-photo-viewer:not([hidden]){position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px}
+#audit-inspection-report .inspection-photo-viewer button{align-self:flex-end;padding:8px 14px;background:white;border:0;border-radius:6px;cursor:pointer}
+#audit-inspection-report .inspection-photo-viewer img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain}
+@media(max-width:700px){#audit-inspection-report .inspection-report-fields{grid-template-columns:repeat(2,minmax(0,1fr))}#audit-inspection-report .inspection-report-table{table-layout:auto;min-width:500px}}
 @media(max-width:700px){#audit-inspection-report{padding:8px}#audit-inspection-report header{padding:14px}#audit-inspection-report .inspection-report-body{padding:0 14px 18px}#audit-inspection-report .inspection-report-fields{grid-template-columns:minmax(0,1fr)}#audit-inspection-report h2{font-size:19px}#ps-form3view>.auris-audit-s-5571af1e74{grid-template-columns:minmax(0,1fr)}}
 .audit-type-locked .audit-type-btn[style*="scale(1.05)"]{opacity:1;cursor:default;filter:none}
 .audit-type-locked:after{content:"Inspection type fixed by the selected category tab";display:block;grid-column:1/-1;padding:7px 9px;border-radius:7px;background:#eaf7f3;color:#08745f;font-size:10px;font-weight:750}
