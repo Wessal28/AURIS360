@@ -369,7 +369,7 @@
 <button id="mob-btn-more" class="mob-nav-btn" type="button" data-mf-action="more"><i class="ti ti-dots"></i><span>More</span></button>
 </div>
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div class="auris-shell-s-29507867a0" id="sb-role-changer">
+<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><button type="button" class="sb-user profile-shortcut" id="sb-user" title="Open my profile">-</button><span class="sb-role" id="sb-role">-</span></div><div class="auris-shell-s-29507867a0" id="sb-role-changer">
 <select class="auris-shell-s-624d011af0" id="sb-role-select" data-auris-onchange="h0025">
 <option value="employee">Employee</option>
 <option value="contractor">Contractor</option>
@@ -10745,6 +10745,19 @@ I can help you:<br>
         </div>
       </div>
 
+      <div class="auris-settings-s-4c2e60e092">Module appearance</div>
+      <div class="company-appearance-grid">
+        <label>Background colour <input type="color" id="br-background-color" value="#f4f6f8"/></label>
+        <label>Font colour <input type="color" id="br-text-color" value="#111827"/></label>
+        <label>Module icons <select id="br-icon-style"><option value="3d">3D artwork</option><option value="2d">2D flat icons</option></select></label>
+      </div>
+      <div class="company-background-control">
+        <label for="br-background-file">Background picture for all modules</label>
+        <input type="file" id="br-background-file" accept="image/png,image/jpeg,image/webp"/>
+        <div class="company-background-actions"><img id="br-background-preview" alt="Company background preview" hidden/><button type="button" class="btn btn-sm" id="br-background-clear">Remove picture</button></div>
+        <small>JPG, PNG or WebP, up to 5 MB. The image is optimised before upload.</small>
+      </div>
+
       <!-- Logos -->
       <div class="auris-settings-s-4c2e60e092">Company logos</div>
       <div class="auris-settings-s-177d44ad79">
@@ -10879,7 +10892,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-brand-drop.css"/>
 
 
-<div class="card" id="settings-profile-card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+<div class="card" id="settings-profile-card"><div class="card-title">My profile</div><div id="my-profile-info"></div><div class="profile-photo-control"><label for="my-profile-photo">Profile picture</label><input type="file" id="my-profile-photo" accept="image/png,image/jpeg,image/webp"/><button type="button" class="btn btn-sm" id="my-profile-photo-remove">Remove picture</button><small>Choose a JPG, PNG or WebP image up to 5 MB.</small></div></div>
 
 <div class="card auris-settings-s-6aa34d7432" id="settings-rollout-control-card">
   <div class="auris-settings-s-59b6f24660">
@@ -11713,6 +11726,7 @@ I can help you:<br>
 
 <link rel="stylesheet" href="auris-premium-3d-sidebar.css?v=20260818-1"/>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
+<link rel="stylesheet" href="auris-company-appearance.css?v=20260929-1">
 <link rel="stylesheet" href="requirements-5.css?v=20260824-1">
 <link rel="stylesheet" href="auris-mobile-responsive.css?v=20260818-1">
 <link rel="stylesheet" href="notification-centre.css?v=20260902-1">

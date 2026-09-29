@@ -2571,6 +2571,8 @@ rolePreview=null;
 var isSephsAdmin = isSA();
 document.getElementById('sb-company').textContent = isSephsAdmin ? 'AURIS360' : (co?.name||'AURIS360');
 document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
+if(!document.getElementById('sb-user').dataset.profileBound){document.getElementById('sb-user').dataset.profileBound='1';document.getElementById('sb-user').addEventListener('click',myProfileOpenDialog);}
+myProfileRenderAvatar();
 var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[activeRole()]:null;
 document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(activeRole()||'user').replace(/_/g,' ');
 var roleSel=document.getElementById('sb-role-select');
@@ -2706,7 +2708,11 @@ window.Brand = (function(){
     email_header_color: null,
     pdf_footer_text: null,
     hide_poweredby: false,
-    theme_preset: 'sephs'
+    theme_preset: 'sephs',
+    background_color: '#f4f6f8',
+    text_color: '#111827',
+    background_image_url: null,
+    icon_style: '3d'
   };
   var PRESETS = [
     {id:'sephs',     name:'SEPHS',     primary:'#1D9E75', secondary:'#0F6E56', accent:'#EF9F27'},
@@ -2721,6 +2727,29 @@ window.Brand = (function(){
 
   function apply(b){
     var r = document.documentElement.style;
+    var hex=function(value,fallback){return /^#[0-9a-f]{6}$/i.test(value||'')?value:fallback;};
+    var bg=hex(b.background_color,DEFAULTS.background_color),fg=hex(b.text_color,DEFAULTS.text_color);
+    var channels=[1,3,5].map(function(i){return parseInt(bg.slice(i,i+2),16)/255;});
+    var luminance=channels.map(function(x){return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4);});
+    var dark=(luminance[0]*.2126+luminance[1]*.7152+luminance[2]*.0722)<.18;
+    document.documentElement.dataset.companyDark=dark?'true':'false';
+    document.documentElement.dataset.companyIconStyle=b.icon_style==='2d'?'2d':'3d';
+    r.setProperty('--bg',bg);
+    r.setProperty('--text',fg);
+    r.setProperty('--text2',dark?'#cbd5e1':'#6b7280');
+    r.setProperty('--text3',dark?'#94a3b8':'#9ca3af');
+    r.setProperty('--card',dark?'#17212f':'#ffffff');
+    r.setProperty('--border',dark?'#475569':'#e5e7eb');
+    var main=document.querySelector('.main');
+    var picture=String(b.background_image_url||'');
+    document.documentElement.dataset.companyPicture=/^(https:\/\/|blob:)/i.test(picture)?'true':'false';
+    if(main){
+      main.style.backgroundColor=bg;
+      main.style.backgroundImage=/^(https:\/\/|blob:)/i.test(picture)?'linear-gradient('+bg+'66,'+bg+'66), url("'+picture.replace(/["\\\r\n]/g,'')+'")':'';
+      main.style.backgroundSize=picture?'cover':'';
+      main.style.backgroundPosition=picture?'center':'';
+      main.style.backgroundAttachment=picture?'local':'';
+    }
     r.setProperty('--brand-primary',    b.primary);
     r.setProperty('--brand-secondary',  b.secondary);
     r.setProperty('--brand-accent',     b.accent);
@@ -2767,6 +2796,7 @@ window.Brand = (function(){
     });
 
     current = b;
+    if(window.applyAurisIconSystem)window.applyAurisIconSystem();
   }
 
   function cache(b){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(b)); }catch(_){} }
@@ -2790,7 +2820,11 @@ window.Brand = (function(){
       email_header_color:c.email_header_color || null,
       pdf_footer_text:   c.pdf_footer_text  || null,
       hide_poweredby:    !!c.hide_poweredby,
-      theme_preset:      c.theme_preset     || 'custom'
+      theme_preset:      c.theme_preset     || 'custom',
+      background_color: c.settings?.appearance?.background_color || DEFAULTS.background_color,
+      text_color: c.settings?.appearance?.text_color || DEFAULTS.text_color,
+      background_image_url: c.settings?.appearance?.background_image_url || null,
+      icon_style: c.settings?.appearance?.icon_style === '2d' ? '2d' : '3d'
     };
     apply(b);
     cache(b);
@@ -3656,7 +3690,8 @@ function dashAttentionRow(item){
 function dashKpiAsset(type){
   var allowed={incident:1,action:1,risk:1,training:1,permit:1,inspection:1};
   var icon=allowed[type]?type:'inspection';
-  return '<i class="auris-dashboard-asset" data-dashboard-icon="'+icon+'" aria-hidden="true"></i>';
+  var flat={incident:'ti-alert-triangle',action:'ti-list-check',risk:'ti-shield-check',training:'ti-school',permit:'ti-file-certificate',inspection:'ti-clipboard-check'};
+  return '<i class="auris-dashboard-asset ti '+flat[icon]+'" data-dashboard-icon="'+icon+'" aria-hidden="true"></i>';
 }
 
 function dashOpenControlCentreModal(title, bodyHtml){
@@ -3895,7 +3930,7 @@ function dashRenderControlCentre(data){
         +'<button class="hse-cc-tool-btn primary" data-auris-generated-onclick="g0009"><i class="ti ti-chart-bar"></i>Executive View</button>'
         +'<button class="hse-cc-tool-btn" data-auris-generated-onclick="g0010" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
         +'<button class="hse-cc-tool-btn" data-auris-generated-onclick="g0011"><i class="ti ti-refresh"></i>Refresh</button>'
-        +'<div class="hse-cc-user-chip"><span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span><span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
+        +'<div class="hse-cc-user-chip">'+(aurisSafeMediaUrl(prof?.avatar_url,'image')?'<img class="hse-cc-avatar" src="'+escH(aurisSafeMediaUrl(prof.avatar_url,'image'))+'" alt=""/>':'<span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span>')+'<span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
       +'</div>'
     +'</div>'
     +'<div class="hse-cc-kpis">'
@@ -10931,6 +10966,57 @@ async function rolloutRecordHealthEvent(eventType,payload){
 window.addEventListener('error',function(event){try{var active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'app',message=String(event.message||'Unexpected module error').slice(0,300);rolloutRecordHealthEvent('module_error',{module_key:moduleKey,severity:'error',fingerprint:['module-error',moduleKey,message].join(':'),detail:{message:message}});}catch(_){}});
 
 var settingsLoadedGroups={};
+function myProfileRenderAvatar(){
+  var sidebar=document.getElementById('sb-user');if(!sidebar)return;
+  var old=sidebar.querySelector('.sb-user-avatar');if(old)old.remove();
+  var safe=aurisSafeMediaUrl(prof?.avatar_url,'image');
+  var dashboardAvatar=document.querySelector('.hse-cc-user-chip .hse-cc-avatar');
+  if(dashboardAvatar){if(safe){var dashImg=document.createElement('img');dashImg.className='hse-cc-avatar';dashImg.alt='';dashImg.src=safe;dashboardAvatar.replaceWith(dashImg);}else if(dashboardAvatar.tagName==='IMG'){var initials=document.createElement('span');initials.className='hse-cc-avatar';initials.textContent=(prof?.full_name||'U').charAt(0).toUpperCase();dashboardAvatar.replaceWith(initials);}}
+  if(!safe)return;
+  var img=document.createElement('img');img.className='sb-user-avatar';img.alt='';img.src=safe;sidebar.prepend(img);
+}
+function myProfileRender(){
+  var host=document.getElementById('my-profile-info');if(!host)return;
+  host.innerHTML='<div class="my-profile-summary"><img class="my-profile-avatar" alt="Profile picture" hidden/><div><strong>'+escH(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+escH(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div></div>';
+  var img=host.querySelector('img'),safe=aurisSafeMediaUrl(prof?.avatar_url,'image');if(safe){img.src=safe;img.hidden=false;}
+  myProfileRenderAvatar();
+  myProfileRenderDialog();
+  var file=document.getElementById('my-profile-photo');if(file&&!file.dataset.bound){file.dataset.bound='1';file.addEventListener('change',myProfilePhotoSave);document.getElementById('my-profile-photo-remove').addEventListener('click',myProfilePhotoRemove);}
+}
+function myProfileOpenDialog(){
+  var dialog=document.getElementById('my-profile-dialog');
+  if(!dialog){
+    dialog=document.createElement('div');dialog.id='my-profile-dialog';dialog.className='my-profile-dialog';
+    dialog.innerHTML='<div class="my-profile-dialog-card" role="dialog" aria-modal="true" aria-label="My profile"><button type="button" class="btn btn-sm my-profile-dialog-close" aria-label="Close profile">Close</button><div class="my-profile-dialog-summary"></div><div class="profile-photo-control"><label for="my-profile-dialog-photo">Profile picture</label><input id="my-profile-dialog-photo" type="file" accept="image/png,image/jpeg,image/webp"/><button type="button" class="btn btn-sm my-profile-dialog-remove">Remove picture</button><small>JPG, PNG or WebP, up to 5 MB.</small></div></div>';
+    document.body.appendChild(dialog);
+    dialog.querySelector('.my-profile-dialog-close').addEventListener('click',function(){dialog.hidden=true;});
+    dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.hidden=true;});
+    dialog.querySelector('#my-profile-dialog-photo').addEventListener('change',myProfilePhotoSave);
+    dialog.querySelector('.my-profile-dialog-remove').addEventListener('click',myProfilePhotoRemove);
+  }
+  myProfileRenderDialog();dialog.hidden=false;
+}
+function myProfileRenderDialog(){
+  var dialog=document.getElementById('my-profile-dialog');if(!dialog)return;
+  var host=dialog.querySelector('.my-profile-dialog-summary');
+  host.innerHTML='<div class="my-profile-summary"><img class="my-profile-avatar" alt="Profile picture" hidden/><div><strong>'+escH(prof?.full_name||'--')+'</strong><br>'+escH(prof?.email||'--')+'</div></div>';
+  var img=host.querySelector('img'),safe=aurisSafeMediaUrl(prof?.avatar_url,'image');if(safe){img.src=safe;img.hidden=false;}
+}
+async function myProfilePhotoSave(event){
+  var file=event.target.files&&event.target.files[0];if(!file)return;
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>5*1024*1024){toast('Choose a JPG, PNG or WebP image under 5 MB',false);event.target.value='';return;}
+  try{
+    var blob=await appearanceOptimiseImage(file,320,.82);
+    var data=await new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=reject;reader.readAsDataURL(blob);});
+    await api('/profiles?id=eq.'+prof.id,{m:'PATCH',p:'return=minimal',b:{avatar_url:data}});
+    prof.avatar_url=data;myProfileRender();toast('Profile picture saved');
+  }catch(e){toast('Profile picture could not be saved: '+(e.message||e),false);}
+  finally{event.target.value='';}
+}
+async function myProfilePhotoRemove(){
+  try{await api('/profiles?id=eq.'+prof.id,{m:'PATCH',p:'return=minimal',b:{avatar_url:null}});prof.avatar_url=null;myProfileRender();toast('Profile picture removed');}
+  catch(e){toast('Profile picture could not be removed: '+(e.message||e),false);}
+}
 function settingsGroups(){return [["company","Company",["branding-studio"],isAdm()],["workflows","Workflows & approvals",["settings-workflow-studio-card","settings-automation-centre-card","settings-workflow-card"],isAdm()||activeRole()==='hse_manager'],["notifications","Notifications",["settings-notif-card"],isAdm()],["modules","Module configuration",["settings-custom3fields-card"],isAdm()||activeRole()==='hse_manager'],["data","Data administration",["settings-relationship-repair-card","settings-person-identity-card"],systemHealthCanView()],["personal","My profile & offline drafts",["settings-profile-card","settings-offline-drafts-card"],true],["support","Support",["settings-resilience-simulation-card","settings-rollout-control-card","settings-rollback-rehearsal-card","settings-system3health-card","settings-client-demo-card","settings-application-lifecycle-card","settings-security-readiness-card","settings-offline-sync-diagnostic-card"],systemHealthCanView()]];}
 function settingsSelectGroup(requested){
 var page=document.getElementById('page-settings'),nav=document.getElementById('settings-navigation');
@@ -10945,7 +11031,7 @@ var group=settingsSelectGroup(requestedGroup);if(!group)return;
 if(settingsLoadedGroups[group])return;
 settingsLoadedGroups[group]=true;
 document.getElementById('logo-settings').style.display='none';
-document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+escH(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+escH(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
+myProfileRender();
 try{ if(group==='company')brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ if(group==='support')loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 try{ if(group==='support')loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
@@ -11983,12 +12069,52 @@ async function approvalDeleteWorkflow(id){
 }
 
 var _brandLogoData = { light:null, dark:null };  // base64 data URIs captured before save
+var brandEditingCompany=null, brandBackgroundFile=null, brandBackgroundUrl=null, brandBackgroundPreviewUrl=null, brandBackgroundPending=null;
 
-function brandInit(){
+async function brandInit(){
   if(!isAdm()){ document.getElementById('branding-studio').style.display='none'; return; }
   document.getElementById('branding-studio').style.display='block';
+  brandEditingCompany=null;
+  var companyId=ccid();
+  if(companyId){
+    try{
+      var rows=await api('/companies?id=eq.'+companyId+'&select=*');
+      if(rows&&rows[0]){brandEditingCompany=rows[0];Brand.loadFromCompany(brandEditingCompany);}
+    }catch(e){console.warn('Could not load company appearance',e);}
+  }
+  var studio=document.getElementById('branding-studio');
+  if(!studio.dataset.appearanceBound){
+    studio.dataset.appearanceBound='1';
+    ['br-background-color','br-text-color','br-icon-style'].forEach(function(id){document.getElementById(id).addEventListener('input',brandLivePreview);});
+    document.getElementById('br-background-file').addEventListener('change',brandBackgroundSelect);
+    document.getElementById('br-background-clear').addEventListener('click',function(){brandBackgroundFile=null;brandBackgroundUrl=null;document.getElementById('br-background-file').value='';brandBackgroundRefresh();brandLivePreview();});
+  }
   brandRenderPresets();
   brandPopulateFromCurrent();
+}
+
+function brandBackgroundRefresh(){
+  var preview=document.getElementById('br-background-preview');
+  if(brandBackgroundPreviewUrl){URL.revokeObjectURL(brandBackgroundPreviewUrl);brandBackgroundPreviewUrl=null;}
+  var src=brandBackgroundFile?(brandBackgroundPreviewUrl=URL.createObjectURL(brandBackgroundFile)):brandBackgroundUrl;
+  preview.hidden=!src;
+  preview.src=src||'';
+}
+async function brandBackgroundSelect(event){
+  var file=event.target.files&&event.target.files[0];if(!file)return;
+  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>5*1024*1024){toast('Choose a JPG, PNG or WebP image under 5 MB',false);event.target.value='';return;}
+  try{brandBackgroundPending=appearanceOptimiseImage(file,1600,.78);brandBackgroundFile=await brandBackgroundPending;brandBackgroundRefresh();brandLivePreview();}
+  catch(e){toast('Could not prepare background picture',false);event.target.value='';}
+  finally{brandBackgroundPending=null;}
+}
+function appearanceOptimiseImage(file,maxSize,quality){
+  return new Promise(function(resolve,reject){var image=new Image(),objectUrl=URL.createObjectURL(file);image.onload=function(){try{var scale=Math.min(1,maxSize/Math.max(image.width,image.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));var ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){URL.revokeObjectURL(objectUrl);blob?resolve(blob):reject(new Error('Image conversion failed'));},'image/jpeg',quality);}catch(e){URL.revokeObjectURL(objectUrl);reject(e);}};image.onerror=function(){URL.revokeObjectURL(objectUrl);reject(new Error('Image could not be opened'));};image.src=objectUrl;});
+}
+async function brandBackgroundUpload(file,companyId){
+  var path=companyId+'/background-'+Date.now()+'.jpg';
+  var response=await fetch(SB+'/storage/v1/object/logos/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'Content-Type':'image/jpeg','x-upsert':'false'},body:file});
+  if(!response.ok)throw new Error('Background upload failed ('+response.status+'). Check logos storage access.');
+  return SB+'/storage/v1/object/public/logos/'+path.split('/').map(encodeURIComponent).join('/');
 }
 
 function brandRenderPresets(){
@@ -12024,6 +12150,10 @@ function brandPickPreset(id){
 
 function brandPopulateFromCurrent(){
   var b = Brand.get();
+  document.getElementById('br-background-color').value=/^#[0-9a-f]{6}$/i.test(b.background_color||'')?b.background_color:Brand.DEFAULTS.background_color;
+  document.getElementById('br-text-color').value=/^#[0-9a-f]{6}$/i.test(b.text_color||'')?b.text_color:Brand.DEFAULTS.text_color;
+  document.getElementById('br-icon-style').value=b.icon_style==='2d'?'2d':'3d';
+  brandBackgroundFile=null;brandBackgroundUrl=b.background_image_url||null;brandBackgroundRefresh();
   document.getElementById('br-primary').value      = b.primary;
   document.getElementById('br-primary-hex').value  = b.primary;
   document.getElementById('br-secondary').value    = b.secondary;
@@ -12131,6 +12261,10 @@ function brandLivePreview(){
     hide_poweredby:     document.getElementById('br-hide-poweredby').checked,
     theme_preset: document.getElementById('branding-studio').dataset.preset || 'custom'
   };
+  b.background_color=document.getElementById('br-background-color').value;
+  b.text_color=document.getElementById('br-text-color').value;
+  b.icon_style=document.getElementById('br-icon-style').value;
+  b.background_image_url=brandBackgroundFile?brandBackgroundPreviewUrl:brandBackgroundUrl;
   // Sync hex display fields
   document.getElementById('br-primary-hex').value   = b.primary;
   document.getElementById('br-secondary-hex').value = b.secondary;
@@ -12161,7 +12295,9 @@ function brandLivePreview(){
 
 async function brandSave(){
   if(!isAdm()){ toast('Only admins can change branding',false); return; }
-  if(!prof?.company_id){ toast('No company linked',false); return; }
+  if(isSA()&&!sephsCompanyContext){toast('Select a company before saving its appearance',false);return;}
+  var companyId=brandEditingCompany?.id||ccid();
+  if(!companyId){ toast('Select a company first',false); return; }
 
   var preset = document.getElementById('branding-studio').dataset.preset || 'custom';
   var body = {
@@ -12186,10 +12322,18 @@ async function brandSave(){
   }
 
   try{
-    await api('/companies?id=eq.'+prof.company_id, {m:'PATCH', p:'return=minimal', b:body});
+    if(brandBackgroundPending)brandBackgroundFile=await brandBackgroundPending;
+    if(brandBackgroundFile)brandBackgroundUrl=await brandBackgroundUpload(brandBackgroundFile,companyId);
+    body.settings=Object.assign({},brandEditingCompany?.settings||{}, {appearance:{
+      background_color:document.getElementById('br-background-color').value,
+      text_color:document.getElementById('br-text-color').value,
+      background_image_url:brandBackgroundUrl,
+      icon_style:document.getElementById('br-icon-style').value
+    }});
+    await api('/companies?id=eq.'+companyId, {m:'PATCH', p:'return=minimal', b:body});
     // Re-fetch company so Brand has the canonical row, then re-apply
-    var rows = await api('/companies?id=eq.'+prof.company_id+'&select=*');
-    if(rows && rows[0]){ co = rows[0]; Brand.loadFromCompany(co); }
+    var rows = await api('/companies?id=eq.'+companyId+'&select=*');
+    if(rows && rows[0]){ brandEditingCompany=rows[0];if(String(co?.id)===String(companyId))co=rows[0];Brand.loadFromCompany(rows[0]);brandBackgroundFile=null;brandBackgroundRefresh(); }
     toast('Branding saved - applied across the platform');
   }catch(e){
     // If the new columns don't exist yet, give a useful migration hint
@@ -12205,6 +12349,10 @@ async function brandSave(){
 async function brandResetDefaults(){
   if(!(await appConfirmAction({title:'Reset branding',message:'Reset to AURIS360 default branding?',detail:'Your custom logos and colours will be cleared.',confirmText:'Reset branding',cancelText:'Cancel'}))) return;
   _brandLogoData = {light:null, dark:null};
+  brandBackgroundFile=null;brandBackgroundUrl=null;document.getElementById('br-background-file').value='';brandBackgroundRefresh();
+  document.getElementById('br-background-color').value=Brand.DEFAULTS.background_color;
+  document.getElementById('br-text-color').value=Brand.DEFAULTS.text_color;
+  document.getElementById('br-icon-style').value='3d';
   // Apply defaults to editor
   var d = Brand.DEFAULTS;
   document.getElementById('br-primary').value      = d.primary;
@@ -35751,6 +35899,7 @@ async function saCompanyInit() {
   var saved = saCompanyGetContext();
   if(saved) {
     sephsCompanyContext = saved;
+    try{var selectedRows=await api('/companies?id=eq.'+saved+'&select=*');if(selectedRows&&selectedRows[0])Brand.loadFromCompany(selectedRows[0]);}catch(e){console.warn('Could not restore selected company appearance',e);}
   }
   saCompanyUpdateLabel();
   sidebarApplyCompanyLogo();
@@ -35799,6 +35948,9 @@ function saCompanyMenuBuild() {
 async function saCompanyPick(companyId) {
   saCompanyMenuClose();
   saCompanySetContext(companyId);
+  settingsLoadedGroups.company=false;
+  if(!companyId)Brand.reset();
+  else try{var appearanceRows=await api('/companies?id=eq.'+companyId+'&select=*');if(appearanceRows&&appearanceRows[0])Brand.loadFromCompany(appearanceRows[0]);}catch(e){console.warn('Could not apply selected company appearance',e);}
   await loadRolloutRuntimeConfig();
   await workflowHydrateTenant(companyId);
   await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
@@ -43299,7 +43451,7 @@ function mobileFieldReports(){var h='<p>Choose a report. Photos, location, voice
  if(canAccessPage('events'))[['Incident','injury'],['Near miss','near_miss'],['Hazard / unsafe condition','unsafe_condition'],['Unsafe act','unsafe_act'],['Environmental event','environmental']].forEach(function(a){h+=mobileFieldButton(a[0],'report',a[1]);});
  if(canAccessPage('observation'))h+=mobileFieldButton('Equipment defect','observation','unsafe_condition');
  if(canAccessPage('observation'))h+=mobileFieldButton('Observation','observation');mobileFieldDialog('Quick report',h+'</div>');}
-function mobileFieldMore(){mobileFieldDialog('More','<div class="mf-grid">'+(typeof isSA==='function'&&isSA()?mobileFieldButton('Select company','companies'):'')+mobileFieldButton('My profile & offline drafts','personal')+mobileFieldButton('Sync saved drafts','sync')+(canAccessPage('approvals')?mobileFieldButton('Approvals & notifications','nav','approvals'):'')+(canAccessPage('settings')?mobileFieldButton('Settings','nav','settings'):'')+'</div><p class="mf-note">Incident and observation drafts with photos support offline capture. Other workflows require a connection; keep unsaved forms open until saved.</p>');}
+function mobileFieldMore(){mobileFieldDialog('More','<div class="mf-grid">'+(typeof isSA==='function'&&isSA()?mobileFieldButton('Select company','companies'):'')+mobileFieldButton('My profile','profile')+(canAccessPage('settings')?mobileFieldButton('Offline drafts','personal'):'')+mobileFieldButton('Sync saved drafts','sync')+(canAccessPage('approvals')?mobileFieldButton('Approvals & notifications','nav','approvals'):'')+(canAccessPage('settings')?mobileFieldButton('Settings','nav','settings'):'')+'</div><p class="mf-note">Incident and observation drafts with photos support offline capture. Other workflows require a connection; keep unsaved forms open until saved.</p>');}
 function mobileFieldQrUrl(value){var url=new URL(value,location.origin);if(url.origin!==location.origin||!url.searchParams.get('record')||!url.searchParams.get('goto'))throw Error('Scan an AURIS360 record code for this environment.');if(!canAccessPage(url.searchParams.get('goto')))throw Error('Your role cannot open this module.');return url;}
 async function mobileFieldQrOpen(value){try{var url=mobileFieldQrUrl(value);mobileFieldClose();history.pushState(null,'',url.pathname+url.search);await deepLinkResume('mobile-qr');}catch(e){toast(e.message,false);}}
 async function mobileFieldQr(){
@@ -43311,6 +43463,7 @@ async function mobileFieldQr(){
 async function mobileFieldAct(action,value){
  if(!prof)return;
  if(action==='close'){mobileFieldClose();return;}
+ if(action==='profile'){mobileFieldClose();myProfileOpenDialog();return;}
  if(action==='companies'){await mobileFieldCompanies();return;}
  if(action==='company'){await mobileFieldPickCompany(value);return;}
  if(action==='reports'){mobileFieldReports();return;}if(action==='more'){mobileFieldMore();return;}if(action==='qr'){mobileFieldQr();return;}if(action==='qr-link'){mobileFieldQrOpen(document.getElementById('mf-qr-link').value);return;}
