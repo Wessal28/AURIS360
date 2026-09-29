@@ -1,0 +1,48 @@
+.company-appearance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:8px 0 16px}
+.company-appearance-grid label,.company-background-control,.profile-photo-control{display:grid;gap:7px;font-size:12px;font-weight:700;color:var(--text)}
+.company-appearance-grid input[type=color]{height:40px;padding:3px}
+.company-background-control{padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:18px}
+.company-background-control small,.profile-photo-control small{font-weight:400;color:var(--text2)}
+.company-background-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#br-background-preview{width:140px;height:76px;object-fit:cover;border:1px solid var(--border);border-radius:8px}
+.profile-photo-control{margin-top:14px;max-width:420px}
+.my-profile-summary{display:flex;align-items:center;gap:14px;font-size:13px}
+.my-profile-avatar,.sb-user-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--border);background:var(--card)}
+.hse-cc-user-chip img.hse-cc-avatar{object-fit:cover}
+.sb-user-avatar{width:30px;height:30px;vertical-align:middle;margin-right:7px}
+.profile-shortcut{display:flex;align-items:center;width:100%;border:0;background:transparent;text-align:left;cursor:pointer;padding:4px 0;color:var(--text2)}
+.profile-shortcut:hover,.profile-shortcut:focus-visible{color:var(--brand-primary);text-decoration:underline}
+.my-profile-dialog{position:fixed;inset:0;z-index:980;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.6)}
+.my-profile-dialog[hidden]{display:none}
+.my-profile-dialog-card{position:relative;width:min(420px,100%);padding:24px;border-radius:14px;background:var(--card);color:var(--text);box-shadow:0 24px 70px rgba(0,0,0,.24)}
+.my-profile-dialog-close{position:absolute;right:16px;top:16px}
+.my-profile-dialog-summary{padding-right:72px}
+@media(max-width:760px){.company-appearance-grid{grid-template-columns:1fr}}
+
+/* Company appearance is shared by every module; cards retain a readable surface. */
+html[data-company-picture="true"] .page.active{background:transparent!important}
+html[data-company-picture="true"] .main{background-repeat:no-repeat;background-size:cover;background-position:center}
+html[data-company-dark="true"] .page.active{background:var(--bg)!important;color:var(--text)!important}
+html[data-company-dark="true"][data-company-picture="true"] .page.active{background:transparent!important}
+html[data-company-dark="true"] .sidebar,html[data-company-dark="true"] .sidebar-top{background:var(--card)!important;color:var(--text)!important}
+html[data-company-dark="true"] .sidebar .nav-item{color:var(--text)!important}
+html[data-company-dark="true"] .hse-cc{background:var(--card)!important;color:var(--text)!important}
+html[data-company-dark="true"] .page :is(.card,.metric,.hse-cc-panel,.auris-indicator-card){background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
+html[data-company-dark="true"] .page :is(.page-title,.card-title,.metric-value,.hse-cc-panel-title,.hse-cc-title,.auris-indicator-value){color:var(--text)!important}
+html[data-company-dark="true"] .page :is(th,td,.form3label,.metric-label,.hse-cc-sub){color:var(--text)!important}
+html[data-company-dark="true"] .page :is(input,select,textarea){background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
+
+/* Flat symbols use the same Tabler glyphs as the 3D module artwork. */
+html[data-company-icon-style="2d"] .sidebar .nav-item i.ti,
+html[data-company-icon-style="2d"] .modules-menu-item i.ti,
+html[data-company-icon-style="2d"] .mob-nav-btn i.ti,
+html[data-company-icon-style="2d"] .mob-module-btn i.ti,
+html[data-company-icon-style="2d"] .auris-app-card-icon i.ti{background:var(--brand-primary)!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;font-size:18px!important}
+html[data-company-icon-style="2d"] .sidebar .nav-item i.ti:after{display:none!important}
+html[data-company-icon-style="2d"] .page button.auris-icon-tab>i.auris-tab-icon{background:var(--tab-icon)!important;box-shadow:none!important;text-shadow:none!important;transform:none!important}
+html[data-company-icon-style="2d"] .auris-indicator-icon,
+html[data-company-icon-style="2d"] .auris-dashboard-asset,
+html[data-company-icon-style="2d"] #page-dashboard .kpi-card .kpi-icon{display:inline-flex!important;align-items:center!important;justify-content:center!important;background-image:none!important;background-color:var(--brand-primary)!important;background-position:center!important;color:#fff!important;font-size:22px!important;border-radius:8px!important;box-shadow:none!important;mix-blend-mode:normal!important}
+html[data-company-icon-style="2d"] .auris-indicator-icon>i,
+html[data-company-icon-style="2d"] #page-dashboard .kpi-card .kpi-icon>*{display:inline-flex!important;color:#fff!important;font-size:22px!important}
+html[data-company-icon-style="2d"] .auris-indicator-card>i.ti:not(.auris-indicator-icon){display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;margin-bottom:9px;border-radius:8px;background:var(--brand-primary);color:#fff;font-size:20px;box-shadow:none}
