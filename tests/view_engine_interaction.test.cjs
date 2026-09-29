@@ -9,6 +9,12 @@ test('separate record links navigate natively but stale sessions block navigatio
   r.identity.companyId='co-a';
   assert.throws(()=>r.mount({actions:[{key:'view',label:'View',href:()=> 'javascript:alert(1)'}]}),/HTTP/);
 });
+test('icon actions keep an accessible name while rendering a compact glyph',()=>{
+  const r=runtime();r.mount({actions:[{key:'open',label:'Open inspection report',icon:'ti-eye'}]});
+  assert.match(r.host.innerHTML,/class="ave-icon-action" aria-label="Open inspection report"/);
+  assert.match(r.host.innerHTML,/<i class="ti ti-eye" aria-hidden="true"><\/i>/);
+  assert.doesNotMatch(r.host.innerHTML,/>Open inspection report<\/button>/);
+});
 test('datetime fields retain local hours, minutes and timezone while date-only and invalid values stay honest',()=>{
   const r=runtime(),timestamp='2026-09-08T08:45:00+04:00';r.def.fields.push({key:'start',label:'Start',type:'datetime'});r.rows[0].start=timestamp;r.mount();
   const expected=new Date(timestamp).toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});

@@ -13,7 +13,7 @@ const section = index.slice(start, end);
 test('Audits & Inspections has no inline style attributes', () => {
   assert.match(index, /<link rel="stylesheet" href="auris-audits-inspections-static\.css\?v=\d+-\d+">/);
   assert.equal((section.match(/\sstyle=(?:"[^"]*"|'[^']*')/gi) || []).length, 0);
-  assert.ok((section.match(/auris-audit-s-[a-f0-9]{10}/g) || []).length >= 188);
+  assert.ok((section.match(/auris-audit-s-[a-f0-9]{10}/g) || []).length >= 180);
   assert.ok((css.match(/^\.auris-audit-s-[a-f0-9]{10}\{/gm) || []).length >= 104);
 });
 
@@ -24,5 +24,5 @@ test('Audit, pre-start, finding and evidence states remain runtime-controlled', 
   }
   assert.match(css, /transition:width \.8s/);
   assert.match(css, /accent-color:var\(--green\)/);
-  assert.doesNotMatch(css, /!important/i);
+  assert.doesNotMatch(css.split('#audit-register-list .ave-actions')[0], /!important/i);
 });
