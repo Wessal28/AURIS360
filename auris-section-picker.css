@@ -1,0 +1,5 @@
+.auris-section-picker{display:flex;align-items:center;gap:10px;width:min(100%,360px);margin:12px 0 16px;color:var(--text,#17344b);font-size:13px;font-weight:700}
+.auris-section-picker select{min-width:0;flex:1;height:42px;padding:8px 34px 8px 12px;border:1px solid var(--border,#cddbdc);border-radius:10px;background:var(--card,#fff);color:inherit;font:inherit;cursor:pointer}
+.auris-section-picker select:focus-visible{outline:2px solid #078d76;outline-offset:2px}
+.auris-section-tabs-hidden{display:none!important}
+@media(max-width:600px){.auris-section-picker{width:100%;margin:10px 0 14px}.auris-section-picker select{height:44px}}
