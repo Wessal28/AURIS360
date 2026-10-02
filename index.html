@@ -49,7 +49,7 @@
 <script src="auris-application-lifecycle.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
-<script src="auris-view-engine.js?v=20260920-1"></script>
+<script src="auris-view-engine.js?v=20261002-3"></script>
 <script src="auris-module-extraction.js?v=20260901-12"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
@@ -68,7 +68,7 @@
 <script src="auris-incident-list-workspace.js?v=20260915-1"></script>
 <script src="auris-audit-list-workspace.js?v=20260915-1"></script>
 <script src="auris-contractor-list-workspace.js?v=20260915-1"></script>
-<script src="auris-fleet-list-workspace.js?v=20260920-1"></script>
+<script src="auris-fleet-list-workspace.js?v=20261002-3"></script>
 <script src="auris-atex-list-workspace.js?v=20260920-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260920-1"></script>
 <script src="auris-chemical-list-workspace.js?v=20260920-1"></script>
@@ -110,10 +110,10 @@
 <link rel="stylesheet" href="auris-atex-records.css?v=20260920-1">
 <script src="auris-atex-records.js?v=20260920-1"></script>
 <link rel="stylesheet" href="auris-fleet-records.css?v=20260920-1">
-<script src="auris-fleet-records.js?v=20261002-1"></script>
+<script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20260920-1&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261002-3&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -143,7 +143,7 @@
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1&launcher-icons-20260916-1">
 <link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
-<link rel="stylesheet" href="auris-view-engine.css?v=20260908-1">
+<link rel="stylesheet" href="auris-view-engine.css?v=20261002-3">
 <link rel="stylesheet" href="auris-record-workspace.css?v=20260908-1&work-record-20260923-1&people-access-20260927-1">
 <link rel="stylesheet" href="auris-reporting-engine.css?v=20260901-17">
 <link rel="stylesheet" href="auris-dashboard-designer.css?v=20260901-18">
@@ -408,7 +408,7 @@
      TOP BAR - Desktop only. Sidebar toggle + Modules dropdown.
      ------------------------------------------------------------------------ -->
 <div class="topbar">
-  <div class="auris-global-brand" aria-label="AURIS 360 HSE Intelligence"><span class="auris-global-mark">A360</span><span><strong>AURIS 360</strong><small>HSE INTELLIGENCE</small></span></div>
+  <div class="auris-global-brand" aria-label="AURIS 360 HSE Intelligence"><img src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><span><strong>AURIS 360</strong><small>HSE INTELLIGENCE</small></span></div>
   <button class="topbar-btn" data-auris-onclick="h0065" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">
     <i class="ti ti-menu-2" id="sidebar-toggle-icon"></i>
   </button>
@@ -4365,6 +4365,7 @@ Offline mode - changes will sync when connection is restored
 <button class="btn" id="fleet-print-btn" data-auris-onclick="h0490"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-primary auris-fleet-s-6aa34d7432" id="fleet-add-vehicle-btn" data-auris-onclick="h0491"><i class="ti ti-plus"></i>Add vehicle</button>
 <button class="btn" id="fleet-fuel-log-btn" data-auris-onclick="h0492"><i class="ti ti-gas-station"></i>Fuel log</button>
+<button class="btn" id="fleet-show-inspections" type="button"><i class="ti ti-clipboard-check"></i>Inspection register</button>
 </div>
 </div>
 <div class="auris-fleet-s-61d5ffe04d">
@@ -4374,18 +4375,8 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-fleet-s-bf5033d99d"><div class="auris-fleet-s-4422804ebb">Fuel logged</div><div class="auris-fleet-s-97309bb0fa"><span id="fleet-m3fuel">--</span> L</div></div>
 <div class="card auris-fleet-s-7650de7f10"><div class="auris-fleet-s-4422804ebb">CO2e</div><div class="auris-fleet-s-3fa9419540"><span id="fleet-m3co2">--</span> kg</div></div>
 </div>
-<div class="card auris-fleet-s-54bb9f1d16">
-<div class="auris-fleet-s-d5129e1520">
-<input type="text" id="fleet-search" class="auris-fleet-s-42afc95e9e" placeholder="Search vehicle, registration, location, driver..." data-auris-oninput="h0493"/>
-<select id="fleet-filter-status" class="auris-fleet-s-d35063206b" data-auris-onchange="h0494">
-<option value="">All statuses</option><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="maintenance">Maintenance</option><option value="archived">Archived</option>
-</select>
-<select id="fleet-filter-check" class="auris-fleet-s-d35063206b" data-auris-onchange="h0494">
-<option value="">All checks</option><option value="overdue">Monthly check overdue</option><option value="due_soon">Monthly check due soon</option><option value="with_incidents">With vehicle incidents</option>
-</select>
-</div>
-</div>
 <div id="fleet-list"><div class="loading-msg">Loading fleet...</div></div>
+<section id="fleet-inspection-register" hidden><div class="fleet-inspection-heading"><h2>Vehicle inspection register</h2><button class="btn" id="fleet-show-vehicles" type="button"><i class="ti ti-arrow-left"></i>Vehicles</button></div><div id="fleet-inspection-list"></div></section>
 </div>
 
 <div id="page-atex" class="page">
@@ -11741,7 +11732,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20260929-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
-<link rel="stylesheet" href="auris-universal-header.css?v=20261002-2">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261002-3">
 <link rel="stylesheet" href="auris-sidebar-navigation.css?v=20261002-1">
 <link rel="stylesheet" href="auris-command-centre-priorities.css?v=20261002-1">
 <link rel="stylesheet" href="requirements-5.css?v=20260824-1">
@@ -11774,8 +11765,8 @@ I can help you:<br>
 <script src="notification-centre.js?v=20260902-1"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>
-<link rel="stylesheet" href="auris-improvement-260910.css?v=20260913-1&launcher-icons-20260916-1"><script src="auris-risk-library.js?v=20260913-1"></script>
+<link rel="stylesheet" href="auris-improvement-260910.css?v=20261002-3&launcher-icons-20260916-1"><script src="auris-risk-library.js?v=20260913-1"></script>
 <script src="auris-attendance-photo.js?v=20260913-1&work-record-20260923-1&people-access-20260927-1"></script>
-<script src="auris-register-columns.js?v=20261002-2"></script><link rel="stylesheet" href="auris-mobile-final-polish.css?v=20260923-company-icons-1"/>
+<script src="auris-register-columns.js?v=20261002-3"></script><link rel="stylesheet" href="auris-mobile-final-polish.css?v=20260923-company-icons-1"/>
 </body>
 </html>

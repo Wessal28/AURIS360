@@ -16,6 +16,7 @@
 .ave-toolbar button:disabled,.ave-toolbar select:disabled,.ave-actions button:disabled{opacity:.6;cursor:not-allowed}
 .ave-columns{position:relative;align-self:end}
 .ave-columns summary{display:flex;align-items:center;padding:8px 12px;border:1px solid var(--border,#d9e0ea);border-radius:8px;background:var(--card,#fff);cursor:pointer}
+.ave-columns summary{justify-content:center;width:44px;min-width:44px;padding:0;list-style:none}.ave-columns summary::-webkit-details-marker{display:none}.ave-columns summary i{font-size:18px}
 .ave-columns>div{position:absolute;top:100%;left:0;z-index:5;width:260px;max-width:calc(100vw - 40px);max-height:55dvh;overflow:auto;padding:10px;border:1px solid var(--border,#d9e0ea);border-radius:9px;background:var(--card,#fff);box-shadow:0 8px 24px #0f172a22}
 .ave-columns label{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:500;cursor:pointer}
 .ave-columns label input{width:18px;height:18px;min-height:18px;accent-color:#158266;flex:0 0 18px}
@@ -31,6 +32,12 @@
 .ave-actions .ave-icon-action i{font-size:17px}
 .ave-table-wrap td:has(> .ave-actions){min-width:125px;max-width:none}
 .ave-table-wrap .ave-actions .ave-icon-action{flex:none}
+#page-fleet .ave-table-wrap td:has(> .ave-actions){min-width:125px;width:125px}
+#page-fleet .ave-table-wrap .ave-actions{gap:5px}
+#fleet-list[hidden],#fleet-inspection-register[hidden],#fleet-show-inspections[hidden]{display:none!important}
+.fleet-inspection-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 10px}.fleet-inspection-heading h2{margin:0;font-size:18px}
+#fleet-inspection-list .table-scroll{max-height:60dvh;overflow:auto;scrollbar-gutter:stable}#fleet-inspection-list .data-table{width:100%;min-width:900px}
+.fleet-inspection-result{display:inline-block;padding:3px 9px;border-radius:99px;background:#eaf3de;color:#3b6d11;font-weight:700;text-transform:capitalize}.fleet-inspection-result.is-fail{background:#fcebeb;color:#a32d2d}
 .ave-card-grid,.ave-card,.ave-board>section,.ave-card>header,.ave-card dl div,.ave-card dd{min-width:0;overflow-wrap:anywhere}
 .ave-card dt{font-size:12px}.ave-card dd{font-size:13px}
 .ave-badge{display:inline-block;padding:4px 8px;border-radius:99px;font-size:12px;font-weight:700}
@@ -40,4 +47,4 @@
 .ave-feedback{margin:8px 0;padding:12px;border:1px solid #a7d8ca;border-radius:8px;background:#edf9f5;color:#155e4a;overflow-wrap:anywhere}
 .ave-feedback-error{border-color:#fecaca;background:#fff1f2;color:#991b1b}
 .auris-view-engine :focus-visible{outline:2px solid #2563eb;outline-offset:2px}
-@media(max-width:700px){.ave-toolbar{align-items:end}.ave-columns{grid-column:1/-1}.ave-columns>div{position:static;width:100%;max-width:100%}.ave-card dl div{flex-wrap:wrap}.ave-card dd{text-align:left}.ave-table-wrap{max-height:55dvh}.ave-actions button{flex:1 1 110px}.ave-board{max-width:100%}}
+@media(max-width:700px){.ave-toolbar{align-items:end}.ave-columns{grid-column:1/-1}.ave-columns>div{position:static;width:100%;max-width:100%}.ave-card dl div{flex-wrap:wrap}.ave-card dd{text-align:left}.ave-table-wrap{max-height:55dvh}.ave-actions button{flex:1 1 110px}.ave-actions .ave-icon-action{flex:none}.ave-board{max-width:100%}}
