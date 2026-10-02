@@ -43,7 +43,10 @@ test('Fleet owns its add and edit vehicle workflow', () => {
   const start = js.indexOf('function fleetMonthlyCheck');
   const end = js.indexOf('function fleetFuelNew', start);
   const section = js.slice(start, end);
-  assert.match(section, /inspection_type:'vehicle_monthly'/);
+  assert.match(section, /inspection_type:'periodic'/);
+  assert.match(section, /notes:'Fleet monthly check'/);
+  assert.match(section, /<option value="">Select result<\/option>/);
+  assert.match(section, /Select Pass or Fail for every check/);
   assert.doesNotMatch(section, /showPage\('tools'/);
 });
 
