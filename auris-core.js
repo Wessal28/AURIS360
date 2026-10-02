@@ -31600,6 +31600,8 @@ function tbtShowForm(){
   tbtListViewGeneration++;
   document.getElementById('mtg-view-tbt').style.display='none';
   document.getElementById('tbt-form').style.display='block';
+  var addAttendee=document.querySelector('#tbt-form #tbtf-add-attendee');
+  if(addAttendee&&!addAttendee.dataset.attendeeBound){addAttendee.dataset.attendeeBound='true';addAttendee.addEventListener('click',tbtAddAttendee);}
 }
 function tbtBack(){
   document.getElementById('tbt-form').style.display='none';
@@ -31892,12 +31894,11 @@ function tbtAddAttendee(){
   if(!el)return;
   var idx=el.querySelectorAll('.tbt-att-row').length;
   el.insertAdjacentHTML('beforeend',tbtAttendeeRow('','',idx));
+  var added=el.lastElementChild;
+  added?.querySelector('.tbt-att-name')?.focus();
+  added?.scrollIntoView({block:'nearest'});
   tbtUpdateCount();
 }
-document.addEventListener('click',function(event){
-  if(event.target.closest('#tbtf-add-attendee'))tbtAddAttendee();
-});
-
 function tbtAddAction(){
   // Same duplicate-ID issue as tbtAddAttendee - find the visible #tbt-actions-list.
   var lists = document.querySelectorAll('#tbt-actions-list');
@@ -31945,7 +31946,7 @@ async function tbtSave(){
   });
   var linkedWork=tbtSelectedWork();
   var cleanNotes=tbtStripLinkedWork(g('tbtf-notes')||'');
-  var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),presenter_person_id:personFromValue(g('tbtf-presenter'))?.id||null,attendee_person_ids:attendees.map(function(a){return a.person_id;}).filter(Boolean),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),work_schedule_id:linkedWork?.id||null,title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),presenter_person_id:personFromValue(g('tbtf-presenter'))?.id||null,attendee_person_ids:attendees.map(function(a){return a.person_id;}).filter(Boolean),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
   try{if(typeof AurisAttendancePhoto!=='undefined')body.attendance_photo=AurisAttendancePhoto.get('tbt');}catch(photoError){toast(photoError.message,false);return;}
   tbtSavePending=true;
   try{
@@ -33995,7 +33996,7 @@ async function aurisTakePhoto(){
 async function auditCaptureChecklistPhoto(button){
   var item=button?.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim().slice(0,100)||'Inspection';
   try{var data=await aurisTakePhoto();auditAddPhotoRow({url:data,file_name:item+' photo.jpg',type:'photo'});toast('Photo captured. Save the inspection to keep it.');}
-  catch(error){if(error.message==='Photo cancelled.')return;auditAddPhotoRow();var rows=document.querySelectorAll('#audit-photos-list>div');rows[rows.length-1]?.querySelector('input[type="file"]')?.click();}
+  catch(error){if(error.message!=='Photo cancelled.')toast(error.message||'Camera could not be opened.',false);}
 }
 
 // -- Photos / voice notes ------------------------------------------

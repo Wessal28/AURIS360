@@ -408,6 +408,7 @@
      TOP BAR - Desktop only. Sidebar toggle + Modules dropdown.
      ------------------------------------------------------------------------ -->
 <div class="topbar">
+  <div class="auris-global-brand" aria-label="AURIS 360 HSE Intelligence"><span class="auris-global-mark">A360</span><span><strong>AURIS 360</strong><small>HSE INTELLIGENCE</small></span></div>
   <button class="topbar-btn" data-auris-onclick="h0065" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">
     <i class="ti ti-menu-2" id="sidebar-toggle-icon"></i>
   </button>
@@ -424,6 +425,7 @@
     <span>Search</span>
     <kbd>Ctrl K</kbd>
   </button>
+  <span class="auris-global-company" id="auris-global-company"></span>
   <div class="auris-shell-s-83725d2c6e"></div>
   <!-- Company context switcher - visible only to sephs_admin -->
   <div class="modules-dropdown auris-shell-s-6aa34d7432" id="sa-company-switcher">
@@ -440,6 +442,10 @@
     <span id="dev-mode-label">Rollout view</span>
   </button>
   <div class="auris-shell-s-39c68df36f" id="topbar-extras"></div>
+</div>
+<div class="auris-module-bar" id="auris-module-bar" aria-label="Current module and section">
+  <div class="auris-module-identity"><span class="auris-module-symbol"><i class="ti ti-layout-dashboard"></i></span><span><small>Current module</small><strong id="auris-module-name">Dashboard</strong><span class="auris-module-crumb" id="auris-module-crumb">Home / Dashboard</span></span></div>
+  <label class="auris-module-section" id="auris-module-section-wrap" hidden><span>Go to page</span><select id="auris-module-section" aria-label="Go to module page"></select></label>
 </div>
 
 <!-- ------------------------------------------------------ -->
@@ -11728,6 +11734,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20260929-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20260929-1">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261002-1">
 <link rel="stylesheet" href="requirements-5.css?v=20260824-1">
 <link rel="stylesheet" href="auris-mobile-responsive.css?v=20260818-1">
 <link rel="stylesheet" href="notification-centre.css?v=20260902-1">
@@ -11749,6 +11756,7 @@ I can help you:<br>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260824-1"></script>
 <script src="auris-section-picker.js?v=20260929-1"></script>
+<script src="auris-universal-header.js?v=20261002-1"></script>
 <script src="requirements-5.js?v=20260824-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="offline-sync-diagnostic.js?v=20260814-1"></script>

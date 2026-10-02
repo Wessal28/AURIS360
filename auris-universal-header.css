@@ -1,0 +1,25 @@
+/* Shared command header; existing controls keep their original handlers. */
+.auris-section-picker.auris-section-mirrored{display:none!important}
+@media(min-width:769px){
+  #app .topbar{min-height:64px;gap:12px;padding:8px 18px;background:linear-gradient(105deg,#102337,#18364f);color:#fff;border-bottom:3px solid #21b573}
+  #app .topbar .topbar-btn{color:#f2f8fb;background:#ffffff0d;border-color:#ffffff26;min-height:38px}
+  #app .topbar .topbar-btn:hover{background:#ffffff24}
+  #app .topbar .topbar-btn i{color:#d7e9f1}
+  #app .topbar kbd{color:#c8dce7}
+  .auris-global-brand{display:flex;align-items:center;gap:10px;flex:none;min-width:180px;line-height:1.1}
+  .auris-global-mark{width:36px;height:36px;display:grid;place-items:center;border:3px solid #d8e2e7;border-right-color:#21b573;border-bottom-color:#ff9f32;border-radius:50%;font-size:11px;font-weight:800}
+  .auris-global-brand strong{display:block;font-size:17px;letter-spacing:.4px}.auris-global-brand small{display:block;margin-top:3px;font-size:9px;letter-spacing:1.3px;color:#a8becb}
+  .auris-global-company{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650;font-size:12px;color:#d7e9f1}
+}
+.auris-module-bar{display:flex;align-items:center;gap:24px;min-height:72px;padding:10px 20px;background:linear-gradient(90deg,#eaf8f1,#fff 45%);border-bottom:1px solid var(--border,#dce6ec);flex-shrink:0}
+.auris-module-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.auris-module-identity>span:last-child{display:flex;flex-direction:column;min-width:0}
+.auris-module-symbol{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:12px;background:linear-gradient(145deg,#18a86b,#138659);color:#fff;font-size:21px}
+.auris-module-identity small,.auris-module-section>span{color:#617687;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.auris-module-identity strong{font-size:17px;color:#193042;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auris-module-crumb{font-size:11px;color:#617687;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auris-module-section{margin-left:auto;min-width:220px}.auris-module-section[hidden]{display:none}.auris-module-section>span{display:block;margin-bottom:3px}
+.auris-module-section select{width:100%;min-height:39px;padding:7px 11px;border:1px solid #cbd9df;border-radius:9px;background:var(--card,#fff);color:var(--text,#193042);font-weight:650}
+@media(max-width:1080px) and (min-width:769px){.auris-global-brand{min-width:auto}.auris-global-brand>span:last-child{display:none}.auris-global-company{max-width:140px}}
+@media(max-width:768px){.auris-global-brand,.auris-global-company{display:none}.auris-module-bar{padding:8px 14px;min-height:62px;gap:8px;flex-wrap:wrap}.auris-module-symbol{width:34px;height:34px;font-size:17px}.auris-module-identity strong{font-size:14px}.auris-module-crumb,.auris-module-identity small{display:none}.auris-module-section{min-width:130px;max-width:52%;margin-left:auto}.auris-module-section select{min-height:40px;font-size:12px}.auris-module-section>span{font-size:9px}}
+@media(max-width:370px){.auris-module-section{max-width:none;width:100%;margin-left:0}}
