@@ -19,7 +19,7 @@ function enhance(table){
  if(table.closest('[data-ave-module]')||Array.from(table.parentElement.children).some(function(child){return child.classList&&child.classList.contains('ave-columns');}))return;
  var hidden=read(storageKey).filter(function(i){return Number.isInteger(i)&&i>0&&i<labels.length&&labels[i]&&!/^(actions?|edit)$/i.test(labels[i]);});
  var control=document.createElement('details');control.className='auris-register-columns';
- var summary=document.createElement('summary');summary.textContent='Columns';control.appendChild(summary);
+ var summary=document.createElement('summary');summary.setAttribute('aria-label','Select columns');summary.title='Select columns';summary.innerHTML='<i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>';control.appendChild(summary);
  var list=document.createElement('div');list.className='auris-register-column-options';control.appendChild(list);
  labels.forEach(function(label,index){if(!label)return;var row=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=hidden.indexOf(index)===-1;input.disabled=index===0||/^(actions?|edit)$/i.test(label);row.append(input,document.createTextNode(label));list.appendChild(row);
  input.addEventListener('change',function(){if(context()!==record.context){schedule();return;}hidden=hidden.filter(function(i){return i!==index;});if(!input.checked)hidden.push(index);record.hidden=hidden;try{root.localStorage.setItem(storageKey,JSON.stringify(hidden));}catch(_){}apply(table,hidden);});});

@@ -37,8 +37,9 @@ async function fleetOpenLinkedRecord(req){
     return true;
   }
   var history=await fleetReadRecordHistory(row,current);AurisFleetListWorkspace.assertSession(current);
+  var registerHistory={inspections:fleetInspections,fuel:fleetFuel,services:fleetServices};
   fleetInspections=history[0].rows;fleetFuel=history[1].rows;fleetServices=history[2].rows;
-  fleetOpeningLinkedRecord=true;try{fleetOpenVehicleDetail(row.id);}finally{fleetOpeningLinkedRecord=false;}
+  fleetOpeningLinkedRecord=true;try{fleetOpenVehicleDetail(row.id);}finally{fleetOpeningLinkedRecord=false;fleetInspections=registerHistory.inspections;fleetFuel=registerHistory.fuel;fleetServices=registerHistory.services;}
   var modal=document.getElementById('fleet-detail-modal');
   if(!modal)return false;
   modal.classList.add('fleet-readonly-window');

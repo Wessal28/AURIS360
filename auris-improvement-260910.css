@@ -1,6 +1,7 @@
 .auris-column-hidden{display:none!important}
 .auris-register-columns{position:relative;display:block;width:max-content;margin:6px 0 8px auto;font-size:12px}
 .auris-register-columns>summary{cursor:pointer;padding:7px 12px;border:1px solid var(--border);border-radius:7px;background:var(--card,#fff)}
+.auris-register-columns>summary{display:grid;place-items:center;width:40px;height:40px;padding:0;list-style:none}.auris-register-columns>summary::-webkit-details-marker{display:none}.auris-register-columns>summary i{font-size:18px}
 .auris-register-column-options{position:absolute;right:0;z-index:30;min-width:210px;max-height:320px;overflow:auto;background:var(--card,#fff);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 6px 20px #0002}
 .auris-register-column-options label{display:flex;align-items:center;gap:8px;padding:5px;font-size:12px;white-space:nowrap}
 .auris-register-column-options input{width:15px;height:15px;margin:0}
