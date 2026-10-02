@@ -3424,6 +3424,7 @@ async function loadDash(options) {
   }
   try {
     var safe = async function(p) { try { return await p; } catch(e) { hadApiFailure=true;console.warn('Dash API:', e.message); return []; } };
+    var optional = async function(p) { try { return await p; } catch(e) { console.warn('Optional dashboard source:', e.message); return null; } };
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
     var results = await Promise.all([
@@ -3432,15 +3433,19 @@ async function loadDash(options) {
       safe(api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active')),
       safe(api('/permits?select=*'+cf()+'&status=eq.active')),
       safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc')),
-      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=10')),
+      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=200')),
       safe(api('/legal_requirements?select=*'+cf()+'&limit=200')),
       safe(api('/training_followup?select=id,person_name,expiry_date'+cf())),
       safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50')),
       safe(api('/safety_observations?select=id'+cf()+'&limit=10')),
       safe(api('/risk_assessments?select=*'+cf()+'&limit=100')),
       safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10')),
+      optional(api('/contractors?select=*'+cf()+'&limit=200')),
+      optional(api('/tools_register?select=*'+cf()+'&limit=200')),
+      optional(api('/moc_change_requests?select=*'+cf()+'&limit=200')),
+      optional(api('/approval_requests?select=*'+cf()+'&limit=200')),
     ]);
-    var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals] = results;
+    var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals, contractors, equipment, changes, approvals] = results;
     // A newer dashboard request owns the screen. Never let a slower, older
     // response overwrite data loaded for a changed company or manual refresh.
     if(loadGeneration!==_dashLoadGeneration)return;
@@ -3521,7 +3526,7 @@ async function loadDash(options) {
     dashRenderSeverityChart(events);
     dashRenderComplianceRings(compPct, trainPct, permits.length);
     dashRenderDemoReadiness({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals});
-    dashRenderControlCentre({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals, certs:certs});
+    dashRenderControlCentre({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals, certs:certs, contractors:contractors, equipment:equipment, changes:changes, approvals:approvals});
 
     // --- Dashboard redesign hooks (Stage 1-5) ---
     dashRouteView();      // toggle org vs personal view based on role
@@ -3784,6 +3789,7 @@ function dashRenderControlCentre(data){
   var inspections=data.inspections||[];
   var risks=data.riskAssessments||[];
   var certs=data.certs||[];
+  var contractors=data.contractors, equipment=data.equipment, changes=data.changes, approvals=data.approvals;
 
   var openIncidents=events.filter(function(x){return !dashIsDoneStatus(x.status);});
   var seriousIncidents=openIncidents.filter(function(x){
@@ -3808,6 +3814,12 @@ function dashRenderControlCentre(data){
     var limit=new Date(now); limit.setDate(limit.getDate()-30);
     return d>=limit;
   });
+  var scheduledInspections=inspections.filter(function(x){var status=String(x.status||'').toLowerCase();return status==='scheduled'||status==='planned'||status==='pending';});
+  var quarantinedEquipment=Array.isArray(equipment)?equipment.filter(function(x){return /quarantin|out.of.service|defect|unsafe/.test(String(x.status||x.condition||'').toLowerCase());}):null;
+  var contractorReviews=Array.isArray(contractors)?contractors.filter(function(x){return !/^(approved|active|compliant)$/.test(String(x.compliance_status||x.status||'').toLowerCase());}):null;
+  var pendingApprovals=Array.isArray(approvals)?approvals.filter(function(x){return /pending|awaiting|submitted/.test(String(x.status||'').toLowerCase());}):null;
+  var mocReviews=Array.isArray(changes)?changes.filter(function(x){return /pending|awaiting|submitted|review/.test(String(x.status||'').toLowerCase());}):null;
+  var personalTasks=openActions.filter(function(x){var assignee=String(x.assigned_to_id||x.assigned_to||x.responsible||x.owner||'').toLowerCase();return assignee&&((prof&&prof.id&&assignee===String(prof.id).toLowerCase())||(prof&&prof.full_name&&assignee===String(prof.full_name).toLowerCase()));});
   var currentMonth=now.getMonth();
   var thisMonthEvents=events.filter(function(x){
     var d=new Date(x.event_date||x.date||x.created_at||'');
@@ -3840,7 +3852,7 @@ function dashRenderControlCentre(data){
   var openCritical=seriousIncidents.length+highRisks.length;
   var trainingScore=training.length?Math.max(0,Math.round((training.length-expiringTraining.length)/training.length*100)):0;
   var permitScore=permits.length?Math.max(0,Math.round((permits.length-activePermits.length)/permits.length*100)):(activePermits.length?0:100);
-  var inspectionDue=expiringCerts.length+Math.max(0,highRisks.length-recentInspections.length);
+  var inspectionDue=scheduledInspections.length;
   var userName=(prof&&prof.full_name)||'User';
   var companyName=(co&&co.name)||(typeof sephsCompanyName==='string'?sephsCompanyName:'All companies');
   var firstName=String(userName).split(' ')[0]||'there';
@@ -3902,30 +3914,41 @@ function dashRenderControlCentre(data){
   training.slice(0,2).forEach(function(x){upcoming.push({id:x.id||'',title:x.training_title||x.course||x.person_name||'Training follow-up',date:x.expiry_date||x.planned_date,page:'training'});});
   upcoming=upcoming.filter(function(x){return x.date;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);}).slice(0,8);
   var complianceBars=[
-    {label:'HSE overall',value:legalScore||88,color:'#0F6E56',page:'legal'},
+    {label:'Legal compliance',value:legalScoreValues.length?legalScore:null,color:'#0F6E56',page:'legal'},
     {label:'Training',value:trainingScore||0,color:'#16A34A',page:'training'},
-    {label:'Permits',value:permitScore,color:'#0F6E56',page:'permit'},
-    {label:'Inspections',value:recentInspections.length?Math.min(100,70+recentInspections.length*3):0,color:'#1D9E75',page:'inspection'},
-    {label:'Risk control',value:highRisks.length?Math.max(20,100-highRisks.length*10):90,color:highRisks.length?'#DC2626':'#0F6E56',page:'risk'},
-    {label:'Environment',value:legalGaps.length?Math.max(35,100-legalGaps.length*5):91,color:'#185FA5',page:'esg'}
+    {label:'Permits',value:null,color:'#0F6E56',page:'permit'},
+    {label:'Inspections',value:null,color:'#1D9E75',page:'inspection'},
+    {label:'Risk control',value:null,color:highRisks.length?'#DC2626':'#0F6E56',page:'risk'},
+    {label:'Environment',value:null,color:'#185FA5',page:'esg'}
   ];
 
   var metrics=[
-    {label:'Total incidents',value:openIncidents.length+events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',asset:'incident',page:'events'},
+    {label:'Total incidents',value:events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',asset:'incident',page:'events'},
     {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',asset:'action',page:'actions'},
     {label:'High risks',value:highRisks.length,hint:seriousIncidents.length+' high incidents',tone:highRisks.length?'red':'green',asset:'risk',page:'risk'},
     {label:'Training compliance',value:(trainingScore||0)+'%',hint:expiringTraining.length+' due soon',tone:trainingScore>=80?'green':'amber',asset:'training',page:'training'},
     {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',asset:'permit',page:'permit'},
-    {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
+    {label:'Scheduled inspections',value:inspectionDue,hint:recentInspections.length+' recorded in 30d',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
   ];
+  var commandPriorities=[
+    {label:'Critical risks',value:highRisks.length,page:'risk',tone:highRisks.length?'red':'green'},
+    {label:'Overdue actions',value:overdueActions.length,page:'actions',tone:overdueActions.length?'red':'green'},
+    {label:'Incidents to investigate',value:openIncidents.length,page:'events',tone:openIncidents.length?'amber':'green'},
+    {label:'Pending approvals',value:pendingApprovals&&pendingApprovals.length,page:'approvals',tone:pendingApprovals&&pendingApprovals.length?'amber':'blue'},
+    {label:'Contractors to review',value:contractorReviews&&contractorReviews.length,page:'contractor',tone:contractorReviews&&contractorReviews.length?'amber':'blue'},
+    {label:'Training expiry',value:expiringTraining.length,page:'training',tone:expiringTraining.length?'amber':'green'},
+    {label:'Equipment out of service',value:quarantinedEquipment&&quarantinedEquipment.length,page:'tools',tone:quarantinedEquipment&&quarantinedEquipment.length?'red':'blue'},
+    {label:'Scheduled inspections',value:scheduledInspections.length,page:'inspection',tone:'blue'},
+    {label:'MOC awaiting review',value:mocReviews&&mocReviews.length,page:'moc',tone:mocReviews&&mocReviews.length?'amber':'blue'},
+    {label:'Missing KPI results',value:null,page:'kpi',tone:'purple'},
+    {label:'My open tasks',value:personalTasks.length,page:'actions',tone:personalTasks.length?'amber':'green'}
+  ].filter(function(item){return typeof canAccessPage!=='function'||canAccessPage(item.page);});
   window.__hseCcKpis=metrics;
 
   panel.innerHTML =
     '<div class="hse-cc-top">'
-      +'<div><div class="hse-cc-title">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'</div><div class="hse-cc-sub">Here is what is happening across '+escH(companyName)+' today.</div></div>'
+      +'<div><div class="hse-cc-title">Home Command Centre</div><div class="hse-cc-sub">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'. Here is what is happening across '+escH(companyName)+' today.</div></div>'
       +'<div class="hse-cc-toolbar">'
-        +'<select class="hse-cc-filter" data-auris-generated-onchange="g0008"><option>All Companies</option></select>'
-        +'<select class="hse-cc-filter" data-auris-generated-onchange="g0008"><option>All Sites</option></select>'
         +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
         +'<button class="hse-cc-tool-btn primary" data-auris-generated-onclick="g0009"><i class="ti ti-chart-bar"></i>Executive View</button>'
         +'<button class="hse-cc-tool-btn" data-auris-generated-onclick="g0010" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
@@ -3936,15 +3959,16 @@ function dashRenderControlCentre(data){
     +'<div class="hse-cc-kpis">'
       +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.page]))+'"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
+    +'<div class="hse-cc-priority-strip" aria-label="Cross-module priorities">'+commandPriorities.map(function(item){return '<button type="button" class="hse-cc-priority-tile '+item.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.page]))+'"><strong>'+escH(item.value==null?(item.page==='kpi'?'Review':'—'):item.value)+'</strong><span>'+escH(item.label)+'</span></button>';}).join('')+'</div>'
     +'<div class="hse-cc-grid">'
       +'<div class="hse-cc-panel" data-cc-widget="riskmap" data-auris-generated-onclick="g0012"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="actions" data-auris-generated-onclick="g0013"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all actions</div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="trend" data-auris-generated-onclick="g0015"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" data-auris-generated-onclick="g0016">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
-      +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">Priority work ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="upcoming" data-auris-generated-onclick="g0018"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0019">View calendar</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" data-auris-runtime-onclick="r0012" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=x.value==null?null:Math.max(0,Math.min(100,x.value));return '<div class="hse-cc-row" data-auris-runtime-onclick="r0012" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+(v==null?0:v)+'%;background:'+x.color+'"></i></div><strong>'+(v==null?'—':v+'%')+'</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
     +'</div>';
 }
 

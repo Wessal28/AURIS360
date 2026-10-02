@@ -1,6 +1,7 @@
 (function(root){
 'use strict';
 var tables=new WeakMap(),timer;
+var registerPages={risk:1,inspection:1,observation:1,events:1,workschedule:1,documents:1,swms:1,users:1,admin:1,integrations:1,settings:1};
 function context(){return String(typeof ccid==='function'?ccid():'')+':'+String(typeof prof!=='undefined'&&prof?prof.id:'');}
 function key(table,labels){var host=table.closest('[id]');return 'auris-register-columns-v1:'+context()+':'+(host?host.id:'table')+':'+labels.join('|');}
 function read(storageKey){try{var value=JSON.parse(root.localStorage.getItem(storageKey));return Array.isArray(value)?value:[];}catch(_){return [];}}
@@ -8,13 +9,14 @@ function apply(table,hidden){
  Array.from(table.rows).forEach(function(row){var offset=0;Array.from(row.cells).forEach(function(cell){var span=cell.colSpan||1,hide=true;for(var i=offset;i<offset+span;i++)if(hidden.indexOf(i)===-1)hide=false;cell.classList.toggle('auris-column-hidden',hide);offset+=span;});});
 }
 function enhance(table){
- if(table.closest('.ave-workspace,.ave-list,.ave-table-wrap,.kpi-x-table')||table.querySelector('input:not([type=checkbox]),select,textarea'))return;
+ var page=table.closest('.page');
+ if(!page||!registerPages[page.id.replace(/^page-/,'')]||table.closest('.ave-workspace,.ave-list,.ave-table-wrap,.kpi-x-table,[role="dialog"],.modal,.ws-record-overlay'))return;
  var header=table.tHead&&table.tHead.rows[0];if(!header||header.cells.length<2||Array.from(header.cells).some(function(c){return c.colSpan>1||c.rowSpan>1;}))return;
  var labels=Array.from(header.cells).map(function(c){return c.textContent.trim();}),storageKey=key(table,labels),existing=tables.get(table);
  if(existing&&existing.key===storageKey){apply(table,existing.hidden);return;}
  if(existing)existing.control.remove();
  // Existing view-engine registers own their column controls.
- if(table.closest('[data-ave-module]')||table.parentElement.querySelector('.ave-columns'))return;
+ if(table.closest('[data-ave-module]')||Array.from(table.parentElement.children).some(function(child){return child.classList&&child.classList.contains('ave-columns');}))return;
  var hidden=read(storageKey).filter(function(i){return Number.isInteger(i)&&i>0&&i<labels.length&&labels[i]&&!/^(actions?|edit)$/i.test(labels[i]);});
  var control=document.createElement('details');control.className='auris-register-columns';
  var summary=document.createElement('summary');summary.textContent='Columns';control.appendChild(summary);

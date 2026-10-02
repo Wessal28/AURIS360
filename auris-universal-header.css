@@ -16,6 +16,14 @@
   #app .topbar .auris-profile-trigger{border-radius:50%;width:40px;justify-content:center}
   #app .topbar #modules-trigger span,#app .topbar #dev-mode-label{display:none}
   #app .topbar #modules-trigger .ti-chevron-down{display:none}
+  #app .topbar .modules-dropdown:has(#modules-trigger){position:absolute;right:0;top:64px;width:0;height:0;overflow:visible}
+  #app .topbar #modules-trigger,#app .topbar #dev-mode-toggle{display:none!important}
+  #app .topbar #modules-menu.open{position:fixed;right:16px;left:auto;top:70px;z-index:1005}
+  #app .topbar .auris-profile-menu{position:absolute;right:16px;top:57px;z-index:1006;min-width:175px;padding:5px;border:1px solid #cbd9df;border-radius:10px;background:#fff;box-shadow:0 12px 28px #10233730}
+  #app .topbar .auris-profile-menu[hidden]{display:none}
+  #app .topbar .auris-profile-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:#17344b;font:inherit;text-align:left;cursor:pointer}
+  #app .topbar .auris-profile-menu button[hidden]{display:none}
+  #app .topbar .auris-profile-menu button:hover,#app .topbar .auris-profile-menu button:focus-visible{background:#eaf8f1}
   #app .topbar .auris-global-brand{order:1}#app .topbar>button:first-of-type{order:2}#app .topbar #auris-command-trigger{order:3}#app .topbar #auris-global-company,#app .topbar #sa-company-switcher{order:4}#app .topbar #auris-quick-create{order:5}#app .topbar>.auris-shell-s-83725d2c6e{order:6;flex:1}#app .topbar #topbar-extras{order:7}#app .topbar #auris-profile-trigger{order:8}#app .topbar .modules-dropdown:has(#modules-trigger){order:9}#app .topbar #dev-mode-toggle{order:10}
   .auris-global-brand{display:flex;align-items:center;gap:10px;flex:none;min-width:180px;line-height:1.1}
   .auris-global-mark{width:36px;height:36px;display:grid;place-items:center;border:3px solid #d8e2e7;border-right-color:#21b573;border-bottom-color:#ff9f32;border-radius:50%;font-size:11px;font-weight:800}

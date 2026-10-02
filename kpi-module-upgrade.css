@@ -59,6 +59,10 @@
 #page-kpi .kpi-x-priority-row{grid-template-columns:24px minmax(0,1fr) auto auto}
 #page-kpi .kpi-x-priority-row small{display:block;color:#64748b;line-height:1.45;margin-top:3px}
 #page-kpi .kpi-x-priority-open{padding:5px 7px;border:1px solid #b8d9cf;border-radius:7px;color:#087b64;font-weight:700;white-space:nowrap}
+#page-kpi button.kpi-x-priority-open{background:#fff;cursor:pointer;font:inherit}
+#page-kpi .kpi-x-priority-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+#page-kpi .kpi-x-trend-wrap{position:relative}
+#page-kpi .kpi-x-trend-empty{position:absolute;top:36%;left:12%;right:12%;padding:9px;border:1px solid #dbe4ea;border-radius:8px;background:#ffffffe8;color:#526879;text-align:center;font-size:12px}
 #page-kpi .kpi-x-metric[data-status="all"] .kpi-x-metric-value{font-size:clamp(15px,1.3vw,25px)!important;line-height:1.15!important}
 #page-kpi .kpi-x-priority-rank {width:22px;height:22px;border-radius:99px;display:grid;place-items:center;background:#fee2e2;color:#b91c1c;font-weight:800}
 #page-kpi .kpi-x-quality {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
@@ -319,3 +323,9 @@
 .kpi-editor-draft pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font:inherit;background:white;padding:10px}
 .kpi-editor-draft [hidden]{display:none!important}
 @media(max-width:600px){.kpi-editor-draft{margin:8px 10px;padding:10px}.kpi-editor-draft button{min-height:44px}}
+.kpi-x-more{position:relative}
+.kpi-x-more>summary{list-style:none;cursor:pointer}
+.kpi-x-more>summary::-webkit-details-marker{display:none}
+.kpi-x-more-menu{position:absolute;right:0;top:calc(100% + 5px);z-index:50;min-width:176px;display:grid;gap:2px;padding:5px;border:1px solid #d9e1ea;border-radius:10px;background:#fff;box-shadow:0 12px 28px #132c4630}
+.kpi-x-more-menu .kpi-x-btn{width:100%;justify-content:flex-start;border:0;background:transparent;white-space:nowrap}
+.kpi-x-more-menu .kpi-x-btn:hover,.kpi-x-more-menu .kpi-x-btn:focus-visible{background:#eef8f4}
