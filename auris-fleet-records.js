@@ -5,10 +5,9 @@ function fleetRecordHref(id,mode){
   url.searchParams.set('fleetMode',['edit','service'].includes(mode)?mode:'view');return url.toString();
 }
 function fleetRecordWindow(id,mode){
-  AurisFleetListWorkspace.session();
+  var current=AurisFleetListWorkspace.session();
   if(mode!=='view'&&!isMgr())throw Error('Manager access is required to change fleet records.');
-  var child=window.open(fleetRecordHref(id,mode),'_blank');
-  if(child)child.opener=null;else toast('Allow popups to open the vehicle in a separate window.',false);
+  return fleetOpenLinkedRecord({record:id,table:'tools_register',company:current.companyId,mode:mode}).then(function(opened){if(!opened)toast('This vehicle is unavailable in the selected company. Refresh the register.',false);if(opened&&mode!=='view')document.getElementById('fleet-detail-modal')?.remove();return opened;}).catch(function(error){toast(error.message||'Vehicle record could not be opened.',false);return false;});
 }
 function fleetAssertEditor(current){AurisFleetListWorkspace.assertSession(current);if(!isMgr())throw Error('Manager access is required to save fleet records.');}
 async function fleetReadRecordHistory(row,current){

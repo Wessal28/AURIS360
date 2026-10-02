@@ -9,8 +9,10 @@ test('PPE employee refresh loads current tenant before populating and rejects st
  const r=runtime();await r.c.ppeRefreshPeople();assert.match(r.calls[0],/company_id=eq.a/);assert.equal(r.calls[1],'fill');assert.equal(r.c.people.length,1);assert.equal(r.c.people[0].first_name,'Alice');
  r.c.api=async()=>{r.setCompany('b');return [];};await assert.rejects(r.c.ppeRefreshPeople(),/Company changed/);
 });
-test('PPE view and edit open distinct modes without changing current window; edit checks role',()=>{
- const r=runtime();r.c.ppeRecordWindow('catalogue','one','view');assert.equal(new URL(r.opened[0]).searchParams.get('ppeMode'),'view');r.setManager(false);r.c.ppeRecordWindow('catalogue','one','edit');assert.equal(r.opened.length,1);r.setManager(true);r.c.ppeRecordWindow('catalogue','one','edit');assert.equal(new URL(r.opened[1]).searchParams.get('ppeMode'),'edit');
+test('PPE view and edit use the current session without opening another app window',async()=>{
+ const r=runtime(),requests=[];r.c.document.getElementById=()=>null;r.c.ppeOpenLinkedRecord=async request=>{requests.push(request);return true;};
+ await r.c.ppeRecordWindow('catalogue','one','view');r.setManager(false);r.c.ppeRecordWindow('catalogue','one','edit');r.setManager(true);await r.c.ppeRecordWindow('catalogue','one','edit');
+ assert.deepEqual(requests.map(request=>request.mode),['view','edit']);assert.ok(requests.every(request=>request.company==='a'&&request.table==='ppe_catalogue'&&request.record==='one'));assert.equal(r.opened.length,0);
 });
 test('PPE linked record rejects foreign company before reading and never edits in view mode',async()=>{
  const r=runtime();await assert.rejects(r.c.ppeOpenLinkedRecord({table:'ppe_catalogue',record:'one',company:'b'}),/company that owns/);assert.equal(r.calls.length,0);
