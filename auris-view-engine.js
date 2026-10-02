@@ -83,12 +83,12 @@ function value(row,field){
 }
 function available(row,options){return (options.actions||[]).filter(function(action){return typeof action.when!=='function'||action.when(row);});}
 function actionButton(row,action,label,options,extra){
+  var icon=action.icon&&!extra?safeKey(action.icon):'';
   if(typeof action.href==='function'){
     var href=String(action.href(row)||'');
     if(!/^https?:\/\//i.test(href))throw new Error('Record link must use HTTP or HTTPS.');
-    return '<a '+(extra||'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(label)+'</a>';
+    return '<a '+(extra||'')+(icon?' class="ave-icon-action" aria-label="'+esc(label)+'" title="'+esc(label)+'"':'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+(icon?'<i class="ti '+esc(icon)+'" aria-hidden="true"></i>':esc(label))+'</a>';
   }
-  var icon=action.icon&&!extra?safeKey(action.icon):'';
   return '<button type="button" '+(extra||'')+(icon?' class="ave-icon-action" aria-label="'+esc(label)+'" title="'+esc(label)+'"':'')+' data-view-action="'+esc(action.key)+'" data-view-row="'+esc(row[options.definition.rowKey])+'">'+(icon?'<i class="ti '+esc(icon)+'" aria-hidden="true"></i>':esc(label))+'</button>';
 }
 function actions(row,options){return available(row,options).map(function(action){return actionButton(row,action,typeof action.label==='function'?action.label(row):action.label,options);}).join('');}

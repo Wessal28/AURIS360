@@ -56,6 +56,10 @@
 #page-kpi .kpi-x-priority {display:grid;gap:7px}
 #page-kpi .kpi-x-priority-row {display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;border-bottom:1px solid #eef2f7;padding:7px 0;font-size:11px;cursor:pointer}
 #page-kpi .kpi-x-priority-row:last-child {border-bottom:0}
+#page-kpi .kpi-x-priority-row{grid-template-columns:24px minmax(0,1fr) auto auto}
+#page-kpi .kpi-x-priority-row small{display:block;color:#64748b;line-height:1.45;margin-top:3px}
+#page-kpi .kpi-x-priority-open{padding:5px 7px;border:1px solid #b8d9cf;border-radius:7px;color:#087b64;font-weight:700;white-space:nowrap}
+#page-kpi .kpi-x-metric[data-status="all"] .kpi-x-metric-value{font-size:clamp(15px,1.3vw,25px)!important;line-height:1.15!important}
 #page-kpi .kpi-x-priority-rank {width:22px;height:22px;border-radius:99px;display:grid;place-items:center;background:#fee2e2;color:#b91c1c;font-weight:800}
 #page-kpi .kpi-x-quality {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 #page-kpi .kpi-x-quality strong {display:block;font-size:22px;color:#0f8a64}

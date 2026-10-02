@@ -27,7 +27,7 @@ test('missing results remain unscored across dashboard and year summary',()=>{
   const h=harness();add(h.c,'missing');const m=h.q.metrics(),html=views(h);
   assert.equal(m.achievement,null);assert.equal(m.scored,0);assert.equal(m.data_missing,1);
   assert.match(html.dashboard,/No scored results are available/);assert.match(html.dashboard,/>0\/1<\/strong><span>KPIs with scores/);
-  assert.match(html.dashboard,/0 KPIs Off Track or At Risk/);assert.doesNotMatch(html.dashboard,/0 KPIs require attention/);
+  assert.match(html.dashboard,/Performance status cannot yet be confirmed\. Results are missing for 1 KPI/);assert.doesNotMatch(html.dashboard,/0 KPIs require attention/);
   for(const value of Object.values(html)){assert.match(value,/No reported results/);assert.doesNotMatch(value,/>null%<|>0%<\/strong><span>Achievement/);}
 });
 test('measured zero stays a real zero percent and counts as a scored KPI',()=>{

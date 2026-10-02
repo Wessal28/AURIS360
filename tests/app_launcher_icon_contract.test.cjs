@@ -12,7 +12,7 @@ const launcherCss=fs.readFileSync(path.join(root,'auris-app-launcher.css'),'utf8
 test('launcher cards carry their icon key and atlas class in the initial render',()=>{
   assert.ok(core.includes(`data-app-key="'+escapeHtml(module.k)+'" data-nav-key="'+escapeHtml(module.k)+'"`));
   assert.match(core,/auris-app-card-icon[^]*auris-module-icon/);
-  assert.match(core,/escapeHtml\(module\.color\|\|'#185FA5'\)/);
+  assert.doesNotMatch(core,/style="[^"]*background:[^"]*module\.color/);
 });
 
 test('shared icon system decorates launcher cards and positions module artwork',()=>{
@@ -22,7 +22,7 @@ test('shared icon system decorates launcher cards and positions module artwork',
   assert.match(iconCss,/\[data-nav-key="tools"\] i\.auris-module-icon/);
 });
 
-test('launcher icon shell keeps a visible fallback surface',()=>{
-  assert.match(launcherCss,/#modules-menu \.auris-app-card-icon\{[^}]*background-color:#185FA5/);
+test('launcher icon shell uses the same unframed artwork as the sidebar',()=>{
+  assert.match(launcherCss,/#modules-menu \.auris-app-card-icon\{[^}]*background:transparent/);
   assert.match(launcherCss,/#modules-menu \.auris-app-card-icon i\{[^}]*display:inline-flex/);
 });
