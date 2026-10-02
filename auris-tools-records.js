@@ -5,10 +5,13 @@ function toolsRecordHref(id,mode){
   url.searchParams.set('equipmentMode',mode==='edit'?'edit':'view');return url.toString();
 }
 function toolsRecordWindow(id,mode){
-  AurisToolsListWorkspace.session();
+  var current=AurisToolsListWorkspace.session();
   if(mode==='edit'&&!isMgr())throw Error('Manager access is required to edit equipment.');
-  var child=window.open(toolsRecordHref(id,mode),'_blank');
-  if(child)child.opener=null;else toast('Allow popups to open the equipment in a separate window.',false);
+  return toolsOpenLinkedRecord({record:id,table:'tools_register',company:current.companyId,mode:mode}).then(function(opened){
+    if(!opened)toast('This equipment is unavailable in the selected company. Refresh the register.',false);
+    if(opened&&mode==='edit')document.getElementById('equipment-record')?.remove();
+    return opened;
+  }).catch(function(error){toast(error.message||'Equipment record could not be opened.',false);return false;});
 }
 function toolsEvidenceHref(value){
   try{var url=new URL(String(value||''));return url.protocol==='https:'&&!url.username&&!url.password?url.href:'';}catch(_){return '';}
@@ -42,11 +45,12 @@ function toolsShowRecord(row,current,history){
   AurisToolsListWorkspace.assertSession(current);
   document.getElementById('equipment-record')?.remove();
   var host=document.createElement('div');host.id='equipment-record';host.className='equipment-overlay';
-  host.innerHTML='<article class="equipment-window" role="dialog" aria-modal="true" aria-labelledby="equipment-record-title"><header><div><p>Tools & Equipment · Read only</p><h2 id="equipment-record-title">'+escH(row.name||'Equipment')+'</h2><p>'+escH(row.ref_number||'')+' · '+escH(String(row.status||'Not recorded').replace(/_/g,' '))+'</p></div><button class="btn" data-equipment-close>Close</button></header><nav aria-label="Equipment record actions"><button class="btn" data-equipment-print>Print equipment report</button>'+(isMgr()?'<a class="btn btn-primary" target="_blank" rel="noopener" href="'+escH(toolsRecordHref(row.id,'edit'))+'">Edit equipment</a>':'')+'</nav><div class="equipment-content"><section><h3>Identity & custody</h3>'+toolsRecordFields(row,[['category','Category'],['brand','Brand'],['model','Model'],['serial_number','Serial number'],['location','Location'],['assigned_to_name','Assigned to'],['purchase_date','Purchased'],['inspection_frequency','Inspection frequency']])+'</section><section><h3>Statutory assurance</h3>'+toolsRecordFields(row,[['requires_statutory','Statutory required'],['statutory_type','Type'],['statutory_body','Authority'],['last_statutory_date','Last verification'],['next_statutory_date','Next verification'],['notes','Notes']])+'</section>'+history.map(toolsHistoryHtml).join('')+'</div></article>';
+  host.innerHTML='<article class="equipment-window" role="dialog" aria-modal="true" aria-labelledby="equipment-record-title"><header><div><p>Tools & Equipment · Read only</p><h2 id="equipment-record-title">'+escH(row.name||'Equipment')+'</h2><p>'+escH(row.ref_number||'')+' · '+escH(String(row.status||'Not recorded').replace(/_/g,' '))+'</p></div><button class="btn" data-equipment-close>Close</button></header><nav aria-label="Equipment record actions"><button class="btn" data-equipment-print>Print equipment report</button>'+(isMgr()?'<button class="btn btn-primary" data-equipment-edit>Edit equipment</button>':'')+'</nav><div class="equipment-content"><section><h3>Identity & custody</h3>'+toolsRecordFields(row,[['category','Category'],['brand','Brand'],['model','Model'],['serial_number','Serial number'],['location','Location'],['assigned_to_name','Assigned to'],['purchase_date','Purchased'],['inspection_frequency','Inspection frequency']])+'</section><section><h3>Statutory assurance</h3>'+toolsRecordFields(row,[['requires_statutory','Statutory required'],['statutory_type','Type'],['statutory_body','Authority'],['last_statutory_date','Last verification'],['next_statutory_date','Next verification'],['notes','Notes']])+'</section>'+history.map(toolsHistoryHtml).join('')+'</div></article>';
   document.body.appendChild(host);
   host.addEventListener('click',function(event){try{AurisToolsListWorkspace.assertSession(current);}catch(error){event.preventDefault();event.stopImmediatePropagation();host.remove();toast(error.message,false);}},true);
   host.querySelector('[data-equipment-close]').addEventListener('click',function(){host.remove();});
   host.querySelector('[data-equipment-print]').addEventListener('click',function(){printRegisterView('Equipment Record - '+(row.name||''),'#equipment-record .equipment-content');});
+  host.querySelector('[data-equipment-edit]')?.addEventListener('click',function(){toolsRecordWindow(row.id,'edit');});
   host.querySelectorAll('[data-equipment-inspection]').forEach(function(button){button.addEventListener('click',function(){toolsViewInspection(button.dataset.equipmentInspection);});});
   host.querySelector('[data-equipment-close]').focus();
 }
@@ -58,7 +62,7 @@ async function toolsOpenLinkedRecord(req){
   AurisToolsListWorkspace.assertSession(current);
   var row=(rows||[]).find(function(item){return String(item.id)===String(req.record)&&String(item.company_id)===current.companyId;});
   if(!row)return false;
-  if(new URLSearchParams(location.search).get('equipmentMode')==='edit'){
+  if((req.mode||new URLSearchParams(location.search).get('equipmentMode'))==='edit'){
     if(!isMgr())throw Error('Manager access is required to edit equipment.');
     var staff=await api('/people?select=id,company_id,first_name,last_name,job_title&company_id=eq.'+encodeURIComponent(current.companyId)+'&status=eq.active&order=last_name');
     AurisToolsListWorkspace.assertSession(current);

@@ -15,14 +15,13 @@ function ppeRecordHref(kind,id,mode){
   return url.toString();
 }
 function ppeRecordLink(kind,id,mode){
-  return '<a class="btn btn-sm" target="_blank" rel="noopener" href="'+escH(ppeRecordHref(kind,id,mode))+'">'+(mode==='edit'?'Edit':'View')+'</a>';
+  return '<button type="button" class="btn btn-sm" data-'+(mode==='edit'?'ppe-edit':'ppe-view')+'="'+escH(kind)+'" data-id="'+escH(id)+'">'+(mode==='edit'?'Edit':'View')+'</button>';
 }
 function ppeRecordWindow(kind,id,mode){
   if(!ppeRecordTable(kind)||!id)return;
   if(mode==='edit'&&!isMgr()){toast('Manager access is required to edit PPE records.',false);return;}
-  var child=window.open(ppeRecordHref(kind,id,mode),'_blank');
-  if(!child)toast('Allow popups to open the PPE record in a separate window.',false);
-  else child.opener=null;
+  var company=String(ccid()||'');
+  return ppeOpenLinkedRecord({record:id,table:ppeRecordTable(kind),company:company,mode:mode}).then(function(opened){if(!opened)toast('This PPE record is unavailable in the selected company. Refresh the register.',false);if(opened&&mode==='edit')document.getElementById('ppe-record-view')?.remove();return opened;}).catch(function(error){toast(error.message||'PPE record could not be opened.',false);return false;});
 }
 var ppeOpeningLinkedRecord=false;
 async function ppeOpenLinkedRecord(req){
@@ -33,7 +32,7 @@ async function ppeOpenLinkedRecord(req){
   if(String(ccid())!==company)throw Error('Company changed. Reopen the record.');
   var row=(rows||[]).find(function(x){return String(x.id)===String(req.record)&&String(x.company_id)===company;});
   if(!row)return false;
-  var edit=new URLSearchParams(location.search).get('ppeMode')==='edit';
+  var edit=(req.mode||new URLSearchParams(location.search).get('ppeMode'))==='edit';
   if(edit){
     if(!isMgr())throw Error('Manager access is required to edit PPE records.');
     await ppeRefreshPeople();
