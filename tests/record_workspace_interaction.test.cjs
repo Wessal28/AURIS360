@@ -14,7 +14,7 @@ function runtime() {
   const listeners = {}, document = { activeElement: null };
   const launcher = { isConnected: true, focus() { document.activeElement = this; } };
   launcher.focus();
-  let markup = '', buttons = [];
+  let markup = '', buttons = [], section = null;
   function matches(button, selector) {
     if (selector === 'button:not(:disabled)') return !button.disabled;
     const parts = selector.match(/^\[([^=\]]+)(?:="([^"]*)")?\]$/);
@@ -36,9 +36,17 @@ function runtime() {
           focus() { document.activeElement = this; }
         });
       }
+      if (value.includes('data-record-section')) {
+        const events = {};
+        section = { value: value.match(/<option value="([^"]+)" selected/)?.[1] || 'overview', attrs: { 'data-record-section': '' },
+          addEventListener(name, handler) { events[name] = handler; },
+          change(value) { this.value = value; return events.change?.(); },
+          focus() { document.activeElement = this; }
+        };
+      } else section = null;
     },
-    querySelector(selector) { return buttons.find(button => matches(button, selector)) || null; },
-    querySelectorAll(selector) { return buttons.filter(button => matches(button, selector)); },
+    querySelector(selector) { return selector === '[data-record-section]' ? section : buttons.find(button => matches(button, selector)) || null; },
+    querySelectorAll(selector) { return buttons.filter(button => matches(button, selector.split(',')[0])); },
     contains(element) { return buttons.includes(element); },
     addEventListener(name, handler) { listeners[name] = handler; },
     setAttribute() {}
@@ -55,7 +63,7 @@ function runtime() {
   const api = window.AurisRecordWorkspace;
   function adapter(load, extra = {}) { return api.registerAdapter({ key: 'action', module: 'actions', table: 'action_tracker', fields: [{ key: 'title', label: 'Title' }], canEdit: () => true, load, ...extra }); }
   function open(extra = {}) { return api.open({ source, record, ...extra }); }
-  const click = selector => { const button = host.querySelector(selector); assert.ok(button, selector); return button.click(); };
+  const click = selector => { const tab = selector.match(/^\[data-record-tab="([^"]+)"\]$/);if(tab){assert.ok(host.querySelector('[data-record-section]'));return host.querySelector('[data-record-section]').change(tab[1]);}const button = host.querySelector(selector); assert.ok(button, selector); return button.click(); };
   return { window, document, launcher, host, identity, api, adapter, open, click, listeners };
 }
 
