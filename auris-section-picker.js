@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var selector='.page .module-tabs,.page .bbs-tabs,.page [class*="-tabs"]';
+  var selector='.page .module-tabs,.page .bbs-tabs,.page [class*="-tabs"],.page [role="tablist"]';
   var pending=false;
 
   function tabsIn(bar){return Array.from(bar.children).filter(function(child){return child.tagName==='BUTTON'&&!child.hidden;});}
@@ -9,7 +9,7 @@
   function enhance(bar){
     if(bar.closest('.auris-section-picker'))return;
     var buttons=tabsIn(bar);
-    if(buttons.length<3||buttons.some(function(button){return !label(button);}))return;
+    if(buttons.length<2||buttons.some(function(button){return !label(button);}))return;
     var picker=bar.previousElementSibling;
     if(!picker||!picker.classList.contains('auris-section-picker')){
       picker=document.createElement('label');
@@ -33,7 +33,7 @@
     var selected=String(activeIndex(buttons));
     if(select.value!==selected)select.value=selected;
   }
-  function update(){pending=false;document.querySelectorAll(selector).forEach(enhance);}
+  function update(){pending=false;document.querySelectorAll(selector).forEach(enhance);var audit=document.getElementById('insp-tab-all');if(audit)enhance(audit.parentElement);}
   function schedule(){if(pending)return;pending=true;requestAnimationFrame(update);}
   function start(){schedule();new MutationObserver(schedule).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-current','aria-selected','hidden']});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();

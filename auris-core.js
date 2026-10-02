@@ -36126,7 +36126,7 @@ function appLauncherCard(module,activePage,favourites){
   // white tile in the app launcher while sidebar artwork still renders.
   return '<div class="auris-app-card'+(isActive?' active':'')+'" role="button" tabindex="0" data-app-key="'+escapeHtml(module.k)+'" data-nav-key="'+escapeHtml(module.k)+'" aria-label="Open '+escapeHtml(module.l)+'">'
     +'<button type="button" class="auris-app-favourite'+(favourite?' on':'')+'" data-favourite-key="'+escapeHtml(module.k)+'" aria-label="'+(favourite?'Remove from':'Add to')+' favourites" aria-pressed="'+(favourite?'true':'false')+'"><i class="ti ti-star'+(favourite?'-filled':'')+'"></i></button>'
-    +'<span class="auris-app-card-icon" style="background:'+escapeHtml(module.color||'#185FA5')+'"><i class="ti '+escapeHtml(module.i||'ti-apps')+' auris-module-icon" aria-hidden="true"></i></span>'
+    +'<span class="auris-app-card-icon"><i class="ti '+escapeHtml(module.i||'ti-apps')+' auris-module-icon" aria-hidden="true"></i></span>'
     +'<span class="auris-app-card-label">'+escapeHtml(module.l)+'</span></div>';
 }
 function appLauncherRenderApps(query){
