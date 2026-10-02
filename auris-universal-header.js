@@ -33,9 +33,14 @@
   function schedule(){if(pending)return;pending=true;requestAnimationFrame(update);}
   function start(){
     var mirror=document.getElementById('auris-module-section');if(!mirror)return;
+    var profileButton=document.getElementById('auris-profile-trigger'),profileMenu=document.getElementById('auris-profile-menu');
+    function closeProfile(){if(!profileMenu)return;profileMenu.hidden=true;profileButton.setAttribute('aria-expanded','false');}
     document.getElementById('auris-home-link')?.addEventListener('click',function(){if(typeof showPage==='function')showPage('dashboard');});
     document.getElementById('auris-quick-create')?.addEventListener('click',function(){if(typeof mobileFieldReports==='function')mobileFieldReports();});
-    document.getElementById('auris-profile-trigger')?.addEventListener('click',function(){document.getElementById('sb-user')?.click();});
+    profileButton?.addEventListener('click',function(){if(!profileMenu)return;profileMenu.querySelector('[data-auris-profile-action="rollout"]').hidden=!(typeof prof!=='undefined'&&prof&&prof.role==='sephs_admin');profileMenu.hidden=!profileMenu.hidden;profileButton.setAttribute('aria-expanded',String(!profileMenu.hidden));});
+    profileMenu?.addEventListener('click',function(event){var action=event.target.closest('[data-auris-profile-action]')?.dataset.aurisProfileAction;if(!action)return;closeProfile();if(action==='profile')document.getElementById('sb-user')?.click();if(action==='apps')document.getElementById('modules-trigger')?.click();if(action==='rollout')document.getElementById('dev-mode-toggle')?.click();});
+    document.addEventListener('click',function(event){if(profileMenu&&!profileMenu.hidden&&!event.target.closest('#auris-profile-menu,#auris-profile-trigger'))closeProfile();});
+    document.addEventListener('keydown',function(event){if(event.key==='Escape')closeProfile();});
     mirror.addEventListener('change',function(){var page=document.getElementById(mirror.dataset.sourcePage);if(!page||!page.classList.contains('active'))return;var source=page.querySelector('.auris-section-picker select');if(!source)return;source.value=mirror.value;source.dispatchEvent(new Event('change',{bubbles:true}));schedule();});
     new MutationObserver(schedule).observe(document.getElementById('app'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','hidden','style','value']});
     schedule();

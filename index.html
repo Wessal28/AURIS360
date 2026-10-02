@@ -113,11 +113,11 @@
 <script src="auris-fleet-records.js?v=20261002-1"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20260920-1&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20260920-1&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
-<link rel="stylesheet" href="kpi-module-upgrade.css?v=20260913-kpi-drafts-1">
+<link rel="stylesheet" href="kpi-module-upgrade.css?v=20260913-kpi-drafts-1&complete-20261002-1">
 <link rel="stylesheet" href="kpi-data-source.css?v=20260908-refresh-reliability-1">
 <link rel="stylesheet" href="kpi-pdf-import.css?v=20260902-1">
 <link rel="stylesheet" href="safety-engagement.css?v=20260823-4">
@@ -443,7 +443,12 @@
     <span id="dev-mode-label">Rollout view</span>
   </button>
   <div class="auris-shell-s-39c68df36f" id="topbar-extras"></div>
-  <button class="topbar-btn auris-profile-trigger" id="auris-profile-trigger" type="button" title="My profile" aria-label="My profile"><i class="ti ti-user-circle"></i></button>
+  <button class="topbar-btn auris-profile-trigger" id="auris-profile-trigger" type="button" title="Profile and more" aria-label="Profile and more" aria-haspopup="menu" aria-expanded="false" aria-controls="auris-profile-menu"><i class="ti ti-user-circle"></i></button>
+  <div class="auris-profile-menu" id="auris-profile-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-auris-profile-action="profile"><i class="ti ti-user"></i>My profile</button>
+    <button type="button" role="menuitem" data-auris-profile-action="apps"><i class="ti ti-apps"></i>Apps</button>
+    <button type="button" role="menuitem" data-auris-profile-action="rollout" hidden><i class="ti ti-flask"></i>Rollout view</button>
+  </div>
 </div>
 <div class="auris-module-bar" id="auris-module-bar" aria-label="Current module and section">
   <div class="auris-module-identity"><span class="auris-module-symbol"><i class="ti ti-layout-dashboard"></i></span><span><small>Current module</small><strong id="auris-module-name">Home</strong><span class="auris-module-crumb"><button type="button" id="auris-home-link">Home</button><span id="auris-module-crumb"></span></span></span></div>
@@ -11735,14 +11740,16 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-premium-3d-sidebar.css?v=20260818-1"/>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20260929-1">
-<link rel="stylesheet" href="auris-section-picker.css?v=20260929-1">
-<link rel="stylesheet" href="auris-universal-header.css?v=20261002-1">
+<link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261002-2">
+<link rel="stylesheet" href="auris-sidebar-navigation.css?v=20261002-1">
+<link rel="stylesheet" href="auris-command-centre-priorities.css?v=20261002-1">
 <link rel="stylesheet" href="requirements-5.css?v=20260824-1">
 <link rel="stylesheet" href="auris-mobile-responsive.css?v=20260818-1">
 <link rel="stylesheet" href="notification-centre.css?v=20260902-1">
 <link rel="stylesheet" href="elearning-course-path.css?v=20260813-1">
 <script src="kpi-configuration.js?v=20260913-monthly-review-1"></script>
-<script src="kpi-module-upgrade.js?v=20260913-kpi-drafts-1-monthly-review-1"></script>
+<script src="kpi-module-upgrade.js?v=20260913-kpi-drafts-1-monthly-review-1&complete-20261002-1"></script>
 <script src="kpi-workflow.js?v=20260904-locked-monthly-1"></script>
 <link rel="stylesheet" href="kpi-monthly-review.css?v=20260914-3">
 <script src="kpi-monthly-review.js?v=20260914-3"></script>
@@ -11757,8 +11764,9 @@ I can help you:<br>
 <script src="risk-assessment-upgrade.js?v=20260823-4"></script>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260824-1"></script>
-<script src="auris-section-picker.js?v=20260929-1"></script>
-<script src="auris-universal-header.js?v=20261002-1"></script>
+<script src="auris-section-picker.js?v=20261002-2"></script>
+<script src="auris-universal-header.js?v=20261002-2"></script>
+<script src="auris-sidebar-navigation.js?v=20261002-1"></script>
 <script src="requirements-5.js?v=20260824-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="offline-sync-diagnostic.js?v=20260814-1"></script>
@@ -11768,6 +11776,6 @@ I can help you:<br>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>
 <link rel="stylesheet" href="auris-improvement-260910.css?v=20260913-1&launcher-icons-20260916-1"><script src="auris-risk-library.js?v=20260913-1"></script>
 <script src="auris-attendance-photo.js?v=20260913-1&work-record-20260923-1&people-access-20260927-1"></script>
-<script src="auris-register-columns.js?v=20260913-1"></script><link rel="stylesheet" href="auris-mobile-final-polish.css?v=20260923-company-icons-1"/>
+<script src="auris-register-columns.js?v=20261002-2"></script><link rel="stylesheet" href="auris-mobile-final-polish.css?v=20260923-company-icons-1"/>
 </body>
 </html>

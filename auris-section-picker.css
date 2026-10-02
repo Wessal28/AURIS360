@@ -3,4 +3,5 @@
 .auris-section-picker select:focus-visible{outline:2px solid #078d76;outline-offset:2px}
 .auris-section-tabs-hidden{display:none!important}
 #app .page .auris-section-tabs-hidden,#page-kpi .kpi-x-tabs.auris-section-tabs-hidden{display:none!important}
+#app .page [data-auris-section-nav]{display:none!important}
 @media(max-width:600px){.auris-section-picker{width:100%;margin:10px 0 14px}.auris-section-picker select{height:44px}}

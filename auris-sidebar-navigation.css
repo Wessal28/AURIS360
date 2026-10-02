@@ -1,0 +1,19 @@
+.sidebar .auris-sidebar-tools{padding:8px 12px 4px}
+.sidebar .auris-sidebar-tools>label{display:flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #d4e0e6;border-radius:8px;background:#fff;color:#597080}
+.sidebar .auris-sidebar-tools input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:#17344b;font:inherit;font-size:12px}
+.sidebar .auris-sidebar-shortcuts[hidden]{display:none}
+.sidebar .auris-sidebar-shortcut-group{margin:8px 0}
+.sidebar .auris-sidebar-shortcut-group strong{display:block;padding:3px 5px;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.07em}
+.sidebar .auris-sidebar-shortcut-group button{display:flex;align-items:center;gap:7px;width:100%;min-height:32px;padding:4px 7px;border:0;border-radius:7px;background:transparent;color:#17344b;font:inherit;font-size:11px;text-align:left;cursor:pointer}
+.sidebar .auris-sidebar-shortcut-group button:hover,.sidebar .auris-sidebar-shortcut-group button:focus-visible{background:#e8f7f2}
+.sidebar .auris-sidebar-shortcut-group button i{font-size:15px}
+.sidebar .nav-section[role="button"]{cursor:pointer}
+.sidebar .nav-section[role="button"]:after{content:'⌄';float:right;font-size:14px}
+.sidebar .nav-section[aria-expanded="false"]:after{content:'›'}
+.sidebar .nav-item.auris-sidebar-group-collapsed,.sidebar .nav-item.auris-sidebar-filtered{display:none!important}
+.sidebar .nav-item{position:relative}
+.sidebar .nav-item .auris-sidebar-star{display:none;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:26px;height:26px;padding:0;border:0;background:transparent;color:#64748b;cursor:pointer}
+.sidebar:not(.collapsed) .nav-item:hover .auris-sidebar-star,.sidebar:not(.collapsed) .nav-item:focus-within .auris-sidebar-star{display:grid;place-items:center}
+.sidebar .nav-item .auris-sidebar-star i{font-size:15px!important}
+.sidebar.collapsed .auris-sidebar-tools,.sidebar.collapsed .nav-section{display:none!important}
+@media(max-width:768px){.sidebar .auris-sidebar-star{display:none!important}}
