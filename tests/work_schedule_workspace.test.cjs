@@ -21,7 +21,7 @@ test('day boundaries include both endpoints and due today is not overdue',()=>{
   assert.equal(r.api.overdue(rows[0],new Date(2026,8,20,23,59)),false);assert.equal(r.api.overdue(rows[0],new Date(2026,8,21)),true);assert.equal(r.api.overdue(rows[1],new Date(2026,8,21)),false);
 });
 test('saved filters use the shared register and reject a changed session',()=>{
-  const r=runtime();let applied;r.api.mount({},rows,{canEdit:false,filters:{status:'cancelled'},onApplyFilters:f=>{applied=f;}});const m=r.mounted();assert.equal(m.options.moduleKey,'work-schedule');assert.equal(m.options.actions[1].when(),false);m.options.onApplyFilters({search:'Ada'});assert.equal(applied.search,'Ada');
+  const r=runtime();let applied;r.api.mount({},rows,{canEdit:false,filters:{status:'cancelled'},onApplyFilters:f=>{applied=f;}});const m=r.mounted();assert.equal(m.options.moduleKey,'work-schedule');assert.equal(m.options.actions[1].when(),false);assert.deepEqual(Array.from(m.options.actions,action=>action.icon),['ti-eye','ti-pencil','ti-clipboard-check']);assert.deepEqual(Array.from(m.options.actions,action=>action.label),['View work order','Edit work order','Manage work']);m.options.onApplyFilters({search:'Ada'});assert.equal(applied.search,'Ada');
   assert.equal(m.options.actions[0].href,undefined);assert.equal(typeof m.options.onAction,'function');r.identity.company.id='co-b';assert.throws(()=>m.options.onApplyFilters({}),/changed/);
 });
 test('read-only rendering escapes record content and creates no editing controls',()=>{

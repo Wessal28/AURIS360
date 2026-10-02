@@ -50,7 +50,7 @@ function href(id,mode,company,linked){
 function mount(host,rows,options){
   options=options||{};var current=session(),data=project(rows,current,options);
   return root.AurisViewEngine.mount(host,data,{moduleKey:'work-schedule',label:'Work Schedule',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),
-    actions:['view','edit','manage'].map(function(key){return {key:key,label:{view:'View',edit:'Edit',manage:'Manage work'}[key],when:function(){return key==='view'||options.canEdit===true;}};}),
+    actions:['view','edit','manage'].map(function(key){return {key:key,label:{view:'View work order',edit:'Edit work order',manage:'Manage work'}[key],icon:{view:'ti-eye',edit:'ti-pencil',manage:'ti-clipboard-check'}[key],when:function(){return key==='view'||options.canEdit===true;}};}),
     onAction:async function(key,row){assertSession(current);await wsRecordWindow(row.id,key);},
     onApplyFilters:function(value){assertSession(current);options.onApplyFilters(filters(value));}
   });

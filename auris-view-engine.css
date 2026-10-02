@@ -30,6 +30,7 @@
 .ave-actions .ave-icon-action{display:inline-grid;place-items:center;flex:none;width:34px;min-width:34px;min-height:34px;height:34px;padding:0!important;border:1px solid var(--border,#d9e0ea);border-radius:8px;background:var(--card,#fff);color:var(--text,#17213a);text-decoration:none;cursor:pointer}
 .ave-actions .ave-icon-action i{font-size:17px}
 .ave-table-wrap td:has(> .ave-actions){min-width:125px;max-width:none}
+.ave-table-wrap .ave-actions .ave-icon-action{flex:none}
 .ave-card-grid,.ave-card,.ave-board>section,.ave-card>header,.ave-card dl div,.ave-card dd{min-width:0;overflow-wrap:anywhere}
 .ave-card dt{font-size:12px}.ave-card dd{font-size:13px}
 .ave-badge{display:inline-block;padding:4px 8px;border-radius:99px;font-size:12px;font-weight:700}
