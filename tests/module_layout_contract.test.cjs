@@ -28,7 +28,7 @@ test('Incident Management renders its manifest views through the shared layout',
 
 test('application loads the shared layout before Incident Management and caches it offline',()=>{
   const html=read('index.html'),manifest=read('sw-assets.js'),css=read('auris-module-layout.css');
-  assert.ok(html.indexOf('auris-module-layout.js?v=20260831-4')<html.indexOf('incident-management-upgrade.js?v=20260831-4'));
+  assert.ok(html.indexOf('auris-module-layout.js?v=20260831-4')<html.indexOf('incident-management-upgrade.js?v=20261004-1'));
   assert.match(html,/auris-module-layout\.css\?v=20260831-4/);
   assert.match(manifest,/auris-module-layout\.js/);
   assert.match(manifest,/auris-module-layout\.css/);

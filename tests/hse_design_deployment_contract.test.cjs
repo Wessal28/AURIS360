@@ -41,7 +41,7 @@ test('corrected design assets use their expected release cache keys', () => {
       : asset === 'risk-assessment-upgrade.js'
       ? '20261004-6'
       : ['bbs-observations.css','bbs-observations.js','incident-management-upgrade.css','incident-management-upgrade.js','risk-assessment-upgrade.css','risk-assessment-upgrade.js','auris-audits-inspections-static.css'].includes(asset)
-      ? (asset.startsWith('incident-management-upgrade.') ? '20260831-4' : '20260823-4')
+      ? (asset.startsWith('incident-management-upgrade.') ? '20261004-1' : '20260823-4')
       : ['auris-base.css'].includes(asset)
       ? '20260822-1'
       : asset === 'tools-equipment-upgrade.css' || asset === 'contractor-management-upgrade.css' ? '20260821-4' : '20260821-3';

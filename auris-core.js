@@ -14926,7 +14926,8 @@ function imsSetTypeMode(isExisting){
   var selected=document.getElementById('ev-type')?.value||'';
   var canChange=!isExisting || imsCanChangeType();
   document.querySelectorAll('.ims-type-btn').forEach(function(btn){
-    var show=!isExisting || canChange || btn.dataset.type===selected;
+    var allowed=typeof window.imv2IncidentTypeAllowed!=='function'||window.imv2IncidentTypeAllowed(btn.dataset.type);
+    var show=allowed&&(!isExisting || canChange || btn.dataset.type===selected);
     btn.style.display=show?'':'none';
     btn.style.pointerEvents=canChange?'auto':'none';
     btn.style.cursor=canChange?'pointer':'default';
@@ -15098,6 +15099,7 @@ function imsOpenEdit(id){
 }
 
 function imsSelectType(type){
+  if(typeof window.imv2IncidentTypeAllowed==='function'&&!window.imv2IncidentTypeAllowed(type)){toast('This incident type is not available for new reports',false);return;}
   var current=document.getElementById('ev-type')?.value||'';
   if(imsEditId && current && current!==type && !imsCanChangeType()){
     toast('Only the HSE Manager can change the incident type',false);
@@ -15327,6 +15329,7 @@ async function imsSave(){
   }
   var type=document.getElementById('ev-type')?.value;
   if(!type){toast('Please select incident type',false);return;}
+  if(typeof window.imv2IncidentTypeAllowed==='function'&&!window.imv2IncidentTypeAllowed(type)){toast('This incident type is not available for new reports',false);return;}
   var date=document.getElementById('ev-date')?.value;
   if(!date){toast('Please enter date/time',false);return;}
   var desc=document.getElementById('ev-description')?.value?.trim();
