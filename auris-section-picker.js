@@ -1,13 +1,13 @@
 (function(){
   'use strict';
-  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page [role="tablist"]';
+  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page .dcx-top-tabs,.page .noise-tabs,.page .swx-tabs,.page [role="tablist"]';
   // These legacy navigation rows have generated class names rather than a tab-list class.
   var moduleTabs={inspection:'insp-tab-all',contractor:'con-tab-register',esg:'esg-tab-dash',emergency:'em3tab-dash',ohealth:'oh-tab-dash',ppe:'ppe-tab-dash',fire:'fire-tab-certs',meetings:'mtg-tab-schedule',training:'train-tab-matrix'};
   var pending=false;
 
   function tabsIn(bar){return Array.from(bar.children).filter(function(child){return child.tagName==='BUTTON'&&!child.hidden;});}
   function activeIndex(buttons){var index=buttons.findIndex(function(button){return button.classList.contains('active')||button.getAttribute('aria-current')==='page'||button.getAttribute('aria-selected')==='true';});return index<0?0:index;}
-  function label(button){return (button.textContent||'').replace(/\s+/g,' ').trim();}
+  function label(button){var viewName=button.querySelector('.auris-module-view-copy strong');return ((viewName&&viewName.textContent)||button.textContent||'').replace(/\s+/g,' ').trim();}
   function enhance(bar){
     if(!bar||bar.closest('.auris-section-picker,[role="dialog"],.modal')||!bar.closest('.page'))return;
     var buttons=tabsIn(bar);
