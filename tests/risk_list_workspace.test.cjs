@@ -21,7 +21,7 @@ test('projection is tenant-scoped and keeps risk, review and linked-record meani
 });
 test('scope and combinable filters cover personal work, due reviews, high risk and text',()=>{
   const r=runtime(),select=filters=>r.api.project(rows,current,{filters},new Date('2026-09-15T12:00:00Z')).map(x=>x.id);
-  assert.deepEqual(select({scope:'mine'}),['ra-1']);assert.deepEqual(select({scope:'due'}),['ra-1','ra-2']);assert.deepEqual(select({scope:'high'}),['ra-1','ra-3']);
+  assert.deepEqual(select({scope:'mine'}),['ra-1']);assert.deepEqual(select({scope:'due'}),['ra-1','ra-2']);assert.deepEqual(select({scope:'overdue'}),['ra-1']);assert.deepEqual(select({scope:'high'}),['ra-1','ra-3']);
   assert.deepEqual(select({search:'solvent',type:'baseline',status:'review',risk:'Medium'}),['ra-2']);assert.deepEqual(select({type:'task',status:'active'}),['ra-1']);
 });
 test('unknown statuses and types remain visible without unsafe relabelling',()=>{
@@ -33,5 +33,5 @@ test('shared register exposes only the exact open action and protects session ch
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},rows,{openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}
 });
 test('release wiring publishes the risk register before the core loader',()=>{
-  const html=read('index.html'),core=read('auris-core.js'),upgrade=read('risk-assessment-upgrade.js');assert.ok(html.indexOf('auris-risk-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisRiskListWorkspace\.mount\(el,raAllData/);assert.match(upgrade,/AurisRiskListWorkspace\.mount\(el,data\(\)/);assert.match(upgrade,/scope:\['mine','due','high'\]/);assert.match(read('sw-assets.js'),/auris-risk-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-risk-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-risk-list-workspace\.js/);assert.doesNotMatch(read('auris-risk-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);
+  const html=read('index.html'),core=read('auris-core.js'),upgrade=read('risk-assessment-upgrade.js');assert.ok(html.indexOf('auris-risk-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisRiskListWorkspace\.mount\(el,raAllData/);assert.match(upgrade,/AurisRiskListWorkspace\.mount\(el,data\(\)/);assert.match(upgrade,/scope:\['mine','due','overdue','high'\]/);assert.match(read('sw-assets.js'),/auris-risk-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-risk-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-risk-list-workspace\.js/);assert.doesNotMatch(read('auris-risk-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);
 });

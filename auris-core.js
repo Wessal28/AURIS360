@@ -16683,13 +16683,13 @@ async function raLoadList(){
   try{
     var d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
     raAllData=d||[];
-    var now=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
+    var today=new Date().toISOString().slice(0,10);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('ra-m3active',raAllData.filter(x=>x.status==='active').length);
     setM('ra-m3draft',raAllData.filter(x=>x.status==='draft').length);
-    setM('ra-m3pending',raAllData.filter(x=>x.status==='pending_review').length);
+    setM('ra-m3pending',raAllData.filter(x=>['pending_review','pending_approval','review'].includes(x.status)).length);
     setM('ra-m3high',raAllData.filter(x=>['Critical','Very High','High'].includes(x.overall_risk_level||x.risk_level)).length);
-    setM('ra-m3review',raAllData.filter(x=>x.review_date&&new Date(x.review_date)<=soon&&x.status==='active').length);
+    setM('ra-m3review',raAllData.filter(x=>x.review_date&&String(x.review_date).slice(0,10)<today&&x.status==='active').length);
     raFilterList();
   }catch(e){if(el)el.innerHTML=registerErrorHtml('Risk Assessment register',e.message);console.error(e);}
 }
@@ -16698,7 +16698,7 @@ async function raLoadJSAList(){
   try{
     var d=await api('/jsa_records?select=*'+cf()+'&order=created_at.desc');
     raAllJSA=d||[];
-    var el=document.getElementById('ra-m3jsa');if(el)el.textContent=raAllJSA.length;
+    // The sixth dashboard card is now reserved for overdue risk actions.
   }catch(e){raAllJSA=[];}
 }
 
@@ -17493,6 +17493,16 @@ function raRowHasContent(r){
 
 // ===== RA_JS_PART3.JS =====
 // -- Save RA -------------------------------------------------------------------
+function raControlSubmissionIssue(rows){
+  for(var i=0;i<rows.length;i++){
+    var row=rows[i],initial=Number(row.rr),residual=Number(row.res_rr);
+    if(!Number.isFinite(initial)||!Number.isFinite(residual)||residual>=initial)continue;
+    if(!String(row.further_controls||'').trim())return 'Hazard row '+(i+1)+': describe the additional controls supporting the lower residual risk.';
+    if(!String(row.hoc_level||'').trim())return 'Hazard row '+(i+1)+': select the hierarchy of controls level.';
+    if(!String(row.action_by||'').trim()||!String(row.target_date||'').trim())return 'Hazard row '+(i+1)+': assign an owner and target date for the additional controls.';
+  }
+  return '';
+}
 async function raSave(targetStatus){
   if(!workflowCanMutate('risk','risk assessments'))return;
   var currentRa=raEditingId?(raAllData.find(function(x){return x.id===raEditingId;})||{}):null;
@@ -17510,6 +17520,7 @@ async function raSave(targetStatus){
     if(!g('ra-date'))return toast('Please enter the assessment date before submitting',false);
     if(!g('ra-review-date'))return toast('Please enter the review date before submitting',false);
     if(!rows.length)return toast('Please add at least one hazard/control row before submitting',false);
+    var controlIssue=raControlSubmissionIssue(rows);if(controlIssue)return toast(controlIssue,false);
   }
   if(g('ra-date')&&g('ra-review-date')&&new Date(g('ra-review-date'))<new Date(g('ra-date')))return toast('Review date cannot be before assessment date',false);
   // Calculate overall risk
@@ -17572,7 +17583,7 @@ async function raSave(targetStatus){
       if(submitted&&currentRa?.status!==status)await raQueueStatusNotice(updatedRa,'submitted');
       toast('Risk assessment updated!');
       // Update linked work order if needed
-      raSyncToMAP(raEditingId, rows);
+      await raSyncToMAP(raEditingId, rows).catch(function(err){toast('Assessment saved, but linked actions could not be updated: '+err.message,false);});
     }else{
       body.created_by=prof?.id;
       var res=await apiWriteWithMissingColumnFallback('/risk_assessments',{m:'POST',p:'return=representation',b:body},'Risk assessment');
@@ -17596,7 +17607,7 @@ async function raSave(targetStatus){
         raAudit(newSubmitted?'submit':'create',newSubmitted?'Risk assessment created and submitted for approval':'Risk assessment created',createdRa,{new_status:status,row_count:rows.length});
         if(newSubmitted)await raQueueStatusNotice(createdRa,'submitted');
         toast('RA saved! Ref: '+ref);
-        raSyncToMAP(res[0].id, rows);
+        await raSyncToMAP(res[0].id, rows).catch(function(err){toast('Assessment saved, but linked actions could not be created: '+err.message,false);});
       }
     }
     if(savedRecord&&wsRecordReturnMatches('ra')){
@@ -17768,6 +17779,7 @@ async function raApproveCurrent(){
   if(!raEditingId)return;
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve risk assessments',false);return;}
   var currentApprovalRa=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  if(typeof window.raxApprovalGuard==='function'&&!(await window.raxApprovalGuard(currentApprovalRa)))return;
   if(!coreWorkflowRequireTransition('risk',currentApprovalRa.status||'draft','active','Risk assessment'))return;
   var expected=await raCurrentApprovalStep();
   if(expected&&!raApprovalStepAllows(expected)){
@@ -17884,20 +17896,16 @@ async function raGenRef(type){
   return prefix+'-'+yr+'-'+String(n).padStart(3,'0');
 }
 
-function raSyncToMAP(raId, rows){
-  // Auto-create MAP actions for critical/high residual risks
-  var ra=(raAllData||[]).find(function(x){return String(x.id)===String(raId);})||{};
-  var sourceRef=raRecordRef(ra);
-  rows.forEach(function(r){
-    var rl=r.res_rl||r.rl||'';
-    if(['Critical','Very High'].includes(rl)){
-      api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,
-        description:'High residual risk: '+( r.hazard||'').substring(0,100),
-        priority:rl==='Critical'?'critical':'high',status:'open',created_by:prof?.id
-      }}).catch(function(){});
-    }
-  });
+async function raSyncToMAP(raId, rows){
+  var ra=(raAllData||[]).find(function(x){return String(x.id)===String(raId);})||{},sourceRef=raRecordRef(ra);
+  var existing=await api('/action_tracker?select=id,description'+cf()+'&source_module=eq.risk&source_id=eq.'+encodeURIComponent(raId)+'&limit=500');
+  var known=new Set((existing||[]).map(function(a){return String(a.description||'');}));
+  for(var r of rows){
+    var rl=r.res_rl||r.rl||'';if(!['Critical','Very High','High'].includes(rl))continue;
+    var description='High residual risk: '+String(r.hazard||r.task||'Unspecified hazard').slice(0,100);if(known.has(description))continue;
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,title:description,description:description,responsible:r.action_by||null,target_date:r.target_date||null,priority:rl==='Critical'?'critical':'high',status:'open',created_by:prof?.id}});
+    known.add(description);
+  }
 }
 
 function raClearForm(){
@@ -19118,7 +19126,7 @@ function raRenderAISuggestions(rows){
   var h='<div style="margin-top:10px;border:2px solid #8B5CF6;border-radius:10px;overflow:hidden">'
     +'<div style="padding:8px 14px;background:#8B5CF6;color:#fff;display:flex;justify-content:space-between;align-items:center">'
     +'<span style="font-size:12px;font-weight:700">AI Generated '+rows.length+' Hazard Rows</span>'
-    +'<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-named-action="ra-add-all-suggestions">Add all to RA</button>'
+    +'<span style="font-size:11px">Review each suggestion before adding it</span>'
     +'</div>';
   rows.forEach(function(r,i){
     var rr=(r.rs||1)*(r.rop||1);

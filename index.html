@@ -64,7 +64,7 @@
 <script src="auris-toolbox-list-workspace.js?v=20260908-1"></script>
 <script src="auris-toolbox-record-workspace.js?v=20260908-1"></script>
 <script src="auris-tools-list-workspace.js?v=20260920-1"></script>
-<script src="auris-risk-list-workspace.js?v=20260915-1"></script>
+<script src="auris-risk-list-workspace.js?v=20261004-2"></script>
 <script src="auris-incident-list-workspace.js?v=20260915-1"></script>
 <script src="auris-audit-list-workspace.js?v=20260915-1"></script>
 <script src="auris-contractor-list-workspace.js?v=20260915-1"></script>
@@ -95,7 +95,7 @@
 <script src="auris-governance-persistence.js?v=20260901-10"></script>
 <script src="auris-workflow-studio.js?v=20260901-10"></script>
 <script src="auris-work-centre.js?v=20260914-12-work-centre"></script>
-<script src="auris-priority-module-adapters.js?v=20260901-7"></script>
+<script src="auris-priority-module-adapters.js?v=20261004-8"></script>
 <script src="auris-extracted-module-adapters.js?v=20260901-12"></script>
 <script src="auris-applications-admin.js?v=20260901-8"></script>
 <script src="auris-record-edit-session.js?v=20260913-1"></script>
@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -133,7 +133,7 @@
 <link rel="stylesheet" href="document-control-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="swms-upgrade.css?v=20260803-1">
 <link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260822-2">
-<link rel="stylesheet" href="risk-assessment-upgrade.css?v=20260823-4">
+<link rel="stylesheet" href="risk-assessment-upgrade.css?v=20261004-5">
 <link rel="stylesheet" href="sop-video-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="learning-competency-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260822-2">
@@ -2881,7 +2881,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-risk-s-eccffcaf4c"><div class="auris-risk-s-4422804ebb">Draft</div><div id="ra-m3draft" class="auris-risk-s-58368c28c6">-</div></div>
 <div class="card auris-risk-s-b6d403ee7e"><div class="auris-risk-s-4422804ebb">Pending Review</div><div id="ra-m3pending" class="auris-risk-s-6f56b8363e">-</div></div>
 <div class="card auris-risk-s-530946d91c"><div class="auris-risk-s-4422804ebb">High/Critical</div><div id="ra-m3high" class="auris-risk-s-e7ad3ebe2e">-</div></div>
-<div class="card auris-risk-s-21ac3ff165"><div class="auris-risk-s-4422804ebb">Review Due</div><div id="ra-m3review" class="auris-risk-s-34362c1a82">-</div></div>
+<div class="card auris-risk-s-21ac3ff165"><div class="auris-risk-s-4422804ebb">Review Overdue</div><div id="ra-m3review" class="auris-risk-s-34362c1a82">-</div></div>
 <div class="card auris-risk-s-a0785733e0"><div class="auris-risk-s-4422804ebb">JSA Records</div><div id="ra-m3jsa" class="auris-risk-s-f87716cfb5">-</div></div>
 </div>
 <!-- Tab bar -->
@@ -2934,10 +2934,10 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-risk-s-5019965c36">
 <div class="auris-risk-s-1e7d536875">Recommended approach</div>
 <div class="auris-risk-s-a9f006e5d0">
-<div><b class="auris-risk-s-f677e21492">Task-Based RA</b><br/>Use for most operational jobs because it breaks the work into steps.</div>
-<div><b class="auris-risk-s-f677e21492">Specific RA</b><br/>Use when the hazard family has special controls, such as fire, chemical, machinery, vehicle or ATEX.</div>
-<div><b class="auris-risk-s-f677e21492">Dynamic RA</b><br/>Use on site when conditions change and a quick decision is needed.</div>
-<div><b class="auris-risk-s-f677e21492">JSA / HIRA</b><br/>Use for formal job safety analysis or comprehensive hazard studies.</div>
+<div><b class="auris-risk-s-f677e21492">Task-Based RA / JSA</b><br/>Use for sequential job steps, hazards and controls.</div>
+<div><b class="auris-risk-s-f677e21492">HIRA / Baseline RA</b><br/>Use for department, process, location or broader activity risks.</div>
+<div><b class="auris-risk-s-f677e21492">Dynamic RA / LMRA</b><br/>Use on site when conditions change and a quick decision is needed.</div>
+<div><b class="auris-risk-s-f677e21492">Specialised Assessment</b><br/>Use a guided assessment for manual handling, fire, machinery, chemicals, ATEX or vehicles.</div>
 </div>
 </div>
 <div class="auris-risk-s-cd39740603">
@@ -11732,7 +11732,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20260929-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
-<link rel="stylesheet" href="auris-universal-header.css?v=20261002-3">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261004-4">
 <link rel="stylesheet" href="auris-single-module-header.css?v=20261004-2">
 <link rel="stylesheet" href="auris-sidebar-navigation.css?v=20261002-1">
 <link rel="stylesheet" href="auris-command-centre-priorities.css?v=20261002-1">
@@ -11753,11 +11753,11 @@ I can help you:<br>
 <script src="incident-management-upgrade.js?v=20260831-4"></script>
 <script src="document-control-upgrade.js?v=20260803-2"></script>
 <script src="swms-upgrade.js?v=20260806-1"></script>
-<script src="risk-assessment-upgrade.js?v=20260823-4"></script>
+<script src="risk-assessment-upgrade.js?v=20261004-5"></script>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260824-1"></script>
 <script src="auris-section-picker.js?v=20261004-3"></script>
-<script src="auris-universal-header.js?v=20261002-2"></script>
+<script src="auris-universal-header.js?v=20261004-4"></script>
 <script src="auris-sidebar-navigation.js?v=20261002-1"></script>
 <script src="requirements-5.js?v=20260824-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
