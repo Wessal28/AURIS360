@@ -80,7 +80,7 @@ raxSaved('due')
 raxSaved('archived')
     },
     "c0027": function (event, args) {
-raOpen(args[0])
+raOpenReadOnly(args[0])
     },
     "c0028": function (event, args) {
 raxHeatCell(args[0],args[1])

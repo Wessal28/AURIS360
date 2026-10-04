@@ -17,7 +17,7 @@ test('second module batch has no executable inline event attributes', () => {
     assert.doesNotMatch(source, eventAttribute, moduleName);
     assert.doesNotMatch(source, /on[a-z]+=\\["']/i, moduleName);
   }
-  assert.match(html, /src="auris-module-event-handlers-batch-2\.js\?v=20260822-2"/);
+  assert.match(html, /src="auris-module-event-handlers-batch-2\.js\?v=20261004-risk-view-1"/);
 });
 
 test('second module registry is precompiled and uses the strict shared dispatcher', () => {
