@@ -6,7 +6,8 @@ var TABS=[
   ['dashboard','Dashboard'],['my','My Safety Performance'],['team','Team Performance'],
   ['programmes','KPI Programmes'],['assignments','Assignments'],['monthly','Monthly Follow-up'],
   ['validation','Validation Queue'],['recognition','Recognition'],['coaching','Coaching & Improvement'],
-  ['disputes','Disputes & Corrections'],['reports','Reports'],['configuration','Configuration']
+  ['disputes','Disputes & Corrections'],['reports','Reports'],['configuration','Configuration'],
+  ['mobile','Mobile workspace']
 ];
 var MOBILE=[['home','Home','ti-home'],['performance','My Performance','ti-chart-dots'],['qr','Toolbox QR','ti-qrcode'],['hazard','Report Hazard','ti-alert-triangle'],['calendar','Calendar','ti-calendar'],['notifications','Notifications','ti-bell'],['sync','Offline & Sync','ti-cloud-upload'],['validation','Validation','ti-shield-check']];
 
@@ -65,8 +66,7 @@ function mount(){
 
 function filterContext(){var coName=co?.name||prof?.company_name||'Company',period=field('Period','se-period','select',[[SE.period,currentPeriodLabel()],[(new Date(new Date(SE.period+'-01').setMonth(new Date(SE.period+'-01').getMonth()-1))).toISOString().slice(0,7),'Previous month']],SE.period),company=field('Company','se-company','select',[[coName,coName]],coName),programme=field('Programme','se-programme-filter','select',[['all','All programmes']].concat((SE.data.programmes||[]).map(function(x){return [x.name,x.name];})),SE.filters.programme||'all'),status=field('Status','se-status-filter','select',[['all','All statuses'],['on_track','On Track'],['at_risk','At Risk'],['off_track','Off Track'],['pending','Pending Validation'],['draft','Draft'],['published','Published'],['archived','Archived']],SE.filters.status||'all'),search=field('Search','se-search','text',null,SE.search||'');if(['dashboard','my','team','monthly'].includes(SE.tab))return '<div class="se-context">'+period+company+programme+status+'</div>';if(['programmes','assignments','validation','recognition','coaching','disputes','reports','configuration'].includes(SE.tab))return '<div class="se-context">'+search+company+status+(SE.tab==='validation'?period:'')+'</div>';return '';}
 function header(){
-  var coName=co?.name||prof?.company_name||'Company';
-  return '<div class="se-header"><div><div class="se-eyebrow">People participation · Fairness governed</div><div class="se-title">Safety Engagement & Individual Performance</div><div class="se-subtitle">Positive, verifiable safety participation with traceable evidence, correction rights and privacy-controlled team insight.</div></div><div class="se-header-actions">'+actionButton('Mobile workspace',"seSwitchTab('mobile')",'se-mobile-toggle','ti-device-mobile')+(canManage()?actionButton('New programme',"seOpenDrawer('programme')",'primary','ti-plus'):'')+actionButton('Refresh','seRefresh()','','ti-refresh')+'</div></div>'+
+  return '<div class="se-header-actions se-header-compact">'+(canManage()?actionButton('New programme',"seOpenDrawer('programme')",'primary','ti-plus'):'')+actionButton('Refresh','seRefresh()','','ti-refresh')+'</div>'+
   '<div class="se-tabs">'+TABS.map(function(t){return '<button class="se-tab '+(SE.tab===t[0]?'active':'')+'" aria-current="'+(SE.tab===t[0]?'page':'false')+'" data-auris-module-onclick="f0002" data-auris-module-args="'+encodeURIComponent(JSON.stringify([t[0]]))+'">'+h(t[1])+'</button>';}).join('')+'</div>'+
   filterContext()+
   (!SE.schemaReady?'<div class="se-note se-warning" style="margin-bottom:12px"><strong>Data service needs attention.</strong> Apply <code>safety_engagement_crud_workflow_upgrade.sql</code>, then retry. No example records are substituted when a query fails.</div>':'');
