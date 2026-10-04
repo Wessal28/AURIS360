@@ -6,6 +6,7 @@
 #page-legal .legx-hero>div:first-child,
 #page-sop .sov-hero>div:first-child,
 #page-swms .swx-hero>div:first-child,
+#page-tools .teu-hero>div:first-child,
 #page-events.auris-module-layout>.auris-module-header>.auris-module-identity,
 #page-permit.auris-module-layout>.auris-module-header>.auris-module-identity,
 #page-actions.auris-module-layout>.auris-module-header>.auris-module-identity{display:none!important}
@@ -13,6 +14,7 @@
 #page-observation .bbs-header,#page-noise .noise-header,
 #page-chemical .ccu-hero,#page-legal .legx-hero,
 #page-sop .sov-hero,#page-swms .swx-hero,
+#page-tools .teu-hero,
 #page-documents .dcx-module-head,
 #page-events.auris-module-layout>.auris-module-header,
 #page-permit.auris-module-layout>.auris-module-header,
@@ -21,6 +23,7 @@
 #page-observation .bbs-actions,#page-noise .noise-actions,
 #page-chemical .ccu-actions,#page-legal .legx-actions,
 #page-sop .sov-actions,#page-swms .swx-hero-actions,
+#page-tools .teu-actions,
 #page-documents .dcx-actions{margin:0;justify-content:flex-end}
 
 #page-contractor>.page-header>div:first-child,
@@ -31,6 +34,7 @@
   #page-observation .bbs-header,#page-noise .noise-header,
   #page-chemical .ccu-hero,#page-legal .legx-hero,
   #page-sop .sov-hero,#page-swms .swx-hero,
+  #page-tools .teu-hero,
   #page-documents .dcx-module-head{display:flex;flex-direction:row;flex-wrap:wrap}
 }
 @media print{
@@ -38,6 +42,7 @@
   #page-documents .dcx-module-head>div:first-child,#page-chemical .ccu-hero>div:first-child,
   #page-legal .legx-hero>div:first-child,#page-sop .sov-hero>div:first-child,
   #page-swms .swx-hero>div:first-child,#page-contractor>.page-header>div:first-child,
+  #page-tools .teu-hero>div:first-child,
   #page-training>.page-header>div:first-child,
   #page-events.auris-module-layout>.auris-module-header>.auris-module-identity,
   #page-permit.auris-module-layout>.auris-module-header>.auris-module-identity,
