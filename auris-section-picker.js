@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page .dcx-top-tabs,.page .noise-tabs,.page .swx-tabs,.page [role="tablist"]';
+  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page .dcx-top-tabs,.page .noise-tabs,.page .swx-tabs,.page .teu-tabs,.page [role="tablist"]';
   // These legacy navigation rows have generated class names rather than a tab-list class.
   var moduleTabs={inspection:'insp-tab-all',contractor:'con-tab-register',esg:'esg-tab-dash',emergency:'em3tab-dash',ohealth:'oh-tab-dash',ppe:'ppe-tab-dash',fire:'fire-tab-certs',meetings:'mtg-tab-schedule',training:'train-tab-matrix'};
   var pending=false;
