@@ -191,7 +191,7 @@ navigator.clipboard.writeText(args[0]).then(()=>toast('Copied!'))
 event.stopPropagation();imsEditEvidence(args[0])
     },
     "r0064": function (event, args) {
-event.stopPropagation();raOpen(args[0])
+event.stopPropagation();raOpenReadOnly(args[0])
     },
     "r0065": function (event, args) {
 event.stopPropagation();jsaEdit(args[0])

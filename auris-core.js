@@ -3732,7 +3732,7 @@ function dashNavigateTo(page,id){
     try{
       if(page==='events'&&typeof evOpenDetail==='function')evOpenDetail(id);
       else if(page==='inspection'&&typeof auditOpen==='function')auditOpen(id);
-      else if(page==='risk'&&typeof raOpen==='function')raOpen(id);
+      else if(page==='risk'&&typeof raOpenReadOnly==='function')raOpenReadOnly(id);
       else if(page==='permit'&&typeof ptwShowDetail==='function')ptwShowDetail(id);
       else if(page==='workschedule'&&typeof wsShowDetail==='function')wsShowDetail(id);
       else if(page==='swms'&&typeof swmsOpen==='function')swmsOpen(id);
@@ -16716,7 +16716,7 @@ function raFilterList(){
           if(!current||String(current.companyId)!==String(ccid()))throw new Error('Your company changed. Reload the risk register.');
           var selected=(raAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});
           if(!selected)throw new Error('This risk assessment is unavailable or outside your company access.');
-          raOpen(selected.id);
+          raOpenReadOnly(selected.id);
         }
       });
     }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Risk Assessment register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
@@ -16877,7 +16877,7 @@ function raRenderAssessmentRegister(el,rows,emptyHtml){
       +'<td style="padding:11px;text-align:center">'+raRiskBadge(sum.residualLevel,sum.residualScore)+'</td>'
       +'<td style="padding:11px;min-width:150px">'+raLinkedCell(x)+'</td>'
       +'<td style="padding:11px;text-align:center"><span style="display:inline-block;background:'+sc[0]+';color:'+sc[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap">'+sc[2]+'</span><div style="margin-top:5px">'+raReviewCell(x)+'</div></td>'
-      +'<td style="padding:11px"><button class="btn btn-sm" title="Open assessment" data-auris-runtime-onclick="r0064" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:11px"><button class="btn btn-sm" title="View assessment" aria-label="View assessment" data-auris-runtime-onclick="r0064" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -21347,7 +21347,35 @@ function aurisReadableRecordFields(row){
   return Object.keys(row||{}).filter(function(k){return !['id','company_id','created_by','updated_by'].includes(k)&&typeof row[k]!=='object';}).slice(0,24).map(function(k){return [k.replace(/_/g,' '),row[k]];});
 }
 
-function raOpenReadOnly(id){var row=(raAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('Risk assessment · Read-only preview',row.title||row.activity||'Risk assessment',row,[['Reference',row.ra_ref],['Type',row.ra_type_v2||row.ra_type],['Activity / scope',row.activity||row.scope],['Site / location',row.site_name||row.location||row.workshop],['Department',row.department||row.dept],['Assessed by',row.assessed_by||row.ra_assessor],['Assessment date',row.ra_date||row.assessment_date||row.date],['Initial risk',row.initial_risk_level||row.risk_level],['Residual risk',row.overall_risk_level||row.residual_risk_level],['Status',row.status],['Review date',row.review_date],['Controls / notes',row.controls||row.notes||row.revision_notes]]);}
+function raReadOnlyReportHTML(row){
+  var summary=raSummariseRows(row),type=row.ra_type_v2||row.ra_type||'baseline',cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
+  var fields=[['Reference',row.ra_ref],['Assessment type',cfg.label],['Status',String(row.status||'draft').replace(/_/g,' ')],['Revision',row.revision||1],['Activity',row.activity],['Scope',row.scope],['Site',row.site_name],['Location',row.location||row.workshop],['Department',row.department||row.dept],['Assessed by',row.assessed_by||row.ra_assessor],['Assessment date',row.ra_date||row.assessment_date||row.date],['Review date',row.review_date],['Approved by',row.approved_by||row.ra_approver],['People briefed',row.ra_briefed],['Permit reference',row.permit_ref],['RAMS document',row.rams_document_name],['Legal references',Array.isArray(row.legal_refs)?row.legal_refs.join(', '):row.legal_refs]];
+  var details=fields.filter(function(f){return f[1]!==null&&f[1]!==undefined&&String(f[1]).trim()!=='';}).map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(String(f[1]))+'</dd></div>';}).join('');
+  var hazards=summary.rows.map(function(r,i){
+    var initial=r.rr||((Number(r.rs)||0)*(Number(r.rop)||0)),residual=r.res_rr||((Number(r.res_s)||0)*(Number(r.res_p)||0));
+    return '<tr><td>'+(i+1)+'</td><td>'+escH(r.task||r.step||r.activity||r.condition||'—')+'</td><td>'+escH(r.hazard||r.condition||'—')+'</td><td>'+escH(r.harm||r.observed_risk||'—')+'</td><td>'+escH(r.controls||r.immediate_control||'—')+'</td><td>'+escH((r.rl||'')+(initial?' ('+initial+')':''))+'</td><td>'+escH(r.further_controls||r.additional_controls||'—')+'</td><td>'+escH((r.res_rl||'')+(residual?' ('+residual+')':''))+'</td><td>'+escH(r.action_by||r.responsible||r.owner||'—')+'</td><td>'+escH(r.target_date||r.due_date||'—')+'</td></tr>';
+  }).join('');
+  return '<section><h3>Assessment details</h3><dl class="ra-readonly-fields">'+details+'</dl></section><section><h3>Risk summary</h3><div class="ra-readonly-summary"><div><span>Initial risk</span>'+raRiskBadge(summary.initialLevel,summary.initialScore)+'</div><div><span>Residual risk</span>'+(summary.residualScore?raRiskBadge(summary.residualLevel,summary.residualScore):'<strong>Not recorded</strong>')+'</div></div></section><section><h3>Hazards and controls</h3>'+(hazards?'<div class="ra-readonly-table-wrap"><table class="ra-readonly-table"><thead><tr><th>#</th><th>Step / activity</th><th>Hazard</th><th>Possible harm</th><th>Existing controls</th><th>Initial risk</th><th>Additional controls</th><th>Residual risk</th><th>Owner</th><th>Due date</th></tr></thead><tbody>'+hazards+'</tbody></table></div>':'<p>No hazard rows recorded.</p>')+'</section>';
+}
+function raOpenReadOnly(id){
+  var row=(raAllData||[]).find(function(x){return String(x.id)===String(id)&&String(x.company_id)===String(ccid());});
+  if(!row){toast('This risk assessment is unavailable for the selected company.',false);return;}
+  document.getElementById('ra-readonly-report')?.closeReport?.();
+  var opener=document.activeElement,oldOverflow=document.body.style.overflow,modal=document.createElement('div'),canEdit=isMgr()&&controlledRecordCanEdit(row);
+  modal.id='ra-readonly-report';
+  modal.innerHTML='<section class="ra-readonly-dialog" role="dialog" aria-modal="true" aria-labelledby="ra-readonly-title"><header><div><p>Risk assessment · Read-only report</p><h2 id="ra-readonly-title">'+escH(row.title||row.activity||row.workshop||'Risk assessment')+'</h2><small>'+escH(row.ra_ref||'Draft reference')+'</small></div><div class="ra-readonly-actions">'+(canEdit?'<button type="button" class="btn btn-primary ra-readonly-edit"><i class="ti ti-edit"></i> Edit assessment</button>':'')+'<button type="button" class="btn ra-readonly-close">Close</button></div></header><div class="ra-readonly-body">'+raReadOnlyReportHTML(row)+'</div></section>';
+  document.body.appendChild(modal);document.body.style.overflow='hidden';
+  var close=function(returnToWork){modal.remove();document.body.style.overflow=oldOverflow;if(returnToWork&&typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
+  modal.closeReport=function(){close(false);};
+  modal.querySelector('.ra-readonly-close').addEventListener('click',function(){close(true);});
+  modal.querySelector('.ra-readonly-edit')?.addEventListener('click',function(){
+    if(String(ccid())!==String(row.company_id)||!isMgr()||!controlledRecordCanEdit(row)){toast('Edit access is no longer available for this assessment.',false);return;}
+    close(false);raOpen(row.id);
+  });
+  modal.addEventListener('click',function(event){if(event.target===modal)close(true);});
+  modal.addEventListener('keydown',function(event){if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close(true);}if(event.key==='Tab'){var buttons=Array.from(modal.querySelectorAll('button')),first=buttons[0],last=buttons[buttons.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
+  modal.querySelector('.ra-readonly-close').focus();
+}
 function jsaOpenReadOnly(id){var row=(raAllJSA||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('JSA / JHA · Read-only preview',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Scope',row.scope||row.description],['Location',row.location],['Prepared by',row.prepared_by],['Status',row.status],['Revision',row.revision],['Job steps',Array.isArray(row.steps)?row.steps.map(function(x){return x.step||x.task||x.description;}).filter(Boolean).join('\n'):row.steps]]);}
 function auditOpenReadOnly(id){
   var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;
@@ -27518,14 +27546,14 @@ async function mapOpenExactSource(adapter,x){
     if(adapter.key==='documents'&&typeof dcEdit==='function'){
       await dcEdit(id);return true;
     }
-    if(adapter.key==='risk'&&typeof raOpen==='function'){
+    if(adapter.key==='risk'&&typeof raOpenReadOnly==='function'){
       var riskRow=(raAllData||[]).find(function(row){return String(row.id)===String(id);});
       if(!riskRow){
         var riskRows=await api('/risk_assessments?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
         riskRow=riskRows&&riskRows[0];
         if(riskRow&&!mapHasSourceRow(raAllData,id))raAllData.push(riskRow);
       }
-      if(riskRow){raOpen(riskRow.id);return true;}
+      if(riskRow){raOpenReadOnly(riskRow.id);return true;}
     }
     if(adapter.key==='legal'){
       if(x.source_table==='legal_compliance_records'&&typeof legxOpenConnectedRecord==='function'){await legxOpenConnectedRecord(id);return true;}
