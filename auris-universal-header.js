@@ -10,6 +10,14 @@
     if(!page||!title||!crumb)return;
     redundantRegisterSearch.forEach(function(id){var input=page.querySelector('#'+id);if(input&&input.value){input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));}});
     var key=page.id.replace(/^page-/,''),heading=page.querySelector('.page-title'),module=typeof MODULES_DIR!=='undefined'&&MODULES_DIR.find(function(item){return item.k===key;}),name=key==='dashboard'?'Home':key==='kpi'?'Objectives & KPIs':clean(module&&module.l)||clean(heading&&heading.textContent)||clean(document.getElementById('mobile-page-title')?.textContent)||'Dashboard';
+    var quick=document.getElementById('auris-module-quick-actions');
+    if(quick){
+      var hideQuick=key!=='risk';if(quick.hidden!==hideQuick)quick.hidden=hideQuick;
+      if(key==='risk'){
+        var newButton=quick.querySelector('[data-risk-action="new"]');
+        if(newButton){var hideNew=typeof isMgr==='function'&&!isMgr();if(newButton.hidden!==hideNew)newButton.hidden=hideNew;var importButton=quick.querySelector('[data-risk-action="import"]');if(importButton&&importButton.hidden!==hideNew)importButton.hidden=hideNew;}
+      }
+    }
     if(title.textContent!==name)title.textContent=name;
     if(heading&&!heading.classList.contains('auris-title-mirrored'))heading.classList.add('auris-title-mirrored');
     var kpiTitle=key==='kpi'&&page.querySelector('.kpi-x-title');if(kpiTitle&&!kpiTitle.classList.contains('auris-title-mirrored'))kpiTitle.classList.add('auris-title-mirrored');
@@ -33,6 +41,13 @@
   function schedule(){if(pending)return;pending=true;requestAnimationFrame(update);}
   function start(){
     var mirror=document.getElementById('auris-module-section');if(!mirror)return;
+    var bar=document.getElementById('auris-module-bar'),sectionWrap=document.getElementById('auris-module-section-wrap');
+    if(bar&&sectionWrap&&!document.getElementById('auris-module-quick-actions')){
+      var quick=document.createElement('div');quick.id='auris-module-quick-actions';quick.className='auris-module-quick-actions';quick.hidden=true;
+      quick.innerHTML='<button type="button" data-risk-action="refresh"><i class="ti ti-refresh"></i> Refresh</button><button type="button" data-risk-action="libraries"><i class="ti ti-books"></i> Risk Libraries</button><button type="button" class="primary" data-risk-action="new"><i class="ti ti-plus"></i> New RA</button><details class="auris-module-more"><summary>More</summary><div><button type="button" data-risk-action="print"><i class="ti ti-printer"></i> Print view</button><button type="button" data-risk-action="import"><i class="ti ti-file-import"></i> Import RA PDF</button></div></details>';
+      bar.insertBefore(quick,sectionWrap);
+      quick.addEventListener('click',function(event){var action=event.target.closest('[data-risk-action]')?.dataset.riskAction;if(!action)return;var page=document.getElementById('page-risk');if(!page?.classList.contains('active'))return;if(action==='print'&&typeof raPrintCurrentView==='function')return raPrintCurrentView();if(action==='import'&&typeof raImportExistingPDF==='function'&&(!(typeof isMgr==='function')||isMgr()))return raImportExistingPDF('baseline');var selector=action==='refresh'?'[data-layout-action="refresh"]':action==='libraries'?'[data-layout-command="libraries"]':'[data-layout-action="primary"]';var original=page.querySelector(selector);if(original){original.click();return;}if(action==='refresh'&&typeof loadRA==='function')loadRA();if(action==='libraries'&&typeof raShowLibrary==='function')raShowLibrary();if(action==='new'&&typeof raShowNewPanel==='function'&&(!(typeof isMgr==='function')||isMgr()))raShowNewPanel();});
+    }
     var profileButton=document.getElementById('auris-profile-trigger'),profileMenu=document.getElementById('auris-profile-menu');
     function closeProfile(){if(!profileMenu)return;profileMenu.hidden=true;profileButton.setAttribute('aria-expanded','false');}
     document.getElementById('auris-home-link')?.addEventListener('click',function(){if(typeof showPage==='function')showPage('dashboard');});

@@ -13,7 +13,7 @@ function session(){
   return {companyId:String(company),userId:String(profile.id),role:String(identity.role||''),name:String(profile.full_name||profile.name||'')};
 }
 function assertSession(expected){var current=session();if(current.companyId!==expected.companyId||current.userId!==expected.userId||current.role!==expected.role)throw new Error('Your account or company changed. Reload the risk register.');return current;}
-function filters(input){input=input||{};return {search:String(input.search||'').slice(0,300),type:String(input.type||'').slice(0,80),status:String(input.status||'').slice(0,80),risk:String(input.risk||'').slice(0,80),scope:['all','mine','due','high'].indexOf(input.scope)!==-1?input.scope:'all'};}
+function filters(input){input=input||{};return {search:String(input.search||'').slice(0,300),type:String(input.type||'').slice(0,80),status:String(input.status||'').slice(0,80),risk:String(input.risk||'').slice(0,80),scope:['all','mine','due','overdue','high'].indexOf(input.scope)!==-1?input.scope:'all'};}
 function typeCode(row){return String(row&&((row.ra_type_v2||row.ra_type||row.ra_type_old)||'baseline')).toLowerCase();}
 function typeLabel(row){var code=typeCode(row);return types[code]||String(row&&((row.ra_type_v2||row.ra_type||row.ra_type_old)||'Risk assessment')).replace(/_/g,' ');}
 function statusLabel(value){var code=String(value||'').toLowerCase();return statuses[code]||String(value||'Not recorded').replace(/_/g,' ');}
@@ -35,6 +35,7 @@ function project(rows,current,options,now){
     var owner=String(row.assessed_by||row.ra_assessor||row.created_by_name||'Unassigned');
     if(f.scope==='mine'&&!(String(row.assessed_by_id||row.created_by||'')===current.userId||name&&owner.toLowerCase().includes(name)))return null;
     if(f.scope==='due'&&!overdue&&!dueSoon)return null;
+    if(f.scope==='overdue'&&!overdue)return null;
     if(f.scope==='high'&&!['high','very high','critical'].some(function(level){return summary.initialLevel.toLowerCase()===level||summary.residualLevel.toLowerCase()===level;}))return null;
     var hay=[row.ra_ref,row.title,row.activity,row.scope,row.location,row.workshop,row.department,owner,label,status,statusLabel(status),summary.initialLevel,summary.residualLevel].join(' ').toLowerCase();
     if(search&&!hay.includes(search)||f.type&&(code!==f.type&&label.toLowerCase()!==f.type.toLowerCase())||f.status&&status!==f.status||f.risk&&summary.initialLevel.toLowerCase()!==f.risk.toLowerCase()&&summary.residualLevel.toLowerCase()!==f.risk.toLowerCase())return null;
