@@ -176,6 +176,11 @@
       "order": 35,
       "file": "20260927020000_module_section_access.sql",
       "sha256": "025cfa118a8049cf3d446b0326b07d7eabbe968ec443e464916cd2462cac2e01"
+    },
+    {
+      "order": 36,
+      "file": "20261005010000_repair_work_schedule_equipment_links.sql",
+      "sha256": "bc5209b2bacd13620fe06d810429da52ed0c5b7dbc7037b1ee9b3808bdcfd141"
     }
   ]
 }
