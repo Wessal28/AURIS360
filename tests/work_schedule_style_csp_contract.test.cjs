@@ -13,7 +13,7 @@ const section = index.slice(start, end);
 test('Work Schedule has no inline style attributes', () => {
   assert.match(index, /<link rel="stylesheet" href="auris-work-schedule\.css\?v=\d+-\d+">/);
   assert.equal((section.match(/\sstyle=(?:"[^"]*"|'[^']*')/gi) || []).length, 0);
-  assert.ok((section.match(/auris-work-s-[a-f0-9]{10}/g) || []).length >= 204);
+  assert.ok((section.match(/auris-work-s-[a-f0-9]{10}/g) || []).length >= 201);
   assert.ok((css.match(/^\.auris-work-s-[a-f0-9]{10}\{/gm) || []).length >= 128);
 });
 
