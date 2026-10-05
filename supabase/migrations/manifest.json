@@ -181,6 +181,11 @@
       "order": 36,
       "file": "20261005010000_repair_work_schedule_equipment_links.sql",
       "sha256": "bc5209b2bacd13620fe06d810429da52ed0c5b7dbc7037b1ee9b3808bdcfd141"
+    },
+    {
+      "order": 37,
+      "file": "20261005020000_work_order_equipment_allocation.sql",
+      "sha256": "ee9c5d38cd2e0a8fb4c384757d87e8a465a09ea33b3ed00902c8fdd987354d10"
     }
   ]
 }

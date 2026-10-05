@@ -63,7 +63,7 @@
 <script src="auris-permit-record-workspace.js?v=20260908-1"></script>
 <script src="auris-toolbox-list-workspace.js?v=20260908-1"></script>
 <script src="auris-toolbox-record-workspace.js?v=20260908-1"></script>
-<script src="auris-tools-list-workspace.js?v=20260920-1"></script>
+<script src="auris-tools-list-workspace.js?v=20261005-1"></script>
 <script src="auris-risk-list-workspace.js?v=20261004-2"></script>
 <script src="auris-incident-list-workspace.js?v=20260915-1"></script>
 <script src="auris-audit-list-workspace.js?v=20260915-1"></script>
@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -155,7 +155,7 @@
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
-<link rel="stylesheet" href="auris-work-schedule.css?v=20260823-4">
+<link rel="stylesheet" href="auris-work-schedule.css?v=20261005-1">
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260909-1">
@@ -1477,17 +1477,11 @@
 <div class="card auris-work-s-7ec95abeba">
 <div class="auris-work-s-a1e97d820a">
 <div><div class="card-title auris-work-s-7eccc5f37f"><i class="ti ti-clipboard-list"></i> Equipment Required for This Job</div>
-<div class="auris-work-s-9c4ae63835">Search and add tools/equipment from the register, or add manually</div></div>
+<div class="auris-work-s-9c4ae63835">Choose available registered equipment. It is allocated to this job until the work is completed.</div></div>
 <button class="btn btn-sm btn-primary auris-work-s-23ca5bfb79" data-auris-onclick="h0178"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
-<!-- Search from register -->
-<div class="auris-work-s-ca39e35561">
-<input type="text" id="ws-te-search" class="auris-work-s-213178a5c5" placeholder="Search equipment register (ref, name)..." data-auris-oninput="h0179"/>
-<button class="btn" data-auris-onclick="h0180"><i class="ti ti-search"></i>Search</button>
-</div>
-<div id="ws-te-search-results" class="auris-work-s-b56987dbcb"></div>
 <!-- Added items list -->
-<div id="ws-te-items-list"><div class="auris-work-s-116caa558d">No equipment added yet. Search above or add manually.</div></div>
+<div id="ws-te-items-list"><div class="auris-work-s-116caa558d">No equipment allocated yet.</div></div>
 </div>
 </div>
 
