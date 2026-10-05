@@ -13985,33 +13985,39 @@ async function wsOpenPTW(){
 
 // -- TOOLS & EQUIPMENT for WORK ORDER -----------------------------------------
 let wsTEItems=[]; // [{tool_id, ref, name, category, source:'register'|'manual', checked:false}]
+let wsTELoadError='';
 let wsChkToolId=null, wsChkToolName='', wsChkToolCat='';
+
+function wsTEErrorMessage(error){
+  var detail=String(error?.message||error||''),code=String(error?.code||'');
+  if(/PGRST205|42P01|schema cache|does not exist|not found/i.test(code+' '+detail))return 'Work-order equipment links are not installed in this database. Apply the work schedule links migration, then reopen this work order.';
+  if(/42501|permission denied|row.level security|not authorised|not authorized/i.test(code+' '+detail))return 'Your account cannot read work-order equipment links. Ask an administrator to check Work Schedule access.';
+  return 'Linked equipment could not be loaded. Check the connection and reopen this work order.';
+}
 
 async function wsOpenToolsCheck(){
   var x=wsGetCurrent(),company=String(ccid()||''),work=String(wsCurrentId||'');
+  wsTEItems=[];wsTELoadError='';toolsAllData=[];wsTERenderItems();
   document.getElementById('ws-detail-view').style.display='none';
   document.getElementById('ws-te-form').style.display='block';
   document.getElementById('ws-te-checklist-view').style.display='none';
   document.getElementById('ws-te-wo-title').textContent=x.title||'Work Order';
   document.getElementById('ws-te-search').value='';
   document.getElementById('ws-te-search-results').innerHTML='';
-  try{var tools=await api('/tools_register?select=id,company_id,ref_number,name,category&company_id=eq.'+encodeURIComponent(company)+'&order=name.asc');if(company===String(ccid()||'')&&work===String(wsCurrentId||''))toolsAllData=(tools||[]).filter(function(tool){return String(tool.company_id)===company;});}catch(error){toast('Equipment register could not be loaded. Try again.',false);}
+  try{var tools=await api('/tools_register?select=id,company_id,ref_number,name,category&company_id=eq.'+encodeURIComponent(company)+'&order=name.asc&limit=5000');if(company===String(ccid()||'')&&work===String(wsCurrentId||''))toolsAllData=(tools||[]).filter(function(tool){return String(tool.company_id)===company;});}catch(error){toast('Equipment register could not be loaded. Try again.',false);}
   await wsTELoadItems();
 }
 
 async function wsTELoadItems(){
-  var company=String(ccid()||''),work=String(wsCurrentId||'');wsTEItems=[];wsTERenderItems();
+  var company=String(ccid()||''),work=String(wsCurrentId||'');
   if(!company||!work)return;
   try{
-    var links=await api('/work_schedule_links?select=record_id,company_id,work_order_id&company_id=eq.'+encodeURIComponent(company)+'&work_order_id=eq.'+encodeURIComponent(work)+'&link_type=eq.equipment');
+    var links=await api('/work_schedule_links?select=record_id,record_ref,company_id,work_order_id&company_id=eq.'+encodeURIComponent(company)+'&work_order_id=eq.'+encodeURIComponent(work)+'&link_type=eq.equipment');
     if(company!==String(ccid()||'')||work!==String(wsCurrentId||''))return;
-    var ids=(links||[]).filter(function(link){return String(link.company_id)===company&&String(link.work_order_id)===work&&link.record_id;}).map(function(link){return link.record_id;});
-    if(!ids.length)return;
-    var tools=await api('/tools_register?select=id,company_id,ref_number,name,category&company_id=eq.'+encodeURIComponent(company)+'&id=in.('+ids.map(encodeURIComponent).join(',')+')');
-    if(company!==String(ccid()||'')||work!==String(wsCurrentId||''))return;
-    wsTEItems=(tools||[]).filter(function(tool){return String(tool.company_id)===company&&ids.includes(tool.id);}).map(function(tool){return {tool_id:tool.id,ref:tool.ref_number||'',name:tool.name||'Equipment',category:tool.category||'other',source:'register',checked:false};});
+    wsTEItems=(links||[]).filter(function(link){return String(link.company_id)===company&&String(link.work_order_id)===work&&link.record_id;}).map(function(link){var tool=(toolsAllData||[]).find(function(t){return String(t.id)===String(link.record_id)&&String(t.company_id)===company;});return {tool_id:link.record_id,ref:tool?.ref_number||link.record_ref||'',name:tool?.name||link.record_ref||'Equipment unavailable in register',category:tool?.category||'other',source:'register',checked:false,unavailable:!tool};});
+    wsTELoadError='';
     wsTERenderItems();
-  }catch(error){toast('Linked equipment could not be loaded. Reload to retry.',false);}
+  }catch(error){if(company!==String(ccid()||'')||work!==String(wsCurrentId||''))return;wsTELoadError=wsTEErrorMessage(error);wsTERenderItems();toast(wsTELoadError,false);}
 }
 
 function wsTESearchEquipment(){
@@ -14021,7 +14027,7 @@ function wsTESearchEquipment(){
   if(q.length<2){el.innerHTML='';return;}
   // Search from toolsAllData (already loaded if tools module was visited)
   var results=(toolsAllData||[]).filter(function(t){
-    return (t.name||'').toLowerCase().includes(q)||(t.ref_number||'').toLowerCase().includes(q)||(t.serial_number||'').toLowerCase().includes(q);
+    return String(t.company_id)===String(ccid())&&((t.name||'').toLowerCase().includes(q)||(t.ref_number||'').toLowerCase().includes(q)||(t.serial_number||'').toLowerCase().includes(q));
   }).slice(0,8);
   if(!results.length){
     el.innerHTML='<div style="padding:8px 12px;font-size:12px;color:var(--text2)">No equipment found in register. <button class="btn btn-sm btn-primary" data-auris-generated-onclick="g0086"><i class="ti ti-plus"></i>Add manually</button></div>';
@@ -14049,6 +14055,7 @@ function wsTESearchEquipment(){
 }
 
 async function wsTEAddFromRegister(toolId){
+  if(wsTELoadError){toast(wsTELoadError,false);return;}
   var t=(toolsAllData||[]).find(function(x){return x.id===toolId&&String(x.company_id)===String(ccid());});
   if(!t)return;
   if(wsTEItems.some(function(i){return i.tool_id===toolId;})){toast('Already in list');return;}
@@ -14060,6 +14067,7 @@ async function wsTEAddFromRegister(toolId){
 }
 
 async function wsTEAddManual(){
+  if(wsTELoadError){toast(wsTELoadError,false);return;}
   var name=await appPrompt({title:'Add equipment',message:'Equipment name',placeholder:'e.g. Grinder, ladder, lifting chain'});if(!name||!name.trim())return;
   var cat=await appPrompt({title:'Equipment category',message:'Category',value:'equipment',placeholder:'hand_tool, power_tool, equipment, vehicle, lifting, electrical or other'});
   wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:cat||'equipment',source:'manual',checked:false});
@@ -14067,6 +14075,7 @@ async function wsTEAddManual(){
 }
 
 async function wsTEAddItem(){
+  if(wsTELoadError){toast(wsTELoadError,false);return;}
   var name=await appPrompt({title:'Add equipment',message:'Equipment name or search term',placeholder:'Equipment name'});
   if(!name||!name.trim())return;
   wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:'equipment',source:'manual',checked:false});
@@ -14075,6 +14084,7 @@ async function wsTEAddItem(){
 
 function wsTERenderItems(){
   var el=document.getElementById('ws-te-items-list');if(!el)return;
+  if(wsTELoadError){el.innerHTML='<div role="alert" style="padding:16px;border:1px solid #E8A24B;border-radius:8px;background:#FFF7E8;color:#713F12;font-size:13px">'+escH(wsTELoadError)+'</div>';return;}
   if(!wsTEItems.length){
     el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No equipment added yet. Search the register or add manually.</div>';
     return;
