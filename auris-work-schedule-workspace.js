@@ -72,23 +72,24 @@ async function wsRecordWindow(id,mode){
 var WS_RECORD_LINKS={tbt:{label:'Toolbox talk',module:'meetings',table:'toolbox_talks',ref:'tbt_ref'},prestart:{label:'Pre-start check',module:'inspection',table:'inspections',ref:'reference_no'},site:{label:'Site inspection',module:'inspection',table:'inspections',ref:'reference_no'},ra:{label:'Risk assessment',module:'risk',table:'risk_assessments',ref:'ra_ref'},ptw:{label:'Permit to work',module:'permit',table:'permits',ref:'permit_number'},event:{label:'Incident / hazard',module:'events',table:'events',ref:'event_ref'},equipment:{label:'Equipment',module:'tools',table:'tools_register',ref:'ref_number'}};
 function wsRecordLinks(row,extra){
   var links=[];
-  function add(kind,value,ref){if(!WS_RECORD_LINKS[kind]||!value)return;if(!links.some(function(link){return link.kind===kind&&(link.value===String(value)||ref&&link.ref===ref);}))links.push({kind:kind,value:String(value),ref:ref||(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(value))?'Reference unavailable':String(value))});}
+  function add(kind,value,ref){if(!WS_RECORD_LINKS[kind]||!value)return;if(!links.some(function(link){return link.kind===kind&&link.value===String(value);}))links.push({kind:kind,value:String(value),ref:ref||(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(value))?'Reference unavailable':String(value))});}
   (extra||[]).forEach(function(link){add(link.link_type,link.record_id||link.record_ref,link.record_ref);});
   add('tbt',row.toolbox_talk_id);add('prestart',row.prestart_id);add('site',row.site_inspection_id);add('ra',row.risk_assessment_id||row.ra_ref,row.ra_ref);add('ptw',row.permit_id||row.permit_ref,row.permit_ref);add('event',row.linked_event_ref);
   return links;
 }
 async function wsReadRecordLinks(row,current){
   var warning='',extra=[];
-  try{extra=await api('/work_schedule_links?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&work_order_id=eq.'+encodeURIComponent(row.id));}
+  async function allRows(path){var rows=[],page;do{page=await api(path+'&limit=1000&offset='+rows.length);AurisWorkScheduleWorkspace.assertSession(current);if(!Array.isArray(page))throw new Error('Linked record response is invalid.');rows=rows.concat(page);}while(page.length===1000);return rows;}
+  try{extra=await allRows('/work_schedule_links?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&work_order_id=eq.'+encodeURIComponent(row.id));}
   catch(e){warning='Additional linked records could not be loaded. Direct work-order links are shown. Reload to retry.';}
   AurisWorkScheduleWorkspace.assertSession(current);
   extra=(extra||[]).filter(function(link){return String(link.company_id)===current.companyId&&String(link.work_order_id)===String(row.id);});
-  var reverse=await Promise.allSettled(['ra','ptw','tbt'].map(function(kind){var info=WS_RECORD_LINKS[kind],field=kind==='tbt'?'work_schedule_id':'work_order_id';return api('/'+info.table+'?select=id,company_id,'+field+','+info.ref+'&company_id=eq.'+encodeURIComponent(current.companyId)+'&'+field+'=eq.'+encodeURIComponent(row.id));}));
+  var reverse=await Promise.allSettled(['ra','ptw','tbt'].map(function(kind){var info=WS_RECORD_LINKS[kind],field=kind==='tbt'?'work_schedule_id':'work_order_id';return allRows('/'+info.table+'?select=id,company_id,'+field+','+info.ref+'&company_id=eq.'+encodeURIComponent(current.companyId)+'&'+field+'=eq.'+encodeURIComponent(row.id));}));
   AurisWorkScheduleWorkspace.assertSession(current);
   reverse.forEach(function(result,index){var kind=['ra','ptw','tbt'][index],info=WS_RECORD_LINKS[kind],field=kind==='tbt'?'work_schedule_id':'work_order_id';if(result.status==='rejected'){warning='Some linked records could not be loaded. Reload to retry.';return;}(result.value||[]).forEach(function(record){if(String(record.company_id)===current.companyId&&String(record[field])===String(row.id))extra.push({link_type:kind,record_id:record.id,record_ref:record[info.ref]});});});
   // Standalone talks store their work-order link in notes rather than work_schedule_id.
   try{
-    var markerRows=await api('/toolbox_talks?select=id,company_id,tbt_ref,notes&company_id=eq.'+encodeURIComponent(current.companyId)+'&notes=ilike.*'+encodeURIComponent(String(row.id))+'*');
+    var markerRows=await allRows('/toolbox_talks?select=id,company_id,tbt_ref,notes&company_id=eq.'+encodeURIComponent(current.companyId)+'&notes=ilike.*'+encodeURIComponent(String(row.id))+'*');
     AurisWorkScheduleWorkspace.assertSession(current);
     (markerRows||[]).forEach(function(talk){
       if(String(talk.company_id)!==current.companyId)return;

@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   var pending=false;
-  var redundantRegisterSearch=['map-search','fire-cert-search','ptw-search','atex-search','fleet-search','tools-search','ra-search','lr-search','swms-search'];
+  var redundantRegisterSearch=['map-search','fire-cert-search','ptw-search','atex-search','fleet-search','tools-search','ra-search','lr-search','swms-search','ws-search','moc-search','kpi-x-search'];
   function visible(element){return !!element&&getComputedStyle(element).display!=='none'&&getComputedStyle(element).visibility!=='hidden';}
   function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
   function update(){

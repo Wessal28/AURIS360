@@ -1,15 +1,15 @@
 (function(){
   'use strict';
-  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page .dcx-top-tabs,.page .noise-tabs,.page .swx-tabs,.page .teu-tabs,.page [role="tablist"]';
+  var selector='.page .module-tabs,.page .bbs-tabs,.page .mtg-tabs,.page .kpi-x-tabs,.page .se-tabs,.page .dcx-top-tabs,.page .noise-tabs,.page .swx-tabs,.page .teu-tabs,.page .ccu-tabs,.page .cmu-tabs,.page .legx-tabs,.page .sov-tabs,.page [role="tablist"]';
   // These legacy navigation rows have generated class names rather than a tab-list class.
-  var moduleTabs={inspection:'insp-tab-all',contractor:'con-tab-register',esg:'esg-tab-dash',emergency:'em3tab-dash',ohealth:'oh-tab-dash',ppe:'ppe-tab-dash',fire:'fire-tab-certs',meetings:'mtg-tab-schedule',training:'train-tab-matrix'};
+  var moduleTabs={inspection:'insp-tab-all',contractor:'con-tab-register',esg:'esg-tab-dash',emergency:'em3tab-dash',ohealth:'oh-tab-dash',ppe:'ppe-tab-dash',fire:'fire-tab-certs',meetings:'mtg-tab-schedule',training:'train-tab-matrix',legal:'legal-tab-register',tools:'tools-tab-register',sop:'sop-tab-list'};
   var pending=false;
 
   function tabsIn(bar){return Array.from(bar.children).filter(function(child){return child.tagName==='BUTTON'&&!child.hidden;});}
   function activeIndex(buttons){var index=buttons.findIndex(function(button){return button.classList.contains('active')||button.getAttribute('aria-current')==='page'||button.getAttribute('aria-selected')==='true';});return index<0?0:index;}
   function label(button){var viewName=button.querySelector('.auris-module-view-copy strong');return ((viewName&&viewName.textContent)||button.textContent||'').replace(/\s+/g,' ').trim();}
   function enhance(bar){
-    if(!bar||bar.closest('.auris-section-picker,[role="dialog"],.modal')||!bar.closest('.page'))return;
+    if(!bar||bar.closest('.auris-section-picker,[role="dialog"],.modal')||!bar.closest('.page')||bar.id==='teu-legacy-tabs'||bar.id==='cmu-legacy-tabs')return;
     var buttons=tabsIn(bar);
     if(buttons.length<2||buttons.some(function(button){return !label(button);}))return;
     var picker=bar.previousElementSibling;
