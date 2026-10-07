@@ -72,7 +72,7 @@
 <script src="auris-atex-list-workspace.js?v=20260920-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260920-1"></script>
 <script src="auris-chemical-list-workspace.js?v=20260920-1"></script>
-<script src="auris-legal-list-workspace.js?v=20260916-1"></script>
+<script src="auris-legal-list-workspace.js?v=20261008-legal-not-assessed-1"></script>
 <script src="auris-ppe-list-workspace.js?v=20260916-1"></script>
 <script src="auris-ohealth-list-workspace.js?v=20260916-1"></script>
 <script src="auris-emergency-list-workspace.js?v=20260920-1"></script>
@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -1124,7 +1124,7 @@
 <div class="auris-work-s-d5129e1520">
 <input type="text" id="ws-search" class="auris-work-s-11856befbc" aria-label="Search work orders" placeholder="Search work order, location, supervisor..." data-auris-oninput="h0149"/>
 <select id="ws-filter-status" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
-<option value="">All statuses</option>
+<option value="">All statuses</option><option value="not_assessed">Not assessed</option>
 <option value="planned">Planned</option>
 <option value="approved">Approved</option>
 <option value="in_progress">In Progress</option>
@@ -3871,7 +3871,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-legal-s-ccd1ef9d3f">
 <div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Legislation name</label><input type="text" id="lr-pdf-legislation" value="Occupational Safety and Health Act 2005"/></div>
 <div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Reference prefix</label><input type="text" id="lr-pdf-prefix" value="OSH"/></div>
-<div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Default status</label><select id="lr-pdf-status"><option value="partial">Partial - to assess</option><option value="non_compliant">Non-compliant</option><option value="compliant">Compliant</option><option value="not_applicable">Not applicable</option></select></div>
+<div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Default status</label><select id="lr-pdf-status"><option value="not_assessed">Not assessed</option><option value="partial">Partial compliance</option><option value="non_compliant">Non-compliant</option><option value="compliant">Compliant</option><option value="not_applicable">Not applicable</option></select></div>
 <button class="btn btn-primary" data-auris-onclick="h0440"><i class="ti ti-upload"></i>Choose PDF</button>
 </div>
 <div id="lr-pdf-status-msg" class="auris-legal-s-fa530ed1c3">No PDF selected.</div>
@@ -4094,7 +4094,8 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-legal-s-9bcefa3fff"><div class="card-title auris-legal-s-ca32b871b2">Compliance Status</div>
 <div class="auris-legal-s-498a5137d9">
-<label class="auris-legal-s-1321ed78bb" data-auris-onclick="h0464"><input class="auris-legal-s-47d1d40bad" type="radio" name="lr-status-r" value="compliant" checked><span class="auris-legal-s-d834aec0f8">Compliant</span></label>
+<label class="auris-legal-s-88d58d43e0" data-auris-onclick="h9999"><input class="auris-legal-s-6aa3d63a22" type="radio" name="lr-status-r" value="not_assessed" checked><span class="auris-legal-s-e9afde16e0">Not assessed</span></label>
+<label class="auris-legal-s-1321ed78bb" data-auris-onclick="h0464"><input class="auris-legal-s-47d1d40bad" type="radio" name="lr-status-r" value="compliant"><span class="auris-legal-s-d834aec0f8">Compliant</span></label>
 <label class="auris-legal-s-ba03bbc764" data-auris-onclick="h0465"><input class="auris-legal-s-b25cf9d8d5" type="radio" name="lr-status-r" value="partial"><span class="auris-legal-s-f57ee6fcd1">Partial compliance</span></label>
 <label class="auris-legal-s-ffa237a31b" data-auris-onclick="h0466"><input class="auris-legal-s-319efb9ff6" type="radio" name="lr-status-r" value="non_compliant"><span class="auris-legal-s-7cd7d9cc8e">Non-compliant</span></label>
 <label class="auris-legal-s-88d58d43e0" data-auris-onclick="h0467"><input class="auris-legal-s-6aa3d63a22" type="radio" name="lr-status-r" value="not_applicable"><span class="auris-legal-s-e9afde16e0">Not applicable</span></label>

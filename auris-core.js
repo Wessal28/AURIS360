@@ -29963,6 +29963,7 @@ const LEGAL_CAT_CFG={
   other:               {emoji:'*',label:'Other',                color:'#6B7280'}
 };
 const LEG_STATUS_CFG={
+  not_assessed:  {bg:'#F1F5F9',tc:'#475569', label:'Not assessed', score:null},
   compliant:      {bg:'#EAF3DE',tc:'#3B6D11', label:'Compliant',     score:100},
   partial:        {bg:'#FEF9EC',tc:'#854F0B', label:'Partial',       score:50},
   non_compliant:  {bg:'#FCEBEB',tc:'#A32D2D', label:'Non-Compliant', score:0},
@@ -30253,6 +30254,7 @@ function legalCategoryOptionsHtml(selected){
 function legalStatusScore(status){
   if(status==='compliant')return 100;
   if(status==='partial')return 50;
+  if(status==='not_assessed'||status==='not_applicable')return null;
   return 0;
 }
 
@@ -30309,12 +30311,12 @@ async function legalImportPdfRows(){
   if(!selected.length){toast('Select at least one section to import',false);return;}
   var legislation=(document.getElementById('lr-pdf-legislation')?.value||'Imported Legal Act').trim();
   var prefix=(document.getElementById('lr-pdf-prefix')?.value||'LEG').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'LEG';
-  var status=document.getElementById('lr-pdf-status')?.value||'partial';
+  var status=document.getElementById('lr-pdf-status')?.value||'not_assessed';
   var score=legalStatusScore(status);
   var source=document.getElementById('lr-pdf-input')?.files?.[0]?.name||null;
   var existing=new Set((lrAllData||[]).filter(function(x){return x.legislation===legislation;}).map(function(x){return String(x.section||'').trim();}));
   var rows=selected.filter(function(x){return !existing.has(String(x.section||'').trim());}).map(function(x){
-    return {company_id:ccid(),req_ref:prefix+'-'+String(x.section).padStart(3,'0'),legislation:legislation,legislation_type:'statutory',part:x.part||null,title:x.title,section:x.section,requirement:x.requirement,category:x.category||'health_safety',jurisdiction:'Mauritius',authority:legislation.toLowerCase().includes('environment')?'Ministry of Environment':'OSHI',obligation_type:x.obligation_type||'mandatory',frequency:x.frequency||'ongoing',applicable:true,status:status,compliance_score:score,notes:source?'Imported from PDF: '+source:null,source_url:source,last_verified_at:new Date().toISOString(),created_by:prof?.id,updated_at:new Date().toISOString()};
+    return {company_id:ccid(),req_ref:prefix+'-'+String(x.section).padStart(3,'0'),legislation:legislation,legislation_type:'statutory',part:x.part||null,title:x.title,section:x.section,requirement:x.requirement,category:x.category||'health_safety',jurisdiction:'Mauritius',authority:legislation.toLowerCase().includes('environment')?'Ministry of Environment':'OSHI',obligation_type:x.obligation_type||'mandatory',frequency:x.frequency||'ongoing',applicable:status==='not_assessed'?null:true,status:status,compliance_score:score,notes:source?'Imported from PDF: '+source:null,source_url:source,last_verified_at:new Date().toISOString(),created_by:prof?.id,updated_at:new Date().toISOString()};
   });
   if(!rows.length){toast('All selected sections already exist for this legislation',false);return;}
   var msg=document.getElementById('lr-pdf-status-msg');
@@ -30411,7 +30413,7 @@ function legalFilterRegister(){
   var h=bulk+'<div class="table-scroll"><table class="data-table" style="min-width:1180px"><thead><tr>'+(isMgr()?'<th style="width:38px;text-align:center"><input type="checkbox" id="lr-select-all-visible" data-auris-generated-onchange="g0269" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th>Ref</th><th>Legislation</th><th style="min-width:300px">Section / Requirement</th><th>Category</th><th>Obligation</th><th>Responsibility</th><th style="text-align:center">Score</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
-    var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.non_compliant;
+    var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.not_assessed;
     var catCfg=LEGAL_CAT_CFG[x.category||'other']||LEGAL_CAT_CFG.other;
     var hasGap=x.gap||x.gap_identified;
     var score=x.compliance_score!=null?x.compliance_score:sc.score;
@@ -30432,7 +30434,7 @@ function legalFilterRegister(){
   h+='</tbody></table></div>';el.innerHTML=h;
 }
 
-function legalStatusBadge(s){var c=LEG_STATUS_CFG[s]||LEG_STATUS_CFG.non_compliant;return '<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+c.label+'</span>';}
+function legalStatusBadge(s){var c=LEG_STATUS_CFG[s]||LEG_STATUS_CFG.not_assessed;return '<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+c.label+'</span>';}
 function legalReqArchived(x){
   return ohIsArchivedText(x?.notes)||ohIsArchivedText(x?.comments)||String(x?.status||'').toLowerCase()==='archived'||(String(x?.applicable)==='false'&&/archived|retired|deleted/i.test(String(x?.notes||'')));
 }
@@ -30464,11 +30466,11 @@ function legalNewRequirement(){
   document.getElementById('lr-obligation').value='mandatory';
   document.getElementById('lr-frequency').value='ongoing';
   document.getElementById('lr-applicable').value='true';
-  document.getElementById('lr-status').value='non_compliant';
-  document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value==='non_compliant';});
+  document.getElementById('lr-status').value='not_assessed';
+  document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value==='not_assessed';});
   document.getElementById('lr-gap').checked=false;
   document.getElementById('lr-compliance-score').value=0;
-  document.getElementById('lr-score-display').textContent='0%';
+  document.getElementById('lr-score-display').textContent='Not scored';
   var aiPanel=document.getElementById('legal-ai-assess-panel');if(aiPanel)aiPanel.style.display='none';
   document.getElementById('legal-view-register').style.display='none';
   document.getElementById('legal-req-form').style.display='block';
@@ -30484,8 +30486,8 @@ function legalReqEditMode(edit){
   if(del)del.style.display=(edit&&isMgr()&&lrEditId)?'inline-flex':'none';
 }
 function legalReqReviewHtml(x){
-  var st=x.status||'non_compliant';
-  var sc=LEG_STATUS_CFG[st]||LEG_STATUS_CFG.non_compliant;
+  var st=x.status||'not_assessed';
+  var sc=LEG_STATUS_CFG[st]||LEG_STATUS_CFG.not_assessed;
   var cat=LEGAL_CAT_CFG[x.category||'other']||LEGAL_CAT_CFG.other;
   var hasGap=!!(x.gap||x.gap_identified);
   var row=function(label,value){return '<div><div class="form3label">'+label+'</div><div style="font-weight:700;color:#111827;white-space:pre-wrap">'+escH(value||'-')+'</div></div>';};
@@ -30517,13 +30519,13 @@ function legalLoadReqIntoForm(x){
   document.getElementById('lr-obligation').value=x.obligation_type||'mandatory';
   document.getElementById('lr-frequency').value=x.frequency||'ongoing';
   document.getElementById('lr-applicable').value=x.applicable!==false?'true':'false';
-  var st=x.status||'non_compliant';
+  var st=x.status||'not_assessed';
   document.getElementById('lr-status').value=st;
   document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value===st;});
   document.getElementById('lr-gap').checked=!!(x.gap||x.gap_identified);
-  var sc=x.compliance_score!=null?x.compliance_score:(LEG_STATUS_CFG[st]?.score||0);
+  var sc=x.compliance_score!=null?x.compliance_score:LEG_STATUS_CFG[st]?.score;
   document.getElementById('lr-compliance-score').value=sc!=null?sc:0;
-  document.getElementById('lr-score-display').textContent=(sc!=null?sc:0)+'%';
+  document.getElementById('lr-score-display').textContent=sc!=null?sc+'%':'Not scored';
   var aiPanel=document.getElementById('legal-ai-assess-panel');if(aiPanel)aiPanel.style.display='none';
 }
 function legalOpenReq(id){
@@ -30555,12 +30557,12 @@ function legalSetStatus(status){
   var hidden=document.getElementById('lr-status');
   if(hidden)hidden.value=status;
   document.querySelectorAll('[name="lr-status-r"]').forEach(function(r){r.checked=r.value===status;});
-  var scoreMap={compliant:100,partial:50,non_compliant:0,not_applicable:0};
+  var scoreMap={compliant:100,partial:50,non_compliant:0,not_applicable:null,not_assessed:null};
   var score=scoreMap[status]??0;
   var slider=document.getElementById('lr-compliance-score');
   var display=document.getElementById('lr-score-display');
   if(slider)slider.value=score;
-  if(display)display.textContent=score+'%';
+  if(display)display.textContent=(status==='not_assessed'||status==='not_applicable')?'Not scored':score+'%';
 }
 
 async function legalSaveReq(){
@@ -30569,8 +30571,10 @@ async function legalSaveReq(){
   var leg=document.getElementById('lr-leg-main')?.value?.trim();if(!leg){toast('Please enter legislation name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var score=parseInt(g('lr-compliance-score'))||0;
-  var st=g('lr-status')||'non_compliant';
+  var st=g('lr-status')||'not_assessed';
+  if(st==='not_assessed'||st==='not_applicable')score=null;
   var body={company_id:ccid(),legislation:leg,title:g('lr-leg-title'),section:g('lr-section'),subsection:g('lr-subsection'),requirement:g('lr-requirement'),legislation_type:g('lr-leg-type')||'statutory',category:g('lr-category')||'health_safety',jurisdiction:g('lr-jurisdiction')||'Mauritius',authority:g('lr-authority'),obligation_type:g('lr-obligation')||'mandatory',frequency:g('lr-frequency')||'ongoing',applicable:g('lr-applicable')!=='false',status:st,compliance_score:score,controls:g('lr-controls'),evidence_required:g('lr-evidence-req'),evidence_location:g('lr-evidence-loc'),gap:document.getElementById('lr-gap')?.checked||false,gap_identified:document.getElementById('lr-gap')?.checked||false,further_controls:g('lr-further-controls'),penalty_risk:g('lr-penalty'),notes:g('lr-notes'),responsibility:g('lr-responsibility'),responsible_person:g('lr-responsibility'),target_date:g('lr-target-date')||null,effective_date:g('lr-effective-date')||null,review_date:g('lr-review-date')||null,last_assessed_date:g('lr-last-assessed')||null,assessed_by:g('lr-assessed-by'),updated_at:new Date().toISOString()};
+  if(st==='not_assessed')body.applicable=null;
   try{
     if(lrEditId){await api('/legal_requirements?id=eq.'+lrEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Requirement updated!');}
     else{body.created_by=prof?.id;var res=await api('/legal_requirements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var typeCode={statutory:'REQ',regulatory:'REG',iso_standard:'ISO',client_standard:'CLI',industry_code:'IND',other:'LEG'}[body.legislation_type]||'REQ';var ref=await nextCompanyRef('legal_requirements','req_ref',typeCode+'-');await api('/legal_requirements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{req_ref:ref}});toast('Requirement saved! Ref: '+ref);if(body.gap){try{await api('/compliance_gaps',{m:'POST',p:'return=minimal',b:{company_id:ccid(),legislation:leg,section:body.section,gap_description:body.further_controls||'Gap identified - controls inadequate',risk_level:'high',status:'open',created_by:prof?.id}});}catch(ex){}}};}
@@ -30719,11 +30723,11 @@ function legalPrintRegisterEvidence(){
   var part=rows.filter(function(x){return x.status==='partial';}).length;
   var nonC=rows.filter(function(x){return x.status==='non_compliant';}).length;
   var gaps=rows.filter(function(x){return legalGapLabel(x)==='Yes';}).length;
-  var totalApplicable=rows.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).length||1;
-  var score=Math.round((comp*100+part*50)/totalApplicable);
+  var totalApplicable=rows.filter(function(x){return x.status!=='not_applicable'&&x.status!=='not_assessed'&&x.applicable!==false;}).length;
+  var score=totalApplicable?Math.round((comp*100+part*50)/totalApplicable):null;
   var currentLeg='';
   var html='<link rel="stylesheet" href="/auris-print-legal-register.css">'
-    +'<div class="report-page"><div class="rpt-header"><div><div class="legal-print-title">Legal Compliance Register</div><div class="legal-print-sub">'+escH(company)+' - operational evidence view</div></div><div class="legal-print-meta"><b>Generated:</b> '+new Date().toLocaleDateString('en-GB')+'<br><b>Scope:</b> '+rows.length+' visible requirements<br><b>Score:</b> '+score+'%</div></div>'
+    +'<div class="report-page"><div class="rpt-header"><div><div class="legal-print-title">Legal Compliance Register</div><div class="legal-print-sub">'+escH(company)+' - operational evidence view</div></div><div class="legal-print-meta"><b>Generated:</b> '+new Date().toLocaleDateString('en-GB')+'<br><b>Scope:</b> '+rows.length+' visible requirements<br><b>Score:</b> '+(score==null?'Not assessed':score+'%')+'</div></div>'
     +'<div class="legal-summary"><div class="legal-chip"><b>'+rows.length+'</b><span>Requirements</span></div><div class="legal-chip"><b>'+comp+'</b><span>Compliant</span></div><div class="legal-chip"><b>'+part+'</b><span>Partial</span></div><div class="legal-chip"><b>'+nonC+'</b><span>Non-compliant</span></div><div class="legal-chip"><b>'+gaps+'</b><span>Open gaps</span></div></div>'
     +'<table class="legal-print-table"><thead><tr><th style="width:7%">Ref</th><th style="width:23%">Section / requirement</th><th style="width:22%">Current controls</th><th style="width:9%">Status</th><th style="width:7%">Gap</th><th style="width:20%">Recommendations / further controls</th><th style="width:7%">Action by</th><th style="width:5%">Target</th></tr></thead><tbody>';
   rows.forEach(function(x){
