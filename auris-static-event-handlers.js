@@ -1390,6 +1390,9 @@ legalAIAssessRequirement()
     "h0463": function (event) {
 legalSaveReq()
     },
+    "h9999": function (event) {
+legalSetStatus('not_assessed')
+    },
     "h0464": function (event) {
 legalSetStatus('compliant')
     },
