@@ -11,13 +11,18 @@ function runtime(respond=()=>[]){
 const withRecord=(handler=()=>[],row=record)=>url=>url.startsWith('/toolbox_talks?')?[row]:handler(url);
 test('toolbox overview reads exact company/record before bounded shared history',async()=>{
   const r=runtime(withRecord()),before=JSON.stringify(record),result=await r.api.load(source,current,{topics:{chemical:{label:'Chemical / COSHH'}}});
-  assert.equal(r.calls[0],'/toolbox_talks?select=*&company_id=eq.co-a&id=eq.talk-1&limit=1');assert.equal(r.calls.length,3);
-  for(const url of r.calls.slice(1)){assert.match(url,/company_id=eq.co-a/);assert.match(url,/meetings/);assert.match(url,/toolbox_talks/);assert.match(url,/talk-1/);assert.match(url,/limit=101/);}
+  assert.equal(r.calls[0],'/toolbox_talks?select=*&company_id=eq.co-a&id=eq.talk-1&limit=1');assert.equal(r.calls.length,4);
+  assert.match(r.calls[1],/^\/work_schedule\?select=id,company_id,ref_number,title&company_id=eq.co-a&id=eq.work-1&limit=1$/);
+  for(const url of r.calls.slice(2)){assert.match(url,/company_id=eq.co-a/);assert.match(url,/meetings/);assert.match(url,/toolbox_talks/);assert.match(url,/talk-1/);assert.match(url,/limit=101/);}
   assert.equal(result.record.topic_label,'Chemical / COSHH');assert.equal(result.record.status_label,'Draft');assert.equal(result.record.duration_label,0);assert.equal(result.record.date_label,'2026-09-08');assert.equal(JSON.stringify(record),before);
 });
-test('attendance preserves names, snapshots, times, methods and missing confirmation without exposing PINs',async()=>{
+test('attendance overview shows names only without internal confirmation metadata or PINs',async()=>{
   const value=(await runtime(withRecord()).api.load(source,current)).record;
-  assert.equal(value.attendance_label,2);assert.match(value.attendees_label,/Person One.*\nDepartment: Ops; Organisation: Company A; Role: Operator/);assert.match(value.attendees_label,/Recorded method: employee_code/);assert.match(value.attendees_label,/Person Two.*\n.*\nConfirmation time: Not recorded/);assert.doesNotMatch(value.attendees_label,/never-display-this|Confirmed|Approved/);
+  assert.equal(value.attendance_label,2);assert.match(value.attendees_label,/Person One/);assert.match(value.attendees_label,/Person Two/);assert.doesNotMatch(value.attendees_label,/never-display-this|Confirmed|Approved|Department|Organisation|Role|method|time/);
+});
+test('linked work shows the current reference and title when the exact company record is available',async()=>{
+  const r=runtime(withRecord(url=>url.startsWith('/work_schedule?')?[{id:'work-1',company_id:'co-a',ref_number:'WO-123',title:'Current work title'}]:[]));
+  const value=await r.api.load(source,current);assert.equal(value.record.work_label,'WO-123 — Current work title');
 });
 test('linked work, content and action snapshots retain facts without implying live state',async()=>{
   const value=await runtime(withRecord()).api.load(source,current);

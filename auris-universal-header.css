@@ -2,7 +2,19 @@
 .auris-section-picker.auris-section-mirrored{display:none!important}
 #app .page .page-title.auris-title-mirrored,#page-kpi .kpi-x-title.auris-title-mirrored{display:none!important}
 #auris-sidebar-logo{display:block!important;object-fit:contain!important;object-position:center!important;background-image:none!important;background-size:auto!important}
-.page :is(#map-search,#fire-cert-search,#ptw-search,#atex-search,#fleet-search,#tools-search,#ra-search,#lr-search,#swms-search){display:none!important}
+.page :is(#map-search,#fire-cert-search,#ptw-search,#atex-search,#fleet-search,#tools-search,#ra-search,#lr-search,#swms-search,#ws-search,#moc-search,#kpi-x-search){display:none!important}
+#page-kpi .kpi-x-field:has(#kpi-x-search),#page-legal .legx-filter-field.search{display:none!important}
+#page-moc>.page-header>div:first-child,#page-actions>.page-header>div:first-child,#page-chemical>.page-header>div:first-child,#page-legal>.page-header>div:first-child,#page-sop>.page-header>div:first-child,#page-tools>.page-header>div:first-child{display:none!important}
+#page-moc>.page-header,#page-actions>.page-header,#page-chemical>.page-header,#page-legal>.page-header,#page-sop>.page-header,#page-tools>.page-header{justify-content:flex-end;min-height:0;padding:8px 0;margin:0}
+#page-fire .auris-fire-certificates-s-73f315dd9f{display:grid;grid-template-columns:minmax(150px,1fr) repeat(3,minmax(145px,1fr));align-items:center;gap:10px}
+#page-fire .auris-fire-certificates-s-73f315dd9f>span{font-weight:750}
+#page-fire .auris-fire-certificates-s-73f315dd9f>select{width:100%;min-width:0}
+#page-actions .auris-map-s-54bb9f1d16{padding:10px 12px;margin-bottom:8px}
+#page-actions .auris-map-s-d5129e1520{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px}
+#page-actions .auris-map-s-d5129e1520>select{width:100%;min-width:0}
+#page-actions #map-list-view .ave-toolbar{margin-top:0}
+@media(max-width:900px){#page-fire .auris-fire-certificates-s-73f315dd9f{grid-template-columns:repeat(2,minmax(0,1fr))}#page-fire .auris-fire-certificates-s-73f315dd9f>span{grid-column:1/-1}#page-actions .auris-map-s-d5129e1520{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){#page-fire .auris-fire-certificates-s-73f315dd9f,#page-actions .auris-map-s-d5129e1520{grid-template-columns:1fr}}
 .sidebar-brand-row:before{display:none!important}
 @media(min-width:769px){
   #app .topbar{min-height:64px;gap:12px;padding:8px 18px;background:linear-gradient(105deg,#102337,#18364f);color:#fff;border-bottom:3px solid #21b573}

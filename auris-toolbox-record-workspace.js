@@ -30,9 +30,9 @@ function project(record,current,options){
   var result=copy(record),display=root.AurisToolboxListWorkspace.project([record],current,{topics:options&&options.topics})[0],work=linkedWork(record);
   result.key_points=record.key_points||record.topics_covered;result.title=record.title||'Untitled toolbox talk';result.reference_label=record.tbt_ref||'Not recorded';result.status_label=display.status;result.topic_label=display.topic;
   result.date_label=text(record.talk_date);result.duration_label=display.duration;result.presenter_label=text(record.presenter||record.conducted_by_name);result.attendance_label=display.attendees;
-  result.attendees_label=recordedList(record.attendees,function(item){return 'Name: '+text(item.name||item.full_name||item.person_name)+'\nDepartment: '+text(item.dept||item.department)+'; Organisation: '+text(item.organization_snapshot)+'; Role: '+text(item.role_snapshot)+'\nConfirmation time: '+localTime(item.confirmed_at)+'\nRecorded method: '+text(item.confirmation_method);});
+  result.attendees_label=recordedList(record.attendees,function(item){return text(item.name||item.full_name||item.person_name);});
   result.actions_label=recordedList(record.actions_raised,function(item){return text(item.description)+'\nAssigned to: '+text(item.assigned_to)+'; Due: '+text(item.due_date);});
-  result.work_label=work.value;result.notes_label=text(work.notes);result.created_label=localTime(record.created_at);result.updated_label=localTime(record.updated_at);
+  result.work_label=work.value;result.notes_label=text(work.notes);
   return result;
 }
 async function load(source,current,options){
@@ -40,7 +40,13 @@ async function load(source,current,options){
   var api=root.AurisPlatformServices.api,q='company_id=eq.'+encodeURIComponent(current.companyId),id=encodeURIComponent(source.id);
   var rows=await api.request('/toolbox_talks?select=*&'+q+'&id=eq.'+id+'&limit=1');assertSession(current,options);
   if(!Array.isArray(rows)||rows.length!==1)throw new Error('This toolbox talk is unavailable or outside your company access.');assertRecord(rows[0],source);
-  var record=project(rows[0],current,options),activities=[],notices=['Recorded snapshot: an attendee name or count is not confirmation. Check the recorded confirmation time and method.','Linked work/actions are snapshots, not live status or proof of Master Action creation. History includes only entries linked to this exact talk; it may be incomplete.'];
+  var record=project(rows[0],current,options),activities=[],notices=['Attendance names are shown for easy reading; use the original talk form to review recorded confirmations.','Recorded actions are snapshots, not live status or proof of Master Action creation. History includes only entries linked to this exact talk; it may be incomplete.'];
+  var marker=String(rows[0].notes||'').match(/\[AURIS360_LINKED_WORK:({[\s\S]*?})\]/),workId=rows[0].work_order_id||rows[0].work_schedule_id;
+  if(!workId&&marker){try{workId=JSON.parse(marker[1]).id;}catch(_){}}
+  if(workId&&!/^Conflicting recorded work IDs/.test(record.work_label)&&/^[a-zA-Z0-9_-]{1,100}$/.test(String(workId))){
+    try{var workRows=await api.request('/work_schedule?select=id,company_id,ref_number,title&'+q+'&id=eq.'+encodeURIComponent(workId)+'&limit=1');assertSession(current,options);var workRow=(workRows||[]).find(function(item){return String(item.id)===String(workId)&&String(item.company_id)===current.companyId;});if(workRow)record.work_label=[workRow.ref_number||workRow.id,workRow.title].filter(Boolean).join(' — ');}
+    catch(error){assertSession(current,options);notices.push('The current work-order reference could not be loaded. The recorded link is shown instead.');}
+  }
   async function history(path,label){try{var data=await api.request(path);assertSession(current,options);if(!Array.isArray(data))throw new Error('Malformed history');if(data.length>limit)notices.push(label+' is limited to the latest '+limit+' entries; older entries are not shown.');return data.slice(0,limit);}catch(error){assertSession(current,options);notices.push(label+' is unavailable. This does not mean no history exists. Reopen the overview to retry.');return [];}}
   var parts=await Promise.all([
     history('/work_activities?select=*&'+q+'&source_module=eq.meetings&source_table=eq.toolbox_talks&source_record_id=eq.'+id+'&order=created_at.desc&limit=101','Shared activity and evidence'),
@@ -61,9 +67,8 @@ function fields(){return [
   {key:'reference_label',label:'Reference'},{key:'status_label',label:'Recorded status'},{key:'topic_label',label:'Topic'},{key:'date_label',label:'Talk date'},
   {key:'presenter_label',label:'Presenter'},{key:'location',label:'Location'},{key:'department',label:'Department'},{key:'duration_label',label:'Duration (minutes)'},
   {key:'key_points',label:'Key points',section:'Talk content'},{key:'hazards_discussed',label:'Hazards discussed',section:'Talk content'},{key:'incidents_referenced',label:'Incidents referenced',section:'Talk content'},{key:'notes_label',label:'Notes',section:'Talk content'},
-  {key:'attendance_label',label:'Recorded attendance count',section:'Attendance snapshot'},{key:'attendees_label',label:'Attendees and recorded confirmations',section:'Attendance snapshot'},
-  {key:'work_label',label:'Recorded linked work — not live status',section:'Linked work snapshot'},{key:'actions_label',label:'Recorded action items — not live progress',section:'Action snapshot'},
-  {key:'created_label',label:'Created (local time)',section:'Record timestamps'},{key:'updated_label',label:'Updated (local time)',section:'Record timestamps'}
+  {key:'attendance_label',label:'Attendance count',section:'Attendance'},{key:'attendees_label',label:'Attendees',section:'Attendance'},
+  {key:'work_label',label:'Linked work',section:'Linked work'},{key:'actions_label',label:'Action items',section:'Actions'}
 ];}
 async function open(id,options){
   options=options||{};id=identifier(id);var current=session();assertSession(current,options);

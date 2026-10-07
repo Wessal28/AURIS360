@@ -7,6 +7,8 @@
 .sidebar .auris-sidebar-shortcut-group button{display:flex;align-items:center;gap:7px;width:100%;min-height:32px;padding:4px 7px;border:0;border-radius:7px;background:transparent;color:#17344b;font:inherit;font-size:11px;text-align:left;cursor:pointer}
 .sidebar .auris-sidebar-shortcut-group button:hover,.sidebar .auris-sidebar-shortcut-group button:focus-visible{background:#e8f7f2}
 .sidebar .auris-sidebar-shortcut-group button i{font-size:15px}
+.sidebar .auris-sidebar-shortcut-group button i.auris-module-icon{flex:none}
+html[data-company-icon-style="2d"] .sidebar .auris-sidebar-shortcut-group button i.ti{display:inline-grid;place-items:center;flex:none;width:24px;height:24px;border-radius:7px;background:var(--brand-primary);color:#fff;box-shadow:none;text-shadow:none;filter:none}
 .sidebar .nav-section[role="button"]{cursor:pointer}
 .sidebar .nav-section[role="button"]:after{content:'⌄';float:right;font-size:14px}
 .sidebar .nav-section[aria-expanded="false"]:after{content:'›'}

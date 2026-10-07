@@ -25967,9 +25967,10 @@ async function toolsStartInspection(toolId,returnTab){
   toolsInspectionReturnTab=returnTab||(activeToolsTab==='register'?'register':'inspection');
   var tool=toolsAllData.find(x=>x.id===toolId)||toolsLiftingData.find(x=>x.id===toolId);
   if(!tool&&toolId){try{var d=await api('/tools_register?id=eq.'+toolId+'&select=*');tool=d?.[0];}catch(e){}}
-  if(!tool){toast('Equipment not found',false);return;}
+  if(!tool){toast('Equipment not found',false);return false;}
   toolsInspEquipId=toolId;
   toolsInspEditingId=null;
+  [['insp-type','periodic'],['insp-result','pass'],['insp-defects',''],['insp-actions','']].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1];});
   // Set header info
   document.getElementById('insp-equip-name').textContent=tool.name||'-';
   document.getElementById('insp-equip-ref').textContent=tool.ref_number||'';
@@ -25992,6 +25993,29 @@ async function toolsStartInspection(toolId,returnTab){
   ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='block';
+  return true;
+}
+
+async function toolsEditInspection(id){
+  if(!isMgr()){toast('Manager access is required to edit an inspection.',false);return;}
+  try{
+    var rows=await api('/tool_inspections?id=eq.'+encodeURIComponent(id)+'&select=*'+cf()+'&limit=1'),record=rows?.[0];
+    if(!record||String(record.company_id)!==String(ccid()))throw new Error('Inspection not found in the selected company.');
+    if(record.status==='archived')throw new Error('Archived inspections cannot be edited.');
+    if(!await toolsStartInspection(record.tool_id,'inspection'))return;
+    toolsInspEditingId=record.id;
+    document.getElementById('tools-insp-form3title').textContent='Edit inspection';
+    if(record.inspected_by&&!Array.from(document.getElementById('insp-inspector').options).some(function(option){return option.value===record.inspected_by;})){var inspector=document.createElement('option');inspector.value=record.inspected_by;inspector.textContent=record.inspected_by_name||'Recorded inspector';document.getElementById('insp-inspector').appendChild(inspector);}
+    [['insp-date',record.inspection_date],['insp-type',record.inspection_type],['insp-inspector',record.inspected_by],['insp-result',record.overall_result],['insp-defects',record.defects_found],['insp-actions',record.actions_taken],['insp-next-date',record.next_inspection_date]].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1]||'';});
+    var checks=Array.isArray(record.checklist_results)?record.checklist_results:[];
+    if(checks.length){
+      var body=document.getElementById('insp-checklist-body');body.replaceChildren();
+      checks.forEach(function(check,index){
+        var tr=document.createElement('tr');tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(check.item||('Check '+(index+1)))+'</td>'+['ok','fail','na'].map(function(result){return '<td style="padding:6px;text-align:center"><input type="radio" name="chk'+index+'" value="'+result+'" id="ci-'+result+'-'+index+'" data-auris-generated-onchange="g0233"'+((check.result||'na')===result?' checked':'')+'></td>';}).join('')+'<td style="padding:4px 12px"><input type="text" class="insp-note-'+index+'" placeholder="Notes..." value="'+escH(check.note||'')+'"></td>';body.appendChild(tr);
+      });
+      toolsInspScore();document.getElementById('insp-result').value=record.overall_result||'pass';
+    }
+  }catch(error){toast(error.message||'Inspection could not be opened for editing.',false);}
 }
 
 async function toolsLoadChecklist(category,tool){
@@ -26086,12 +26110,12 @@ async function toolsSaveInspection(){
     defects_found:document.getElementById('insp-defects')?.value||null,
     actions_taken:document.getElementById('insp-actions')?.value||null,
     next_inspection_date:document.getElementById('insp-next-date')?.value||null,
-    created_by:prof?.id
+    ...(toolsInspEditingId?{}:{created_by:prof?.id})
   };
   try{
-    await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
+    await api(toolsInspEditingId?'/tool_inspections?id=eq.'+encodeURIComponent(toolsInspEditingId):'/tool_inspections',{m:toolsInspEditingId?'PATCH':'POST',p:'return=minimal',b:body});
     // If fail, add to MAP. A follow-up failure must never misreport the inspection save.
-    if(body.overall_result==='fail'&&body.defects_found){
+    if(!toolsInspEditingId&&body.overall_result==='fail'&&body.defects_found){
       var tool=toolsAllData.find(x=>x.id===toolsInspEquipId);
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
@@ -26480,11 +26504,13 @@ async function toolsViewInspection(id){
       +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 10px;text-align:left">Check item</th><th style="padding:8px 10px;text-align:center;width:90px">Result</th><th style="padding:8px 10px;text-align:left">Notes</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
       +(String(x.status||'active')==='archived'?'<div style="margin-top:14px;padding:10px 12px;border-radius:8px;background:#FEF9EC;color:#854F0B;font-size:12px"><strong>Archived</strong>'+(x.archived_at?' on '+escH(new Date(x.archived_at).toLocaleString()):'')+(x.archived_by_name?' by '+escH(x.archived_by_name):'')+(x.archive_reason?'<br>Reason: '+escH(x.archive_reason):'')+'</div>':'')
       +'<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn tools-inspection-print"><i class="ti ti-printer"></i>Print this inspection</button>'
+      +(String(x.status||'active')!=='archived'&&isMgr()?'<button class="btn tools-inspection-edit" type="button"><i class="ti ti-pencil"></i>Edit inspection</button>':'')
       +(String(x.status||'active')==='archived'&&toolsCanPermanentlyDeleteInspection()?'<button class="btn danger tools-inspection-delete-detail" type="button"><i class="ti ti-trash"></i>Delete permanently</button>':String(x.status||'active')!=='archived'&&toolsCanArchiveInspection()?'<button class="btn danger tools-inspection-archive-detail" type="button"><i class="ti ti-archive"></i>Archive</button>':'')
       +'<button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
       +'</div></div>';
     document.body.appendChild(modal);
     modal.querySelector('.tools-inspection-print')?.addEventListener('click',function(){printRegisterView('Equipment inspection - '+(tool.name||''),'#tools-inspection-detail-modal .tools-inspection-print-area');});
+    modal.querySelector('.tools-inspection-edit')?.addEventListener('click',async function(){modal.remove();await toolsEditInspection(x.id);});
     modal.querySelector('.tools-inspection-archive-detail')?.addEventListener('click',function(){toolsArchiveInspection(x.id);});
     modal.querySelector('.tools-inspection-delete-detail')?.addEventListener('click',function(){toolsDeleteInspectionPermanently(x.id);});
     modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
