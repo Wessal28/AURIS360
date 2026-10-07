@@ -15,3 +15,17 @@
 @media(max-width:1150px){.dcx-grid.six{grid-template-columns:repeat(3,1fr)}.dcx-grid.four{grid-template-columns:repeat(2,1fr)}.dcx-toolbar{grid-template-columns:repeat(3,1fr)}.dcx-config-layout{grid-template-columns:190px minmax(0,1fr)}}
 @media(max-width:720px){#page-documents.dcx-page{padding:8px}.dcx-module-head,.dcx-head,.dcx-doc-head{flex-direction:column}.dcx-actions{justify-content:flex-start}.dcx-grid.two,.dcx-grid.three,.dcx-grid.four,.dcx-grid.six{grid-template-columns:1fr}.dcx-toolbar,.dcx-form{grid-template-columns:1fr}.dcx-field.full,.dcx-form .full{grid-column:auto}.dcx-config-layout{grid-template-columns:1fr}.dcx-config-nav{display:flex;overflow:auto}.dcx-config-nav button{width:auto;white-space:nowrap}.dcx-config-nav button .ti-circle-check-filled{display:none}.dcx-config-hero{grid-template-columns:42px minmax(0,1fr)}.dcx-config-state{grid-column:1/-1;text-align:left}.dcx-setting-grid{grid-template-columns:1fr}.dcx-table{min-width:740px}.dcx-kv{grid-template-columns:120px 1fr}.dcx-drawer{width:100%}}
 .dcx-top-tabs{flex-wrap:wrap;overflow:visible}.dcx-top-tabs button{flex:1 1 145px;white-space:normal;min-height:40px}
+.dcx-page-toolbar{display:flex;align-items:end;justify-content:space-between;gap:12px;background:#fff;border:1px solid var(--dcx-line);border-radius:12px;padding:11px 14px;margin-bottom:14px}
+.dcx-page-toolbar [hidden]{display:none!important}
+.dcx-toolbar .dcx-field input,.dcx-toolbar .dcx-field select{box-sizing:border-box}
+.dcx-toolbar>.dcx-btn{align-self:end}
+#dcx-top-tabs{display:grid;gap:4px;min-width:min(310px,100%)}
+#dcx-top-tabs label{font-size:10px;font-weight:800;color:var(--dcx-muted);text-transform:uppercase}
+#dcx-page-select{min-height:38px;border:1px solid var(--dcx-line);border-radius:8px;background:#fff;color:var(--dcx-navy);font-size:13px;font-weight:700;font-family:inherit;padding:6px 10px}
+.dcx-preview-open .dcx-drawer{width:min(1200px,98vw)}
+.dcx-preview-open .dcx-drawer-body{display:flex;flex-direction:column;gap:10px}
+.dcx-preview-frame{width:100%;min-height:65vh;flex:1;border:1px solid var(--dcx-line);border-radius:8px;background:#fff}
+.dcx-preview-image{display:block;max-width:100%;height:auto;max-height:72vh;object-fit:contain;margin:auto}
+.dcx-badge.current_authorised{background:#dbf4e5;color:#17633b}
+.dcx-badge.obsolete_not_authorised{background:#fff0e8;color:#9b3b1c}
+@media(max-width:720px){.dcx-page-toolbar{align-items:stretch;flex-direction:column}#dcx-top-tabs{min-width:0}.dcx-preview-open .dcx-drawer{width:100vw}}
