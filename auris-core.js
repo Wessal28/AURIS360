@@ -14393,6 +14393,18 @@ async function wsEnsureLinkedRow(rows,selected,path,matchFn){
   return rows;
 }
 
+async function wsEnsureInspectionLinks(rows,links){
+  rows=rows||[];
+  var ids=[...new Set((links||[]).map(function(link){return String(link.record_id||'');}).filter(function(id){return /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id)&&!rows.some(function(row){return String(row.id)===id;});}))];
+  for(var id of ids){
+    try{
+      var found=await api('/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(id)+'&limit=1');
+      if(found&&found[0]&&String(found[0].id)===id)rows.push(found[0]);
+    }catch(_){/* A saved link remains visible even if its record is unavailable. */}
+  }
+  return rows;
+}
+
 async function wsLoadLinkedRecordOptions(x){
   var set=function(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;};
   try{
@@ -14405,10 +14417,13 @@ async function wsLoadLinkedRecordOptions(x){
       api('/events?select=id,event_ref,incident_number,event_type,severity,status,description,event_date'+cf()+'&order=event_date.desc,created_at.desc&limit=150').catch(function(){return[];})
       ,api('/work_schedule_links?select=*'+cf()+'&work_order_id=eq.'+wsRestEqValue(x.id)+'&order=created_at.asc').catch(function(){return[];})
     ]);
-    x.__hseLinks=data[6]||[];var linked=function(kind,fallback,directRows,valueFn){var values=x.__hseLinks.filter(function(l){return l.link_type===kind;}).map(function(l){return l.record_ref||l.record_id;}).filter(Boolean);(directRows||[]).filter(function(r){return String(r.work_order_id||'')===String(x.id);}).forEach(function(r){var v=valueFn(r);if(v&&!values.includes(v))values.push(v);});if(fallback&&!values.includes(fallback))values.unshift(fallback);return values;};
+    x.__hseLinks=(data[6]||[]).filter(function(link){return String(link.company_id)===String(ccid())&&String(link.work_order_id)===String(x.id);});
+    var linked=function(kind,fallback,directRows,valueFn){var useId=['tbt','prestart','site'].includes(kind),values=x.__hseLinks.filter(function(l){return l.link_type===kind;}).map(function(l){return useId?(l.record_id||l.record_ref):(l.record_ref||l.record_id);}).filter(Boolean).map(String);(directRows||[]).filter(function(r){return String(r.work_order_id||'')===String(x.id);}).forEach(function(r){var v=valueFn(r);if(v&&!values.includes(String(v)))values.push(String(v));});if(fallback&&!values.includes(String(fallback)))values.unshift(String(fallback));return values;};
     data[0]=await wsEnsureLinkedRow(data[0],x.toolbox_talk_id,'/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&id=eq.'+wsRestEqValue(x.toolbox_talk_id)+'&limit=1',function(r,v){return r.id===v||r.tbt_ref===v;});
     data[1]=await wsEnsureLinkedRow(data[1],x.prestart_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.prestart_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
     data[2]=await wsEnsureLinkedRow(data[2],x.site_inspection_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.site_inspection_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
+    data[1]=await wsEnsureInspectionLinks(data[1],x.__hseLinks.filter(function(link){return link.link_type==='prestart';}));
+    data[2]=await wsEnsureInspectionLinks(data[2],x.__hseLinks.filter(function(link){return link.link_type==='site';}));
     set('ws-link-tbt',wsLinkedOptionHtml(data[0],linked('tbt',x.toolbox_talk_id),'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
     set('ws-link-prestart',wsLinkedOptionHtml(data[1],linked('prestart',x.prestart_id),'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
     set('ws-link-site',wsLinkedOptionHtml(data[2],linked('site',x.site_inspection_id),'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
