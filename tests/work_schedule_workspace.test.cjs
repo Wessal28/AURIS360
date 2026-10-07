@@ -102,6 +102,17 @@ test('all saved toolbox talks for a work order appear even when the link table i
  assert.deepEqual(Array.from(data.links.filter(link=>link.kind==='tbt'),link=>link.ref),['TBT-A','TBT-C','Reference unavailable']);
  assert.ok(queries.every(url=>url.includes('company_id=eq.co-a')));
 });
+test('every linked pre-start and site inspection appears in the work-order window',async()=>{
+ const r=runtime(),inspectionIds=['11111111-1111-4111-8111-111111111112','11111111-1111-4111-8111-111111111113','11111111-1111-4111-8111-111111111114'];
+ r.context.api=async url=>{
+  if(url.startsWith('/work_schedule_links?'))return inspectionIds.map((id,index)=>({company_id:'co-a',work_order_id:'wo-1',link_type:index===2?'site':'prestart',record_id:id,record_ref:`INSP-${index+1}`})).concat([{company_id:'co-b',work_order_id:'wo-1',link_type:'site',record_id:'private',record_ref:'PRIVATE'}]);
+  if(url.startsWith('/risk_assessments?')||url.startsWith('/permits?')||url.startsWith('/toolbox_talks?'))return [];
+  throw Error('Unexpected request '+url);
+ };
+ const data=await r.context.wsReadRecordLinks(rows[0],r.api.session());
+ assert.deepEqual(Array.from(data.links.filter(link=>['prestart','site'].includes(link.kind)),link=>link.ref),['INSP-1','INSP-2','INSP-3']);
+ const html=r.context.wsRelatedRecordsHtml(data,null);assert.equal((html.match(/data-ws-related=/g)||[]).length,4);assert.doesNotMatch(html,/PRIVATE/);
+});
 test('read-only work order puts creation shortcuts above details and related records below',()=>{
  const r=runtime(),host={innerHTML:'',querySelector:()=>({addEventListener:()=>{},focus:()=>{}}),addEventListener:()=>{}};
  r.context.document={getElementById:id=>id==='page-workschedule'?{appendChild:()=>{}}:null,createElement:()=>host};
