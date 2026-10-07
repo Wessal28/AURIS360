@@ -32,12 +32,22 @@ html[data-company-dark="true"] .page :is(.page-title,.card-title,.metric-value,.
 html[data-company-dark="true"] .page :is(th,td,.form3label,.metric-label,.hse-cc-sub){color:var(--text)!important}
 html[data-company-dark="true"] .page :is(input,select,textarea){background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
 
-/* Flat symbols use the same Tabler glyphs as the 3D module artwork. */
+/* Flat symbols keep each module's meaning and colour without the 3D atlas. */
+html[data-company-icon-style="2d"] [data-nav-key]{--flat-icon-color:#167d9f}
+html[data-company-icon-style="2d"] :is([data-nav-key="dashboard"],[data-nav-key="executive"],[data-nav-key="ai-insights"],[data-nav-key="audit"]){--flat-icon-color:#2563b8}
+html[data-company-icon-style="2d"] :is([data-nav-key="kpi"],[data-nav-key="risk"],[data-nav-key="inspection"],[data-nav-key="engagement"]){--flat-icon-color:#07966a}
+html[data-company-icon-style="2d"] :is([data-nav-key="events"],[data-nav-key="fire"],[data-nav-key="emergency"],[data-nav-key="atex"]){--flat-icon-color:#d44535}
+html[data-company-icon-style="2d"] :is([data-nav-key="observation"],[data-nav-key="training"],[data-nav-key="people"],[data-nav-key="users"]){--flat-icon-color:#7c46c3}
+html[data-company-icon-style="2d"] :is([data-nav-key="workschedule"],[data-nav-key="actions"],[data-nav-key="moc"],[data-nav-key="contractor"],[data-nav-key="tools"],[data-nav-key="fleet"]){--flat-icon-color:#d87816}
+html[data-company-icon-style="2d"] :is([data-nav-key="permit"],[data-nav-key="sitemap"],[data-nav-key="ohealth"],[data-nav-key="ppe"],[data-nav-key="chemical"],[data-nav-key="esg"],[data-nav-key="noise"]){--flat-icon-color:#0b909e}
+html[data-company-icon-style="2d"] :is([data-nav-key="meetings"],[data-nav-key="sop"],[data-nav-key="swms"],[data-nav-key="documents"],[data-nav-key="legal"],[data-nav-key="settings"],[data-nav-key="admin"],[data-nav-key="companies"],[data-nav-key="integrations"],[data-nav-key="approvals"]){--flat-icon-color:#4754b8}
 html[data-company-icon-style="2d"] .sidebar .nav-item i.ti,
+html[data-company-icon-style="2d"] .sidebar .auris-sidebar-shortcut-group button[data-nav-key] i.ti,
 html[data-company-icon-style="2d"] .modules-menu-item i.ti,
 html[data-company-icon-style="2d"] .mob-nav-btn i.ti,
 html[data-company-icon-style="2d"] .mob-module-btn i.ti,
-html[data-company-icon-style="2d"] .auris-app-card-icon i.ti{background:var(--brand-primary)!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;font-size:18px!important}
+html[data-company-icon-style="2d"] .mob-search-result i.ti,
+html[data-company-icon-style="2d"] .auris-app-card-icon i.ti{display:inline-grid!important;place-items:center!important;width:34px!important;height:34px!important;min-width:34px!important;background-image:none!important;background-color:color-mix(in srgb,var(--flat-icon-color) 16%,var(--card,#fff))!important;color:var(--flat-icon-color)!important;border:1px solid color-mix(in srgb,var(--flat-icon-color) 34%,transparent)!important;border-radius:8px!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;font-size:21px!important}
 html[data-company-icon-style="2d"] .sidebar .nav-item i.ti:after{display:none!important}
 html[data-company-icon-style="2d"] .page button.auris-icon-tab>i.auris-tab-icon{background:var(--tab-icon)!important;box-shadow:none!important;text-shadow:none!important;transform:none!important}
 html[data-company-icon-style="2d"] .auris-indicator-icon,
