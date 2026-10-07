@@ -41,6 +41,27 @@ html[data-company-icon-style="2d"] :is([data-nav-key="observation"],[data-nav-ke
 html[data-company-icon-style="2d"] :is([data-nav-key="workschedule"],[data-nav-key="actions"],[data-nav-key="moc"],[data-nav-key="contractor"],[data-nav-key="tools"],[data-nav-key="fleet"]){--flat-icon-color:#d87816}
 html[data-company-icon-style="2d"] :is([data-nav-key="permit"],[data-nav-key="sitemap"],[data-nav-key="ohealth"],[data-nav-key="ppe"],[data-nav-key="chemical"],[data-nav-key="esg"],[data-nav-key="noise"]){--flat-icon-color:#0b909e}
 html[data-company-icon-style="2d"] :is([data-nav-key="meetings"],[data-nav-key="sop"],[data-nav-key="swms"],[data-nav-key="documents"],[data-nav-key="legal"],[data-nav-key="settings"],[data-nav-key="admin"],[data-nav-key="companies"],[data-nav-key="integrations"],[data-nav-key="approvals"]){--flat-icon-color:#4754b8}
+/* Exact icon artwork embedded in Improvement 261005, shown at the native 34px navigation size. */
+html[data-company-icon-style="2d"] [data-nav-key="dashboard"]{--flat-reference-position:-21px -64px}
+html[data-company-icon-style="2d"] [data-nav-key="risk"]{--flat-reference-position:-79px -64px}
+html[data-company-icon-style="2d"] [data-nav-key="sop"]{--flat-reference-position:-140px -64px}
+html[data-company-icon-style="2d"] [data-nav-key="moc"]{--flat-reference-position:-199px -64px}
+html[data-company-icon-style="2d"] [data-nav-key="elearning"]{--flat-reference-position:-258px -64px}
+html[data-company-icon-style="2d"] [data-nav-key="chemical"]{--flat-reference-position:-21px -122px}
+html[data-company-icon-style="2d"] [data-nav-key="contractor"]{--flat-reference-position:-79px -122px}
+html[data-company-icon-style="2d"] [data-nav-key="tools"]{--flat-reference-position:-140px -122px}
+html[data-company-icon-style="2d"] [data-nav-key="noise"]{--flat-reference-position:-199px -122px}
+html[data-company-icon-style="2d"] [data-nav-key="fire"]{--flat-reference-position:-258px -122px}
+html[data-company-icon-style="2d"] [data-nav-key="events"]{--flat-reference-position:-21px -183px}
+html[data-company-icon-style="2d"] [data-nav-key="inspection"]{--flat-reference-position:-79px -183px}
+html[data-company-icon-style="2d"] [data-nav-key="actions"]{--flat-reference-position:-140px -183px}
+html[data-company-icon-style="2d"] [data-nav-key="training"]{--flat-reference-position:-199px -183px}
+html[data-company-icon-style="2d"] [data-nav-key="documents"]{--flat-reference-position:-258px -183px}
+html[data-company-icon-style="2d"] [data-nav-key="ppe"]{--flat-reference-position:-21px -249px}
+html[data-company-icon-style="2d"] [data-nav-key="emergency"]{--flat-reference-position:-79px -249px}
+html[data-company-icon-style="2d"] [data-nav-key="esg"]{--flat-reference-position:-140px -249px}
+html[data-company-icon-style="2d"] [data-nav-key="legal"]{--flat-reference-position:-199px -249px}
+html[data-company-icon-style="2d"] [data-nav-key="executive"]{--flat-reference-position:-258px -249px}
 html[data-company-icon-style="2d"] .sidebar .nav-item i.ti,
 html[data-company-icon-style="2d"] .sidebar .auris-sidebar-shortcut-group button[data-nav-key] i.ti,
 html[data-company-icon-style="2d"] .modules-menu-item i.ti,
@@ -48,6 +69,28 @@ html[data-company-icon-style="2d"] .mob-nav-btn i.ti,
 html[data-company-icon-style="2d"] .mob-module-btn i.ti,
 html[data-company-icon-style="2d"] .mob-search-result i.ti,
 html[data-company-icon-style="2d"] .auris-app-card-icon i.ti{display:inline-grid!important;place-items:center!important;width:34px!important;height:34px!important;min-width:34px!important;background-image:none!important;background-color:color-mix(in srgb,var(--flat-icon-color) 16%,var(--card,#fff))!important;color:var(--flat-icon-color)!important;border:1px solid color-mix(in srgb,var(--flat-icon-color) 34%,transparent)!important;border-radius:8px!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;mix-blend-mode:normal!important;font-size:21px!important}
+html[data-company-icon-style="2d"] .sidebar [data-nav-key] i.ti.auris-flat-reference,html[data-company-icon-style="2d"] [data-nav-key] i.ti.auris-flat-reference,html[data-company-icon-style="2d"] i.auris-flat-reference{background-image:url("assets/auris-2d-icons-reference.jpg")!important;background-size:312px 468px!important;background-position:var(--flat-reference-position)!important;background-repeat:no-repeat!important;background-color:transparent!important;border:0!important;color:transparent!important;font-size:0!important;filter:none!important}
+html[data-company-icon-style="2d"] i.auris-flat-reference:before,html[data-company-icon-style="2d"] i.auris-flat-reference:after{content:none!important;display:none!important}
+html[data-company-icon-style="2d"] [data-flat-action="add"]{--flat-action-position:-15px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="edit"]{--flat-action-position:-66px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="save"]{--flat-action-position:-115px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="search"]{--flat-action-position:-166px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="filter"]{--flat-action-position:-217px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="upload"]{--flat-action-position:-267px -324px}
+html[data-company-icon-style="2d"] [data-flat-action="download"]{--flat-action-position:-15px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="view"]{--flat-action-position:-66px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="approve"]{--flat-action-position:-115px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="reject"]{--flat-action-position:-166px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="delete"]{--flat-action-position:-217px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="print"]{--flat-action-position:-267px -374px}
+html[data-company-icon-style="2d"] [data-flat-action="share"]{--flat-action-position:-15px -424px}
+html[data-company-icon-style="2d"] [data-flat-action="notifications"]{--flat-action-position:-66px -424px}
+html[data-company-icon-style="2d"] [data-flat-action="settings"]{--flat-action-position:-115px -424px}
+html[data-company-icon-style="2d"] [data-flat-action="help"]{--flat-action-position:-166px -424px}
+html[data-company-icon-style="2d"] [data-flat-action="back"]{--flat-action-position:-217px -424px}
+html[data-company-icon-style="2d"] [data-flat-action="dropdown"]{--flat-action-position:-267px -424px}
+html[data-company-icon-style="2d"] i.auris-flat-action-reference{display:inline-block!important;width:30px!important;height:30px!important;min-width:30px!important;background-image:url("assets/auris-2d-icons-reference.jpg")!important;background-size:312px 468px!important;background-position:var(--flat-action-position)!important;background-repeat:no-repeat!important;background-color:transparent!important;border:0!important;color:transparent!important;font-size:0!important;vertical-align:middle!important;filter:none!important;box-shadow:none!important;clip-path:inset(0 0 8px 0)}
+html[data-company-icon-style="2d"] i.auris-flat-action-reference:before,html[data-company-icon-style="2d"] i.auris-flat-action-reference:after{content:none!important;display:none!important}
 html[data-company-icon-style="2d"] .sidebar .nav-item i.ti:after{display:none!important}
 html[data-company-icon-style="2d"] .page button.auris-icon-tab>i.auris-tab-icon{background:var(--tab-icon)!important;box-shadow:none!important;text-shadow:none!important;transform:none!important}
 html[data-company-icon-style="2d"] .auris-indicator-icon,
