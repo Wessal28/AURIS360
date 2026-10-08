@@ -6,7 +6,7 @@ const path = require('node:path');
 
 function library(role = 'employee') {
   const source = fs.readFileSync(path.join(__dirname, '..', 'document-control-upgrade.js'), 'utf8')
-    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, previewFile, renderDraftsAndReviews, documentTypeOptions };})();');
+    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, previewFile, renderDraftsAndReviews, documentTypeOptions, nav };})();');
   const context = {
     window: {},
     document: { readyState: 'loading', addEventListener() {} },
@@ -19,7 +19,7 @@ function library(role = 'employee') {
     console,
   };
   vm.runInNewContext(source, context);
-  return context.window.__library;
+  return { ...context.window.__library, window: context.window, document: context.document };
 }
 
 test('employee library shows only current authorised, unexpired, non-confidential documents', () => {
@@ -76,4 +76,21 @@ test('controller can preview an uploaded draft PDF without exposing it to employ
   assert.equal(controller.previewFile(draft, revision).file_url, file.file_url);
   assert.equal(employee.filteredDocs().length, 0);
   assert.equal(employee.previewFile(draft, revision), null);
+});
+
+test('shared header picker offers document sections and routes changes', () => {
+  const session = library('document_controller');
+  const source = { innerHTML: '', value: '', onchange: null };
+  session.document.getElementById = id => id === 'dcx-page-select' ? source : null;
+  session.D.selectedId = 'document-1';
+  session.D.docTab = 'distribution';
+  session.nav();
+  assert.equal(source.value, 'doc:distribution');
+  assert.match(source.innerHTML, /Document: Content &amp; Files/);
+  assert.match(source.innerHTML, /Document Library/);
+  let routed = null;
+  session.window.dcxDocumentTab = tab => { routed = tab; };
+  source.value = 'doc:content';
+  source.onchange();
+  assert.equal(routed, 'content');
 });
