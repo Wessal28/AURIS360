@@ -78,7 +78,7 @@
 <script src="auris-emergency-list-workspace.js?v=20260920-1"></script>
 <script src="auris-esg-list-workspace.js?v=20260916-1"></script>
 <script src="auris-noise-list-workspace.js?v=20260916-1"></script>
-<script src="auris-meetings-list-workspace.js?v=20260916-1"></script>
+<script src="auris-meetings-list-workspace.js?v=20260916-1&icon-actions-20261009-1"></script>
 <script src="auris-training-plan-list-workspace.js?v=20260916-1"></script>
 <script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1&people-access-20260927-1"></script>
 <link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1&people-access-20260927-1">
@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&bulletin-view-20261009-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -173,6 +173,7 @@
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-hse-meetings-static.css?v=20261009-1">
+<link rel="stylesheet" href="safety-alert-attachment.css?v=20261009-1">
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-master-action-plan-static.css?v=20260815-1">
@@ -7413,6 +7414,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Background / What happened</label><textarea id="alertf-background" class="auris-meetings-s-4d5979ac8f" placeholder="Background information and context..."></textarea></div>
 <div class="form3group"><label class="form3label">Lessons learned</label><textarea id="alertf-lessons" class="auris-meetings-s-07bdff4587" placeholder="What can we learn from this? What should be done differently?"></textarea></div>
 <div class="form3group"><label class="form3label">Action required</label><textarea id="alertf-action" class="auris-meetings-s-07bdff4587" placeholder="Specific actions that must be taken by the target audience..."></textarea></div>
+<div class="form3group"><label class="form3label" for="alertf-file">Safety alert document</label><input type="file" id="alertf-file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"/><div id="alertf-current-file" role="status">No document attached.</div><small>PDF, image, or Word document, up to 15 MB. Saving uploads and links it to this alert.</small></div>
 </div>
 <div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Applies to</div>
 <div class="form3group"><label class="form3label">Departments / areas affected</label><input type="text" id="alertf-depts" placeholder="e.g. All departments, Production, Maintenance..."/></div>

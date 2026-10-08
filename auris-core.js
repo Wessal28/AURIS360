@@ -9563,6 +9563,7 @@ async function loadMtgs(){
     var source=sources[listId];if(!source)return;
     var record=(source.rows||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
     if(listId==='bulletin-list'){bulletinViewReadOnly(record.id);return;}
+    if(listId==='alert-list'){alertViewReadOnly(record);return;}
     aurisReadOnlyRecordModal(source.kind,record.title||record.name||record.meeting_title||'Record',record,aurisReadableRecordFields(record));
   });
   var btn=document.getElementById('mtg-new-series-btn');
@@ -32244,6 +32245,33 @@ async function tbtDelete(){
 // SAFETY ALERTS
 // ---------------------------------------------------------------------------
 
+function alertViewReadOnly(record){
+  if(!record||String(record.company_id||'')!==String(ccid()||''))return;
+  var fields=[['Reference',record.alert_ref],['Type',(ALERT_TYPE_CFG[record.alert_type]||ALERT_TYPE_CFG.other).label],['Severity',(ALERT_SEV_CFG[record.severity]||ALERT_SEV_CFG.medium).label],['Summary',record.summary],['Background / What happened',record.background||record.what_happened],['Lessons learned',record.lessons_learned],['Action required',record.action_required],['Departments / areas',(record.departments||[]).join(', ')],['Applies to',record.applies_to],['Issued by',record.issued_by],['Issued date',record.issued_date],['Expiry date',record.expiry_date],['Acknowledgement required',record.requires_ack?'Yes':'No'],['Status',record.status]];
+  aurisReadOnlyRecordModal('Safety alert',record.title||'Safety alert',Object.assign({reference_no:record.alert_ref},record),fields);
+  if(!record.file_url)return;
+  var url=aurisSafeMediaUrl(record.file_url,'document'),dialog=document.querySelector('#auris-readonly-record-modal [role="dialog"]');
+  if(!url||!dialog)return;
+  var section=document.createElement('section');section.className='alert-readonly-attachment';
+  var heading=document.createElement('h3');heading.textContent='Attached safety alert';section.appendChild(heading);
+  var name=document.createElement('p');name.textContent=record.file_name||'Safety alert document';section.appendChild(name);
+  if(String(record.file_mime||'').toLowerCase().startsWith('image/')){
+    var image=document.createElement('img');image.src=url;image.alt=record.file_name||'Attached safety alert';image.className='alert-readonly-image';section.appendChild(image);
+  }
+  var button=document.createElement('button');button.type='button';button.className='btn btn-primary';button.textContent='Preview attachment';button.addEventListener('click',function(){document.getElementById('auris-readonly-record-modal')?.remove();dcOpenViewer({file_url:url,file_name:record.file_name||'Safety alert document',file_mime:record.file_mime||dcMimeFromName(record.file_name||url)});});section.appendChild(button);
+  dialog.insertBefore(section,dialog.lastElementChild);
+}
+
+async function alertUploadAttachment(file,companyId){
+  var allowed=/\.(pdf|png|jpe?g|webp|docx?)$/i;
+  if(!allowed.test(file.name)||!['application/pdf','image/png','image/jpeg','image/webp','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document',''].includes(file.type||''))throw new Error('Choose a PDF, image, or Word document.');
+  if(!file.size||file.size>15*1024*1024)throw new Error('The safety alert attachment must be between 1 byte and 15 MB.');
+  var path=companyId+'/safety-alerts/'+Date.now()+'_'+crypto.randomUUID()+'_'+dcSanitiseName(file.name),encoded=path.split('/').map(encodeURIComponent).join('/');
+  var response=await fetch(SB+'/storage/v1/object/'+DC_BUCKET+'/'+encoded,{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'x-upsert':'false','Content-Type':file.type||'application/octet-stream'},body:file});
+  if(!response.ok)throw new Error('Safety alert document upload failed ('+response.status+').');
+  return {file_url:SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+encoded,file_path:path,file_name:file.name,file_mime:file.type||dcMimeFromName(file.name)};
+}
+
 async function alertLoad(){
   var el=document.getElementById('alert-list');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
@@ -32307,6 +32335,8 @@ function alertNew(){
   document.getElementById('alertf-severity').value='medium';
   document.getElementById('alertf-status').value='active';
   document.getElementById('alertf-req-ack').checked=false;
+  document.getElementById('alertf-file').value='';
+  document.getElementById('alertf-current-file').textContent='No document attached.';
   alertShowForm();
 }
 
@@ -32326,6 +32356,8 @@ function alertEdit(id){
   document.getElementById('alertf-severity').value=x.severity||'medium';
   document.getElementById('alertf-status').value=x.status||'active';
   document.getElementById('alertf-req-ack').checked=!!x.requires_ack;
+  document.getElementById('alertf-file').value='';
+  document.getElementById('alertf-current-file').textContent=x.file_name?'Current document: '+x.file_name:'No document attached.';
   alertShowForm();
 }
 
@@ -32334,17 +32366,25 @@ async function alertSave(){
   var summary=document.getElementById('alertf-summary')?.value?.trim();if(!summary){toast('Please enter alert summary',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),title,alert_type:g('alertf-type')||'hazard_warning',severity:g('alertf-severity')||'medium',summary,background:g('alertf-background'),lessons_learned:g('alertf-lessons'),action_required:g('alertf-action'),departments:g('alertf-depts')?g('alertf-depts').split(',').map(t=>t.trim()).filter(Boolean):[],applies_to:g('alertf-applies'),issued_by:g('alertf-issued-by'),issued_date:g('alertf-issued-date')||new Date().toISOString().slice(0,10),expiry_date:g('alertf-expiry')||null,requires_ack:document.getElementById('alertf-req-ack')?.checked||false,status:g('alertf-status')||'active',updated_at:new Date().toISOString()};
+  var companyId=String(ccid()||''),userId=String(prof?.id||''),file=document.getElementById('alertf-file')?.files?.[0],uploaded=null,persisted=false;
   try{
+    if(file){uploaded=await alertUploadAttachment(file,companyId);Object.assign(body,uploaded);}
+    if(companyId!==String(ccid()||'')||userId!==String(prof?.id||''))throw new Error('Your company or account changed while saving. Reopen the alert and try again.');
     if(alertEditId){
       await api('/safety_alerts?id=eq.'+alertEditId,{m:'PATCH',p:'return=minimal',b:body});
+      persisted=true;
       toast('Alert updated!');
     }else{
       body.created_by=prof?.id;
       var res=await api('/safety_alerts',{m:'POST',p:'return=representation',b:body});
+      persisted=true;
       if(res?.[0]?.id){var yr=new Date().getFullYear();var ref=await nextCompanyRef('safety_alerts','alert_ref','ALERT-'+yr+'-');await api('/safety_alerts?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{alert_ref:ref}});toast('Alert issued! Ref: '+ref);}
     }
     alertBack();
-  }catch(e){toastActionError('Save alert','Training & Competency',e);}
+  }catch(e){
+    if(uploaded&&!persisted)fetch(SB+'/storage/v1/object/'+DC_BUCKET+'/'+uploaded.file_path.split('/').map(encodeURIComponent).join('/'),{method:'DELETE',headers:{Authorization:'Bearer '+tok,apikey:KEY}}).catch(function(){});
+    toastActionError('Save alert','Safety Alerts',e);
+  }
 }
 
 async function alertDelete(){

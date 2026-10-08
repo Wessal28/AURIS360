@@ -186,6 +186,11 @@
       "order": 37,
       "file": "20261005020000_work_order_equipment_allocation.sql",
       "sha256": "ee9c5d38cd2e0a8fb4c384757d87e8a465a09ea33b3ed00902c8fdd987354d10"
+    },
+    {
+      "order": 38,
+      "file": "20261009010000_safety_alert_attachments.sql",
+      "sha256": "095bffff33a2b4bd7e6763edc169a731bc443bc69b1cfa42fd67ccac7cd4c21d"
     }
   ]
 }
