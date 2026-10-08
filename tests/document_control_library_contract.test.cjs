@@ -6,7 +6,7 @@ const path = require('node:path');
 
 function library(role = 'employee') {
   const source = fs.readFileSync(path.join(__dirname, '..', 'document-control-upgrade.js'), 'utf8')
-    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, renderDraftsAndReviews, documentTypeOptions };})();');
+    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, previewFile, renderDraftsAndReviews, documentTypeOptions };})();');
   const context = {
     window: {},
     document: { readyState: 'loading', addEventListener() {} },
@@ -59,4 +59,21 @@ test('a new draft revision does not replace the published revision or its file',
   D.data.documents = [document];
   assert.match(renderDraftsAndReviews(), /Revision/);
   assert.match(renderDraftsAndReviews(), /05/);
+});
+
+test('controller can preview an uploaded draft PDF without exposing it to employees', () => {
+  const controller = library('document_controller');
+  const employee = library();
+  const draft = { id: 'draft-pdf', title: 'Site plan', status: 'draft' };
+  const revision = { id: 'draft-rev', document_id: draft.id, status: 'draft', revision_code: '1.0' };
+  const file = { document_id: draft.id, revision_id: revision.id, file_role: 'approved_rendition', status: 'draft', file_url: 'https://auris.example/site-plan.pdf' };
+  for (const session of [controller, employee]) {
+    session.D.data.documents = [draft];
+    session.D.data.revisions = [revision];
+    session.D.data.files = [file];
+  }
+  assert.equal(controller.filteredDocs().length, 1);
+  assert.equal(controller.previewFile(draft, revision).file_url, file.file_url);
+  assert.equal(employee.filteredDocs().length, 0);
+  assert.equal(employee.previewFile(draft, revision), null);
 });
