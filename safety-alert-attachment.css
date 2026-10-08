@@ -1,0 +1,6 @@
+.alert-readonly-attachment{margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--card)}
+.alert-readonly-attachment h3{margin:0 0 6px;font-size:15px}
+.alert-readonly-attachment p{margin:0 0 10px;overflow-wrap:anywhere}
+.alert-readonly-image{display:block;max-width:100%;max-height:360px;object-fit:contain;margin:0 0 12px;border-radius:6px}
+#alertf-file{max-width:100%}
+#alertf-current-file{margin-top:5px;font-size:12px;color:var(--text2);overflow-wrap:anywhere}
