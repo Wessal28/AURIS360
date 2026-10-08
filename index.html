@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -172,7 +172,7 @@
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
-<link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260908-1">
+<link rel="stylesheet" href="auris-hse-meetings-static.css?v=20261009-1">
 <link rel="stylesheet" href="safety-alert-attachment.css?v=20261009-1">
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
@@ -7478,11 +7478,11 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Approved by</label><select id="bullf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Target audience</label><input type="text" id="bullf-audience" placeholder="e.g. All staff, Management, Supervisors"/></div>
 <div class="form3group"><label class="form3label">Distribution method</label>
-<select id="bullf-dist-method">
-<option value="email">Email</option><option value="noticeboard">Noticeboard</option>
-<option value="intranet">Intranet / Portal</option><option value="printed">Printed copy</option>
-<option value="meeting">Distributed at meeting</option><option value="all">All channels</option>
-</select></div>
+<div id="bullf-dist-methods">
+<label><input type="checkbox" value="email"/> Email</label><label><input type="checkbox" value="noticeboard"/> Noticeboard</label>
+<label><input type="checkbox" value="intranet"/> Intranet / Portal</label><label><input type="checkbox" value="printed"/> Printed copy</label>
+<label><input type="checkbox" value="meeting"/> Distributed at meeting</label>
+</div></div>
 <div class="form3group"><label class="form3label">Attachment</label><input type="text" id="bullf-file-url" placeholder="Upload document or paste link"/></div>
 <div class="form3group"><label class="form3label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
 <label class="btn auris-meetings-s-b2b6d04b19"><i class="ti ti-upload"></i>Upload document for preview<input class="auris-meetings-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0825"/></label>

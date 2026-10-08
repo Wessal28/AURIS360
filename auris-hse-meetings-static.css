@@ -203,3 +203,5 @@
 #tbtf-hazards.auris-meetings-s-07bdff4587{min-height:60px}
 #tbtf-key-points.auris-meetings-s-770a4152c1{min-height:80px}
 #tbtf-notes.auris-meetings-s-2b013fa0d9{min-height:50px}
+#bullf-dist-methods{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px;border:1px solid var(--border);border-radius:8px}
+#bullf-dist-methods label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:13px}

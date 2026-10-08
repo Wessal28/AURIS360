@@ -9562,6 +9562,7 @@ async function loadMtgs(){
     };
     var source=sources[listId];if(!source)return;
     var record=(source.rows||[]).find(function(x){return String(x.id)===String(id);});if(!record)return;
+    if(listId==='bulletin-list'){bulletinViewReadOnly(record.id);return;}
     if(listId==='alert-list'){alertViewReadOnly(record);return;}
     aurisReadOnlyRecordModal(source.kind,record.title||record.name||record.meeting_title||'Record',record,aurisReadableRecordFields(record));
   });
@@ -32441,7 +32442,7 @@ async function bulletinLoad(){
       var summary=x.summary||x.key_messages||'';
       var checks=bulletinChecks(x);
       var latest=bulletinLatestCheck(checks);
-      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" data-auris-generated-onclick="g0307">'
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+';white-space:nowrap">'+escH(x.bulletin_ref||'BULL')+(x.issue_number?'<div style="font-size:10px;color:var(--text2);font-weight:600">Issue '+escH(x.issue_number)+'</div>':'')+'</td>'
         +'<td style="padding:10px;min-width:320px"><div style="font-weight:800">'+escH(x.title||'-')+'</div>'
         +(summary?'<div style="font-size:11px;color:var(--text2);margin-top:3px;line-height:1.35">'+escH(summary.substring(0,150))+(summary.length>150?'...':'')+'</div>':'')
@@ -32454,16 +32455,47 @@ async function bulletinLoad(){
         +'<td style="padding:10px"><div style="font-weight:700">'+escH(latest?latest.name||latest.email||'-':'-')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(latest&&latest.checked_at?new Date(latest.checked_at).toLocaleString('en-GB'):'')+'</div></td>'
         +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
-        +(x.file_url?'<button class="btn btn-sm" data-auris-runtime-onclick="r0100" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
-        +'<button class="btn btn-sm" data-auris-runtime-onclick="r0101" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Open bulletin"><i class="ti ti-eye"></i></button></td>'
+        +'<button class="btn btn-sm bulletin-view-action" data-id="'+escH(x.id)+'" title="View bulletin" aria-label="View bulletin"><i class="ti ti-eye"></i></button> '
+        +(isMgr()?'<button class="btn btn-sm bulletin-edit-action" data-id="'+escH(x.id)+'" title="Edit bulletin" aria-label="Edit bulletin"><i class="ti ti-pencil"></i></button>':'')+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
+    el.querySelectorAll('.bulletin-view-action').forEach(function(b){b.addEventListener('click',function(){bulletinViewReadOnly(b.dataset.id);});});
+    el.querySelectorAll('.bulletin-edit-action').forEach(function(b){b.addEventListener('click',function(){bulletinEdit(b.dataset.id);});});
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
 function bulletinChecks(x){
   return noiseSafeJson(x?.checked_by||x?.acknowledged_by||[],[]).filter(Boolean).sort(function(a,b){return String(b.checked_at||'').localeCompare(String(a.checked_at||''));});
+}
+var BULLETIN_DISTRIBUTION={email:'Email',noticeboard:'Noticeboard',intranet:'Intranet / Portal',printed:'Printed copy',meeting:'Distributed at meeting'};
+function bulletinDistributionValues(value){
+  if(value==='all')return Object.keys(BULLETIN_DISTRIBUTION);
+  return String(value||'').split(',').map(function(v){return v.trim();}).filter(function(v){return Object.prototype.hasOwnProperty.call(BULLETIN_DISTRIBUTION,v);});
+}
+function bulletinSetDistribution(value){
+  var chosen=bulletinDistributionValues(value);
+  document.querySelectorAll('#bullf-dist-methods input[type="checkbox"]').forEach(function(input){input.checked=chosen.includes(input.value);});
+}
+function bulletinSelectedDistribution(){return Array.from(document.querySelectorAll('#bullf-dist-methods input:checked')).map(function(input){return input.value;}).join(',');}
+function bulletinViewReadOnly(id){
+  var x=(bulletinAllData||[]).find(function(r){return String(r.id)===String(id);});if(!x)return;
+  var checks=bulletinChecks(x),seen=new Set();checks=checks.filter(function(c){var key=String(c.user_id||c.email||c.name||'').toLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true;});
+  aurisReadOnlyRecordModal('Safety bulletin',x.title||'Bulletin',x,[
+    ['Reference',x.bulletin_ref],['Type',(BULL_TYPE_CFG[x.bulletin_type]||BULL_TYPE_CFG.other).label],['Issue number',x.issue_number],
+    ['Publication date',x.publication_date],['Status',x.status],['Summary',x.summary],['Key messages',x.key_messages],
+    ['Full content',x.content],['Topics',Array.isArray(x.topics)?x.topics.join(', '):x.topics],['Author',x.author],
+    ['Approved by',x.approved_by],['Target audience',x.target_audience],
+    ['Distribution methods',bulletinDistributionValues(x.distribution_method).map(function(v){return BULLETIN_DISTRIBUTION[v];}).join(', ')||x.distribution_method]
+  ]);
+  var modal=document.getElementById('auris-readonly-record-modal'),card=modal?.querySelector('[role="dialog"]');if(!card)return;
+  var section=document.createElement('section');section.style.cssText='margin-top:18px;border-top:1px solid var(--border);padding-top:14px';
+  section.innerHTML='<h3 style="margin:0 0 10px">Bulletin document</h3>'+(x.file_url?'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span>'+escH(x.file_name||'Attached bulletin')+'</span><button type="button" class="btn btn-primary bulletin-preview-action"><i class="ti ti-eye"></i> View bulletin and mark checked</button></div>':'<p>No document attached. The bulletin text is shown above.</p>')
+    +'<h3 style="margin:20px 0 10px">Checked by ('+checks.length+')</h3>'+(checks.length?'<table class="data-table" style="width:100%"><thead><tr><th>Name</th><th>Last checked</th></tr></thead><tbody>'+checks.map(function(c){return '<tr><td>'+escH(c.name||c.email||'-')+'</td><td>'+escH(c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):'-')+'</td></tr>';}).join('')+'</tbody></table>':'<p>No one has checked this bulletin yet.</p>')
+    +'<button type="button" class="btn bulletin-check-action" style="margin-top:14px"><i class="ti ti-check"></i> Mark as checked</button>';
+  card.lastElementChild.before(section);
+  section.querySelector('.bulletin-preview-action')?.addEventListener('click',function(){modal.remove();bulletinPreview(x.id).then(function(){bulletinLoad();}).catch(function(e){toast(e.message,false);});});
+  section.querySelector('.bulletin-check-action')?.addEventListener('click',async function(){try{var ok=await bulletinRecordCheck(x.id);if(!ok){toast('Could not save bulletin check.',false);return;}bulletinViewReadOnly(x.id);bulletinLoad();toast('Marked as checked.');}catch(e){toast(e.message,false);}});
 }
 function bulletinLatestCheck(checks){return (Array.isArray(checks)?checks:[])[0]||null;}
 function bulletinCurrentCheck(){
@@ -32555,7 +32587,7 @@ function bulletinNew(){
    'bullf-file-url','bullf-file-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('bullf-pub-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('bullf-type').value='safety_bulletin';
-  document.getElementById('bullf-dist-method').value='email';
+  bulletinSetDistribution('email');
   document.getElementById('bullf-status').value='published';
   document.getElementById('bullf-issue-no').value='';
   bulletinRenderChecks({});
@@ -32594,7 +32626,7 @@ function bulletinEdit(id){
   gf('bullf-audience',x.target_audience);gf('bullf-file-url',x.file_url);
   gf('bullf-file-name',x.file_name);gf('bullf-pub-date',x.publication_date);
   document.getElementById('bullf-type').value=x.bulletin_type||'safety_bulletin';
-  document.getElementById('bullf-dist-method').value=x.distribution_method||'email';
+  bulletinSetDistribution(x.distribution_method||'email');
   document.getElementById('bullf-status').value=x.status||'published';
   document.getElementById('bullf-issue-no').value=x.issue_number||'';
   bulletinRenderChecks(x);
@@ -32603,8 +32635,9 @@ function bulletinEdit(id){
 
 async function bulletinSave(){
   var title=document.getElementById('bullf-title')?.value?.trim();if(!title){toast('Please enter bulletin title',false);return;}
+  var distribution=bulletinSelectedDistribution();if(!distribution){toast('Select at least one distribution method.',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),title,bulletin_type:g('bullf-type')||'safety_bulletin',issue_number:parseInt(g('bullf-issue-no'))||null,publication_date:g('bullf-pub-date')||new Date().toISOString().slice(0,10),summary:g('bullf-summary'),key_messages:g('bullf-key-messages'),content:g('bullf-content'),topics:g('bullf-topics')?g('bullf-topics').split(',').map(t=>t.trim()).filter(Boolean):[],author:g('bullf-author'),approved_by:g('bullf-approved-by'),target_audience:g('bullf-audience'),distribution_method:g('bullf-dist-method')||'email',file_url:g('bullf-file-url'),file_name:g('bullf-file-name'),status:g('bullf-status')||'published',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),title,bulletin_type:g('bullf-type')||'safety_bulletin',issue_number:parseInt(g('bullf-issue-no'))||null,publication_date:g('bullf-pub-date')||new Date().toISOString().slice(0,10),summary:g('bullf-summary'),key_messages:g('bullf-key-messages'),content:g('bullf-content'),topics:g('bullf-topics')?g('bullf-topics').split(',').map(t=>t.trim()).filter(Boolean):[],author:g('bullf-author'),approved_by:g('bullf-approved-by'),target_audience:g('bullf-audience'),distribution_method:distribution,file_url:g('bullf-file-url'),file_name:g('bullf-file-name'),status:g('bullf-status')||'published',updated_at:new Date().toISOString()};
   try{
     if(bulletinEditId){
       await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'PATCH',p:'return=minimal',b:body});
