@@ -32742,12 +32742,12 @@ function trainingAudit(action,summary,table,row,details){
 
 function tpNormalizeType(v){
   v=String(v||'').trim().toLowerCase().replace(/\s+/g,'_').replace(/-/g,'_');
-  var map={classroom:'internal',on_job:'internal',on_the_job:'internal',in_house:'internal',internal_training:'internal',e_learning:'online',elearning:'online',external_course:'external'};
+  var map={classroom:'internal',on_job:'on-the-job',on_the_job:'on-the-job',in_house:'internal',internal_training:'internal',e_learning:'online',elearning:'online',external_course:'external'};
   v=map[v]||v||'internal';
-  return ['internal','external','online','toolbox','induction','refresher'].includes(v)?v:'internal';
+  return ['internal','on-the-job','external','online','toolbox','induction','refresher'].includes(v)?v:'internal';
 }
 function tpTypeLabel(v){
-  return {internal:'Classroom / internal',external:'External course',online:'Online / e-learning',toolbox:'Toolbox talk',induction:'Induction',refresher:'Refresher'}[tpNormalizeType(v)]||'Classroom / internal';
+  return {internal:'Classroom / internal','on-the-job':'On-the-job / internal',external:'External course',online:'Online / e-learning',toolbox:'Toolbox talk',induction:'Induction',refresher:'Refresher'}[tpNormalizeType(v)]||'Classroom / internal';
 }
 
 async function trainingQueueNotice(row,event,opts){
@@ -33187,7 +33187,7 @@ async function tpSave(){
       toast('Training added to plan!');
     }
     tpBack();
-  }catch(e){toastActionError('Save training provider','Training & Competency',e);console.error(e);}
+  }catch(e){toastActionError('Save training plan','Training & Competency',e);console.error(e);}
 }
 
 async function tpDelete(){
