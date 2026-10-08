@@ -8,7 +8,7 @@ dcxSwitch(args[0])
 dcxSwitch('mywork')
     },
     "c0003": function (event, args) {
-dcxOpenWizard()
+dcxOpenQuickCreate()
     },
     "c0004": function (event, args) {
 dcxReload()
