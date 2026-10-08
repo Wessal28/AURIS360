@@ -10482,9 +10482,10 @@ function mtgRenderRoadmap(){
 
 function mtgClickWeek(seriesId,week){
   var series=mtgSeriesData.find(function(item){return String(item.id)===String(seriesId);});
-  var saved=(mtgMinutesData||[]).find(function(m){var linked=String(m.series_id||'')===String(seriesId)||(series&&!m.series_id&&String(m.title||'').trim().toLowerCase()===String(series.title||'').trim().toLowerCase());return linked&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&String(m.status||'').toLowerCase()==='completed';});
-  if(saved){mtgViewMomReadOnly(saved.id);return;}
-  // No completed minutes exist yet: open the meeting form pre-set to that week.
+  var matches=(mtgMinutesData||[]).filter(function(m){var linked=String(m.series_id||'')===String(seriesId)||(series&&!m.series_id&&String(m.title||'').trim().toLowerCase()===String(series.title||'').trim().toLowerCase());return linked&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&String(m.status||'').toLowerCase()!=='cancelled';});
+  var saved=matches.find(function(m){return String(m.status||'').toLowerCase()==='completed';})||matches[0];
+  if(saved){if(String(saved.status||'').toLowerCase()==='completed'||!isMgr())mtgViewMomReadOnly(saved.id);else mtgOpenMom(saved.id);return;}
+  // No minutes exist yet: open a new meeting form pre-set to that week.
   var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
   if(!s)return;
   // Calculate actual date for this week
@@ -10574,12 +10575,17 @@ async function mtgViewMomReadOnly(id){
 }
 
 async function mtgOpenMom(id){
-  var m=mtgMinutesData.find(function(x){return x.id===id;});
-  if(!m){
-    try{var d=await api('/hse_meetings?id=eq.'+id+'&select=*');m=d&&d[0];}
-    catch(e){toastActionError('Open meeting minutes','HSE Meetings',e);return;}
+  var companyId=String(ccid()||''),userId=String(prof?.id||''),m=mtgMinutesData.find(function(x){return String(x.id)===String(id);});
+  if(!m||!Object.prototype.hasOwnProperty.call(m,'agenda_items')||!Object.prototype.hasOwnProperty.call(m,'recommendations')){
+    try{
+      var d=await api('/hse_meetings?select=*&company_id=eq.'+encodeURIComponent(companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
+      if(companyId!==String(ccid()||'')||userId!==String(prof?.id||''))throw new Error('The account or company changed while opening these minutes.');
+      if(!Array.isArray(d)||d.length!==1||String(d[0].id)!==String(id)||String(d[0].company_id||'')!==companyId)throw new Error('These meeting minutes are unavailable for this company.');
+      m=d[0];mtgMinutesData=mtgMinutesData.map(function(item){return String(item.id)===String(id)?m:item;});
+    }catch(e){toastActionError('Open meeting minutes','HSE Meetings',e);return;}
   }
   if(!m)return;
+  if(String(m.company_id||'')!==companyId){toastActionError('Open meeting minutes','HSE Meetings',new Error('These meeting minutes are unavailable for this company.'));return;}
   mtgEditingMomId=id;
   mtgClearMom();
   document.getElementById('mtg-mom3form').dataset.seriesId=m.series_id||'';

@@ -5,10 +5,17 @@ const path=require('node:path');
 
 const source=fs.readFileSync(path.resolve(__dirname,'..','auris-core.js'),'utf8');
 
-test('agenda opens the stored completed occurrence instead of a blank form',()=>{
+test('agenda opens stored completed minutes and drafts instead of a blank form',()=>{
   assert.match(source,/function mtgClickWeek\(seriesId,week\)/);
-  assert.match(source,/String\(m\.status\|\|''\)\.toLowerCase\(\)==='completed'/);
-  assert.match(source,/if\(saved\)\{mtgViewMomReadOnly\(saved\.id\);return;\}/);
+  assert.match(source,/var saved=matches\.find\(function\(m\)\{return String\(m\.status\|\|''\)\.toLowerCase\(\)==='completed';\}\)\|\|matches\[0\]/);
+  assert.match(source,/else mtgOpenMom\(saved\.id\);return;/);
+});
+
+test('week 16 opens the stored draft for editing and keeps completed minutes read only',()=>{
+  const calls=[];const c={mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
+  vm.createContext(c);const start=source.indexOf('function mtgClickWeek(seriesId,week){'),end=source.indexOf('\nfunction mtgWeekToDate',start);vm.runInContext(source.slice(start,end),c);
+  c.mtgClickWeek('series-a',16);assert.deepEqual(calls,[['edit','week-16']]);
+  c.mtgMinutesData[0].status='completed';c.mtgClickWeek('series-a',16);assert.deepEqual(calls[1],['view','week-16']);
 });
 
 test('roadmap partial rows are refreshed before rendering complete minutes',()=>{
@@ -16,6 +23,13 @@ test('roadmap partial rows are refreshed before rendering complete minutes',()=>
   assert.match(source,/Object\.prototype\.hasOwnProperty\.call\(m,'title'\)/);
   assert.match(source,/\/hse_meetings\?select=\*&company_id=eq\./);
   assert.match(source,/The completed meeting minutes are unavailable for this company/);
+});
+
+test('opening a draft retrieves its full company-scoped fields before editing',()=>{
+  assert.match(source,/async function mtgOpenMom\(id\)/);
+  assert.match(source,/!Object\.prototype\.hasOwnProperty\.call\(m,'agenda_items'\)/);
+  assert.match(source,/!Object\.prototype\.hasOwnProperty\.call\(m,'recommendations'\)/);
+  assert.match(source,/These meeting minutes are unavailable for this company/);
 });
 
 const vm=require('node:vm');
