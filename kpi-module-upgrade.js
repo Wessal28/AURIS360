@@ -13,6 +13,57 @@ var KPI_X_COLUMNS=[
 ];
 var kpiXState={tab:'dashboard',status:'all',objective:'all',owner:'all',frequency:'all',search:'',period:'monthly'};
 var kpiXLegacy={};
+var kpiXHistory={key:'',kpis:[],indicators:[],monthly:[],error:'',generation:0};
+
+async function kpiXLoadHistory(year,companyId){
+  var key=String(companyId||'')+':'+year,generation=++kpiXHistory.generation;
+  if(!companyId){kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Select a company to compare years.',generation:generation};return;}
+  if(kpiXHistory.key===key&&!kpiXHistory.error)return;
+  var scope='&company_id=eq.'+encodeURIComponent(companyId),years='('+[year-1,year-2].join(',')+')';
+  try{
+    var kpis=await api('/kpis_v2?select=*'+scope+'&year=in.'+years);
+    var ids=(kpis||[]).map(function(k){return k.id;}).filter(Boolean);
+    var indicators=[],monthly=[];
+    if(ids.length){
+      var idFilter='&kpi_id=in.('+ids.join(',')+')';
+      var loaded=await Promise.all([
+        api('/kpi_indicators?select=*'+scope+idFilter),
+        api('/kpi_monthly_data?select=*'+scope+'&year=in.'+years+idFilter)
+      ]);
+      indicators=loaded[0]||[];monthly=loaded[1]||[];
+    }
+    if(generation!==kpiXHistory.generation||String(ccid())!==String(companyId)||kpiXSelectedYear()!==year)return;
+    kpiXHistory={key:key,kpis:kpis||[],indicators:indicators,monthly:monthly,error:'',generation:generation};
+  }catch(error){
+    if(generation!==kpiXHistory.generation)return;
+    kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Previous-year results could not be loaded. Reload to retry.',generation:generation};
+  }
+}
+
+function kpiXComparisonData(){
+  var year=kpiXSelectedYear(),key=String((typeof ccid==='function'?ccid():null)||'')+':'+year;
+  if(!window.AurisKpiYearComparison)return null;
+  if(kpiXHistory.key!==key)return null;
+  return AurisKpiYearComparison.build({year:year,cutoff:kpiXCompilationMonth(),current:{kpis:kpiKPIs,indicators:kpiIndicators,monthly:kpiMonthlyData},history:kpiXHistory});
+}
+function kpiXComparisonValue(value,unit){return value==null?'—':kpiXEsc((Number.isInteger(value)?String(value):String(Math.round(value*100)/100))+(unit?' '+unit:''));}
+function kpiXComparisonHtml(limit){
+  if(!window.AurisKpiYearComparison)return '';
+  var data=kpiXComparisonData(),year=kpiXSelectedYear(),cutoff=kpiXCompilationMonth(),period=cutoff?'January–'+KPI_X_MONTHS[cutoff-1]:'No compiled month',title='<div class="kpi-x-panel-title">Year-on-year KPI comparison <span class="kpi-x-panel-sub">'+kpiXEsc(period)+' · same period each year</span></div>';
+  if(kpiXHistory.error)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(kpiXHistory.error)+'</p></section>';
+  if(!data)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">Loading previous-year results…</p></section>';
+  if(!data.rows.length||!data.comparable)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">No matching recorded KPI results are available for a same-period comparison. Missing results are not counted as zero.</p></section>';
+  var rows=limit?data.rows.filter(function(row){return row.delta!=null;}).slice(0,limit):data.rows,prior=year-1,earlier=year-2;
+  var body=rows.map(function(row){
+    var previous=row.prior[prior],twoYears=row.prior[earlier],delta=row.delta==null?'—':(row.delta>0?'+':'')+row.delta+(row.unit?' '+row.unit:''),percent=row.percent==null?'':(' ('+(row.percent>0?'+':'')+row.percent+'%)');
+    var badge=function(item){return item.illustrative?'<span class="kpi-x-illustrative">Illustrative</span>':'';};
+    var change=row.direction==='illustrative'?'Illustrative comparison':row.direction==='no_comparison'?'No comparison':row.direction==='unchanged'?'Unchanged':row.direction==='improved'?'Improved':row.direction==='declined'?'Declined':'Changed';
+    return '<tr><th scope="row"><strong>'+kpiXEsc(row.code)+' '+kpiXEsc(row.kpi)+'</strong><small>'+kpiXEsc(row.indicator)+'</small></th><td>'+kpiXComparisonValue(row.current,row.unit)+badge({illustrative:row.currentIllustrative})+'</td><td>'+kpiXComparisonValue(previous.value,row.unit)+badge(previous)+'</td><td>'+kpiXComparisonValue(twoYears.value,row.unit)+badge(twoYears)+'</td><td><span class="kpi-x-change '+kpiXEsc(row.direction)+'">'+kpiXEsc(delta+percent)+'</span><small>'+kpiXEsc(change)+'</small></td></tr>';
+  }).join('');
+  var note='Values use each indicator’s YTD method and only recorded months through the same cutoff. A blank year or missing result is not zero.';
+  if(data.illustrative)note+=' Illustrative/unverified figures are labelled and must not be treated as audit evidence.';
+  return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(note)+'</p><div class="kpi-x-comparison-scroll"><table><thead><tr><th>KPI / indicator</th><th>'+year+'</th><th>'+prior+'</th><th>'+earlier+'</th><th>Change vs '+prior+'</th></tr></thead><tbody>'+body+'</tbody></table></div>'+(limit&&data.comparable>limit?'<div class="kpi-x-comparison-footer">Showing '+rows.length+' of '+data.comparable+' comparable indicators. <button type="button" class="kpi-x-btn" data-auris-module-onclick="d0019" data-auris-module-args="'+encodeURIComponent(JSON.stringify(['reports']))+'">View all in Reports</button></div>':'')+'</section>';
+}
 
 function kpiXColumnStorageKey(){var company=typeof ccid==='function'?ccid():(typeof prof!=='undefined'&&prof&&prof.company_id),user=typeof prof!=='undefined'&&prof&&prof.id;return 'auris360:kpi-scorecard-columns:'+(company||'company')+':'+(user||'user');}
 function kpiXColumnPreferences(){var defaults={};KPI_X_COLUMNS.forEach(function(column){defaults[column.key]=true;});try{var saved=JSON.parse(localStorage.getItem(kpiXColumnStorageKey())||'{}');KPI_X_COLUMNS.forEach(function(column){if(typeof saved[column.key]==='boolean')defaults[column.key]=saved[column.key];});}catch(e){}return defaults;}
@@ -234,7 +285,7 @@ function kpiXRenderDashboard(){
     kpiXMetricCard('Data Missing',metrics.data_missing,'Required period not reported','data_missing','ti-help-circle')+'</div>'+
     '<div class="kpi-x-alert"><i class="ti ti-alert-triangle" style="font-size:19px"></i><span><strong>'+(missing?'Performance status cannot yet be confirmed. Results are missing for '+missing+' KPI'+(missing===1?'':'s')+'.':exceptions+' KPI'+(exceptions===1?'':'s')+' Off Track or At Risk.')+'</strong> '+kpiXEsc(statusBasis)+'</span><button class="kpi-x-btn" data-auris-module-onclick="'+(missing?'d0006':'d0004')+'">'+(missing?'Complete Missing Results':'Review Exceptions')+' <i class="ti ti-arrow-right"></i></button></div>'+
     '<div class="kpi-x-grid"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Overall Performance Trend <span class="kpi-x-panel-sub">Actual achievement · target 90%</span></div>'+kpiXTrendSvg()+'</section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Performance by Objective <span class="kpi-x-panel-sub">Average of reported KPI scores</span></div>'+objectiveRows+'</section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Priority Attention</div><div class="kpi-x-priority">'+priority+'</div></section></div>'+
-    '<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Interpretation <button class="kpi-x-btn" style="height:29px" data-auris-module-onclick="d0005">Open scorecard</button></div><div style="font-size:12px;line-height:1.6;color:#475569">'+kpiXEsc(kpiXReportingSummary(metrics))+'</div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Data Quality</div><div class="kpi-x-quality"><div><strong>'+metrics.scored+'/'+metrics.total+'</strong><span>KPIs with scores</span></div><div><strong style="color:#dc2626">'+missing+'</strong><span>Missing required data</span></div><div><strong>'+kpiXAchievementText(metrics)+'</strong><span>Achievement</span></div></div></section></div>';
+    '<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Interpretation <button class="kpi-x-btn" style="height:29px" data-auris-module-onclick="d0005">Open scorecard</button></div><div style="font-size:12px;line-height:1.6;color:#475569">'+kpiXEsc(kpiXReportingSummary(metrics))+'</div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Data Quality</div><div class="kpi-x-quality"><div><strong>'+metrics.scored+'/'+metrics.total+'</strong><span>KPIs with scores</span></div><div><strong style="color:#dc2626">'+missing+'</strong><span>Missing required data</span></div><div><strong>'+kpiXAchievementText(metrics)+'</strong><span>Achievement</span></div></div></section></div>'+kpiXComparisonHtml(5);
   box.querySelectorAll('[data-kpi-priority-assign]').forEach(function(button){button.addEventListener('click',function(){kpiXEditKpi(button.dataset.kpiPriorityAssign);});});
 }
 function kpiXRenderScorecard(){
@@ -300,8 +351,12 @@ function kpiXRenderCycleBanner(){
 function kpiXRenderActions(){
   var host=document.getElementById('kpi-x-actions-view');if(!host)return;kpiXCompute();var affected=kpiKPIs.filter(function(k){return ['at_risk','off_track'].indexOf(k._computed_status)>=0;});host.innerHTML='<div class="kpi-x-panel"><div class="kpi-x-panel-title">KPI Recovery & Improvement Actions <span class="kpi-x-panel-sub">Uses the existing Master Action Plan workflow</span></div>'+ (affected.length?affected.map(function(k){return '<div class="kpi-x-priority-row"><span class="kpi-x-priority-rank"><i class="ti ti-alert-triangle"></i></span><span><strong>'+kpiXEsc(k.name)+'</strong><small style="display:block;color:#64748b">Owner: '+kpiXEsc(kpiXOwner(k))+' · '+kpiXStatusLabel(k._computed_status)+'</small></span><button class="kpi-x-btn primary" style="height:31px" data-auris-module-onclick="d0007" data-auris-module-args="'+encodeURIComponent(JSON.stringify([kpiXEsc(k.id)]))+'"><i class="ti ti-plus"></i>Create Action</button></div>';}).join(''):'<div class="kpi-x-empty">No KPI currently requires a recovery action.</div>')+'</div>';
 }
-function kpiXRenderReports(){
+function kpiXRenderReportsBase(){
   var host=document.getElementById('kpi-x-reports-view');if(!host)return;var m=kpiXMetrics(),month=kpiXCompilationMonth(),basis=month?'Compiled through '+KPI_X_MONTHS[month-1]+' '+kpiXSelectedYear():'No compiled month in '+kpiXSelectedYear();host.innerHTML='<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Performance Report</div><p style="font-size:12px;color:#475569;line-height:1.6">Generate the existing printable scorecard or export the complete KPI register. CSV actuals, variance and status use the same compiled period as the scorecard.</p><p class="kpi-x-csv-note" style="font-size:12px;color:#475569;line-height:1.6">CSV text that could be read as a formula receives a leading tab; saved KPI data is unchanged. Behaviour varies between spreadsheet applications. Keep that prefix when importing or re-saving the file.</p><p class="kpi-x-report-basis" style="font-size:12px;color:#475569;line-height:1.6"><strong>'+kpiXEsc(basis)+'</strong>. Raw recorded trend charts can include open or future recorded periods.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="kpi-x-btn primary" data-auris-module-onclick="d0008"><i class="ti ti-printer"></i>Print Report</button><button class="kpi-x-btn" data-auris-module-onclick="d0009"><i class="ti ti-download"></i>Export CSV</button></div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Year Summary <span class="kpi-x-panel-sub">'+kpiXEsc(kpiXAchievementBasis(m))+'</span></div><div class="kpi-x-quality"><div><strong>'+kpiXAchievementText(m)+'</strong><span>Achievement</span></div><div><strong>'+m.on_track+'</strong><span>On Track</span></div><div><strong style="color:#dc2626">'+m.off_track+'</strong><span>Off Track</span></div></div></section></div>';
+}
+function kpiXRenderReports(){
+  kpiXRenderReportsBase();
+  var host=document.getElementById('kpi-x-reports-view'),comparison=kpiXComparisonHtml();if(host&&comparison)host.innerHTML+=comparison;
 }
 function kpiXRenderConfig(){
   var host=document.getElementById('kpi-x-config-view');if(!host)return;
@@ -576,7 +631,17 @@ function kpiXUpdateEntryPreview(){
 }
 function kpiXParseComment(value){var text=String(value||''),root='',evidence='',explanation=text;var rootMatch=text.match(/Root cause:\s*([^\n]+)/i),evidenceMatch=text.match(/Evidence:\s*([^\n]+)/i);if(rootMatch)root=rootMatch[1].trim();if(evidenceMatch)evidence=evidenceMatch[1].trim();explanation=text.replace(/\n?Root cause:[^\n]*/i,'').replace(/\n?Evidence:[^\n]*/i,'').trim();return {explanation:explanation,root:root,evidence:evidence};}
 function kpiXInstallHooks(){
-  if(typeof window.kpiLoadAll==='function'){kpiXLegacy.loadAll=window.kpiLoadAll;window.kpiLoadAll=async function(entryContext){await kpiXLegacy.loadAll.apply(this,arguments);if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);if(typeof window.kpiConfigLoad==='function')await window.kpiConfigLoad();if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);kpiXCompute();kpiXRenderAll();};}
+  if(typeof window.kpiLoadAll==='function'){kpiXLegacy.loadAll=window.kpiLoadAll;window.kpiLoadAll=async function(entryContext){
+    var year=kpiXSelectedYear(),companyId=typeof ccid==='function'?ccid():null;
+    var historyLoad=entryContext?Promise.resolve():kpiXLoadHistory(year,companyId);
+    await kpiXLegacy.loadAll.apply(this,arguments);
+    if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);
+    if(typeof window.kpiConfigLoad==='function')await window.kpiConfigLoad();
+    await historyLoad;
+    if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);
+    if(year!==kpiXSelectedYear()||String(companyId)!==String(typeof ccid==='function'?ccid():null))return;
+    kpiXCompute();kpiXRenderAll();
+  };}
   if(typeof window.kpiUpdateMetrics==='function'){kpiXLegacy.updateMetrics=window.kpiUpdateMetrics;window.kpiUpdateMetrics=function(){kpiXCompute();kpiXRefreshFilters();kpiXRenderDashboard();kpiXRenderActions();kpiXRenderReports();kpiXRenderConfig();};}
   if(typeof window.kpiRenderOverview==='function'){kpiXLegacy.renderOverview=window.kpiRenderOverview;window.kpiRenderOverview=kpiXRenderScorecard;}
   if(typeof window.kpiRenderMonthly==='function'){kpiXLegacy.renderMonthly=window.kpiRenderMonthly;window.kpiRenderMonthly=kpiXRenderMonthly;}
