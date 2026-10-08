@@ -1,7 +1,7 @@
 (function(root){
 'use strict';
 
-var types={internal:'Classroom / internal',external:'External course',online:'Online / e-learning',toolbox:'Toolbox talk',induction:'Induction',refresher:'Refresher'};
+var types={internal:'Classroom / internal','on-the-job':'On-the-job / internal',external:'External course','e-learning':'Online / e-learning',online:'Online / e-learning',toolbox:'Toolbox talk',induction:'Induction',refresher:'Refresher'};
 var statuses={planned:'Planned',confirmed:'Confirmed',completed:'Completed',cancelled:'Cancelled',postponed:'Postponed',in_progress:'In progress'};
 var priorities={low:'Low',medium:'Medium',high:'High',critical:'Critical'};
 function session(){
