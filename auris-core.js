@@ -18028,7 +18028,7 @@ function raPreviewRamsDocument(){
   var name=document.getElementById('ra-rams-name')?.value||'Linked SWMS / RAMS document';
   if(!url){toast('No RAMS / SWMS attachment to preview',false);return;}
   var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
-  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||(dcMimeFromName(url.split(/[?#]/)[0])!=='application/octet-stream'?dcMimeFromName(url.split(/[?#]/)[0]):dcMimeFromName(name))});
 }
 
 function raGuessRiskSeverity(text){
@@ -28720,7 +28720,7 @@ function appPreviewFieldDocument(urlFieldId, nameFieldId, fallbackName){
   name=name||fallbackName||'Attached document';
   if(!url){toast('No attachment to preview',false);return;}
   var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
-  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||(dcMimeFromName(url.split(/[?#]/)[0])!=='application/octet-stream'?dcMimeFromName(url.split(/[?#]/)[0]):dcMimeFromName(name))});
 }
 
 function dcLooksLikeVideo(url, mime, name){
@@ -32802,7 +32802,7 @@ function tpProviderFromRecord(x){
 function trainingPreviewAttachment(url,name){
   if(!url){toast('No attachment to preview',false);return;}
   var dataMime=(String(url).match(/^data:([^;,]+)/)||[])[1];
-  dcOpenViewer({file_url:url,file_name:name||'Training attachment',file_mime:dataMime||dcMimeFromName(name||url)});
+  dcOpenViewer({file_url:url,file_name:name||'Training attachment',file_mime:dataMime||(dcMimeFromName(url.split(/[?#]/)[0])!=='application/octet-stream'?dcMimeFromName(url.split(/[?#]/)[0]):dcMimeFromName(name))});
 }
 
 // -- COMPETENCY MATRIX -------------------------------------------------------
@@ -33603,6 +33603,15 @@ function authRender(data){
   el.innerHTML=h;
 }
 
+async function authUploadCertificate(file,companyId){
+  if(!/\.(pdf|png|jpe?g|webp|docx?)$/i.test(file.name)||!file.size||file.size>12*1024*1024)throw new Error('Choose a PDF, image, or Word certificate up to 12 MB.');
+  if(!tok)throw new Error('Sign in again before uploading the certificate.');
+  var path=companyId+'/training-certificates/'+Date.now()+'_'+crypto.randomUUID()+'_'+dcSanitiseName(file.name),encoded=path.split('/').map(encodeURIComponent).join('/');
+  var response=await fetch(SB+'/storage/v1/object/'+DC_BUCKET+'/'+encoded,{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'x-upsert':'false','Content-Type':file.type||dcMimeFromName(file.name)},body:file});
+  if(!response.ok)throw new Error('Certificate upload failed ('+response.status+').');
+  return {url:SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+encoded,path:path};
+}
+
 function authShowForm(){
   document.getElementById('train-view-auth').style.display='none';
   document.getElementById('auth-form').style.display='block';
@@ -33625,6 +33634,8 @@ function authNew(){
   ['authr-issue','authr-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var st=document.getElementById('authr-status');if(st)st.value='active';
   var per=document.getElementById('authr-person');if(per)per.value='';
+  var certificateInput=document.getElementById('authr-cert-file');if(certificateInput)certificateInput.value='';
+  var certificateNote=document.getElementById('authr-current-cert');if(certificateNote)certificateNote.textContent='No certificate attached.';
   authShowForm();
 }
 
@@ -33637,6 +33648,8 @@ function authOpen(id){
   var flds={'authr-name':'person_name','authr-type':'authorisation_type','authr-ref':'reference','authr-cert-url':'certificate_url','authr-scope':'scope','authr-issuer':'issuing_body','authr-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   var certUrl=document.getElementById('authr-cert-url');if(certUrl)certUrl.value=x.certificate_url||x.evidence_url||'';
+  var certificateInput=document.getElementById('authr-cert-file');if(certificateInput)certificateInput.value='';
+  var certificateNote=document.getElementById('authr-current-cert');if(certificateNote)certificateNote.textContent=(x.certificate_url||x.evidence_url)?'Certificate attached. Preview it below, or choose a replacement.':'No certificate saved on this record.';
   var scope=document.getElementById('authr-scope');if(scope)scope.value=x.scope||x.restrictions||'';
   var popts='<option value="">Select person...</option>';
   (people||[]).forEach(function(p){popts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>';});
@@ -33658,31 +33671,42 @@ async function authSave(){
   var issue=g('authr-issue'), expiry=g('authr-expiry'), status=g('authr-status')||'active';
   if(issue&&expiry&&expiry<issue){toast('Expiry date cannot be before issue date',false);return;}
   if(expiry&&new Date(expiry)<new Date()&&status==='active')status='expired';
+  var current=authEditingId?(authAllData.find(function(x){return x.id===authEditingId;})||{}):{};
+  var file=document.getElementById('authr-cert-file')?.files?.[0],uploaded=null,stored=false;
+  var existingUrl=current.certificate_url||current.evidence_url||null;
+  var typedUrl=g('authr-cert-url');
+  var certificateUrl=file?existingUrl:(typedUrl&&typedUrl.startsWith('data:')?existingUrl:typedUrl||existingUrl);
   var body={
     company_id:ccid(),
     person_id:g('authr-person')||null,person_name:name,
     authorisation_type:type,status:status,
     issue_date:issue,expiry_date:expiry,
-    reference:g('authr-ref'),certificate_url:g('authr-cert-url'),evidence_url:g('authr-cert-url'),
+    reference:g('authr-ref'),certificate_url:certificateUrl,evidence_url:certificateUrl,
     scope:g('authr-scope'),restrictions:g('authr-scope'),
     issuing_body:g('authr-issuer'),notes:g('authr-notes'),
     updated_at:new Date().toISOString()
   };
   try{
+    if(file){uploaded=await authUploadCertificate(file,String(ccid()));body.certificate_url=uploaded.url;body.evidence_url=uploaded.url;}
     if(authEditingId){
-      var current=authAllData.find(function(x){return x.id===authEditingId;})||{};
-      await trainingSaveWithFallback('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:body},body,['certificate_url','evidence_url','scope','restrictions']);
+      await api('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      stored=true;
       trainingAudit('update','Training authorisation updated','authorisations',Object.assign({},current,body,{id:authEditingId}),{old_status:current.status||null,new_status:body.status||null});
       toast('Updated!');
-    }
-    else{
+    }else{
       body.created_by=prof?.id;
-      var created=await trainingSaveWithFallback('/authorisations',{m:'POST',p:'return=representation',b:body},body,['certificate_url','evidence_url','scope','restrictions']);
+      var created=await api('/authorisations',{m:'POST',p:'return=representation',b:body});
+      stored=true;
       trainingAudit('create','Training authorisation added','authorisations',created?.[0]||body,{expiry_date:body.expiry_date});
       toast('Authorisation added!');
     }
     authBack();
-  }catch(e){toastActionError('Save training authorisation','Training & Competency',e);console.error(e);}
+  }catch(e){
+    if(uploaded&&!stored)fetch(SB+'/storage/v1/object/'+DC_BUCKET+'/'+uploaded.path.split('/').map(encodeURIComponent).join('/'),{method:'DELETE',headers:{Authorization:'Bearer '+tok,apikey:KEY}}).catch(function(){});
+    var schemaMissing=/schema cache|column|could not find/i.test(e.message||'');
+    toast(schemaMissing?'Certificate not saved: apply the Training authorisation certificate migration, then retry.':actionErrorMessage('Save training authorisation','Training & Competency',e.message),false);
+    console.error(e);
+  }
 }
 
 async function authDelete(){
@@ -34298,7 +34322,7 @@ function auditPreviewEvidenceRow(btn){
   if(!url){toast('No evidence to preview',false);return;}
   var name=input?.dataset.fileName||'Audit evidence';
   var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
-  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||(dcMimeFromName(url.split(/[?#]/)[0])!=='application/octet-stream'?dcMimeFromName(url.split(/[?#]/)[0]):dcMimeFromName(name))});
 }
 
 // -- GPS ------------------------------------------------------------
