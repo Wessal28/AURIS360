@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -8136,9 +8136,9 @@ Offline mode - changes will sync when connection is restored
 <select id="authr-status"><option value="active">Active</option><option value="expired">Expired</option><option value="suspended">Suspended</option><option value="pending">Pending renewal</option></select></div>
 <div class="form3group"><label class="form3label">Certificate attachment</label><input type="text" id="authr-cert-url" placeholder="Upload certificate or paste link"/>
 <div class="auris-training-s-df56cf13b7">
-<label class="btn btn-sm auris-training-s-9463ff4798"><i class="ti ti-upload"></i>Upload<input class="auris-training-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0898"/></label>
+<label class="btn btn-sm auris-training-s-9463ff4798"><i class="ti ti-upload"></i>Upload<input id="authr-cert-file" class="auris-training-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0898"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0899"><i class="ti ti-eye"></i>Preview</button>
-</div></div>
+</div><small id="authr-current-cert" class="muted" role="status">No certificate attached.</small></div>
 <div class="form3group"><label class="form3label">Scope / restrictions</label><input type="text" id="authr-scope" placeholder="e.g. 5 tonne max..."/></div>
 </div>
 <div class="form3group"><label class="form3label">Notes</label><textarea id="authr-notes" class="auris-training-s-7e000820e7"></textarea></div>

@@ -196,6 +196,11 @@
       "order": 39,
       "file": "20261009020000_training_plan_form_values.sql",
       "sha256": "7b660d6b258987b3c5e7f879f4bd3f5cb4f7130e67c82cf7f586f3015cdc70e0"
+    },
+    {
+      "order": 40,
+      "file": "20261009030000_training_authorisation_certificate.sql",
+      "sha256": "c69a8efc7b19400833d6a754a16cebe53c84be77e0f2a29d6a89cb751a6287ea"
     }
   ]
 }
