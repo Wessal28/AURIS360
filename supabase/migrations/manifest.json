@@ -201,6 +201,11 @@
       "order": 40,
       "file": "20261009030000_training_authorisation_certificate.sql",
       "sha256": "c69a8efc7b19400833d6a754a16cebe53c84be77e0f2a29d6a89cb751a6287ea"
+    },
+    {
+      "order": 41,
+      "file": "20261009040000_safety_awareness_plan.sql",
+      "sha256": "278874c1399c6b6c6debc531bce3f9f047ab7b1765a37e79dc3fb38a03e086fd"
     }
   ]
 }

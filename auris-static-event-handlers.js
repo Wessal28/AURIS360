@@ -2410,6 +2410,9 @@ mtgSwitchTab('tbt',this)
     "h0802": function (event) {
 mtgSwitchTab('alerts',this)
     },
+    "h1400": function (event) {
+mtgSwitchTab('awareness',this)
+    },
     "h0803": function (event) {
 mtgSwitchTab('bulletins',this)
     },
