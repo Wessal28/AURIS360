@@ -9571,7 +9571,7 @@ async function loadMtgs(){
   mtgRoadmapYear=new Date().getFullYear();
   var yl=document.getElementById('mtg-agenda-year');
   if(yl)yl.textContent=mtgRoadmapYear;
-  ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
+  ['schedule','minutes','tbt','alerts','bulletins','awareness'].forEach(function(t){
     var el=document.getElementById('mtg-view-'+t);if(el)el.style.display=t==='schedule'?'block':'none';
   });
   document.querySelectorAll('[id^="mtg-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -31666,7 +31666,7 @@ function mtgSwitchTab(tab, btn){
   document.querySelectorAll('[id^="mtg-tab-"]').forEach(t=>{t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   // Hide all views
-  ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
+  ['schedule','minutes','tbt','alerts','bulletins','awareness'].forEach(function(t){
     var el=document.getElementById('mtg-view-'+t);if(el)el.style.display='none';
   });
   // Hide all forms
@@ -31690,6 +31690,7 @@ function mtgSwitchTab(tab, btn){
   else if(tab==='tbt'){tbtLoad();}
   else if(tab==='alerts'){alertLoad();}
   else if(tab==='bulletins'){bulletinLoad();}
+  else if(tab==='awareness' && window.AurisSafetyAwareness){window.AurisSafetyAwareness.load();}
 }
 
 // ---------------------------------------------------------------------------
@@ -41324,7 +41325,7 @@ function ohPrintCurrentView(){
 function mtgPrintCurrentView(){
   var active = document.querySelector('#page-meetings .mtg-tab.active');
   var key = (active?.id || 'mtg-tab-schedule').replace('mtg-tab-','');
-  var labels = {schedule:'Meeting Agenda',minutes:'Minutes of Meetings Register',tbt:'Toolbox Talk Register',alerts:'Safety Alerts Register',bulletins:'Safety Bulletins Register'};
+  var labels = {schedule:'Meeting Agenda',minutes:'Minutes of Meetings Register',tbt:'Toolbox Talk Register',alerts:'Safety Alerts Register',bulletins:'Safety Bulletins Register',awareness:'Safety Awareness Plan'};
   printRegisterView(labels[key] || 'Meeting and Communication Register', '#mtg-view-' + key);
 }
 function noisePrintRegister(){ printRegisterView('Noise Survey Register', '#noise-list'); }
