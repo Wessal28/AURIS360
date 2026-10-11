@@ -3445,10 +3445,12 @@ async function loadDash(options) {
     var optional = async function(p) { try { return await p; } catch(e) { console.warn('Optional dashboard source:', e.message); return null; } };
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
+    var todayLocal=yr+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
     var results = await Promise.all([
-      safe(apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yr+'-12-31&order=event_date.desc,id.asc'),'events'),
+      safe(apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+todayLocal+'&order=event_date.desc,id.asc'),'events'),
       safe(apiAllRows('/action_tracker?select=*'+cf()+'&order=created_at.desc,id.asc'),'actions'),
       safe(apiAllRows('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(apiAllRows('/hse_exposure_periods?select=*'+cf()+'&reporting_year=eq.'+yr),'exposure'),
       safe(apiAllRows('/permits?select=*'+cf()+'&status=eq.active'),'permits'),
       safe(apiAllRows('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc,id.asc'),'certs'),
       safe(apiAllRows('/inspections?select=*'+cf()+'&order=inspection_date.desc,id.asc'),'inspections'),
@@ -3463,7 +3465,7 @@ async function loadDash(options) {
       optional(apiAllRows('/moc_change_requests?select=*'+cf())),
       optional(apiAllRows('/approval_requests?select=*'+cf())),
     ]);
-    var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals, contractors, equipment, changes, approvals] = results;
+    var [events, actions, people, exposure, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals, contractors, equipment, changes, approvals] = results;
     // A newer dashboard request owns the screen. Never let a slower, older
     // response overwrite data loaded for a changed company or manual refresh.
     if(loadGeneration!==_dashLoadGeneration)return;
@@ -3493,12 +3495,12 @@ async function loadDash(options) {
     // LTIFR & TRIR
     var ytdEvents = events.filter(function(x){var d=x.event_date||x.created_at||'';return d>=yrStart;});
     var ltiEvents = ytdEvents.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
-    var recordable = ytdEvents.filter(function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;});
-    var manhours = people.length * 2000 * (now.getMonth()+1) / 12;
-    var ltifr = manhours>0 ? (ltiEvents.length/manhours*1000000).toFixed(2) : '0.00';
-    var trir = manhours>0 ? (recordable.length/manhours*200000).toFixed(2) : '0.00';
-    sm('d-ltifr', sourceFailures.events||sourceFailures.people?'Unavailable':ltifr);
-    sm('d-trir', sourceFailures.events||sourceFailures.people?'Unavailable':trir);
+    var recordable = ytdEvents.filter(hseIsRecordableEvent);
+    var manhours=isSA()&&!sephsCompanyContext?null:hseVerifiedHours(exposure,yr,now.getMonth()+1);
+    var ltifr = manhours ? (ltiEvents.length/manhours*1000000).toFixed(2) : 'Not available';
+    var trir = manhours ? (recordable.length/manhours*200000).toFixed(2) : 'Not available';
+    sm('d-ltifr', sourceFailures.events||sourceFailures.exposure?'Unavailable':ltifr);
+    sm('d-trir', sourceFailures.events||sourceFailures.exposure?'Unavailable':trir);
 
     // Training compliance
     var soon60 = new Date(); soon60.setDate(soon60.getDate()+60);
@@ -5361,11 +5363,61 @@ function dashRenderTrainingCompliance(expCerts, valid, people) {
 
 
 // --- EXECUTIVE DASHBOARD ------------------------------------------
+// A rate is publishable only when every month in the reporting period has a
+// verified exposure-hour record. A partial year must never look complete.
+function hseVerifiedHours(rows,year,lastMonth){
+  if(!Array.isArray(rows)||!rows.length||lastMonth<1)return null;
+  var byMonth=new Map();
+  rows.forEach(function(x){if(Number(x.reporting_year)===Number(year)&&x.source_reference&&Number.isFinite(Number(x.exposure_hours)))byMonth.set(Number(x.reporting_month),Number(x.exposure_hours));});
+  var total=0;
+  for(var month=1;month<=lastMonth;month++){if(!byMonth.has(month))return null;total+=byMonth.get(month);}
+  return total>0?total:null;
+}
+function hseIsRecordableEvent(event){
+  var type=String(event?.event_type||'').toLowerCase(),injury=String(event?.injury_type||'').toLowerCase();
+  return ['injury','lti','medical_treatment','restricted_work'].includes(type)||['lti','medical_treatment','restricted_work','fatality','recordable'].includes(injury);
+}
 var execData = {};
 var _execLoadGeneration=0;
+function hseEvidenceMayWrite(){return ['sephs_admin','admin','company_admin','hse_manager'].includes(activeRole())&&!!ccid()&&!(isSA()&&!sephsCompanyContext);}
+function hseBindEvidenceControls(){
+  var month=document.getElementById('hse-hours-month');if(!month)return;
+  if(!month.options.length)for(var m=1;m<=12;m++){var option=document.createElement('option');option.value=m;option.textContent=new Date(2020,m-1,1).toLocaleString('en-GB',{month:'long'});month.appendChild(option);}
+  if(!month.dataset.bound){month.dataset.bound='1';month.addEventListener('change',hseShowEvidenceInputs);document.getElementById('hse-save-hours')?.addEventListener('click',hseSaveHours);document.getElementById('hse-save-targets')?.addEventListener('click',hseSaveTargets);}
+  if(!month.dataset.initialized){month.value=String(new Date().getMonth()+1);month.dataset.initialized='1';}
+  var editor=document.getElementById('hse-evidence-editor');if(editor)editor.hidden=!hseEvidenceMayWrite();
+}
+function hseShowEvidenceInputs(){
+  var d=execData||{}, month=Number(document.getElementById('hse-hours-month')?.value),row=(d.exposure||[]).find(function(x){return Number(x.reporting_month)===month;});
+  var target=(d.targets||[])[0];
+  var set=function(id,value){var el=document.getElementById(id);if(el)el.value=value==null?'':value;};
+  set('hse-hours-value',row?.exposure_hours);set('hse-hours-source',row?.source_reference);
+  set('hse-target-ltifr',target?.ltifr_target);set('hse-target-trir',target?.trir_target);set('hse-target-reference',target?.approval_reference);
+  var recorded=(d.exposure||[]).filter(function(x){return Number(x.reporting_year)===Number(d.yr);}).length;
+  var required=d.yr===new Date().getFullYear()?new Date().getMonth()+1:12;
+  var status=document.getElementById('hse-evidence-status');if(status)status.textContent=d.failures?.exposure?'Exposure-hour records could not be loaded. Check database setup and refresh.':recorded+'/'+required+' reporting months have sourced hours. '+(hseVerifiedHours(d.exposure,d.yr,required)?'Rates use complete verified hours.':'Rates remain unavailable until every month has a sourced value.')+' '+(target?'Approved targets recorded.':'No approved rate targets recorded.');
+}
+async function hseSaveHours(){
+  if(!hseEvidenceMayWrite())return toast('Manager access is required',false);
+  var year=Number(execData.yr),month=Number(document.getElementById('hse-hours-month')?.value),raw=document.getElementById('hse-hours-value')?.value,hours=Number(raw),source=document.getElementById('hse-hours-source')?.value.trim();
+  if(!year||!month||raw===''||!Number.isFinite(hours)||hours<0||!source||source.length<3)return toast('Enter actual hours and a source reference',false);
+  try{await api('/hse_exposure_periods?on_conflict=company_id,reporting_year,reporting_month',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ccid(),reporting_year:year,reporting_month:month,exposure_hours:hours,source_reference:source,verified_by:prof.id,verified_at:new Date().toISOString()}});toast('Verified hours saved');await Promise.all([loadExecutive(),loadDash()]);}
+  catch(e){toast('Hours could not be saved: '+e.message,false);}
+}
+async function hseSaveTargets(){
+  if(!hseEvidenceMayWrite())return toast('Manager access is required',false);
+  var rawL=document.getElementById('hse-target-ltifr')?.value,rawT=document.getElementById('hse-target-trir')?.value,ref=document.getElementById('hse-target-reference')?.value.trim();
+  var ltifr=rawL===''?null:Number(rawL),trir=rawT===''?null:Number(rawT);
+  if((ltifr===null&&trir===null)||ltifr<0||trir<0||!ref||ref.length<3)return toast('Enter an approved target and approval reference',false);
+  try{await api('/hse_rate_targets?on_conflict=company_id,reporting_year',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ccid(),reporting_year:Number(execData.yr),ltifr_target:ltifr,trir_target:trir,approval_reference:ref,approved_by:prof.id,approved_at:new Date().toISOString()}});toast('Approved targets saved');await loadExecutive();}
+  catch(e){toast('Targets could not be saved: '+e.message,false);}
+}
 
 async function loadExecutive() {
   try {
+    execGeneratedReport=null;
+    execLastAIReportText='';
+    hseBindEvidenceControls();
     var generation=++_execLoadGeneration,failures={};
     var summary=document.getElementById('exec-evidence-summary');
     if(summary)summary.textContent='Loading management decisions and data completeness…';
@@ -5373,7 +5425,7 @@ async function loadExecutive() {
     var yr = new Date().getFullYear();
     var yrFilter = document.getElementById('exec-year-filter')?.value || '';
     var useYr = yrFilter ? parseInt(yrFilter) : yr;
-    var yrStart = useYr+'-01-01'; var yrEnd = useYr+'-12-31';
+    var today=new Date(),yrStart = useYr+'-01-01'; var yrEnd = useYr===yr?yr+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'):useYr+'-12-31';
 
     // Populate year selector
     var ySel = document.getElementById('exec-year-filter');
@@ -5388,6 +5440,8 @@ async function loadExecutive() {
       safe(apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.desc,id.asc'),'events'),
       safe(apiAllRows('/action_tracker?select=*'+cf()+'&order=created_at.desc,id.asc'),'actions'),
       safe(apiAllRows('/people?select=id,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(apiAllRows('/hse_exposure_periods?select=*'+cf()+'&reporting_year=eq.'+useYr),'exposure'),
+      safe(apiAllRows('/hse_rate_targets?select=*'+cf()+'&reporting_year=eq.'+useYr),'targets'),
       safe(apiAllRows('/inspections?select=*'+cf()+'&inspection_date=gte.'+yrStart+'&inspection_date=lte.'+yrEnd+'&order=inspection_date.desc,id.asc'),'inspections'),
       safe(apiAllRows('/legal_requirements?select=*'+cf()),'legal'),
       safe(apiAllRows('/authorisations?select=*'+cf()),'certs'),
@@ -5398,25 +5452,26 @@ async function loadExecutive() {
     ]);
 
     if(generation!==_execLoadGeneration)return;
-    var [events,actions,people,insps,legal,certs,spills,waste,fuel,previousEvents] = results;
+    var [events,actions,people,exposure,targets,insps,legal,certs,spills,waste,fuel,previousEvents] = results;
     events=events||[]; actions=actions||[]; people=people||[];
     insps=insps||[]; legal=legal||[]; certs=certs||[];
     spills=spills||[]; waste=waste||[]; fuel=fuel||[];
 
-    execData = {events,actions,people,insps,legal,certs,spills,waste,fuel,yr:useYr,failures};
+    execData = {events,actions,people,exposure,targets,insps,legal,certs,spills,waste,fuel,yr:useYr,failures};
+    hseShowEvidenceInputs();
 
     var now = new Date();
-    var manhours = people.length * 2000 * (useYr<yr?12:(now.getMonth()+1)) / 12;
+    var manhours = isSA()&&!sephsCompanyContext?null:hseVerifiedHours(exposure,useYr,useYr<yr?12:(now.getMonth()+1));
     var ltiEvts = events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
-    var recEvts = events.filter(function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;});
+    var recEvts = events.filter(hseIsRecordableEvent);
     var ltifr = manhours>0?(ltiEvts.length/manhours*1000000).toFixed(2):'N/A';
     var trir = manhours>0?(recEvts.length/manhours*200000).toFixed(2):'N/A';
 
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
     // Overview metrics
-    sm('exec-ltifr', failures.events||failures.people?'Unavailable':ltifr);
-    sm('exec-trir', failures.events||failures.people?'Unavailable':trir);
+    sm('exec-ltifr', failures.events||failures.exposure?'Unavailable':ltifr);
+    sm('exec-trir', failures.events||failures.exposure?'Unavailable':trir);
     var lScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
     var compPct = lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
     sm('exec-compliance', failures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
@@ -5444,7 +5499,7 @@ async function loadExecutive() {
     sm('exec-audit-pct', failures.inspections?'Unable to load':avgAudit==null?'Not assessed':avgAudit+'%');
     var certifiedPeople=new Set(certs.map(function(x){return x.person_id||x.people_id||x.employee_id||null;}).filter(Boolean));
     sm('exec-training-pct', failures.certs||failures.people?'Unable to load':people.length&&certifiedPeople.size?Math.min(100,Math.round(certifiedPeople.size/people.length*100))+'%':'Not available');
-    if(summary)summary.innerHTML=execEvidenceSummary(events,actions,legal,people,certs,previousEvents||[],failures,useYr,manhours,ltiEvts.length,recEvts.length);
+    if(summary)summary.innerHTML=execEvidenceSummary(events,actions,legal,people,certs,previousEvents||[],failures,useYr,manhours,ltiEvts.length,recEvts.length,targets||[]);
 
     // ESG metrics
     sm('exec-env-inc', failures.events?'Unavailable':events.filter(function(x){return x.event_type==='environmental';}).length);
@@ -5487,7 +5542,7 @@ function execTab(tab, btn) {
   });
 }
 
-function execEvidenceSummary(events,actions,legal,people,certs,previousEvents,failures,year,hours,ltiCount,recordableCount){
+function execEvidenceSummary(events,actions,legal,people,certs,previousEvents,failures,year,hours,ltiCount,recordableCount,targets){
   var scope=isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company';
   var previousCutoff=year===new Date().getFullYear()?new Date().getMonth()+1:12;
   var previousComparable=previousEvents.filter(function(x){var d=new Date(x.event_date||'');return !isNaN(d.getTime())&&d.getMonth()<previousCutoff;});
@@ -5504,8 +5559,9 @@ function execEvidenceSummary(events,actions,legal,people,certs,previousEvents,fa
   var html='<div class="card-title">Leadership attention · '+escH(scope)+' · '+year+'</div>';
   var unavailable=Object.keys(failures||{}).filter(function(key){return failures[key];});
   if(unavailable.length)html+='<p role="alert"><strong>Incomplete source data:</strong> '+escH(unavailable.join(', '))+' could not be loaded. Affected figures and decisions require a refresh.</p>';
-  html+='<p>Incidents: '+(failures.events?'Unavailable':events.length)+' this year versus '+(failures.previousEvents?'Unavailable':previousComparable.length)+' for the same months last year. Targets: not configured. Snapshot: '+escH(new Date().toLocaleString('en-GB'))+'.</p>';
-  html+='<p>Data completeness: '+(failures.events?'Unavailable':unknownEmployment+'/'+events.length)+' incidents lack employment type; '+(failures.events?'Unavailable':unknownDepartment+'/'+events.length)+' lack department; '+(failures.legal?'Unavailable':unassessedLegal+'/'+legal.length)+' legal requirements unassessed. '+(failures.people||failures.events?'Exposure rates unavailable until source records load.':'Exposure hours are estimated from '+people.length+' active people × 2,000 hours/year; LTIFR uses '+ltiCount+' cases × 1,000,000 / '+Math.round(hours)+' hours and TRIR uses '+recordableCount+' cases × 200,000 / '+Math.round(hours)+' hours. Verify actual hours before formal reporting.')+'</p>';
+  var target=Array.isArray(targets)?targets[0]:null;
+  html+='<p>Incidents: '+(failures.events?'Unavailable':events.length)+' this year versus '+(failures.previousEvents?'Unavailable':previousComparable.length)+' for the same months last year. Approved LTIFR target: '+(failures.targets?'Unavailable':target?.ltifr_target??'Not recorded')+'; TRIR target: '+(failures.targets?'Unavailable':target?.trir_target??'Not recorded')+'. Snapshot: '+escH(new Date().toLocaleString('en-GB'))+'.</p>';
+  html+='<p>Data completeness: '+(failures.events?'Unavailable':unknownEmployment+'/'+events.length)+' incidents lack employment type; '+(failures.events?'Unavailable':unknownDepartment+'/'+events.length)+' lack department; '+(failures.legal?'Unavailable':unassessedLegal+'/'+legal.length)+' legal requirements unassessed. '+(failures.exposure||failures.events?'Exposure rates unavailable until source records load.':hours?'Verified exposure: '+Math.round(hours)+' hours. LTIFR: '+ltiCount+' cases × 1,000,000 / hours; TRIR: '+recordableCount+' cases × 200,000 / hours.':'Exposure rates not available: verified hours are missing for one or more months in this reporting period.')+'</p>';
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+decisions.map(function(x){var record=x.record,owner=record?(record.responsible||record.owner||record.assigned_to||'Unassigned'):'Unassigned';return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><strong>'+escH(x.title)+'</strong><p>'+escH(x.evidence)+'</p><small>Proposed response: '+escH(x.response)+'<br>Owner: '+escH(owner)+' · Due: '+escH(x.due?dashFmtDate(x.due):'Not set')+'</small>'+(record&&record.id?'<div style="margin-top:8px"><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,record.id]))+'">Open evidence</button></div>':'')+'</div>';}).join('')+'</div>';
   return html;
 }
@@ -5723,19 +5779,19 @@ function execBuildAIContext(type){
   var inRange=function(x,field){var raw=x[field]||x.event_date||x.inspection_date||x.created_at||''; if(!raw)return false; var dt=new Date(raw); return dt>=range.start&&dt<=range.end;};
   var periodEvents=events.filter(function(x){return inRange(x,'event_date');});
   var lti=events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
-  var rec=events.filter(function(x){return x.injury_type||['injury','lti','medical_treatment','restricted_work'].includes(x.event_type);});
+  var rec=events.filter(hseIsRecordableEvent);
   var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
   var overdue=openActions.filter(function(x){return (x.target_date||x.due_date)&&new Date(x.target_date||x.due_date)<now;});
   var lScores=legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
   var compPct=lScores.length?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
   var scoredInsps=insps.filter(function(x){return Number(x.score_good||0)+Number(x.score_insuf||0)>0;});
   var avgAudit=scoredInsps.length?Math.round(scoredInsps.reduce(function(s,x){return s+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/scoredInsps.length):null;
-  var manhours=people.length*2000*(d.yr===now.getFullYear()?(now.getMonth()+1)/12:1); var ltifr=manhours?(lti.length/manhours*1000000).toFixed(2):'N/A'; var trir=manhours?(rec.length/manhours*200000).toFixed(2):'N/A';
+  var manhours=isSA()&&!sephsCompanyContext?null:hseVerifiedHours(d.exposure,d.yr||now.getFullYear(),d.yr===now.getFullYear()?now.getMonth()+1:12); var ltifr=manhours?(lti.length/manhours*1000000).toFixed(2):'N/A'; var trir=manhours?(rec.length/manhours*200000).toFixed(2):'N/A';
   var sevCount={critical:0,high:0,medium:0,low:0}; events.forEach(function(x){if(sevCount.hasOwnProperty(x.severity))sevCount[x.severity]++;});
   var highRecent=periodEvents.filter(function(x){return ['critical','high'].includes(x.severity);}).slice(0,8).map(function(x){return {ref:x.event_ref||x.reference_no||x.id, severity:x.severity, type:x.event_type, location:x.location, date:x.event_date, description:String(x.description||x.event_description||'').slice(0,180)};});
   var overdueList=overdue.slice(0,10).map(function(x){return {ref:x.action_ref||x.id, title:x.title||x.description, priority:x.priority, responsible:x.assigned_to_name||x.responsible, due:x.target_date||x.due_date, status:x.status};});
   var badInsps=insps.filter(function(x){return (x.score_insuf||0)>0;}).slice(0,8).map(function(x){return {ref:x.reference_no||x.id, site:x.site||x.if_site, date:x.inspection_date||x.if_date, insufficient:x.score_insuf||0, type:x.inspection_type};});
-  return {company:isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company',period:range.label,generated_at:new Date().toLocaleString('en-GB'),workforce:people.length,definitions:{open_actions:'Current action status excluding completed/closed/cancelled',legal_compliance_pct:'Mean scored legal requirement; unassessed excluded',audit_score_pct:'Mean score on scored inspections, not inspection completion',ltifr:'LTI cases per million estimated hours',trir:'Recordable cases per 200,000 estimated hours',estimated_hours:Math.round(manhours),source_failures:d.failures||{}},ytd:{incidents:events.length,lti:lti.length,recordable:rec.length,ltifr:ltifr,trir:trir,severity:sevCount,legal_compliance_pct:compPct,audit_score_pct:avgAudit,open_actions:openActions.length,overdue_actions:overdue.length,spills:spills.length,certificates_tracked:certs.length},period_metrics:{incidents:periodEvents.length,high_or_critical:highRecent.length},recent_high_risk_events:highRecent,overdue_actions:overdueList,inspections_with_findings:badInsps};
+  return {company:isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company',period:range.label,generated_at:new Date().toLocaleString('en-GB'),workforce:people.length,definitions:{open_actions:'Current action status excluding completed/closed/cancelled',legal_compliance_pct:'Mean scored legal requirement; unassessed excluded',audit_score_pct:'Mean score on scored inspections, not inspection completion',ltifr:'LTI cases per million verified hours; unavailable until every reporting month has verified hours',trir:'Recordable cases per 200,000 verified hours; unavailable until every reporting month has verified hours',verified_hours:manhours,approved_targets:(d.targets||[])[0]||null,source_failures:d.failures||{}},ytd:{incidents:events.length,lti:lti.length,recordable:rec.length,ltifr:ltifr,trir:trir,severity:sevCount,legal_compliance_pct:compPct,audit_score_pct:avgAudit,open_actions:openActions.length,overdue_actions:overdue.length,spills:spills.length,certificates_tracked:certs.length},period_metrics:{incidents:periodEvents.length,high_or_critical:highRecent.length},recent_high_risk_events:highRecent,overdue_actions:overdueList,inspections_with_findings:badInsps};
 }
 function execAIReportText(data){
   if(!data)return '';
@@ -5772,20 +5828,27 @@ async function execAIReport(type) {
   var outEl = document.getElementById('exec-ai-output');
   var phEl  = document.getElementById('exec-ai-placeholder');
   if(!outEl) return;
+  execLastAIReportText='';
   if(typeof canUseAI==='function' && !canUseAI()){outEl.style.display='block'; if(phEl)phEl.style.display='none'; outEl.innerHTML=aiFriendlyErrorHtml(new Error('restricted')); return;}
   outEl.style.display='block'; if(phEl) phEl.style.display='none';
+  if(!execData?.yr||Object.keys(execData.failures||{}).length){outEl.innerHTML='<p role="alert">Board summary unavailable: one or more live registers could not be loaded. Refresh the Executive Dashboard and try again.</p>';return;}
+  var generation=_execLoadGeneration,company=ccid();
   outEl.innerHTML = '<div style="text-align:center;padding:18px;color:#5B21B6;font-weight:800">Generating AI executive report...</div>';
   var ctx = execBuildAIContext(type);
   var brief={weekly_summary:'weekly executive HSE summary',executive_summary:'board executive HSE summary',monthly_report:'monthly HSE management report',annual_stats:'annual HSE statistics review'}[type]||'executive HSE report';
-  var prompt='Prepare a '+brief+' from this scoped snapshot. Return STRICT JSON with keys: executive_summary string, red_flags array, positive_notes array, management_decisions array, next_week_priorities array, recommended_actions array. Cite exact source reference and date for factual record-level claims; say evidence is insufficient when records are absent. Do not infer safety from zero counts or invent targets, benchmarks, probabilities or certification coverage. Distinguish estimated exposure hours from verified hours. Data: '+JSON.stringify(ctx);
+  var prompt='Prepare a '+brief+' from this scoped snapshot. Return STRICT JSON with keys: executive_summary string, red_flags array, positive_notes array, management_decisions array, next_week_priorities array, recommended_actions array. Cite exact source reference and date for factual record-level claims; say evidence is insufficient when records are absent. Do not infer safety from zero counts or invent targets, benchmarks, probabilities or certification coverage. If verified exposure hours are unavailable, do not calculate rates. Data: '+JSON.stringify(ctx);
   try {
     var raw=await callAI([{role:'user',content:prompt}], 'You are a senior HSE director preparing concise board-ready safety performance reports. Output valid JSON only.');
+    if(generation!==_execLoadGeneration||company!==ccid()){outEl.textContent='The company or reporting period changed. Generate a new summary.';return;}
     var data=aiExtractJson(raw)||raw;
     outEl.innerHTML=execAIRenderReport(data,type,ctx);
     toast('AI executive report generated');
   } catch(e) { outEl.innerHTML = aiFriendlyErrorHtml(e); }
 }
+var execGeneratedReport=null;
 async function execGenerateReport(type) {
+  execGeneratedReport=null;
+  var generation=_execLoadGeneration,company=ccid();
   var outEl=document.getElementById('exec-report-output');
   var textEl=document.getElementById('exec-report-text');
   var titleEl=document.getElementById('exec-report-title');
@@ -5795,10 +5858,11 @@ async function execGenerateReport(type) {
   if(titleEl) titleEl.textContent = titles[type]||'HSE Report';
   textEl.textContent = 'Generating '+titles[type]+'...';
   var d = execData;
+  if(!d||!d.yr||Object.keys(d.failures||{}).length){textEl.textContent='Report unavailable: one or more live source registers could not be loaded. Refresh the dashboard and try again.';return;}
   var yr = d.yr || new Date().getFullYear();
   var ltiCnt = (d.events||[]).filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;}).length;
-  var recCnt = (d.events||[]).filter(function(x){return x.injury_type||['injury','lti','medical_treatment'].includes(x.event_type);}).length;
-  var manhours = (d.people||[]).length * 2000;
+  var recCnt = (d.events||[]).filter(hseIsRecordableEvent).length;
+  var manhours = isSA()&&!sephsCompanyContext?null:hseVerifiedHours(d.exposure,yr,yr===new Date().getFullYear()?new Date().getMonth()+1:12);
   var ltifr = manhours>0?(ltiCnt/manhours*1000000).toFixed(2):'N/A';
   var trir = manhours>0?(recCnt/manhours*200000).toFixed(2):'N/A';
   var lScores=(d.legal||[]).filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
@@ -5813,7 +5877,8 @@ async function execGenerateReport(type) {
     +'- Environmental incidents: '+(d.events||[]).filter(function(x){return x.event_type==='environmental';}).length+'\n'
     +'- Spills: '+(d.spills||[]).length+'\n'
     +'- Company scope: '+(isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company')+'\n'
-    +'- Exposure hours are estimated, not verified: '+Math.round(manhours)+'\n'
+    +'- Verified exposure hours: '+(manhours==null?'Not available':manhours)+'\n'
+    +'- Approved rate targets: '+JSON.stringify((d.targets||[])[0]||'Not recorded')+'\n'
     +'- Source limitations: '+JSON.stringify(d.failures||{})+'\n';
   var prompts = {
     monthly: ctx+'\n\nWrite a professional Monthly HSE Report for management. Include: Executive summary, Incident statistics, Compliance status, Training update, Actions update, Environmental performance, and Priorities for next month. Professional tone, ~400 words.',
@@ -5824,18 +5889,22 @@ async function execGenerateReport(type) {
     compliance: ctx+'\n\nWrite a Compliance Status Report. Cover: Legal compliance score, Gap analysis summary, Regulatory notifications, Open corrective actions by age, Audit performance, Compliance calendar outlook. ~350 words.',
   };
   try {
-    textEl.textContent = await callAI([{role:'user',content:(prompts[type]||ctx+'\n\nWrite a concise HSE report.')+'\nUse only these figures. Cite a source reference and date for record-level claims or state that evidence is unavailable. Do not invent targets, benchmarks, risk probabilities, certification coverage, or positive conclusions from missing records.'}]) || 'No report generated.';
+    var report=await callAI([{role:'user',content:(prompts[type]||ctx+'\n\nWrite a concise HSE report.')+'\nUse only these figures. Cite a source reference and date for record-level claims or state that evidence is unavailable. Do not invent targets, benchmarks, risk probabilities, certification coverage, or positive conclusions from missing records.'}]);
+    if(generation!==_execLoadGeneration||company!==ccid()){textEl.textContent='The company or reporting period changed. Generate a new report.';return;}
+    if(!report||!String(report).trim())throw new Error('The report service returned no content.');
+    textEl.textContent=String(report);
+    execGeneratedReport={text:String(report),year:yr,type:type,company_id:company,generated_at:new Date().toISOString()};
   } catch(e) { textEl.textContent = aiFriendlyError(e); }
 }
 
 function execExportReport() {
-  var report = document.getElementById('exec-report-text')?.textContent;
-  if(!report||report.includes('?')||report.includes('No report')) {
+  var report=execGeneratedReport;
+  if(!report||report.year!==execData.yr||report.company_id!==ccid()||document.getElementById('exec-report-text')?.textContent!==report.text) {
     toast('Generate a report first using the Reports tab', false); return;
   }
-  var blob = new Blob([report], {type:'text/plain'});
+  var blob = new Blob([report.text], {type:'text/plain'});
   var url = URL.createObjectURL(blob);
-  var a = document.createElement('a'); a.href=url; a.download='HSE_Report_'+new Date().toISOString().slice(0,10)+'.txt'; a.click();
+  var a = document.createElement('a'); a.href=url; a.download='HSE_Report_'+report.year+'_'+new Date().toISOString().slice(0,10)+'.txt'; a.click();
   URL.revokeObjectURL(url); toast('Report downloaded!');
 }
 
@@ -6001,7 +6070,7 @@ function aiTab(tab, btn) {
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='insights' && !aiInsightsCache) genFullAI();
-  if(tab==='safetyos') safetyOSPopulateSelectors();
+  if(tab==='safetyos'){safetyOSPopulateSelectors();safetyOSLoadDecisions();}
   if(tab==='rams') aiLoadSavedRamsHistory();
   if(tab==='chat') document.getElementById('ai-chat-input')?.focus();
 }
@@ -6531,8 +6600,39 @@ function safetyOSFallbackDecision(ctx,cause){
     fallback_notice:'The AI provider did not return a valid structured decision. SafetyOS applied its conservative live-record fallback instead.'
   };
 }
+var safetyOSPendingDecision=null;
+function safetyOSCanSupervise(){return ['sephs_admin','admin','company_admin','hse_manager','manager','site_manager'].includes(activeRole())&&!!ccid()&&!(isSA()&&!sephsCompanyContext);}
+async function safetyOSLoadDecisions(){
+  var panel=document.getElementById('safetyos-history');if(!panel)return;
+  var company=ccid();
+  if(!company||isSA()&&!sephsCompanyContext){panel.textContent='Select a company to view supervisor decisions.';return;}
+  panel.textContent='Loading supervisor decisions…';
+  try{
+    var rows=await api('/safetyos_supervisor_decisions?select=id,task,planned_date,advisory_decision,advisory_snapshot,supervisor_decision,supervisor_note,decided_by,decided_at&company_id=eq.'+company+'&order=decided_at.desc&limit=10');
+    if(company!==ccid())return;
+    var ids=[...new Set((rows||[]).map(function(x){return x.decided_by;}).filter(Boolean))];
+    var names={};
+    if(ids.length){try{var people=await api('/profiles?select=id,full_name&id=in.('+ids.join(',')+')');(people||[]).forEach(function(x){names[x.id]=x.full_name;});}catch(_){}}
+    if(company!==ccid())return;
+    panel.innerHTML='<div class="card-title">Recent supervisor decisions</div>'+(!(rows||[]).length?'<p>No supervisor decisions recorded for this company.</p>':'<div style="display:grid;gap:8px">'+rows.map(function(x){return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px"><strong>'+escH(x.task)+'</strong> · '+escH(x.supervisor_decision)+'<br><small>'+escH(x.planned_date)+' · '+escH(names[x.decided_by]||x.decided_by||'Supervisor')+' · '+escH(new Date(x.decided_at).toLocaleString('en-GB'))+'</small><div>'+escH(x.supervisor_note)+'</div><details><summary>View recorded advisory</summary><div>AI advisory: '+escH(x.advisory_decision)+' · '+escH(x.advisory_snapshot?.decision_summary||'')+'</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escH(JSON.stringify(x.advisory_snapshot||{},null,2))+'</pre></details></div>';}).join('')+'</div>');
+  }catch(e){if(company===ccid())panel.textContent='Supervisor decisions could not be loaded. Check database setup and refresh.';}
+}
+async function safetyOSSaveSupervisorDecision(){
+  if(!safetyOSCanSupervise()||!safetyOSPendingDecision)return toast('A current advisory and supervisor access are required',false);
+  var choice=document.getElementById('safetyos-supervisor-choice')?.value,note=document.getElementById('safetyos-supervisor-note')?.value.trim(),snapshot=safetyOSPendingDecision;
+  if(snapshot.company_id!==ccid())return toast('Company changed. Rerun the work readiness check.',false);
+  if(!['held','released'].includes(choice)||!note||note.length<10)return toast('Choose a decision and enter at least 10 characters of field verification',false);
+  if(choice==='released'&&(snapshot.data.decision==='NO_GO'||(snapshot.data.blocking_items||[]).length))return toast('This advisory has blocking items. Resolve them and rerun the check before release.',false);
+  var req=snapshot.ctx.request||{};
+  var payload={company_id:ccid(),task:req.task,planned_date:req.planned_date,location:req.location||null,work_type:req.work_type||null,worker_id:req.worker_id||null,equipment_id:req.equipment_id||null,risk_assessment_id:req.risk_assessment_id||null,permit_id:req.permit_id||null,advisory_decision:snapshot.data.decision,advisory_snapshot:snapshot.data,supervisor_decision:choice,supervisor_note:note,decided_by:prof.id};
+  var button=document.getElementById('safetyos-save-supervisor');if(button)button.disabled=true;
+  try{await api('/safetyos_supervisor_decisions',{m:'POST',p:'return=minimal',b:payload});safetyOSPendingDecision=null;var panel=document.getElementById('safetyos-supervisor-panel');if(panel)panel.innerHTML='<strong>Supervisor decision recorded: '+escH(choice)+'.</strong> This entry is retained with the advisory snapshot. Rerun SafetyOS for a new decision.';toast('Supervisor decision recorded');await safetyOSLoadDecisions();}
+  catch(e){if(button)button.disabled=false;toast('Decision could not be saved: '+e.message,false);}
+}
 async function safetyOSRunCheck(){
   var out=document.getElementById('safetyos-output');if(!out)return;
+  safetyOSPendingDecision=null;
+  if(isSA()&&!sephsCompanyContext){out.textContent='Select one company before running a work readiness check.';return;}
   if(typeof canUseAI==='function'&&!canUseAI()){out.innerHTML=aiFriendlyErrorHtml(new Error('restricted'));return;}
   var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
   var input={task:g('safetyos-task'),location:g('safetyos-location'),worker:g('safetyos-worker'),worker_id:document.getElementById('safetyos-worker')?.selectedOptions?.[0]?.dataset.id||'',equipment_id:g('safetyos-equipment'),risk_assessment_id:g('safetyos-ra'),permit_id:g('safetyos-permit'),work_type:g('safetyos-worktype')||'general',planned_date:g('safetyos-date')||new Date().toISOString().slice(0,10),context:g('safetyos-context')};
@@ -6576,7 +6676,10 @@ function safetyOSRenderDecision(data,ctx){
     +'</div>';
   h+=section('Blocking items',data.blocking_items,'?')+section('Conditions before start',data.conditions_to_start,'?')+section('Missing records',data.missing_records,'*')+section('Verified controls',data.verified_controls,'?*')+section('Required documents',data.required_documents,'*')+section('Notifications / approvals',data.required_notifications,'*')+section('Evidence checked',data.evidence,'*')+section('Next actions',data.next_actions,'*');
   if(data.supervisor_briefing)h+='<div style="margin-top:12px;padding:10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12px"><b>Supervisor briefing:</b><br>'+escH(data.supervisor_briefing)+'</div>';
+  safetyOSPendingDecision={company_id:ccid(),data:JSON.parse(JSON.stringify(data)),ctx:{request:Object.assign({},ctx.request||{})}};
+  if(safetyOSCanSupervise())h+='<div id="safetyos-supervisor-panel" style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:10px"><strong>Supervisor field decision</strong><p>Inspect conditions on site before recording a release. The AI advisory does not authorise work.</p><div class="mobile-stack" style="display:flex;gap:8px;flex-wrap:wrap"><label>Decision <select id="safetyos-supervisor-choice"><option value="">Select</option><option value="held">Hold work</option>'+(decision==='NO_GO'?'':'<option value="released">Release after field verification</option>')+'</select></label><label style="flex:1;min-width:220px">Field verification and reason <textarea id="safetyos-supervisor-note" maxlength="2000" style="width:100%" placeholder="Describe the field checks and outstanding controls"></textarea></label><button id="safetyos-save-supervisor" class="btn btn-primary" type="button">Record decision</button></div></div>';
   out.innerHTML=h;
+  document.getElementById('safetyos-save-supervisor')?.addEventListener('click',safetyOSSaveSupervisorDecision);
 }
 
 // -- Predictive Risk -----------------------------------------------------------
@@ -15058,7 +15161,7 @@ function imsRenderIncidentDashboard(data){
   var investigations=data.filter(function(x){return x.investigation_required||x.status==='under_investigation';}).length;
   var overdueActions=0;
   var closedMonth=data.filter(function(x){var d=new Date(imsDateValue(x));var n=new Date();return (x.status||'')==='closed'&&!isNaN(d)&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
-  var trir=total?Math.max(.1,(data.filter(function(x){return ['injury','occupational_disease'].includes(x.event_type||x.type);}).length*200000/Math.max(1,total*180))).toFixed(2):'0.00';
+  var trir='N/A'; // The incident register alone cannot establish exposure hours.
   var sevIndex=total?(data.reduce(function(s,x){return s+imsSeverityScore(x.severity);},0)/total).toFixed(1):'0.0';
   var incSeries=imsMonthlySeries(data,function(x){return (x.event_type||x.type)!=='near_miss';});
   var nearSeries=imsMonthlySeries(data,function(x){return (x.event_type||x.type)==='near_miss';});
@@ -15068,7 +15171,7 @@ function imsRenderIncidentDashboard(data){
     +imsKpiCard('ims-kpi-orange','ti-search','Open Investigations',investigations,investigations+' requiring follow-up','ims-open-investigations')
     +imsKpiCard('ims-kpi-yellow','ti-clipboard-alert','Overdue Actions',overdueActions,'linked corrective actions','ims-open-actions')
     +imsKpiCard('ims-kpi-green','ti-circle-check','Closed This Month',closedMonth,closedMonth+' closed records','ims-filter-closed')
-    +imsKpiCard('ims-kpi-blue','ti-chart-line','TRIR (YTD)',trir,'indicative from current records','ims-open-stats')
+    +imsKpiCard('ims-kpi-blue','ti-chart-line','TRIR (YTD)',trir,'verified exposure hours required; see Executive Dashboard','ims-open-stats')
     +imsKpiCard('ims-kpi-purple','ti-alert-triangle','Severity Index',sevIndex,sevIndex>=3?'High risk':'Controlled','ims-open-stats')
     +'</div>'
     +'<div class="ims-dash-grid">'
@@ -41172,30 +41275,28 @@ async function printMonthlySummary() {
   toast('Generating monthly report...');
   try {
     var now = new Date();
-    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    var monthEnd = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString();
+    var monthStart = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+    var monthEnd = now.getMonth()===11?(now.getFullYear()+1)+'-01-01':now.getFullYear()+'-'+String(now.getMonth()+2).padStart(2,'0')+'-01';
     var monthName = now.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
 
     // Fetch this month's data
-    var cid = prof.company_id ? '&company_id=eq.' + prof.company_id : '';
-    var [events, audits, actions, permits] = await Promise.all([
-      api('/events?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
-      api('/inspections?inspection_date=gte.' + monthStart + '&inspection_date=lte.' + monthEnd + cid + '&select=*'),
-      api('/action_tracker?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
-      api('/permits?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
+    var cid = cf();
+    var [events, audits, actions] = await Promise.all([
+      apiAllRows('/events?event_date=gte.' + monthStart + '&event_date=lt.' + monthEnd + cid + '&select=*'),
+      apiAllRows('/inspections?inspection_date=gte.' + monthStart + '&inspection_date=lt.' + monthEnd + cid + '&select=*'),
+      apiAllRows('/action_tracker?select=*' + cid),
     ]);
 
     events  = events  || [];
     audits  = audits  || [];
     actions = actions || [];
-    permits = permits || [];
 
     var critical = events.filter(function(e){ return e.severity==='critical'||e.severity==='high'; }).length;
-    var openActions = actions.filter(function(a){ return a.status==='open'; }).length;
-    var overdueActions = actions.filter(function(a){ return a.status==='overdue'; }).length;
-    var avgScore = audits.length
-      ? Math.round(audits.reduce(function(s,a){ return s + (a.score_good||0)/(a.total_items||1)*100; }, 0) / audits.length)
-      : 0;
+    var outstandingActions=actions.filter(function(a){return !dashIsDoneStatus(a.status);});
+    var openActions = outstandingActions.length;
+    var overdueActions = outstandingActions.filter(function(a){return dashIsOverdue(a.target_date||a.due_date);}).length;
+    var scoredAudits=audits.filter(function(a){return Number(a.score_good||0)+Number(a.score_insuf||0)>0;});
+    var avgScore = scoredAudits.length?Math.round(scoredAudits.reduce(function(s,a){return s+Number(a.score_good||0)/(Number(a.score_good||0)+Number(a.score_insuf||0))*100;},0)/scoredAudits.length):null;
 
     var html = '<div class="report-page">'
       + aurisHeader('Monthly HSE Summary Report', monthName, 'MONTHLY-' + now.getFullYear() + (now.getMonth()+1).toString().padStart(2,'0'))
@@ -41207,7 +41308,7 @@ async function printMonthlySummary() {
       + '<div class="rpt-field"><label>Inspections Done</label><span style="font-size:18pt;font-weight:700;color:#1D9E75">' + audits.length + '</span></div>'
       + '<div class="rpt-field"><label>Open Actions</label><span style="font-size:18pt;font-weight:700;color:#185FA5">' + openActions + '</span></div>'
       + '<div class="rpt-field"><label>Overdue Actions</label><span style="font-size:18pt;font-weight:700;color:#DC2626">' + overdueActions + '</span></div>'
-      + '<div class="rpt-field"><label>Avg Audit Score</label><span style="font-size:18pt;font-weight:700;color:#1D9E75">' + avgScore + '%</span></div>'
+      + '<div class="rpt-field"><label>Avg Audit Score</label><span style="font-size:18pt;font-weight:700;color:#1D9E75">' + (avgScore==null?'Not assessed':avgScore+'%') + '</span></div>'
       + '</div></div>'
 
       + '<div class="rpt-section"><div class="rpt-section-title red">Incidents This Month</div>'
@@ -41215,13 +41316,13 @@ async function printMonthlySummary() {
         + events.map(function(e){
             var cls = e.severity==='critical'?'badge-red':e.severity==='high'?'badge-red':e.severity==='medium'?'badge-amber':'badge-green';
             return '<tr><td>' + escH(e.inv_ref||'-') + '</td>'
-              + '<td>' + (e.incident_date?new Date(e.incident_date).toLocaleDateString('en-GB'):'-') + '</td>'
+              + '<td>' + (e.event_date?new Date(e.event_date).toLocaleDateString('en-GB'):'-') + '</td>'
               + '<td><span class="badge ' + cls + '">' + escH(e.severity||'') + '</span></td>'
               + '<td>' + escH(e.location||'-') + '</td>'
               + '<td><span class="badge ' + (e.status==='closed'?'badge-green':'badge-amber') + '">' + escH(e.status||'') + '</span></td>'
               + '</tr>';
           }).join('') + '</tbody></table>'
-        : '<p style="color:#6b7280;font-size:9pt;padding:8px">No incidents recorded this month. ?</p>')
+        : '<p style="color:#6b7280;font-size:9pt;padding:8px">No incidents recorded in this register for the selected month.</p>')
       + '</div>'
 
       + '<div class="rpt-section"><div class="rpt-section-title blue">Inspections & Audits</div>'
@@ -41239,16 +41340,16 @@ async function printMonthlySummary() {
       + '</div>'
 
       + '<div class="rpt-section"><div class="rpt-section-title amber">Outstanding Actions</div>'
-      + (openActions + overdueActions > 0
+      + (outstandingActions.length > 0
         ? '<table><thead><tr><th>Action</th><th>Responsible</th><th>Due Date</th><th>Status</th></tr></thead><tbody>'
-          + actions.filter(function(a){ return a.status!=='closed'; }).map(function(a){
+          + outstandingActions.map(function(a){
               return '<tr><td>' + escH(a.description||'') + '</td>'
                 + '<td>' + escH(a.responsible||'-') + '</td>'
-                + '<td>' + (a.due_date?new Date(a.due_date).toLocaleDateString('en-GB'):'-') + '</td>'
+                + '<td>' + ((a.target_date||a.due_date)?new Date(a.target_date||a.due_date).toLocaleDateString('en-GB'):'-') + '</td>'
                 + '<td><span class="badge ' + (a.status==='overdue'?'badge-red':'badge-amber') + '">' + escH(a.status||'') + '</span></td>'
                 + '</tr>';
             }).join('') + '</tbody></table>'
-        : '<p style="color:#6b7280;font-size:9pt;padding:8px">All actions are closed. ?</p>')
+        : '<p style="color:#6b7280;font-size:9pt;padding:8px">No outstanding actions in the register at report generation.</p>')
       + '</div>'
 
       + '<div class="rpt-signatures">'

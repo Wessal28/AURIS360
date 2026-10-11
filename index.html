@@ -910,7 +910,7 @@
 <div class="card auris-exec-s-bf8f7f0abd">
 <div class="auris-exec-s-525e47b940">TRIR YTD</div>
 <div id="exec-trir" class="auris-exec-s-32fa062d0e">-</div>
-<div class="auris-exec-s-b6cb22c5b1" title="Recordable cases ÷ estimated exposure hours × 200,000. Verify actual hours before using this as an official rate.">per 200,000 estimated hours</div>
+<div class="auris-exec-s-b6cb22c5b1" title="Recordable cases ÷ verified exposure hours × 200,000. Requires all months in the reporting period.">per 200,000 verified hours</div>
 <div id="exec-trir-trend" class="auris-exec-s-3393371eab"></div>
 </div>
 <div class="card auris-exec-s-0df5893da0">
@@ -928,6 +928,20 @@
 
 <!-- Performance trend + Site comparison -->
 <div id="exec-evidence-summary" class="card" role="status" aria-live="polite">Loading management decisions and data completeness…</div>
+<div class="card" id="hse-evidence-controls">
+  <div class="card-title">Verified exposure hours and approved rate targets</div>
+  <p id="hse-evidence-status" role="status">Loading source records…</p>
+  <div id="hse-evidence-editor" class="mobile-stack" hidden>
+    <label>Month <select id="hse-hours-month"></select></label>
+    <label>Actual hours <input id="hse-hours-value" type="number" min="0" step="0.01" placeholder="Verified hours"></label>
+    <label>Source reference <input id="hse-hours-source" maxlength="500" placeholder="Payroll or timesheet reference"></label>
+    <button id="hse-save-hours" class="btn btn-sm btn-primary" type="button">Save verified hours</button>
+    <label>LTIFR target <input id="hse-target-ltifr" type="number" min="0" step="0.001" placeholder="Optional"></label>
+    <label>TRIR target <input id="hse-target-trir" type="number" min="0" step="0.001" placeholder="Optional"></label>
+    <label>Approval reference <input id="hse-target-reference" maxlength="500" placeholder="Approved plan reference"></label>
+    <button id="hse-save-targets" class="btn btn-sm" type="button">Save approved targets</button>
+  </div>
+</div>
 <div class="auris-exec-s-95cc0e2392">
 <div class="card">
 <div class="card-title">Annual Safety Performance Trend</div>
@@ -10230,6 +10244,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div id="safetyos-output" class="auris-ai-insights-s-b2263b5ff6">
 <div class="auris-ai-insights-s-e39eed23fd"><div class="auris-ai-insights-s-09a7c6b88f"><i class="ti ti-circle-dot"></i></div><div class="auris-ai-insights-s-9c7346cc25">SafetyOS ready</div><div class="auris-ai-insights-s-6db7a108ac">Enter a planned task and run the check. AURIS will produce a Go / Conditional Go / No-Go decision with evidence and missing controls.</div></div>
 </div>
+<div id="safetyos-history" role="status">Loading supervisor decisions…</div>
 </div>
 </div>
 </div>
