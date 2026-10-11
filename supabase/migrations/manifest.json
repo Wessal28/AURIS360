@@ -206,6 +206,11 @@
       "order": 41,
       "file": "20261009040000_safety_awareness_plan.sql",
       "sha256": "278874c1399c6b6c6debc531bce3f9f047ab7b1765a37e79dc3fb38a03e086fd"
+    },
+    {
+      "order": 42,
+      "file": "20261012010000_verified_hse_hours_and_safetyos_release.sql",
+      "sha256": "677925c523691d9bcfac714f988a740792c43fc7fc96ca981eb1393706675daf"
     }
   ]
 }
