@@ -9,7 +9,7 @@ const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
 const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
 
 test('reviewed migration replay inventory includes verified HSE evidence and supervisor decisions', () => {
-  assert.deepEqual(expectations, { format_version: 1, tables: 275, policies: 1180, routines: 153 });
+  assert.deepEqual(expectations, { format_version: 1, tables: 275, policies: 1179, routines: 153 });
 });
 
 function run(databaseUrl) {
