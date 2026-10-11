@@ -50,8 +50,8 @@ assert.match(functionSource('mapQueueRefBackfill'), /api\(['"]\/action_tracker\?
 // The landing dashboard also isolates each source and retries transient login
 // failures, preventing a single unavailable optional source from blanking it.
 assert.match(functionSource('loadDash'), /var safe = async function\(p,key\)[\s\S]*sourceFailures\[key\]=true[\s\S]*return \[\]/);
-assert.match(functionSource('loadDash'), /safe\(api\(['"]\/events/);
-assert.match(functionSource('loadDash'), /safe\(api\(['"]\/chemical_register/);
+assert.match(functionSource('loadDash'), /safe\(apiAllRows\(['"]\/events/);
+assert.match(functionSource('loadDash'), /safe\(apiAllRows\(['"]\/chemical_register/);
 assert.match(functionSource('loadDash'), /options\.initial&&hadApiFailure[\s\S]*attempt[\s\S]*1500/);
 
 console.log('Core Control resilience contract passed (dashboard plus four primary registers and optional dependencies).');

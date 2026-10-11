@@ -238,6 +238,21 @@ auditApiMutation(path,method,o,d);
 return d;
 }
 
+// Read every page for cross-module figures. A hard safety boundary fails closed
+// instead of silently displaying a partial count as a complete register.
+async function apiAllRows(path){
+  var pageSize=500,maxPages=100,base=String(path||'').replace(/&(?:limit|offset)=\d+/g,'');
+  if(!/[?&]order=/.test(base))base+='&order=id.asc';
+  var rows=[];
+  for(var page=0;page<maxPages;page++){
+    var batch=await api(base+'&limit='+pageSize+'&offset='+(page*pageSize));
+    if(!Array.isArray(batch))throw new Error('Expected a register row list.');
+    rows.push.apply(rows,batch);
+    if(batch.length<pageSize)return rows;
+  }
+  throw new Error('Register exceeds the safe pagination boundary; figures are unavailable until this query is narrowed.');
+}
+
 // Shared reciprocal relationship service (AP-030). Module-specific relationship
 // tables remain supported while modules migrate to this canonical interface.
 function relationshipEndpoint(moduleKey,tableName,recordId,recordRef,revision){
@@ -3431,22 +3446,22 @@ async function loadDash(options) {
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
     var results = await Promise.all([
-      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yr+'-12-31&order=event_date.desc&limit=500'),'events'),
-      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),'actions'),
-      safe(api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active'),'people'),
-      safe(api('/permits?select=*'+cf()+'&status=eq.active'),'permits'),
-      safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc'),'certs'),
-      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),'inspections'),
-      safe(api('/legal_requirements?select=*'+cf()+'&limit=500'),'legal'),
-      safe(api('/training_followup?select=id,person_name,expiry_date'+cf()),'training'),
-      safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50'),'kpi'),
-      safe(api('/safety_observations?select=id'+cf()+'&limit=10'),'observations'),
-      safe(api('/risk_assessments?select=*'+cf()+'&limit=500'),'risks'),
-      safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10'),'chemicals'),
-      optional(api('/contractors?select=*'+cf()+'&limit=200')),
-      optional(api('/tools_register?select=*'+cf()+'&limit=200')),
-      optional(api('/moc_change_requests?select=*'+cf()+'&limit=200')),
-      optional(api('/approval_requests?select=*'+cf()+'&limit=200')),
+      safe(apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yr+'-12-31&order=event_date.desc,id.asc'),'events'),
+      safe(apiAllRows('/action_tracker?select=*'+cf()+'&order=created_at.desc,id.asc'),'actions'),
+      safe(apiAllRows('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(apiAllRows('/permits?select=*'+cf()+'&status=eq.active'),'permits'),
+      safe(apiAllRows('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc,id.asc'),'certs'),
+      safe(apiAllRows('/inspections?select=*'+cf()+'&order=inspection_date.desc,id.asc'),'inspections'),
+      safe(apiAllRows('/legal_requirements?select=*'+cf()),'legal'),
+      safe(apiAllRows('/training_followup?select=id,person_name,expiry_date'+cf()),'training'),
+      safe(apiAllRows('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc,id.asc'),'kpi'),
+      safe(apiAllRows('/safety_observations?select=id'+cf()),'observations'),
+      safe(apiAllRows('/risk_assessments?select=*'+cf()),'risks'),
+      safe(apiAllRows('/chemical_register?select=id,status'+cf()+'&status=neq.deleted'),'chemicals'),
+      optional(apiAllRows('/contractors?select=*'+cf())),
+      optional(apiAllRows('/tools_register?select=*'+cf())),
+      optional(apiAllRows('/moc_change_requests?select=*'+cf())),
+      optional(apiAllRows('/approval_requests?select=*'+cf())),
     ]);
     var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals, contractors, equipment, changes, approvals] = results;
     // A newer dashboard request owns the screen. Never let a slower, older
@@ -3468,12 +3483,12 @@ async function loadDash(options) {
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
     // Safety metrics
-    sm('d-events', openEvents.length);
-    sm('d-events-sub', thisMonth.length+' this month');
-    sm('d-actions', openActions.length);
-    sm('d-actions-sub', overdueActions.length+' overdue');
-    sm('d-people', people.length);
-    sm('d-permits', permits.length);
+    sm('d-events', sourceFailures.events?'Unavailable':openEvents.length);
+    sm('d-events-sub', sourceFailures.events?'Incident register could not be loaded':thisMonth.length+' this month');
+    sm('d-actions', sourceFailures.actions?'Unavailable':openActions.length);
+    sm('d-actions-sub', sourceFailures.actions?'Action register could not be loaded':overdueActions.length+' overdue');
+    sm('d-people', sourceFailures.people?'Unavailable':people.length);
+    sm('d-permits', sourceFailures.permits?'Unavailable':permits.length);
 
     // LTIFR & TRIR
     var ytdEvents = events.filter(function(x){var d=x.event_date||x.created_at||'';return d>=yrStart;});
@@ -3482,12 +3497,13 @@ async function loadDash(options) {
     var manhours = people.length * 2000 * (now.getMonth()+1) / 12;
     var ltifr = manhours>0 ? (ltiEvents.length/manhours*1000000).toFixed(2) : '0.00';
     var trir = manhours>0 ? (recordable.length/manhours*200000).toFixed(2) : '0.00';
-    sm('d-ltifr', ltifr); sm('d-trir', trir);
+    sm('d-ltifr', sourceFailures.events||sourceFailures.people?'Unavailable':ltifr);
+    sm('d-trir', sourceFailures.events||sourceFailures.people?'Unavailable':trir);
 
     // Training compliance
     var soon60 = new Date(); soon60.setDate(soon60.getDate()+60);
     var expCerts = certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<soon60;});
-    sm('d-certs', expCerts.length);
+    sm('d-certs', sourceFailures.certs?'Unavailable':expCerts.length);
     var trainValid = training.filter(function(x){return !x.expiry_date||new Date(x.expiry_date)>now;});
     // Follow-up rows cannot establish unique workforce coverage without a verified person link.
     var trainPct = null;
@@ -3502,11 +3518,12 @@ async function loadDash(options) {
 
     // Environmental incidents
     var envInc = ytdEvents.filter(function(x){return x.event_type==='environmental';});
-    sm('d-env', envInc.length);
+    sm('d-env', sourceFailures.events?'Unavailable':envInc.length);
 
     // Audit score
     var lastInsp = insps[0];
-    if(lastInsp) {
+    if(sourceFailures.inspections){sm('d-audit-score','Unavailable');}
+    else if(lastInsp) {
       var total=(lastInsp.score_good||0)+(lastInsp.score_insuf||0);
       var score=total>0?Math.round((lastInsp.score_good||0)/total*100):0;
       sm('d-audit-score', score+'%');
@@ -3515,7 +3532,8 @@ async function loadDash(options) {
     // KPIs
     var kpis = kpiData.filter(function(x){return x.year==yr;});
     var kpiTotal = kpis.length; var kpiOK = kpis.filter(function(x){return x.status==='on_track';}).length;
-    sm('d-kpis', kpiOK+'/'+kpiTotal); sm('d-kpis-sub','of '+kpiTotal+' targets');
+    sm('d-kpis', sourceFailures.kpi?'Unavailable':kpiOK+'/'+kpiTotal);
+    sm('d-kpis-sub', sourceFailures.kpi?'KPI results could not be loaded':'of '+kpiTotal+' targets');
 
     // Critical alert bar
     var alertBar = document.getElementById('dash-alert-bar');
@@ -3731,21 +3749,57 @@ function dashJs(value){
 function dashNavigateTo(page,id){
   dashCloseControlCentreModal();
   if(!page)return;
+  if(typeof canAccessPage==='function'&&!canAccessPage(page))return toast('You do not have access to this module.',false);
+  var expectedCompany=String(ccid()||''),expectedUser=String(prof?.id||'');
   showPage(page,null);
   if(!id)return;
-  setTimeout(function(){
+  setTimeout(async function(){
     try{
+      function current(){return expectedCompany===String(ccid()||'')&&expectedUser===String(prof?.id||'')&&(!canAccessPage||canAccessPage(page));}
+      if(!current())return;
       if(page==='events'&&typeof evOpenDetail==='function')evOpenDetail(id);
       else if(page==='inspection'&&typeof auditOpen==='function')auditOpen(id);
       else if(page==='risk'&&typeof raOpenReadOnly==='function')raOpenReadOnly(id);
       else if(page==='permit'&&typeof ptwShowDetail==='function')ptwShowDetail(id);
       else if(page==='workschedule'&&typeof wsShowDetail==='function')wsShowDetail(id);
       else if(page==='swms'&&typeof swmsOpen==='function')swmsOpen(id);
-      else if(page==='training'&&typeof tpOpen==='function')tpOpen(id);
+      else if(page==='training'&&typeof trainSwitchTab==='function'){
+        trainSwitchTab('followup',document.getElementById('train-tab-followup'));
+        await tfLoad();
+        if(!current())return;
+        var trainingRow=(tfAllData||[]).find(function(x){return String(x.id)===String(id);});
+        if(!trainingRow)throw new Error('Training record is no longer available in this company.');
+        aurisReadOnlyRecordModal('Training record',trainingRow.person_name||trainingRow.course_name||'Training',trainingRow,[['Person',trainingRow.person_name],['Course',trainingRow.course_name||trainingRow.training_title],['Training date',trainingRow.training_date],['Expiry',trainingRow.expiry_date],['Certificate',trainingRow.certificate_number||trainingRow.certificate_ref]]);
+      }
       else if(page==='actions'&&typeof mapOpenDetail==='function')mapOpenDetail(id);
       else if(page==='legal'&&typeof legalOpenReq==='function')legalOpenReq(id);
+      else if(page==='contractor'&&typeof conLoadRegister==='function'){
+        await conLoadRegister();
+        if(!current())return;
+        if(!(conAllData||[]).some(function(x){return String(x.id)===String(id);}))throw new Error('Contractor is no longer available in this company.');
+        conOpenDetail(id);
+      }
+      else if(page==='tools'&&typeof toolsLoadRegister==='function'){
+        await toolsLoadRegister();
+        if(!current())return;
+        await toolsOpenEquipmentDetail(id);
+      }
+      else if(page==='moc'&&typeof loadMOC==='function'){
+        await loadMOC();
+        if(!current())return;
+        if(!mocListContext||!(mocData||[]).some(function(x){return String(x.id)===String(id);}))throw new Error('Change request is no longer available in this company.');
+        mocOpenOverview(id,mocLegacyMode?'action_tracker':'moc_change_requests',mocListContext,mocListContext.generation);
+      }
+      else if(page==='approvals'&&typeof loadApprovals==='function'){
+        await loadApprovals();
+        if(!current())return;
+        var approvalRow=(approvalCenterRows||[]).find(function(x){return [x.id,x.open_id,x.record_id].some(function(value){return value!=null&&String(value)===String(id);});});
+        if(!approvalRow)throw new Error('Approval is no longer in the governed queue.');
+        await approvalsOpen(approvalRow.row_key);
+      }
     }catch(e){
       console.warn('Dashboard record navigation failed',e);
+      toast(e.message||'The exact record could not be opened. Refresh and try again.',false);
     }
   },180);
 }
@@ -3968,10 +4022,11 @@ function dashRenderControlCentre(data){
     {label:'Scheduled inspections',value:_dashSourceFailures.inspections?null:scheduledInspections.length,page:'inspection',tone:'blue'},
     {label:'MOC awaiting review',value:mocReviews&&mocReviews.length,page:'moc',tone:mocReviews&&mocReviews.length?'amber':'blue'},
     {label:'Missing KPI results',value:null,page:'kpi',tone:'purple'},
-    {label:'My open tasks',value:personalTasks.length,page:'actions',tone:personalTasks.length?'amber':'green'}
+    {label:'My open tasks',value:_dashSourceFailures.actions?null:personalTasks.length,page:'actions',tone:personalTasks.length?'amber':'green'}
   ].filter(function(item){return typeof canAccessPage!=='function'||canAccessPage(item.page);});
   _dashCommandData={companyId:ccid(),scope:companyName,year:now.getFullYear(),queues:{'Critical risks':_dashSourceFailures.risks?null:highRisks,'Overdue actions':_dashSourceFailures.actions?null:overdueActions,'Incidents to investigate':_dashSourceFailures.events?null:openIncidents,'Pending approvals':pendingApprovals,'Contractors to review':contractorReviews,'Training expiry':_dashSourceFailures.training?null:expiringTraining,'Equipment out of service':quarantinedEquipment,'Scheduled inspections':_dashSourceFailures.inspections?null:scheduledInspections,'MOC awaiting review':mocReviews,'My open tasks':_dashSourceFailures.actions?null:personalTasks},pages:Object.fromEntries(commandPriorities.map(function(x){return [x.label,x.page];}))};
   window.__hseCcKpis=metrics;
+  var unavailableSources=Object.keys(_dashSourceFailures).filter(function(key){return _dashSourceFailures[key];});
 
   panel.innerHTML =
     '<div class="hse-cc-top">'
@@ -3984,6 +4039,7 @@ function dashRenderControlCentre(data){
         +'<div class="hse-cc-user-chip">'+(aurisSafeMediaUrl(prof?.avatar_url,'image')?'<img class="hse-cc-avatar" src="'+escH(aurisSafeMediaUrl(prof.avatar_url,'image'))+'" alt=""/>':'<span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span>')+'<span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
       +'</div>'
     +'</div>'
+    +(unavailableSources.length?'<div class="hse-cc-panel" role="alert"><strong>Some figures are unavailable.</strong> Could not load complete records for '+escH(unavailableSources.join(', '))+'. Refresh to retry.</div>':'')
     +'<div class="hse-cc-kpis">'
       +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.page]))+'"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
@@ -5329,16 +5385,16 @@ async function loadExecutive() {
     }
 
     var results = await Promise.all([
-      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.desc&limit=500'),'events'),
-      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),'actions'),
-      safe(api('/people?select=id,department,status'+cf()+'&status=eq.active'),'people'),
-      safe(api('/inspections?select=*'+cf()+'&inspection_date=gte.'+yrStart+'&inspection_date=lte.'+yrEnd+'&order=inspection_date.desc&limit=500'),'inspections'),
-      safe(api('/legal_requirements?select=*'+cf()),'legal'),
-      safe(api('/authorisations?select=*'+cf()),'certs'),
-      safe(api('/spill_reports?select=*'+cf()),'spills'),
-      safe(api('/waste_records?select=*'+cf()+'&order=created_at.desc&limit=100'),'waste'),
-      safe(api('/fuel_consumption?select=*'+cf()+'&order=created_at.desc&limit=100'),'fuel'),
-      safe(api('/events?select=id'+cf()+'&event_date=gte.'+(useYr-1)+'-01-01&event_date=lte.'+(useYr-1)+'-12-31&limit=500'),'previousEvents'),
+      safe(apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.desc,id.asc'),'events'),
+      safe(apiAllRows('/action_tracker?select=*'+cf()+'&order=created_at.desc,id.asc'),'actions'),
+      safe(apiAllRows('/people?select=id,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(apiAllRows('/inspections?select=*'+cf()+'&inspection_date=gte.'+yrStart+'&inspection_date=lte.'+yrEnd+'&order=inspection_date.desc,id.asc'),'inspections'),
+      safe(apiAllRows('/legal_requirements?select=*'+cf()),'legal'),
+      safe(apiAllRows('/authorisations?select=*'+cf()),'certs'),
+      safe(apiAllRows('/spill_reports?select=*'+cf()),'spills'),
+      safe(apiAllRows('/waste_records?select=*'+cf()+'&order=created_at.desc,id.asc'),'waste'),
+      safe(apiAllRows('/fuel_consumption?select=*'+cf()+'&order=created_at.desc,id.asc'),'fuel'),
+      safe(apiAllRows('/events?select=id,event_date'+cf()+'&event_date=gte.'+(useYr-1)+'-01-01&event_date=lte.'+(useYr-1)+'-12-31'),'previousEvents'),
     ]);
 
     if(generation!==_execLoadGeneration)return;
@@ -5359,7 +5415,8 @@ async function loadExecutive() {
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
     // Overview metrics
-    sm('exec-ltifr', ltifr); sm('exec-trir', trir);
+    sm('exec-ltifr', failures.events||failures.people?'Unavailable':ltifr);
+    sm('exec-trir', failures.events||failures.people?'Unavailable':trir);
     var lScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
     var compPct = lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
     sm('exec-compliance', failures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
@@ -5368,16 +5425,17 @@ async function loadExecutive() {
 
     // Days since LTI
     var lastLTI = ltiEvts.slice(-1)[0];
-    if(lastLTI&&lastLTI.event_date){
+    if(failures.events){sm('exec-days-lti','Unavailable');}
+    else if(lastLTI&&lastLTI.event_date){
       var daysAgo = Math.floor((now-new Date(lastLTI.event_date))/86400000);
       sm('exec-days-lti', daysAgo);
     } else { sm('exec-days-lti', events.length?'365+':'N/A'); }
 
     // Safety tab metrics
-    sm('exec-fatalities', events.filter(function(x){return x.injury_type==='fatality';}).length);
-    sm('exec-ltis', ltiEvts.length);
-    sm('exec-mti', events.filter(function(x){return x.injury_type==='medical_treatment'||x.event_type==='injury';}).length);
-    sm('exec-nm', events.filter(function(x){return x.event_type==='near_miss';}).length);
+    sm('exec-fatalities', failures.events?'Unavailable':events.filter(function(x){return x.injury_type==='fatality';}).length);
+    sm('exec-ltis', failures.events?'Unavailable':ltiEvts.length);
+    sm('exec-mti', failures.events?'Unavailable':events.filter(function(x){return x.injury_type==='medical_treatment'||x.event_type==='injury';}).length);
+    sm('exec-nm', failures.events?'Unavailable':events.filter(function(x){return x.event_type==='near_miss';}).length);
 
     // Compliance tab
     sm('exec-legal-pct', failures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
@@ -5389,12 +5447,12 @@ async function loadExecutive() {
     if(summary)summary.innerHTML=execEvidenceSummary(events,actions,legal,people,certs,previousEvents||[],failures,useYr,manhours,ltiEvts.length,recEvts.length);
 
     // ESG metrics
-    sm('exec-env-inc', events.filter(function(x){return x.event_type==='environmental';}).length);
-    sm('exec-spills', spills.length);
+    sm('exec-env-inc', failures.events?'Unavailable':events.filter(function(x){return x.event_type==='environmental';}).length);
+    sm('exec-spills', failures.spills?'Unavailable':spills.length);
     var totalWaste = waste.reduce(function(s,x){return s+(parseFloat(x.quantity_kg)||0);},0);
-    sm('exec-waste', (totalWaste/1000).toFixed(1));
+    sm('exec-waste', failures.waste?'Unavailable':(totalWaste/1000).toFixed(1));
     var totalCO2 = fuel.reduce(function(s,x){return s+(parseFloat(x.co2_tonnes||x.co2)||0);},0);
-    sm('exec-co2', totalCO2.toFixed(1));
+    sm('exec-co2', failures.fuel?'Unavailable':totalCO2.toFixed(1));
 
     // Render charts
     execRenderAnnualTrend(events);
@@ -5411,9 +5469,9 @@ async function loadExecutive() {
 
     // LTIFR trend indicators
     var ltEl = document.getElementById('exec-ltifr-trend');
-    if(ltEl) ltEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+(ltiEvts.length===0?'Zero LTIs this period':'? '+ltiEvts.length+' LTI'+(ltiEvts.length>1?'s':''))+'</span>';
+    if(ltEl) ltEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+(failures.events?'Incident data unavailable':ltiEvts.length===0?'Zero LTIs this period':ltiEvts.length+' LTI'+(ltiEvts.length>1?'s':''))+'</span>';
     var trEl = document.getElementById('exec-trir-trend');
-    if(trEl) trEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+recEvts.length+' recordable incident'+(recEvts.length!==1?'s':'')+'</span>';
+    if(trEl) trEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+(failures.events?'Incident data unavailable':recEvts.length+' recordable incident'+(recEvts.length!==1?'s':''))+'</span>';
 
   } catch(e) { console.error('Executive dashboard:', e);var summary=document.getElementById('exec-evidence-summary');if(summary)summary.textContent='Unable to load executive evidence. Refresh and try again.'; }
 }
@@ -5439,13 +5497,15 @@ function execEvidenceSummary(events,actions,legal,people,certs,previousEvents,fa
   var gaps=legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;});
   var overdue=actions.filter(function(x){return !dashIsDoneStatus(x.status)&&dashIsOverdue(x.target_date||x.due_date);});
   var decisions=[
-    {title:'Resolve overdue corrective actions',record:overdue[0],page:'actions',evidence:overdue.length+' overdue action(s)',response:'Assign resources and confirm revised due dates',due:overdue[0]?.target_date||overdue[0]?.due_date},
-    {title:'Address legal compliance gaps',record:gaps[0],page:'legal',evidence:gaps.length+' scored requirement(s) below 80%',response:'Review evidence and approve a corrective plan',due:gaps[0]?.target_date},
-    {title:'Improve incident classification',record:events.find(function(x){return !x.department&&!x.person_dept||!x.ws1_contract_type;}),page:'events',evidence:unknownEmployment+' missing employment type; '+unknownDepartment+' missing department',response:'Complete source incident classifications',due:null}
+    {title:'Resolve overdue corrective actions',record:overdue[0],page:'actions',evidence:failures.actions?'Action register unavailable':overdue.length+' overdue action(s)',response:'Assign resources and confirm revised due dates',due:overdue[0]?.target_date||overdue[0]?.due_date},
+    {title:'Address legal compliance gaps',record:gaps[0],page:'legal',evidence:failures.legal?'Legal register unavailable':gaps.length+' scored requirement(s) below 80%',response:'Review evidence and approve a corrective plan',due:gaps[0]?.target_date},
+    {title:'Improve incident classification',record:events.find(function(x){return !x.department&&!x.person_dept||!x.ws1_contract_type;}),page:'events',evidence:failures.events?'Incident register unavailable':unknownEmployment+' missing employment type; '+unknownDepartment+' missing department',response:'Complete source incident classifications',due:null}
   ];
   var html='<div class="card-title">Leadership attention · '+escH(scope)+' · '+year+'</div>';
+  var unavailable=Object.keys(failures||{}).filter(function(key){return failures[key];});
+  if(unavailable.length)html+='<p role="alert"><strong>Incomplete source data:</strong> '+escH(unavailable.join(', '))+' could not be loaded. Affected figures and decisions require a refresh.</p>';
   html+='<p>Incidents: '+(failures.events?'Unavailable':events.length)+' this year versus '+(failures.previousEvents?'Unavailable':previousComparable.length)+' for the same months last year. Targets: not configured. Snapshot: '+escH(new Date().toLocaleString('en-GB'))+'.</p>';
-  html+='<p>Data completeness: '+unknownEmployment+'/'+events.length+' incidents lack employment type; '+unknownDepartment+'/'+events.length+' lack department; '+unassessedLegal+'/'+legal.length+' legal requirements unassessed. Exposure hours are estimated from '+people.length+' active people × 2,000 hours/year; LTIFR uses '+ltiCount+' cases × 1,000,000 / '+Math.round(hours)+' hours and TRIR uses '+recordableCount+' cases × 200,000 / '+Math.round(hours)+' hours. Verify actual hours before formal reporting.</p>';
+  html+='<p>Data completeness: '+(failures.events?'Unavailable':unknownEmployment+'/'+events.length)+' incidents lack employment type; '+(failures.events?'Unavailable':unknownDepartment+'/'+events.length)+' lack department; '+(failures.legal?'Unavailable':unassessedLegal+'/'+legal.length)+' legal requirements unassessed. '+(failures.people||failures.events?'Exposure rates unavailable until source records load.':'Exposure hours are estimated from '+people.length+' active people × 2,000 hours/year; LTIFR uses '+ltiCount+' cases × 1,000,000 / '+Math.round(hours)+' hours and TRIR uses '+recordableCount+' cases × 200,000 / '+Math.round(hours)+' hours. Verify actual hours before formal reporting.')+'</p>';
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+decisions.map(function(x){var record=x.record,owner=record?(record.responsible||record.owner||record.assigned_to||'Unassigned'):'Unassigned';return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><strong>'+escH(x.title)+'</strong><p>'+escH(x.evidence)+'</p><small>Proposed response: '+escH(x.response)+'<br>Owner: '+escH(owner)+' · Due: '+escH(x.due?dashFmtDate(x.due):'Not set')+'</small>'+(record&&record.id?'<div style="margin-top:8px"><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,record.id]))+'">Open evidence</button></div>':'')+'</div>';}).join('')+'</div>';
   return html;
 }
@@ -5851,13 +5911,13 @@ window.addEventListener('load',function(){applyAIAvailability();aiInitDrag();});
 async function getCtx(){
   var now=new Date(),year=now.getFullYear(),company=isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company';
   var [events,actions,inspections,legal,people,certs,kpis]=await Promise.all([
-    api('/events?select=*'+cf()+'&event_date=gte.'+year+'-01-01&event_date=lte.'+year+'-12-31&order=event_date.desc&limit=500'),
-    api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),
-    api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),
-    api('/legal_requirements?select=*'+cf()+'&limit=500'),
-    api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active&limit=500'),
-    api('/authorisations?select=*'+cf()+'&limit=500'),
-    api('/kpi_monthly_data?select=*'+cf()+'&year=eq.'+year+'&limit=500')
+    apiAllRows('/events?select=*'+cf()+'&event_date=gte.'+year+'-01-01&event_date=lte.'+year+'-12-31&order=event_date.desc,id.asc'),
+    apiAllRows('/action_tracker?select=*'+cf()+'&order=created_at.desc,id.asc'),
+    apiAllRows('/inspections?select=*'+cf()+'&order=inspection_date.desc,id.asc'),
+    apiAllRows('/legal_requirements?select=*'+cf()),
+    apiAllRows('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active'),
+    apiAllRows('/authorisations?select=*'+cf()),
+    apiAllRows('/kpi_monthly_data?select=*'+cf()+'&year=eq.'+year)
   ]);
   var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
   var legalScores=legal.filter(function(x){return x.compliance_score!=null&&x.compliance_score!=='';}).map(function(x){return Number(x.compliance_score);}).filter(function(x){return Number.isFinite(x);});
@@ -5866,7 +5926,7 @@ async function getCtx(){
   var auditScored=inspected.filter(function(x){return Number(x.score_good||0)+Number(x.score_insuf||0)>0;});
   var auditAverage=auditScored.length?Math.round(auditScored.reduce(function(sum,x){return sum+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/auditScored.length):null;
   var soon=new Date(now);soon.setDate(soon.getDate()+30);
-  var scope={company:company,company_id:ccid(),period:year+' year to date',snapshot_at:now.toISOString(),limits:'Each source is capped at 500 rows; counts may be incomplete at the cap.'};
+  var scope={company:company,company_id:ccid(),period:year+' year to date',snapshot_at:now.toISOString(),limits:'Register totals include all pages. Evidence excerpts below include up to 30 records per source.'};
   var metrics={incidents_ytd:events.length,open_actions_current:openActions.length,total_actions_current:actions.length,completed_inspections_ytd:inspected.length,audit_score_percent:auditAverage,audit_score_denominator:auditScored.length,legal_score_percent:legalAverage,legal_score_denominator:legalScores.length,unassessed_legal:legal.length-legalScores.length,active_people:people.length,authorisations:certs.length,authorisations_expiring_30d:certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}).length,kpi_results_ytd:kpis.length};
   var source=function(rows,fields){return rows.slice(0,30).map(function(x){var o={};fields.forEach(function(f){if(x[f]!=null&&x[f]!=='')o[f]=x[f];});return o;});};
   var evidence={incidents:source(events,['id','event_ref','event_date','event_type','severity','status','location','department']),actions:source(openActions,['id','ref','source_ref','title','status','priority','target_date','due_date','responsible']),inspections:source(inspected,['id','reference_no','inspection_date','inspection_type','site','score_good','score_insuf']),legal_gaps:source(legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;}),['id','reference','legislation','section_title','compliance_score','target_date']),expiring_authorisations:source(certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}),['id','person_id','authorisation_type','expiry_date'])};
