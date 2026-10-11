@@ -2662,4 +2662,7 @@ input[type="button"], input[type="submit"] {
   .ai-panel.ai-dock-right .ai-window{left:0;right:auto}
   .ai-panel.ai-dock-below .ai-window{top:66px;bottom:auto}
 }
+#hse-evidence-controls { margin: 12px 0; }
+#hse-evidence-editor { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
 #hse-evidence-editor[hidden] { display: none !important; }
+#safetyos-history { margin-top: 14px; }
