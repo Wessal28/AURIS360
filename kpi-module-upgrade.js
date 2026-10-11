@@ -14,6 +14,7 @@ var KPI_X_COLUMNS=[
 var kpiXState={tab:'dashboard',status:'all',objective:'all',owner:'all',frequency:'all',search:'',period:'monthly'};
 var kpiXLegacy={};
 var kpiXHistory={key:'',kpis:[],indicators:[],monthly:[],error:'',generation:0};
+var kpiXHistoryPending=null;
 
 async function kpiXLoadHistory(year,companyId){
   var key=String(companyId||'')+':'+year,generation=++kpiXHistory.generation;
@@ -46,12 +47,25 @@ function kpiXComparisonData(){
   if(kpiXHistory.key!==key)return null;
   return AurisKpiYearComparison.build({year:year,cutoff:kpiXCompilationMonth(),current:{kpis:kpiKPIs,indicators:kpiIndicators,monthly:kpiMonthlyData},history:kpiXHistory});
 }
+function kpiXEnsureHistory(){
+  var year=kpiXSelectedYear(),companyId=typeof ccid==='function'?ccid():null,key=String(companyId||'')+':'+year;
+  if(kpiXHistory.key===key||kpiXHistoryPending&&kpiXHistoryPending.key===key)return;
+  var request=kpiXLoadHistory(year,companyId);
+  kpiXHistoryPending={key:key,request:request};
+  request.then(function(){
+    if(String((typeof ccid==='function'?ccid():null)||'')+':'+kpiXSelectedYear()!==key)return;
+    var dashboard=document.querySelector('#kpi-x-dashboard > .kpi-x-comparison');
+    var reports=document.querySelector('#kpi-x-reports-view > .kpi-x-comparison');
+    if(dashboard)dashboard.outerHTML=kpiXComparisonHtml(5);
+    if(reports)reports.outerHTML=kpiXComparisonHtml();
+  }).finally(function(){if(kpiXHistoryPending&&kpiXHistoryPending.request===request)kpiXHistoryPending=null;});
+}
 function kpiXComparisonValue(value,unit){return value==null?'—':kpiXEsc((Number.isInteger(value)?String(value):String(Math.round(value*100)/100))+(unit?' '+unit:''));}
 function kpiXComparisonHtml(limit){
   if(!window.AurisKpiYearComparison)return '';
   var data=kpiXComparisonData(),year=kpiXSelectedYear(),cutoff=kpiXCompilationMonth(),period=cutoff?'January–'+KPI_X_MONTHS[cutoff-1]:'No compiled month',title='<div class="kpi-x-panel-title">Year-on-year KPI comparison <span class="kpi-x-panel-sub">'+kpiXEsc(period)+' · same period each year</span></div>';
-  if(kpiXHistory.error)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(kpiXHistory.error)+'</p></section>';
-  if(!data)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">Loading previous-year results…</p></section>';
+  if(kpiXHistory.key===String((typeof ccid==='function'?ccid():null)||'')+':'+year&&kpiXHistory.error)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(kpiXHistory.error)+'</p></section>';
+  if(!data){kpiXEnsureHistory();return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">Loading previous-year results…</p></section>';}
   if(!data.rows.length||!data.comparable)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">No matching recorded KPI results are available for a same-period comparison. Missing results are not counted as zero.</p></section>';
   var rows=limit?data.rows.filter(function(row){return row.delta!=null;}).slice(0,limit):data.rows,prior=year-1,earlier=year-2;
   var body=rows.map(function(row){
@@ -276,7 +290,12 @@ function kpiXRenderDashboard(){
   var metrics=kpiXMetrics(),attention=kpiKPIs.filter(function(k){return ['off_track','at_risk','data_missing'].indexOf(k._computed_status)>=0;}).sort(function(a,b){return ({off_track:0,data_missing:1,at_risk:2}[a._computed_status])-({off_track:0,data_missing:1,at_risk:2}[b._computed_status]);});
   var missing=metrics.data_missing,exceptions=metrics.at_risk+metrics.off_track,rules=(window.kpiConfigPublished&&window.kpiConfigPublished.targets)||{},statusBasis=rules.critical_override===false?'KPI status uses score thresholds; missing required data still takes precedence.':'KPI status uses the highest-priority indicator status.';
   var objectiveRows=kpiObjectives.map(function(obj){var rows=kpiKPIs.filter(function(k){return k.objective_id===obj.id;}),score=kpiXObjectiveScore(rows),color=score>=95?'#0f8a64':score>=85?'#f59e0b':'#dc2626';return '<div class="kpi-x-objective-row'+(score==null?' no-data':'')+'" data-auris-module-onclick="d0002" data-auris-module-args="'+encodeURIComponent(JSON.stringify([kpiXEsc(obj.id)]))+'" style="cursor:pointer"><strong>'+kpiXEsc(obj.name)+'</strong>'+(score==null?'<span class="kpi-x-objective-empty">No reported results</span>':'<span class="kpi-x-bar"><i style="width:'+score+'%;background:'+color+'"></i></span><strong>'+score+'%</strong>')+'</div>';}).join('');
-  var priority=attention.slice(0,6).map(function(k,i){var due=k.due_date||k.review_date||'',owner=kpiXOwner(k),priorityLabel=k._computed_status==='off_track'?'High':k._computed_status==='data_missing'?'Data needed':'Review',args=encodeURIComponent(JSON.stringify([kpiXEsc(k.id)])),unassigned=owner==='Unassigned'&&kpiXCanManage();return '<div class="kpi-x-priority-row"><span class="kpi-x-priority-rank">'+(i+1)+'</span><span><strong>'+kpiXEsc(k.name)+'</strong><small>Owner: '+kpiXEsc(owner)+' · Due: '+kpiXEsc(due||'Not set')+' · Priority: '+priorityLabel+'</small></span>'+kpiXStatusHtml(k._computed_status)+'<span class="kpi-x-priority-actions">'+(unassigned?'<button type="button" class="kpi-x-priority-open" data-kpi-priority-assign="'+kpiXEsc(k.id)+'">Assign</button>':'')+'<button type="button" class="kpi-x-priority-open" data-auris-module-onclick="'+(k._computed_status==='data_missing'?'d0024':'d0003')+'" data-auris-module-args="'+args+'">'+(k._computed_status==='data_missing'?'Update result':'Open KPI')+'</button></span></div>';}).join('')||'<div class="kpi-x-empty">No KPI currently requires attention.</div>';
+  var priority=attention.slice(0,6).map(function(k,i){
+    var due=k.due_date||k.review_date||'',owner=kpiXOwner(k),priorityLabel=k._computed_status==='off_track'?'High':k._computed_status==='data_missing'?'Data needed':'Review';
+    var args=encodeURIComponent(JSON.stringify([kpiXEsc(k.id)])),unassigned=owner==='Unassigned',editable=kpiXCanManage()&&(!window.KpiGovernedWorkflow||KpiGovernedWorkflow.canEdit(k));
+    var ownerNote=unassigned&&!editable?' · Owner can be assigned when the definition is editable':'';
+    return '<div class="kpi-x-priority-row"><span class="kpi-x-priority-rank">'+(i+1)+'</span><span class="kpi-x-priority-summary"><strong>'+kpiXEsc(k.name)+'</strong><small>Owner: '+kpiXEsc(owner)+' · Due: '+kpiXEsc(due||'Not set')+' · Priority: '+priorityLabel+kpiXEsc(ownerNote)+'</small></span><span class="kpi-x-priority-side">'+kpiXStatusHtml(k._computed_status)+'<span class="kpi-x-priority-actions">'+(unassigned&&editable?'<button type="button" class="kpi-x-priority-open" data-kpi-priority-assign="'+kpiXEsc(k.id)+'">Assign</button>':'')+'<button type="button" class="kpi-x-priority-open" data-auris-module-onclick="'+(k._computed_status==='data_missing'?'d0024':'d0003')+'" data-auris-module-args="'+args+'">'+(k._computed_status==='data_missing'?'Update result':'Open KPI')+'</button></span></span></div>';
+  }).join('')||'<div class="kpi-x-empty">No KPI currently requires attention.</div>';
   box.innerHTML='<div id="kpi-metrics" class="kpi-x-metrics">'+
     kpiXMetricCard('Overall Achievement',kpiXAchievementText(metrics),missing?kpiXAchievementBasis(metrics)+' · '+missing+' KPI result'+(missing===1?' is':'s are')+' missing':kpiXAchievementBasis(metrics),'all','ti-target-arrow')+
     kpiXMetricCard('On Track',metrics.on_track,'KPIs meeting target','on_track','ti-trending-up')+
@@ -286,7 +305,12 @@ function kpiXRenderDashboard(){
     '<div class="kpi-x-alert"><i class="ti ti-alert-triangle" style="font-size:19px"></i><span><strong>'+(missing?'Performance status cannot yet be confirmed. Results are missing for '+missing+' KPI'+(missing===1?'':'s')+'.':exceptions+' KPI'+(exceptions===1?'':'s')+' Off Track or At Risk.')+'</strong> '+kpiXEsc(statusBasis)+'</span><button class="kpi-x-btn" data-auris-module-onclick="'+(missing?'d0006':'d0004')+'">'+(missing?'Complete Missing Results':'Review Exceptions')+' <i class="ti ti-arrow-right"></i></button></div>'+
     '<div class="kpi-x-grid"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Overall Performance Trend <span class="kpi-x-panel-sub">Actual achievement · target 90%</span></div>'+kpiXTrendSvg()+'</section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Performance by Objective <span class="kpi-x-panel-sub">Average of reported KPI scores</span></div>'+objectiveRows+'</section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Priority Attention</div><div class="kpi-x-priority">'+priority+'</div></section></div>'+
     '<div class="kpi-x-grid two"><section class="kpi-x-panel"><div class="kpi-x-panel-title">Management Interpretation <button class="kpi-x-btn" style="height:29px" data-auris-module-onclick="d0005">Open scorecard</button></div><div style="font-size:12px;line-height:1.6;color:#475569">'+kpiXEsc(kpiXReportingSummary(metrics))+'</div></section><section class="kpi-x-panel"><div class="kpi-x-panel-title">Data Quality</div><div class="kpi-x-quality"><div><strong>'+metrics.scored+'/'+metrics.total+'</strong><span>KPIs with scores</span></div><div><strong style="color:#dc2626">'+missing+'</strong><span>Missing required data</span></div><div><strong>'+kpiXAchievementText(metrics)+'</strong><span>Achievement</span></div></div></section></div>'+kpiXComparisonHtml(5);
-  box.querySelectorAll('[data-kpi-priority-assign]').forEach(function(button){button.addEventListener('click',function(){kpiXEditKpi(button.dataset.kpiPriorityAssign);});});
+  box.querySelectorAll('[data-kpi-priority-assign]').forEach(function(button){button.addEventListener('click',function(){
+    var k=kpiKPIs.find(function(item){return String(item.id)===String(button.dataset.kpiPriorityAssign);});
+    if(!k||window.KpiGovernedWorkflow&&!KpiGovernedWorkflow.canEdit(k)){kpiXOpenDrawer(button.dataset.kpiPriorityAssign);return;}
+    kpiXEditKpi(k.id);
+    setTimeout(function(){var modal=document.getElementById('kpi-edit-modal'),owner=document.getElementById('kpi-resp');if(modal&&modal.style.display!=='none'&&owner)owner.focus();},0);
+  });});
 }
 function kpiXRenderScorecard(){
   var container=document.getElementById('kpi-objectives-container');if(!container)return;

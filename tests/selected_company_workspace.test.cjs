@@ -19,7 +19,7 @@ function runtime(){
     vm.runInContext(core.slice(start,core.indexOf('\n}',start)+2),ctx);
   }
   vm.runInContext(read('auris-platform-services.js'),ctx);
-  const start=core.indexOf('if(window.AurisPlatformServices){\n  window.AurisPlatformServices.configure(');
+  const start=core.indexOf('if(window.AurisPlatformServices){');
   assert.notEqual(start,-1);
   vm.runInContext(core.slice(start,core.indexOf('\nif(window.AurisGovernancePersistence',start)),ctx);
   vm.runInContext(read('auris-action-list-workspace.js'),ctx);

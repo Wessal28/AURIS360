@@ -12,7 +12,7 @@ test('fresh sign-in waits for company context and dashboard data',()=>{
 });
 
 test('session restoration uses the same ordered dashboard startup',()=>{
-  const init=html.match(/async function authInitSession\(\) \{[\s\S]*?\n\}\n\n\nasync function authLoadCompanyDropdown/)?.[0]||'';
+  const init=html.match(/async function authInitSession\(\) \{[\s\S]*?\n\}\s*async function authLoadCompanyDropdown/)?.[0]||'';
   assert.match(init,/await saCompanyInit\(\)/);
   assert.match(init,/await loadDash\(\{initial:true,attempt:0\}\)/);
 });
