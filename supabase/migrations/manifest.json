@@ -209,11 +209,16 @@
     },
     {
       "order": 42,
+      "file": "20261012000000_incident_draft_workflow_status.sql",
+      "sha256": "272e3b72169a2e89801f9b591ac53d4688bc8002159979788c8139facdc37a9c"
+    },
+    {
+      "order": 43,
       "file": "20261012010000_verified_hse_hours_and_safetyos_release.sql",
       "sha256": "677925c523691d9bcfac714f988a740792c43fc7fc96ca981eb1393706675daf"
     },
     {
-      "order": 43,
+      "order": 44,
       "file": "20261012020000_inspection_reference_and_verification.sql",
       "sha256": "ad739e9562e86fde51f8e7064a9f855558ffe5de08d694264eaba61f37597cfc"
     }

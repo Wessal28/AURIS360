@@ -133,7 +133,7 @@ function wsLinkedRecordHtml(linked){
 }
 function wsRelatedRecordsHtml(data,linked){
   var links=data.links||[];
-  return '<section class="ws-related-records"><h3>Related HSE records</h3><p>Double-click a record to open it. Keyboard: focus a row and press Enter.</p>'+(data.warning?'<p role="alert">'+escH(data.warning)+'</p>':'')+(links.length?'<div class="ws-linked-table"><table><thead><tr><th>Record type</th><th>Reference</th><th>Viewing</th></tr></thead><tbody>'+links.map(function(link,index){var active=linked&&linked.info===WS_RECORD_LINKS[link.kind]&&String(linked.row.id)===link.value;return '<tr tabindex="0" data-ws-related="'+index+'" aria-label="'+escH(WS_RECORD_LINKS[link.kind].label+' '+link.ref)+'"'+(active?' class="ws-related-active"':'')+'><td>'+escH(WS_RECORD_LINKS[link.kind].label)+'</td><td>'+escH(link.ref)+'</td><td>'+(active?'Current record':'')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No HSE records linked.</p>')+'</section>';
+  return '<section class="ws-related-records"><h3>Related HSE records</h3><p>Select Open to view a linked record.</p>'+(data.warning?'<p role="alert">'+escH(data.warning)+'</p>':'')+(links.length?'<div class="ws-linked-table"><table><thead><tr><th>Record type</th><th>Reference</th><th>Action</th></tr></thead><tbody>'+links.map(function(link,index){var active=linked&&linked.info===WS_RECORD_LINKS[link.kind]&&String(linked.row.id)===link.value;return '<tr'+(active?' class="ws-related-active"':'')+'><td>'+escH(WS_RECORD_LINKS[link.kind].label)+'</td><td>'+escH(link.ref)+'</td><td>'+(active?'Current record':'<button type="button" class="btn btn-sm" data-ws-related="'+index+'" aria-label="Open '+escH(WS_RECORD_LINKS[link.kind].label+' '+link.ref)+'"><i class="ti ti-eye" aria-hidden="true"></i> Open</button>')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No HSE records linked.</p>')+'</section>';
 }
 function wsShowReadOnly(row,current,linkData,linked){
   document.getElementById('ws-record-view')?.remove();
@@ -161,8 +161,7 @@ function wsShowReadOnly(row,current,linkData,linked){
       else if(action==='tools')await wsOpenToolsCheck();else if(action==='ra')await wsOpenRA();else if(action==='ptw')await wsOpenPTW();
     }catch(error){toast(error.message,false);}finally{button.disabled=false;}
   });
-  host.addEventListener('dblclick',openRelated);
-  host.addEventListener('keydown',function(event){if(event.key==='Enter')openRelated(event);});
+  host.addEventListener('click',openRelated);
   var back=host.querySelector('[data-ws-back]');
   if(back)back.addEventListener('click',async function(){back.disabled=true;try{AurisWorkScheduleWorkspace.assertSession(current);await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'view'});}catch(e){toast(e.message,false);}finally{back.disabled=false;}});
   host.querySelector('[data-ws-close]').addEventListener('click',function(){host.remove();});
