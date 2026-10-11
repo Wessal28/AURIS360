@@ -5927,9 +5927,10 @@ async function getCtx(){
   var auditAverage=auditScored.length?Math.round(auditScored.reduce(function(sum,x){return sum+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/auditScored.length):null;
   var soon=new Date(now);soon.setDate(soon.getDate()+30);
   var scope={company:company,company_id:ccid(),period:year+' year to date',snapshot_at:now.toISOString(),limits:'Register totals include all pages. Evidence excerpts below include up to 30 records per source.'};
-  var metrics={incidents_ytd:events.length,open_actions_current:openActions.length,total_actions_current:actions.length,completed_inspections_ytd:inspected.length,audit_score_percent:auditAverage,audit_score_denominator:auditScored.length,legal_score_percent:legalAverage,legal_score_denominator:legalScores.length,unassessed_legal:legal.length-legalScores.length,active_people:people.length,authorisations:certs.length,authorisations_expiring_30d:certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}).length,kpi_results_ytd:kpis.length};
+  var legalGaps=legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;});
+  var metrics={incidents_ytd:events.length,open_actions_current:openActions.length,total_actions_current:actions.length,completed_inspections_ytd:inspected.length,audit_score_percent:auditAverage,audit_score_denominator:auditScored.length,legal_score_percent:legalAverage,legal_score_denominator:legalScores.length,legal_gaps_current:legalGaps.length,unassessed_legal:legal.length-legalScores.length,active_people:people.length,authorisations:certs.length,authorisations_expiring_30d:certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}).length,kpi_results_ytd:kpis.length};
   var source=function(rows,fields){return rows.slice(0,30).map(function(x){var o={};fields.forEach(function(f){if(x[f]!=null&&x[f]!=='')o[f]=x[f];});return o;});};
-  var evidence={incidents:source(events,['id','event_ref','event_date','event_type','severity','status','location','department']),actions:source(openActions,['id','ref','source_ref','title','status','priority','target_date','due_date','responsible']),inspections:source(inspected,['id','reference_no','inspection_date','inspection_type','site','score_good','score_insuf']),legal_gaps:source(legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;}),['id','reference','legislation','section_title','compliance_score','target_date']),expiring_authorisations:source(certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}),['id','person_id','authorisation_type','expiry_date'])};
+  var evidence={incidents:source(events,['id','event_ref','event_date','event_type','severity','status','location','department']),actions:source(openActions,['id','ref','source_ref','title','status','priority','target_date','due_date','responsible']),inspections:source(inspected,['id','reference_no','inspection_date','inspection_type','site','score_good','score_insuf']),legal_gaps:source(legalGaps,['id','reference','legislation','section_title','compliance_score','target_date']),expiring_authorisations:source(certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}),['id','person_id','authorisation_type','expiry_date'])};
   return JSON.stringify({scope:scope,metrics:metrics,definitions:{open_actions:'All action_tracker statuses except closed/completed/cancelled, current snapshot',audit_score:'Mean score_good/(score_good+score_insuf) on scored inspections in selected year; not inspection completion',legal_score:'Mean compliance_score on assessed legal requirements; unassessed excluded',authorisations:'Record count, not workforce compliance'},evidence:evidence,limitations:'Do not infer site/activity hazards, certificate coverage, probability, or positive control effectiveness from aggregate counts. Cite an exact record ID and date for each factual finding. Separate hypotheses from confirmed facts.'});
 }
 
@@ -6016,6 +6017,18 @@ function aiInsightCitationLinks(result,snapshot){
   return found.length?'<div><strong>Source records cited in the AI interpretation</strong><div style="display:flex;flex-wrap:wrap;gap:6px">'+found.map(function(x){return '<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'">'+escH(x.ref)+' · '+escH(dashFmtDate(x.date))+'</button>';}).join('')+'</div></div>':'<p>No source record references were cited in the AI interpretation. Treat it as unverified commentary.</p>';
 }
 
+function aiVerifiedInsightFindings(response,snapshot){
+  var pages={incidents:'events',actions:'actions',inspections:'inspection',legal_gaps:'legal',expiring_authorisations:'training'};
+  var findings=Array.isArray(response&&response.findings)?response.findings:[];
+  return findings.slice(0,3).map(function(finding){
+    var kind=String(finding.source_type||''),id=String(finding.source_id||'');
+    if(!pages[kind]||!id)return null;
+    var row=(snapshot.evidence[kind]||[]).find(function(item){return String(item.id||'')===id;});
+    if(!row)return null;
+    return {title:String(finding.title||'Finding'),interpretation:String(finding.interpretation||''),next_step:String(finding.next_step||''),page:pages[kind],id:id,ref:String(row.event_ref||row.ref||row.reference||row.reference_no||row.id),date:row.event_date||row.inspection_date||row.target_date||row.expiry_date||''};
+  }).filter(Boolean);
+}
+
 // -- Full HSE insights (enhanced) ----------------------------------------------
 async function genFullAI() {
   var contentEl = document.getElementById('ai-insights-content');
@@ -6025,20 +6038,25 @@ async function genFullAI() {
   if(dateEl) dateEl.textContent = 'Updated: '+new Date().toLocaleString('en-GB');
   try {
     var ctx = await getCtx(),snapshot=JSON.parse(ctx);
-    var result=await callAI([{role:'user',content:'Use only this governed snapshot: '+ctx+'\nGive at most three concise interpretations and next steps. Distinguish confirmed record-backed facts from hypotheses. Cite exact source IDs and dates for each factual claim. If supporting records are absent, say evidence is insufficient. Do not invent risk scores, probabilities, sites, training coverage or positive findings from zero counts.'}], 'You are AURIS HSE analysis. Use only supplied evidence, distinguish aggregate indicators from record-level facts, and state limitations.');
-    aiInsightsCache=[result];
+    var schema={type:'object',additionalProperties:false,required:['findings'],properties:{findings:{type:'array',items:{type:'object',additionalProperties:false,required:['source_type','source_id','title','interpretation','next_step'],properties:{source_type:{type:'string',enum:['incidents','actions','inspections','legal_gaps','expiring_authorisations']},source_id:{type:'string'},title:{type:'string'},interpretation:{type:'string'},next_step:{type:'string'}}}}}};
+    var verified=[],aiNotice='';
+    try{
+      var result=await callAI([{role:'user',content:'Use only this governed snapshot: '+ctx+'\nReturn up to three concise findings. Each finding must name one source_type and exact source_id from the evidence arrays. Treat interpretations as suggestions, not verified facts. Do not invent records, risk scores, probabilities, sites, training coverage or positive findings from zero counts.'}], 'You are AURIS HSE analysis. Return valid JSON only. Use only supplied record IDs.',{response_schema:{name:'verified_hse_insights',schema:schema}});
+      verified=aiVerifiedInsightFindings(aiExtractJson(result),snapshot);
+    }catch(aiError){aiNotice='AI suggestions are unavailable. The governed register indicators remain available.';console.warn('AI insights:',aiError);}
+    aiInsightsCache=verified;
     var sm = function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     sm('ai-risk-score',snapshot.metrics.open_actions_current);
     sm('ai-compliance-score',snapshot.metrics.legal_score_percent==null?'Not assessed':snapshot.metrics.legal_score_percent+'%');
     var findings=[
       {title:'Open corrective actions',count:snapshot.metrics.open_actions_current,rows:snapshot.evidence.actions,page:'actions',next:'Review due dates and close verified actions.'},
-      {title:'Legal requirements needing review',count:snapshot.evidence.legal_gaps.length,rows:snapshot.evidence.legal_gaps,page:'legal',next:'Assess gaps and approve corrective plans.'},
+      {title:'Legal requirements needing review',count:snapshot.metrics.legal_gaps_current,rows:snapshot.evidence.legal_gaps,page:'legal',next:'Assess gaps and approve corrective plans.'},
       {title:'Year-to-date incidents',count:snapshot.metrics.incidents_ytd,rows:snapshot.evidence.incidents,page:'events',next:'Validate classifications and investigate open records.'}
     ];
     sm('ai-rec-count',findings.filter(function(x){return x.count>0;}).length);
-    contentEl.innerHTML='<p>Scope: '+escH(snapshot.scope.company)+' · '+escH(snapshot.scope.period)+' · snapshot '+escH(new Date(snapshot.scope.snapshot_at).toLocaleString('en-GB'))+'. Sources are bounded to 500 records each; counts at that limit need verification.</p>'+
+    contentEl.innerHTML='<p>Scope: '+escH(snapshot.scope.company)+' · '+escH(snapshot.scope.period)+' · snapshot '+escH(new Date(snapshot.scope.snapshot_at).toLocaleString('en-GB'))+'. Totals include all register pages; linked evidence shows up to 30 records per source.</p>'+
       findings.map(function(x){var row=x.rows[0];return '<div class="card"><div class="card-title">'+escH(x.title)+': '+x.count+'</div><p>'+escH(x.next)+'</p>'+(row&&row.id?'<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,row.id]))+'">Open source record '+escH(row.event_ref||row.ref||row.reference||row.id)+'</button>':'<small>No source record available in this snapshot.</small>')+'</div>';}).join('')+
-      '<details class="card"><summary>Show AI interpretation and limitations</summary><div style="white-space:pre-wrap;line-height:1.6;margin-top:10px">'+escH(result)+'</div>'+aiInsightCitationLinks(result,snapshot)+'</details>';
+      '<details class="card"><summary>Show AI suggestions linked to source records</summary>'+(aiNotice?'<p>'+escH(aiNotice)+'</p>':'')+(verified.length?verified.map(function(x){return '<div style="padding:10px 0;border-bottom:1px solid var(--border)"><strong>'+escH(x.title)+'</strong><p>'+escH(x.interpretation)+'</p><p><b>Suggested next step:</b> '+escH(x.next_step)+'</p><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'">Open '+escH(x.ref)+' · '+escH(dashFmtDate(x.date))+'</button></div>';}).join(''):'<p>No AI suggestion could be matched to a record in this snapshot. Review the governed indicators above.</p>')+'<p>AI suggestions require human review of the linked records and current field conditions.</p></details>';
   } catch(e) {
     contentEl.innerHTML = '<div style="padding:20px;background:#FCEBEB;border-radius:10px;border:1px solid #fecaca">'
       + '<div style="font-weight:700;color:#DC2626;margin-bottom:8px">AURIS AI analysis unavailable</div>'
@@ -6432,16 +6450,16 @@ function safetyOSMatch(row,terms){
   var hay=Object.keys(row||{}).map(function(k){var v=row[k];return typeof v==='object'?JSON.stringify(v||{}):String(v||'');}).join(' ').toLowerCase();
   return t.some(function(x){return hay.indexOf(x)!==-1||x.split(/\s+/).some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
 }
-async function safetyOSFetch(path){return api(path);}
+async function safetyOSFetch(path){return apiAllRows(path);}
 async function safetyOSPopulateSelectors(){
   var status=document.getElementById('safetyos-selectors-status');
   if(status)status.textContent='Loading registered workers and controls…';
   try{
     var rows=await Promise.all([
-      api('/people?select=*'+cf()+'&status=eq.active&limit=250'),
-      api('/tools_register?select=id,ref_number,name,status'+cf()+'&limit=250'),
-      api('/risk_assessments?select=id,ra_ref,title,status'+cf()+'&limit=250'),
-      api('/permit_to_work?select=id,permit_ref,permit_type,status'+cf()+'&limit=250')
+      apiAllRows('/people?select=*'+cf()+'&status=eq.active'),
+      apiAllRows('/tools_register?select=id,ref_number,name,status'+cf()),
+      apiAllRows('/risk_assessments?select=id,ra_ref,title,status'+cf()),
+      apiAllRows('/permit_to_work?select=id,permit_ref,permit_type,status'+cf())
     ]);
     [['safetyos-worker',rows[0],function(x){return x.full_name||[x.first_name,x.last_name].filter(Boolean).join(' ')||x.id;},true],['safetyos-equipment',rows[1],function(x){return [x.ref_number,x.name].filter(Boolean).join(' · ')||x.id;}],['safetyos-ra',rows[2].filter(function(x){return /approved|active|current/i.test(String(x.status||''));}),function(x){return [x.ra_ref,x.title].filter(Boolean).join(' · ')||x.id;}],['safetyos-permit',rows[3],function(x){return [x.permit_ref,x.permit_type,x.status].filter(Boolean).join(' · ')||x.id;}]].forEach(function(entry){var el=document.getElementById(entry[0]);if(!el)return;var old=el.value;el.options.length=1;entry[1].forEach(function(row){var label=entry[2](row),option=new Option(label,entry[3]?label:row.id);option.dataset.id=row.id;el.add(option);});el.value=old;});
     if(status)status.textContent='Select records from the current company. AI cannot release work; a responsible supervisor must verify conditions and authorise the start.';
@@ -6494,7 +6512,7 @@ function safetyOSFallbackDecision(ctx,cause){
   if(!blocking.length)conditions.push('A competent supervisor must verify the task-specific controls and authorise the start because the AI advisory service did not return a decision.');
   return {
     decision:blocking.length?'NO_GO':'CONDITIONAL_GO',
-    confidence:'high',
+    confidence:'low',
     decision_summary:blocking.length?'Work must not start until the listed readiness gaps are closed and verified.':'Core records were found, but work requires supervisor verification before starting.',
     blocking_items:blocking,
     conditions_to_start:conditions,
