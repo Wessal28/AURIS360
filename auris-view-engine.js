@@ -73,7 +73,7 @@ function model(rows,input,state,context){
 }
 function value(row,field){
   var raw=row[field.key];if(raw==null||raw==='')return '—';
-  if(field.type==='date'){var parsed=/^\d{4}-\d{2}-\d{2}$/.test(String(raw))?new Date(raw+'T12:00:00'):new Date(raw);return Number.isNaN(parsed.getTime())?String(raw):parsed.toLocaleDateString();}
+  if(field.type==='date'){var parsed=/^\d{4}-\d{2}-\d{2}$/.test(String(raw))?new Date(raw+'T12:00:00'):new Date(raw);return Number.isNaN(parsed.getTime())?String(raw):parsed.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});}
   if(field.type==='datetime'){
     if(/^\d{4}-\d{2}-\d{2}$/.test(String(raw)))return String(raw)+' (time not recorded)';
     var timestamp=new Date(raw);return Number.isNaN(timestamp.getTime())?String(raw):timestamp.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});

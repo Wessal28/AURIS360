@@ -7262,10 +7262,14 @@ var CORE_WORKFLOW_TRANSITIONS={
     closed:[],cancelled:[]
   },
   events:{
+    draft:['submitted','cancelled'],
     open:['under_investigation','action_required','closed','cancelled'],
-    submitted:['under_investigation','action_required','closed','cancelled'],
+    submitted:['triage','under_investigation','action_required','closed','cancelled'],
+    triage:['under_investigation','cancelled'],
     under_investigation:['action_required','closed','cancelled'],
     action_required:['under_investigation','closed','cancelled'],
+    verification:['under_investigation','management_review'],
+    management_review:['under_investigation','closed'],
     closed:[],cancelled:[]
   },
   inspection:{
@@ -13575,7 +13579,17 @@ async function loadWorkSchedule(){
   var addBtn=document.getElementById('ws-add-btn');
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   wsWeekOffset=0;
+  var exportBtn=document.getElementById('ws-export-btn');
+  if(!exportBtn){var listBtn=document.getElementById('ws-btn-list');if(listBtn){exportBtn=document.createElement('button');exportBtn.id='ws-export-btn';exportBtn.type='button';exportBtn.className='btn btn-sm';exportBtn.innerHTML='<i class="ti ti-download"></i> Export CSV';exportBtn.addEventListener('click',wsExportCsv);listBtn.insertAdjacentElement('afterend',exportBtn);}}
   wsSetView('list');
+}
+
+function wsExportCsv(){
+  try{AurisWorkScheduleWorkspace.session();var rows=(wsAllData||[]).filter(function(x){return String(x.company_id)===String(ccid());});
+    var headers=['Reference','Title','Location','Supervisor','Planned start','Planned end','Priority','Risk','Status'],values=rows.map(function(x){return [x.ref_number,x.title,x.location,x.supervisor_name,x.planned_start,x.planned_end,x.priority,x.risk_level,x.status];});
+    var csv=[headers].concat(values).map(function(row){return row.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+    var url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='Work_Schedule_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);toast('Work Schedule exported: '+rows.length+' orders.');
+  }catch(e){toast('Work Schedule export failed: '+e.message,false);}
 }
 
 function wsSetView(type){
@@ -13789,6 +13803,8 @@ function wsRenderActionStatuses(x){
 
 async function wsUpdateStatus(val){
   if(!wsCurrentId)return;
+  var current=wsAllData.find(function(r){return r.id===wsCurrentId;});
+  if(current&&!await wsConfirmStatusChecks(current,val))return;
   try{
     await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{status:val,updated_at:new Date().toISOString()}});
     var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
@@ -13797,6 +13813,21 @@ async function wsUpdateStatus(val){
     if(badge)badge.innerHTML=wsBadge(val,WS_STATUS_CFG);
     toast('Status updated!');
   }catch(e){toastActionError('Update work status','Work Schedule',e);}
+}
+
+function wsPendingStatusChecks(order,status){
+  if(!['approved','in_progress','completed'].includes(status))return [];
+  var pending=[];
+  if(order.requires_ra&&!order.ra_ref&&!order.risk_assessment_id)pending.push('risk assessment');
+  if(order.requires_permit&&!order.permit_ref&&!order.permit_id)pending.push('permit to work');
+  if(['in_progress','completed'].includes(status)&&!order.prestart_id)pending.push('pre-start inspection');
+  if(status==='completed'&&!order.toolbox_talk_id)pending.push('toolbox talk');
+  if(status==='completed'&&!order.site_inspection_id)pending.push('site inspection');
+  return pending;
+}
+async function wsConfirmStatusChecks(order,status){
+  var pending=wsPendingStatusChecks(order,status);if(!pending.length)return true;
+  return !!await appConfirmAction({title:'HSE checks are pending',message:'This work order has no linked '+pending.join(', ')+'.',detail:'Confirm an exception only if the checks are not applicable to this work. Otherwise complete and link them before changing the status.',confirmText:'Continue with exception',cancelText:'Review checks'});
 }
 
 function wsEditCurrent(){
@@ -14035,7 +14066,7 @@ function wsPopulateTeamSelect(selectedValue){
   selected.forEach(function(name){if(!Array.from(select.options).some(function(o){return o.value.toLowerCase()===name.toLowerCase();})){var option=document.createElement('option');option.value=name;option.textContent=name+' (saved)';option.selected=true;select.appendChild(option);}});
   wsInitTeamMultiSelect(select);
 }
-function wsInitTeamMultiSelect(select){if(!select||select.dataset.clickToggleBound)return;select.dataset.clickToggleBound='1';var help=document.getElementById('wsf-team-help');if(help)help.textContent='Click employees to select or deselect them. Ctrl is not required.';var summary=document.getElementById('wsf-team-summary');if(!summary){summary=document.createElement('div');summary.id='wsf-team-summary';summary.className='ws-team-summary';select.insertAdjacentElement('afterend',summary);}var paint=function(){var chosen=Array.from(select.selectedOptions);summary.innerHTML=chosen.length?'<b>'+chosen.length+' selected:</b> '+chosen.map(function(o){return '<span>'+escH(o.value)+'</span>';}).join(''):'No employees selected';};select.addEventListener('mousedown',function(e){var option=e.target.closest('option');if(!option)return;e.preventDefault();option.selected=!option.selected;select.focus();paint();});select.addEventListener('change',paint);paint();}
+function wsInitTeamMultiSelect(select){if(!select)return;var help=document.getElementById('wsf-team-help');if(help)help.textContent='Click employees to select or deselect them. Ctrl is not required.';var summary=document.getElementById('wsf-team-summary');if(!summary){summary=document.createElement('div');summary.id='wsf-team-summary';summary.className='ws-team-summary';select.insertAdjacentElement('afterend',summary);}var paint=function(){var chosen=Array.from(select.selectedOptions);summary.innerHTML=chosen.length?'<b>'+chosen.length+' selected:</b> '+chosen.map(function(o){return '<span>'+escH(o.value)+'</span>';}).join(''):'No employees selected';};if(!select.dataset.clickToggleBound){select.dataset.clickToggleBound='1';select.addEventListener('mousedown',function(e){var option=e.target.closest('option');if(!option)return;e.preventDefault();option.selected=!option.selected;select.focus();paint();});select.addEventListener('change',paint);}paint();}
 function wsSelectedTeamNames(){var select=document.getElementById('wsf-team');return select?Array.from(select.selectedOptions).map(function(o){return o.value;}).filter(Boolean).join(', ')||null:null;}
 
 async function wsNew(){
@@ -14095,11 +14126,8 @@ async function wsEdit(id){
 
 function wsFormBack(){
   document.getElementById('ws-form3view').style.display='none';
-  if(wsCurrentId){
-    document.getElementById('ws-detail-view').style.display='block';
-  }else{
-    wsSetView('list');
-  }
+  if(wsEditingId)wsOpenRecordRequest({record:wsEditingId,mode:'view'});
+  else wsSetView('list');
 }
 
 async function wsSave(){
@@ -14127,6 +14155,8 @@ async function wsSave(){
   };
   var wsRa=verifiedReferenceSelection('wsf-ra-ref'),wsPermit=verifiedReferenceSelection('wsf-ptw-ref');
   body.risk_assessment_id=wsRa.id;body.permit_id=wsPermit.id;
+  var existingOrder=editingId?wsAllData.find(function(x){return x.id===editingId;}):null;
+  if((!existingOrder||existingOrder.status!==body.status)&&!await wsConfirmStatusChecks(Object.assign({},existingOrder||{},body),body.status))return;
   try{
     if(wsEditingId){
       await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsEditingId+'&company_id=eq.'+encodeURIComponent(wsEditContext.companyId),{m:'PATCH',p:'return=minimal',b:body},'Work order');
@@ -15205,7 +15235,9 @@ function imsIsSimpleReporter(){
 }
 
 function imsIsReporterLocked(){
-  return !!imsEditId && imsIsSimpleReporter();
+  if(!imsEditId||!imsIsSimpleReporter())return false;
+  var row=(imsAllData||[]).find(function(x){return String(x.id)===String(imsEditId);});
+  return !(row&&row.status==='draft'&&String(row.created_by||row.reported_by_id||'')===String(prof?.id||''));
 }
 
 function imsSetTypeMode(isExisting){
@@ -15240,6 +15272,8 @@ function imsApplyReportRoleMode(){
     document.getElementById('ev-due-date')?.closest('.form3group')
   ];
   sections.forEach(function(el){ if(el) el.style.display=simple?'none':''; });
+  var likelihood=document.getElementById('imx-likelihood')?.closest('.imx-field');
+  if(likelihood)likelihood.style.display=simple?'none':'';
   var gps=document.getElementById('ev-gps-address')?.closest('.card');
   if(gps) gps.style.display=type==='vehicle'?'':'none';
   var view=document.getElementById('ims-view-report');
@@ -15624,7 +15658,7 @@ async function imsSave(){
   if(!g('ev-location')){toast('Please enter the incident location',false);return;}
   try{await customValidateRecordValues('events');}catch(e){toastActionError('Validate incident report','Incident Management',e);return;}
   var invReq=document.getElementById('ev-inv-required')?.checked||false;
-  var severity=g('ev-severity')||'medium';
+  var severity=imsIsSimpleReporter()?null:(g('ev-severity')||'medium');
   if(isMgr() && ['high','critical'].includes(severity) && !invReq){
     var proceedWithoutInv=await appConfirm({
       title:'Save without investigation?',
@@ -15644,14 +15678,14 @@ async function imsSave(){
   var reporterPerson = personByDisplayName(g('ev-reported-by-name'));
   var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
     event_time:date.includes('T')?date.split('T')[1]:null,title:desc.substring(0,120),severity:severity,
-    potential_severity:g('ev-potential-severity')||null,likelihood:g('imx-likelihood')||null,
+    potential_severity:imsIsSimpleReporter()?null:(g('ev-potential-severity')||null),likelihood:imsIsSimpleReporter()?null:(g('imx-likelihood')||null),
     estimated_time:g('imx-estimated-time')==='true',confidentiality:g('imx-confidentiality')||'internal',
     emergency_gate:g('imx-emergency-gate')||'none',immediate_danger:g('imx-immediate-danger')==='true',
     reporter_mode:g('imx-reporter-mode')||'named',work_activity:g('imx-work-activity')||null,
-    regulatory_required:g('ev-reg-required')||null,idempotency_key:(typeof imv2IncidentKey==='function'?imv2IncidentKey():'incident-'+effectiveCompanyId+'-'+Date.now()),
+    regulatory_required:imsIsSimpleReporter()?null:(g('ev-reg-required')||null),idempotency_key:(typeof imv2IncidentKey==='function'?imv2IncidentKey():'incident-'+effectiveCompanyId+'-'+Date.now()),
     submitted_at:(g('ev-status')==='submitted'?new Date().toISOString():null),
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
-    description:desc,immediate_action:g('ev-immediate'),root_cause:g('ev-root-cause'),
+    description:desc,immediate_action:g('ev-immediate'),root_cause:imsIsSimpleReporter()?null:g('ev-root-cause'),
     witnesses:g('ev-witnesses'),reported_by_name:g('ev-reported-by-name'),
     reported_by_id:reporterPerson?.id||null,
     assigned_to_name:g('ev-assigned-name'),assigned_to_id:assignedPerson?.id||null,due_date:g('ev-due-date')||null,
@@ -15718,11 +15752,12 @@ async function imsSave(){
         if(invReq){
           var refField=document.getElementById('ev-inv-ref'); if(refField)refField.placeholder='Will be assigned when investigation starts';
           toast('Incident saved. Start the investigation when the initial report is ready for review.');
-          return;
+          return true;
         }
       }
     }
     imsBackToRegister();
+    return true;
   }catch(e){
     if(offlineIsNetworkError(e)){
       try{
@@ -15730,9 +15765,10 @@ async function imsSave(){
         toast('Offline: incident saved locally. It will sync when internet returns.');
         imsBackToRegister();
       }catch(qe){toastActionError('Save offline incident draft','Incident Management',qe);}
-      return;
+      return false;
     }
     toastActionError('Save incident report','Incident Management',e);
+    return false;
   }
 }
 
@@ -35099,6 +35135,7 @@ function psPopulateTeam(value){
   select.innerHTML='';var seen=new Set();
   tenantPeople().forEach(function(person){var name=wsTeamMemberName(person);if(!name)return;var option=document.createElement('option');option.value=String(person.id);option.textContent=name;option.selected=names.includes(name);select.appendChild(option);seen.add(name);});
   names.filter(function(name){return !seen.has(name);}).forEach(function(name){var option=document.createElement('option');option.value='legacy:'+name;option.textContent=name;option.selected=true;select.appendChild(option);});
+  if(select.dataset&&!select.dataset.clickToggleBound&&select.addEventListener){select.dataset.clickToggleBound='1';select.addEventListener('mousedown',function(event){var option=event.target.closest('option');if(!option)return;event.preventDefault();option.selected=!option.selected;select.focus();});}
 }
 function psTeamValue(){return Array.from(document.getElementById('ps-team')?.selectedOptions||[]).map(function(o){return o.textContent;}).join(', ');}
 function psNew(){
