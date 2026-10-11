@@ -33,6 +33,8 @@ const testFiles = [
   'tests/kpi_source_refresh_behaviour.test.cjs',
   'tests/kpi_display_clarity.test.cjs',
   'tests/kpi_dashboard_reporting.test.cjs',
+  'tests/kpi_year_comparison.test.cjs',
+  'tests/kpi_priority_comparison_refresh.test.cjs',
   'tests/kpi_period_cutoff.test.cjs',
   'tests/kpi_navigation.test.cjs',
   'tests/kpi_monthly_navigation.test.cjs',
