@@ -229,3 +229,8 @@
 #audit-register-list .ave-table-wrap td:last-child{min-width:90px;width:90px}
 #audit-register-list .ave-columns summary{border-color:#8bc9b7;color:#116e58;font-weight:700}
 @media(max-width:700px){#audit-register-list .ave-actions .ave-icon-action{flex:0 0 38px;width:38px;min-width:38px;height:38px;min-height:38px}}
+#audit-form-feedback:not([hidden]){margin:10px 0;padding:10px 14px;border-radius:8px;background:#e7f6ee;color:#075b3d;font-weight:650}
+#audit-form-feedback.error:not([hidden]){background:#fff0ed;color:#9d2b18}
+#audit-equipment-row:not([hidden]){margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:8px}
+#audit-equipment-asset{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--card,#fff)}
+#audit-equipment-details{margin:7px 0 0;color:var(--text2);font-size:12px}

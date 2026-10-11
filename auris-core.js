@@ -21671,12 +21671,14 @@ function auditOpenReadOnly(id){
   document.getElementById('audit-inspection-report')?.closeReport?.();
   var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
   modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
-  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · Full read-only report</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section></div></section>';
+  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · Full read-only report</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(isMgr()?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section></div></section>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
   modal.closeReport=close;
   modal.querySelector('.inspection-report-close').addEventListener('click',close);
+  modal.querySelector('.inspection-report-edit')?.addEventListener('click',function(){if(String(ccid())!==String(row.company_id)||!isMgr())return;close();if(row.inspection_type==='prestart')psOpen(row.id);else auditOpen(row.id);});
+  modal.querySelector('.inspection-report-findings-link').addEventListener('click',function(){if(String(ccid())!==String(row.company_id))return;close();auditSwitchTab('findings');});
   modal.querySelectorAll('.inspection-photo-preview').forEach(function(button){button.addEventListener('click',function(){
     var viewer=modal.querySelector('.inspection-photo-viewer');
     viewer.querySelector('img').src=button.querySelector('img').src;
@@ -21706,7 +21708,7 @@ function auditInspectionFieldsHTML(fields){
   return '<dl class="inspection-report-fields">'+fields.filter(function(f){return f[1]!==null&&f[1]!==undefined&&f[1]!=='';}).map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(String(f[1]))+'</dd></div>';}).join('')+'</dl>';
 }
 function auditInspectionFindingsHTML(rows){
-  return rows.length?rows.map(function(f){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Reference',f.finding_ref],['Type',f.finding_type],['Clause',f.clause],['Finding',f.description],['Evidence',f.evidence],['Corrective action',f.corrective_action],['Assigned to',f.assigned_to],['Status',f.status],['Closed date',f.closed_date]])+'</article>';}).join(''):'<p>No findings recorded.</p>';
+  return rows.length?rows.map(function(f){return '<article class="inspection-report-item">'+auditInspectionFieldsHTML([['Reference',f.finding_ref],['Type',f.finding_type],['Clause',f.clause],['Finding',f.description],['Evidence',f.evidence],['Corrective action',f.corrective_action],['Assigned to',f.assigned_to],['Status',f.status],['Verification evidence',f.verification_evidence],['Verified by',f.verified_by],['Closed date',f.closed_date]])+'</article>';}).join(''):'<p>No findings recorded.</p>';
 }
 function auditInspectionReportHTML(row){
   var h='<section><h3>Inspection details</h3>'+auditInspectionFieldsHTML([
@@ -33985,8 +33987,11 @@ async function saveTraining(){
 // Inspections - Audits - Pre-Start - Findings - Mobile features
 // ===================================================================
 
-let auditAllData=[], auditEditId=null, auditCurrentTab='all';
+let auditAllData=[], auditEditId=null, auditCurrentTab='all', auditAIRequest=0, auditTemplateRequest=0, auditAssetRequest=0, auditAssets=[], auditSaving=false, auditRestoreError=false, auditFindingsLoading=false;
 let auditTemplates=[], auditFindingsData=[];
+function auditLocalDate(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function auditClearAI(){auditAIRequest++;window.auditAIReviewData=null;var el=document.getElementById('audit-ai-output');if(el){el.textContent='';el.style.display='none';}}
+function auditFormFeedback(message,error){var el=document.getElementById('audit-form-feedback');if(!el)return;el.textContent=message||'';el.hidden=!message;el.classList.toggle('error',!!error);if(message&&error)el.scrollIntoView({block:'nearest'});}
 
 const AUDIT_TYPE_CFG = {
   workplace:       {emoji:'*',label:'Workplace Inspection',      color:'#1e40af',bg:'#EFF6FF', border:'#bfdbfe'},
@@ -34098,7 +34103,7 @@ async function auditLoad(typeFilter) {
   try {
     var findings = await api('/audit_findings?select=id,finding_type,status'+cf());
     var fEl = document.getElementById('audit-m3findings');
-    if(fEl) fEl.textContent = (findings||[]).filter(function(x){return x.status==='open';}).length;
+    if(fEl) fEl.textContent = (findings||[]).filter(function(x){return ['open','in_progress','awaiting_verification'].includes(x.status);}).length;
     var mEl = document.getElementById('audit-m3major');
     if(mEl) mEl.textContent = (findings||[]).filter(function(x){return x.finding_type==='major_nc';}).length;
     // avg score
@@ -34175,13 +34180,15 @@ function auditFilter() {
 }
 //  ------------------------------------------
 function auditNew(preType) {
+  auditRestoreError=false;auditFindingsLoading=false;
   auditEditId = null;
   var type = preType || 'workplace';
-  auditSelectType(type,{skipTemplate:true});
   var typeGrid=document.getElementById('audit-type-grid');
+  if(typeGrid)typeGrid.dataset.lockedType='';
+  auditSelectType(type,{skipTemplate:true});
   var lockedFromTab=auditCurrentTab&&auditCurrentTab!=='all'&&!['findings','prestart'].includes(auditCurrentTab);
   if(typeGrid){typeGrid.dataset.lockedType=lockedFromTab?type:'';typeGrid.classList.toggle('audit-type-locked',!!lockedFromTab);}
-  document.getElementById('audit-form3title').textContent = 'New Inspection';
+  document.getElementById('audit-form3title').textContent = 'New '+(AUDIT_TYPE_CFG[type]?.label||'Inspection');
   document.getElementById('audit-form3ref').textContent = 'REF-AUTO';
   document.getElementById('audit-delete-btn').style.display = 'none';
   document.getElementById('audit-form3view').style.display = 'block';
@@ -34194,10 +34201,11 @@ function auditNew(preType) {
    'audit-gps-address','audit-lat','audit-lng'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['if-by','if-sign-inspector','if-sign-reviewer'].forEach(function(id){fillPersonSelect(id);});
   ['if-date','if-sign-date','if-sign-reviewer-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('if-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('if-date').value = auditLocalDate();
   document.getElementById('audit-priority').value = 'medium';
   document.getElementById('audit-status').value = 'open';
   document.getElementById('if-checklist').innerHTML = '';
+  auditClearAI();auditFormFeedback('');
   document.getElementById('audit-photos-list').innerHTML = '';
   document.getElementById('if-actions-body').innerHTML = '';
   document.getElementById('if-actions-empty').style.display = 'block';
@@ -34205,16 +34213,21 @@ function auditNew(preType) {
   document.getElementById('audit-score-display').textContent = '-';
   document.getElementById('audit-score-detail').textContent = '';
   document.getElementById('audit-score-bar').style.width = '0%';
+  auditAssetRequest++;var assetSelect=document.getElementById('audit-equipment-asset');if(assetSelect)assetSelect.value='';
   // Load template for type
   auditAutoLoadTemplate(type);
+  if(type==='equipment')auditLoadEquipmentAssets('');
 }
 
 function auditOpen(id) {
   var x = auditAllData.find(function(r){return r.id===id;}); if(!x) return;
+  auditRestoreError=false;auditFindingsLoading=true;
+  auditTemplateRequest++;
   auditEditId = id;
   var type = x.inspection_type || 'workplace';
   var typeGrid=document.getElementById('audit-type-grid');if(typeGrid){typeGrid.dataset.lockedType='';typeGrid.classList.remove('audit-type-locked');}
   auditSelectType(type,{skipTemplate:true});
+  auditClearAI();auditFormFeedback('');
   document.getElementById('audit-form3title').textContent = x.site || 'Edit Inspection';
   document.getElementById('audit-form3ref').textContent = x.reference_no || '-';
   document.getElementById('audit-delete-btn').style.display = isMgr()?'inline-flex':'none';
@@ -34230,13 +34243,17 @@ function auditOpen(id) {
   gf('audit-scope',x.audit_scope); gf('audit-lead-auditor',x.lead_auditor);
   gf('audit-team',x.audit_team); gf('audit-auditee',x.auditee);
   gf('audit-gps-address',x.gps_address); gf('audit-lat',x.lat); gf('audit-lng',x.lng);
+  auditLoadEquipmentAssets(x.equipment_asset_id||'');
   if(document.getElementById('audit-standard')&&x.audit_standard) document.getElementById('audit-standard').value=x.audit_standard;
   document.getElementById('audit-priority').value = x.priority||'medium';
   document.getElementById('audit-status').value = x.status||'open';
   // Rebuild checklist from saved items
-  if(x.items){
-    window.chkItems=(x.items||[]).map(function(i){return{ca:i.category||'',item:i.item||i.item_name||'',guidance:i.guidance||''};});
-    buildChecklist(x.items);
+  var savedItems=Array.isArray(x.items)?x.items:[];
+  if(typeof x.items==='string')try{savedItems=JSON.parse(x.items||'[]');}catch(parseError){auditRestoreError=true;auditFormFeedback('Saved checklist data could not be read. The record is unchanged; contact support before editing it.',true);return;}
+  if(!Array.isArray(savedItems)){auditRestoreError=true;auditFormFeedback('Saved checklist data is invalid. The record is unchanged; contact support before editing it.',true);return;}
+  if(savedItems.length){
+    window.chkItems=savedItems.map(function(i){return{ca:i.category||i.ca||'',item:i.item||i.item_name||'',guidance:i.guidance||''};});
+    buildChecklist(savedItems);
   }
   else auditAutoLoadTemplate(type);
   // Photos
@@ -34253,6 +34270,13 @@ function auditOpen(id) {
     (x.action_items||[]).forEach(function(a){actBody.insertAdjacentHTML('beforeend',inspActionRowHTML(a));});
     document.getElementById('if-actions-empty').style.display = (x.action_items||[]).length?'none':'block';
   }
+  var findingList=document.getElementById('audit-findings-list');if(findingList)findingList.innerHTML='';
+  api('/audit_findings?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&inspection_id=eq.'+encodeURIComponent(id)+'&order=created_at.asc').then(function(rows){
+    if(auditEditId!==id||!findingList)return;
+    if(rows?.length){var section=document.getElementById('audit-findings-section');if(section)section.style.display='block';}
+    (rows||[]).forEach(function(f){auditAddFinding(f);});
+    auditFindingsLoading=false;
+  }).catch(function(e){auditFindingsLoading=false;auditRestoreError=true;auditFormFeedback('Saved findings could not be loaded. Editing is disabled to protect this record: '+e.message,true);});
   updateScore();
 }
 
@@ -34261,6 +34285,8 @@ function auditSelectType(type, opts) {
   opts = opts || {};
   var typeGrid=document.getElementById('audit-type-grid'),locked=typeGrid&&typeGrid.dataset.lockedType;
   if(locked&&locked!==type){toast('Inspection type is fixed by the selected '+auditStartButtonLabel(auditCurrentTab).replace(/^Start /,'')+' tab',false);return;}
+  auditTemplateRequest++;
+  if(document.getElementById('audit-type')?.value!==type)auditClearAI();
   document.getElementById('audit-type').value = type;
   var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
   var banner = document.getElementById('audit-form3banner');
@@ -34278,9 +34304,31 @@ function auditSelectType(type, opts) {
   var findSec = document.getElementById('audit-findings-section');
   if(stdRow) stdRow.style.display = auditTypes.includes(type)?'block':'none';
   if(findSec) findSec.style.display = auditTypes.includes(type)?'block':'none';
+  var equipmentRow=document.getElementById('audit-equipment-row');if(equipmentRow)equipmentRow.hidden=type!=='equipment';
+  if(type==='equipment')auditLoadEquipmentAssets(document.getElementById('audit-equipment-asset')?.value||'');
   if(!opts.skipTemplate && document.getElementById('audit-form3view')?.style.display !== 'none') {
     auditAutoLoadTemplate(type);
   }
+}
+
+async function auditLoadEquipmentAssets(selected){
+  var select=document.getElementById('audit-equipment-asset');if(!select||document.getElementById('audit-type')?.value!=='equipment')return;
+  if(!select.dataset.bound){select.addEventListener('change',auditApplyEquipmentAsset);select.dataset.bound='1';}
+  var company=ccid(),request=++auditAssetRequest;
+  try{
+    var rows=await api('/tools_register?select=id,ref_number,name,serial_number,location,next_statutory_date,status&company_id=eq.'+encodeURIComponent(company)+'&order=name.asc');
+    if(request!==auditAssetRequest||company!==ccid()||document.getElementById('audit-type')?.value!=='equipment')return;
+    auditAssets=Array.isArray(rows)?rows:[];
+    select.innerHTML='<option value="">Select equipment from this company\'s register…</option>';
+    auditAssets.forEach(function(asset){var option=document.createElement('option');option.value=asset.id;option.textContent=[asset.ref_number,asset.name,asset.serial_number].filter(Boolean).join(' · ');select.appendChild(option);});
+    select.value=selected||'';auditApplyEquipmentAsset(false);
+  }catch(error){document.getElementById('audit-equipment-details').textContent='Equipment register could not be loaded: '+error.message;}
+}
+function auditApplyEquipmentAsset(prefill){
+  var selected=document.getElementById('audit-equipment-asset')?.value,asset=auditAssets.find(function(x){return x.id===selected;});
+  var detail=document.getElementById('audit-equipment-details');
+  if(detail)detail.textContent=asset?[asset.ref_number,asset.name,asset.serial_number&&'Serial '+asset.serial_number,asset.location&&'Location '+asset.location,asset.next_statutory_date&&'Next statutory date '+asset.next_statutory_date].filter(Boolean).join(' · '):'';
+  if(prefill!==false&&asset){var site=document.getElementById('if-site'),address=document.getElementById('audit-gps-address');if(site&&!site.value)site.value=asset.location||asset.name||'';if(address&&!address.value)address.value=asset.location||'';}
 }
 
 // -- Templates ------------------------------------------------------
@@ -34339,6 +34387,7 @@ async function auditLoadTemplate() {
 
 async function auditAutoLoadTemplate(type) {
   // Try to load the default template for this type
+  var request=++auditTemplateRequest;
   try {
     if(AUDIT_DEFAULT_CHECKLISTS[type]) {
       window.chkItems = AUDIT_DEFAULT_CHECKLISTS[type];
@@ -34350,6 +34399,7 @@ async function auditAutoLoadTemplate(type) {
     if(!templates.length && auditTemplates.length===0) {
       // Load from DB
       var d = await api('/checklist_templates?select=*'+cf()+'&inspection_type=eq.'+type+'&is_default=eq.true&limit=1');
+      if(request!==auditTemplateRequest||document.getElementById('audit-type')?.value!==type)return;
       templates = d||[];
     }
     if(templates[0]) {
@@ -34365,6 +34415,7 @@ async function auditAutoLoadTemplate(type) {
       }
     }
   } catch(e) {
+    if(request!==auditTemplateRequest)return;
     var fallback = AUDIT_DEFAULT_CHECKLISTS[type];
     if(fallback) { window.chkItems = fallback; buildChecklist([]); }
   }
@@ -34587,7 +34638,7 @@ function auditGetGPS() {
 }
 
 // -- Findings --------------------------------------------------------
-function auditAddFinding() {
+function auditAddFinding(saved) {
   var container = document.getElementById('audit-findings-list'); if(!container) return;
   var idx = container.querySelectorAll('.audit-finding-row').length + 1;
   var row = document.createElement('div'); row.className='audit-finding-row';
@@ -34613,6 +34664,11 @@ function auditAddFinding() {
     + '</div>'
     + '<div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0328"><i class="ti ti-x"></i>Remove</button></div>';
   container.appendChild(row);
+  if(saved&&typeof saved==='object'){
+    row.dataset.findingId=saved.id||'';
+    [['.af-type',saved.finding_type],['.af-clause',saved.clause],['.af-desc',saved.description],['.af-evidence',saved.evidence],['.af-action',saved.corrective_action]].forEach(function(pair){var field=row.querySelector(pair[0]);if(field)field.value=pair[1]||'';});
+    var assignee=row.querySelector('.af-assigned');if(assignee){assignee.innerHTML=auditPersonOptions(saved.assigned_to||'');assignee.value=saved.assigned_to||'';}
+  }
 }
 
 // AI inspection assistant
@@ -34673,6 +34729,7 @@ function auditAppendAIFindings(findings){
 }
 async function auditAIAssistFindings(){
   try{
+    var request=++auditAIRequest,formId=auditEditId,typeAtStart=document.getElementById('audit-type')?.value;
     if(typeof canUseAI==='function' && !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles',false);return;}
     var items=auditCollectChecklistDraft();
     if(!items.length){toast('Add or load a checklist first',false);return;}
@@ -34684,12 +34741,14 @@ async function auditAIAssistFindings(){
     auditAIReviewPanel('<b>AI inspection assistant</b><br>Analysing checklist quality, findings and corrective actions...');
     var prompt='You are an expert HSE site inspector and audit reviewer. Review this inspection before it is saved. Return STRICT JSON only with keys: readiness string, score_comment string, site_risk_level low/medium/high/critical, priority string, immediate_stop_work boolean, positive_observation string, negative_observation string, actions array, findings array, missing_checks array, reviewer_notes array. Each action needs description, responsible blank if unknown, target_date YYYY-MM-DD, priority low/medium/high/critical. Each finding needs finding_type minor_nc/major_nc/observation/opportunity/positive, clause, description, evidence, corrective_action, assigned_to blank if unknown. If an insufficient item indicates imminent danger, set immediate_stop_work true. Do not invent facts; base suggestions on checklist results and observations. Context: '+JSON.stringify(ctx).slice(0,18000);
     var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS, an expert HSE inspection and audit quality assistant. Return valid JSON only.');
+    if(request!==auditAIRequest||formId!==auditEditId||typeAtStart!==document.getElementById('audit-type')?.value)return;
     var data=aiExtractJson(raw)||{};
     if(!data.actions&&!data.findings&&!data.reviewer_notes)throw new Error('No structured inspection review returned');
     window.auditAIReviewData=data;
     auditAIRenderReview(data);
     toast('AI inspection review ready');
   }catch(e){
+    if(request!==auditAIRequest)return;
     auditAIReviewPanel('<b>AI inspection assistant</b><br><span style="color:#B91C1C">AI error: '+escH(e.message||String(e))+'</span>');
     toast('AI inspection error: '+(e.message||e),false);
   }
@@ -34709,6 +34768,7 @@ function auditAIRenderReview(data){
   auditAIReviewPanel(h);
 }
 function auditAIApplyReview(){
+  if(!window.auditAIReviewData){toast('The AI review is no longer available for this inspection.',false);return;}
   var data=window.auditAIReviewData||{};
   var pos=document.getElementById('if-pos'), neg=document.getElementById('if-neg');
   if(pos && !pos.value.trim() && data.positive_observation)pos.value=data.positive_observation;
@@ -34720,6 +34780,8 @@ function auditAIApplyReview(){
 }
 // Save inspection
 async function auditSave() {
+  if(auditSaving)return;
+  if(auditRestoreError||auditFindingsLoading){auditFormFeedback(auditRestoreError?'Saved inspection data could not be restored. Reopen the record before editing.':'Wait for saved findings to finish loading before saving.',true);return;}
   if(!workflowCanMutate('inspection','inspections'))return;
   var site = document.getElementById('if-site')?.value?.trim();
   var type = document.getElementById('audit-type')?.value||'workplace';
@@ -34734,7 +34796,7 @@ async function auditSave() {
     return{category:c.ca||'',item:c.item||'',guidance:c.guidance||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
   }).filter(function(x){return x.item;});
   if(!items.length){toast('Please add at least one checklist item',false);return;}
-  if(items.some(function(x){return !x.result;})){toast('Please mark each checklist item as Good, Insufficient, or N/A',false);return;}
+  if(['completed','closed'].includes(g('audit-status'))&&items.some(function(x){return !x.result;})){auditFormFeedback('Complete every checklist item before closing this inspection.',true);return;}
   var goodCnt=items.filter(function(x){return x.result==='good';}).length;
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   // Collect photos
@@ -34753,7 +34815,7 @@ async function auditSave() {
   var findings = [];
   document.querySelectorAll('.audit-finding-row').forEach(function(row){
     var desc=row.querySelector('.af-desc')?.value?.trim();
-    if(desc)findings.push({finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||''});
+    if(desc)findings.push({id:row.dataset.findingId||null,finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||''});
   });
   var body = {
     company_id:ccid(), inspection_type:type,
@@ -34771,11 +34833,15 @@ async function auditSave() {
     sign_reviewer:g('if-sign-reviewer'), sign_reviewer_date:g('if-sign-reviewer-date')||null,
     gps_address:g('audit-gps-address'), lat:g('audit-lat')?parseFloat(g('audit-lat')):null,
     lng:g('audit-lng')?parseFloat(g('audit-lng')):null,
+    equipment_asset_id:type==='equipment'?g('audit-equipment-asset'):null,
     updated_at:new Date().toISOString()
   };
   var currentInspection=auditEditId?(auditAllData||[]).find(function(x){return x.id===auditEditId;}):null;
   if(currentInspection&&!coreWorkflowRequireTransition('inspection',currentInspection.status||'open',body.status,'Inspection'))return;
   Object.assign(body,locationIdentityPayload(body.site,null));
+  var saveButton=document.getElementById('audit-save-btn');
+  auditSaving=true;if(saveButton)saveButton.disabled=true;
+  auditFormFeedback('Saving inspection…',false);
   try {
     var savedId = auditEditId;
     var savedRef = '';
@@ -34788,47 +34854,40 @@ async function auditSave() {
       body.created_by=prof?.id;
       var res=await apiWriteWithMissingColumnFallback('/inspections',{m:'POST',p:'return=representation',b:body},'Inspection');
       if(res?.[0]?.id){
-        var yr=new Date().getFullYear();
-        var prefix = {workplace:'WI',fire:'FS',ppe:'PPE',equipment:'EQ',environmental:'ENV',
-                      iso_audit:'ISO',internal_audit:'AUD',supplier_audit:'SA',
-                      contractor_audit:'CA',regulatory:'REG',behavioral:'BBO'}[type]||'INS';
-        var seq=1;
-        try{
-          var refPrefix=prefix+'-'+yr+'-';
-          var existing=await api('/inspections?select=reference_no&company_id=eq.'+ccid()+'&reference_no=like.'+encodeURIComponent(refPrefix+'*')+'&order=reference_no.desc&limit=1');
-          var last=(existing&&existing[0]&&existing[0].reference_no)||'';
-          var m=String(last).match(/-(\d+)$/);
-          seq=m?parseInt(m[1],10)+1:1;
-        }catch(refErr){
-          seq=(auditAllData||[]).filter(function(x){return String(x.reference_no||'').indexOf(prefix+'-'+yr+'-')===0;}).length+1;
-        }
-        var n=String(seq).padStart(3,'0');
-        var ref = prefix+'-'+yr+'-'+n;
-        await api('/inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{reference_no:ref}});
-        body.reference_no = ref;
-        toast('Saved! Ref: '+ref);
-        savedId=res[0].id; auditEditId=res[0].id;
-        savedRef=ref;
+        var ref=res[0].reference_no;
+        savedId=res[0].id; auditEditId=savedId; savedRef=ref||'';
+        if(!ref)throw new Error('Inspection was created without a reference. Apply the inspection reference migration before adding another record.');
+        body.reference_no=ref;
         document.getElementById('audit-form3ref').textContent=ref;
-      }
+      }else throw new Error('The database did not confirm the inspection save.');
     }
-    // Save findings to audit_findings table
-    for(var fi of findings){
-      try{await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:ccid(),inspection_id:savedId,finding_ref:'F'+String(findings.indexOf(fi)+1).padStart(3,'0'),...fi,status:'open',created_by:prof?.id}});}catch(ex){}
+    var oldFindings=await api('/audit_findings?select=id,finding_ref,status&company_id=eq.'+encodeURIComponent(ccid())+'&inspection_id=eq.'+encodeURIComponent(savedId));
+    for(var fi=0;fi<findings.length;fi++){
+      var finding=findings[fi], match=(oldFindings||[]).find(function(x){return x.id===finding.id;});
+      var findingBody={finding_type:finding.finding_type,clause:finding.clause,description:finding.description,evidence:finding.evidence,corrective_action:finding.corrective_action,assigned_to:finding.assigned_to};
+      if(match)await api('/audit_findings?id=eq.'+encodeURIComponent(match.id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:findingBody});
+      else await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:ccid(),inspection_id:savedId,finding_ref:'F'+String(fi+1).padStart(3,'0'),...findingBody,status:'open',created_by:prof?.id}});
     }
-    // Create MAP actions for insufficient items + action rows
-    var allActions = actions.slice();
-    if(insufCnt>0&&!actions.length){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
-    for(var a of allActions){
-      if(!a.description)continue;
-      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_id:savedId||null,source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
+    var oldActions=await api('/action_tracker?select=id,action_no,status,description&company_id=eq.'+encodeURIComponent(ccid())+'&source_module=eq.inspection&source_id=eq.'+encodeURIComponent(savedId));
+    var allActions=actions.map(function(a,i){return {...a,key:'inspection:'+String(i+1)};});
+    findings.forEach(function(f,i){if(f.corrective_action)allActions.push({description:f.corrective_action,responsible:f.assigned_to||'',target_date:null,key:'finding:'+String(i+1)});});
+    if(insufCnt>0&&!allActions.length)allActions.push({description:'Address '+insufCnt+' insufficient checklist item(s) at '+site,responsible:'',target_date:null});
+    for(var ai=0;ai<allActions.length;ai++){
+      var a=allActions[ai], key=a.key||'inspection:insufficient';
+      var old=(oldActions||[]).find(function(x){return x.action_no===key;})||(oldActions||[]).find(function(x){return !x.action_no&&x.description===a.description;});
+      var actionBody={title:a.description.substring(0,80),description:a.description,assigned_to_name:a.responsible||null,target_date:a.target_date||null};
+      if(old)await api('/action_tracker?id=eq.'+encodeURIComponent(old.id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:actionBody});
+      else await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_no:key,...actionBody,source_type:'inspection',source_module:'inspection',source_id:savedId,source_ref:savedRef,priority:'high',status:'open',created_by:prof?.id}});
     }
+    auditFormFeedback('Inspection '+savedRef+' saved. '+items.filter(function(x){return x.result;}).length+' of '+items.length+' checklist items answered.',false);
+    toast('Inspection '+savedRef+' saved.');
     var savedRecord=Object.assign({},body,{id:savedId,reference_no:savedRef||body.reference_no});
     if(savedId&&wsRecordReturnMatches('site')){
       await wsAttachSavedRecord('site',savedRecord);
       wsReturnToWork('site');
     }else auditBackToList();
-  } catch(e) { toast(actionErrorMessage('Save inspection','Audits & Inspections',e.message),false); }
+  } catch(e) { var message=actionErrorMessage('Save inspection','Audits & Inspections',e.message);auditFormFeedback(message,true);toast(message,false); }
+  finally {auditSaving=false;if(saveButton)saveButton.disabled=false;}
 }
 
 function saveInspection(){auditSave();}  // backward compat
@@ -34880,20 +34939,21 @@ function inspDelete(){auditDelete();}        // backward compat
 
 // -- Checklist helpers (used by existing buildChecklist) ------------
 function updateScore() {
-  var g=0,ins=0;
+  var g=0,ins=0,na=0;
   (window.chkItems||[]).forEach(function(_,i){
     if(document.getElementById('cg-'+i)&&document.getElementById('cg-'+i).checked)g++;
     if(document.getElementById('ci-'+i)&&document.getElementById('ci-'+i).checked)ins++;
+    if(document.getElementById('cn-'+i)&&document.getElementById('cn-'+i).checked)na++;
   });
-  var total=g+ins; var pct=total>0?Math.round(g/total*100):null;
+  var total=g+ins,answered=total+na,all=(window.chkItems||[]).filter(function(x){return x.item;}).length,pct=total>0?Math.round(g/total*100):null;
   var scoreEl=document.getElementById('if-score');
   if(scoreEl)scoreEl.textContent=g+' Good / '+ins+' Insufficient';
   var dispEl=document.getElementById('audit-score-display');
   var detEl=document.getElementById('audit-score-detail');
   var barEl=document.getElementById('audit-score-bar');
-  if(dispEl)dispEl.textContent=pct!=null?pct+'%':'-';
-  if(detEl)detEl.textContent=pct!=null?g+' good, '+ins+' insufficient of '+total+' items':'Checklist not yet completed';
-  if(barEl){barEl.style.width=(pct||0)+'%;';barEl.style.background=pct>=80?'#fff':pct>=60?'#fcd34d':'#fca5a5';}
+  if(dispEl)dispEl.textContent=pct!=null?pct+'%':'—';
+  if(detEl)detEl.textContent=answered+' of '+all+' answered'+(pct!=null?' · '+(answered<all?'Provisional ':'')+'score '+pct+'%':' · Score pending');
+  if(barEl){barEl.style.width=(all?Math.round(answered/all*100):0)+'%';barEl.style.background='#1D9E75';}
 }
 
 function inspScore(){updateScore();}  // backward compat
@@ -34933,14 +34993,14 @@ function inspSyncActions(a){return inspActionRowHTML(a);}
 // -- buildChecklist (enhanced to support new format) ----------------
 function buildChecklist(preloadedItems) {
   var preMap={};
-  (preloadedItems||[]).forEach(function(item){preMap[item.item_name||item.item]=item;});
+  (preloadedItems||[]).forEach(function(item){preMap[(item.category||item.ca||'')+'\u0000'+(item.item_name||item.item)]=item;});
   var tbody=document.getElementById('if-checklist'); if(!tbody)return;
   tbody.innerHTML='';
-  var items = window.chkItems||[];
+  var items = (window.chkItems||[]).slice().sort(function(a,b){return String(a.ca||'').localeCompare(String(b.ca||''));});window.chkItems=items;
   var lastCat='';
   items.forEach(function(c,i){
     if(!c.item)return;
-    var pre=preMap[c.item]||{};
+    var pre=preMap[(c.ca||'')+'\u0000'+c.item]||{};
     var isGood=pre.result==='good';
     var isInsuf=pre.result==='insufficient';
     var isNA=pre.result==='na';
@@ -34949,21 +35009,38 @@ function buildChecklist(preloadedItems) {
     if(showCatRow){
       lastCat=c.ca;
       var catRow=document.createElement('tr');
-      catRow.innerHTML='<td colspan="7" style="padding:8px 12px;font-size:11px;font-weight:900;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#185FA5,#0891B2);letter-spacing:.05em">'+escH(c.ca)+'</td>';
+      catRow.className='audit-category-heading';catRow.dataset.category=c.ca;
+      catRow.innerHTML='<td colspan="7"><button type="button" class="audit-category-toggle" aria-expanded="true">'+escH(c.ca)+' <span>▾</span></button></td>';
       tbody.appendChild(catRow);
     }
     var tr=document.createElement('tr');
-    tr.style.cssText='border-bottom:1px solid #f3f4f6;';
+    tr.style.cssText='border-bottom:1px solid #f3f4f6;';tr.className='audit-check-item';tr.dataset.category=c.ca||'';
     tr.innerHTML='<td style="padding:8px 10px;font-size:11px;color:var(--text2);vertical-align:top">'+escH(c.ca||'')+'</td>'
       +'<td style="padding:8px 10px;font-size:12px;font-weight:700;line-height:1.35;vertical-align:top">'+escH(c.item)+(c.guidance?'<br><span style="font-size:10px;color:var(--text2);font-style:italic;font-weight:500">'+escH(c.guidance)+'</span>':'')+'</td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' data-auris-runtime-onchange="r0103" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#1D9E75;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' data-auris-runtime-onchange="r0104" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#DC2626;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' data-auris-runtime-onchange="r0105" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#9CA3AF;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" data-auris-generated-onclick="g0332" title="Add evidence"><i class="ti ti-camera"></i></button></td>'
+      +'<td class="audit-choice"><label><input type="radio" name="audit-result-'+i+'" id="cg-'+i+'" value="good" '+(isGood?'checked':'')+'/><span>Good</span></label></td>'
+      +'<td class="audit-choice"><label><input type="radio" name="audit-result-'+i+'" id="ci-'+i+'" value="insufficient" '+(isInsuf?'checked':'')+'/><span>Insufficient</span></label></td>'
+      +'<td class="audit-choice"><label><input type="radio" name="audit-result-'+i+'" id="cn-'+i+'" value="na" '+(isNA?'checked':'')+'/><span>N/A</span></label></td>'
+      +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" data-auris-generated-onclick="g0332" title="Add evidence"><i class="ti ti-camera"></i></button><button type="button" class="btn btn-sm audit-create-finding" title="Create finding from insufficient item">Finding</button></td>'
       +'<td style="padding:6px 8px;vertical-align:top"><textarea id="co-'+i+'" placeholder="Observation, evidence, action required..." style="width:100%;min-height:42px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">'+escH(obs)+'</textarea></td>';
     tbody.appendChild(tr);
   });
+  if(!tbody.dataset.categoryBound){tbody.dataset.categoryBound='1';tbody.addEventListener('click',function(event){var create=event.target.closest('.audit-create-finding');if(create){auditCreateFindingFromItem(create.closest('tr'));return;}var button=event.target.closest('.audit-category-toggle');if(!button)return;var heading=button.closest('tr'),collapsed=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!collapsed));button.querySelector('span').textContent=collapsed?'▸':'▾';Array.from(tbody.querySelectorAll('.audit-check-item')).filter(function(row){return row.dataset.category===heading.dataset.category;}).forEach(function(row){row.hidden=collapsed;});});}
+  if(!tbody.dataset.scoreBound){tbody.dataset.scoreBound='1';tbody.addEventListener('change',function(event){if(event.target.matches('input[type="radio"][name^="audit-result-"]'))updateScore();});}
   updateScore();
+}
+
+function auditCreateFindingFromItem(itemRow){
+  if(!itemRow?.querySelector('input[value="insufficient"]')?.checked){auditFormFeedback('Mark this item Insufficient before creating a finding.',true);return;}
+  if(itemRow.dataset.findingCreated==='1'){auditFormFeedback('A finding has already been prepared for this item.',true);return;}
+  var index=Array.from(document.querySelectorAll('#if-checklist .audit-check-item')).indexOf(itemRow),item=window.chkItems?.[index];
+  if(!item)return;
+  var section=document.getElementById('audit-findings-section');if(section)section.style.display='block';
+  auditAddFinding();var row=document.querySelector('#audit-findings-list .audit-finding-row:last-child');if(!row)return;
+  row.querySelector('.af-clause').value=item.ca||'';
+  row.querySelector('.af-desc').value=item.item;
+  row.querySelector('.af-evidence').value=document.getElementById('co-'+index)?.value||'';
+  itemRow.dataset.findingCreated='1';section?.scrollIntoView({block:'nearest'});
+  auditFormFeedback('Finding prepared from the insufficient item. Confirm classification, action and assignee before saving.',false);
 }
 
 // -- Findings tab ----------------------------------------------------
@@ -34979,7 +35056,7 @@ async function findingsLoad() {
     var d=await api(q); auditFindingsData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600">No audit findings recorded yet</div></div>';return;}
     var typeCfg={major_nc:{color:'#DC2626',bg:'#FCEBEB',label:'Major NC',emoji:'?'},minor_nc:{color:'#C2410C',bg:'#FEF6E7',label:'Minor NC',emoji:'*'},observation:{color:'#185FA5',bg:'#EFF6FF',label:'Observation',emoji:'*'},opportunity:{color:'#065F46',bg:'#ECFDF5',label:'Opportunity',emoji:'*'},positive:{color:'#1D9E75',bg:'#EAF3DE',label:'Positive',emoji:'?'}};
-    var stCfg={open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],closed:['#EAF3DE','#3B6D11'],accepted:['#f3f4f6','#6B7280']};
+    var stCfg={open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],awaiting_verification:['#FFF4DB','#8A5900'],closed:['#EAF3DE','#3B6D11'],accepted:['#f3f4f6','#6B7280']};
     var h='<div style="display:flex;flex-direction:column;gap:8px">';
     d.forEach(function(x){
       var tc=typeCfg[x.finding_type]||typeCfg.observation;
@@ -34995,22 +35072,28 @@ async function findingsLoad() {
         +'<div style="font-size:13px;font-weight:600;margin-bottom:4px">'+escH(x.description||'-')+'</div>'
         +(x.evidence?'<div style="font-size:11px;color:var(--text2);margin-bottom:4px"><strong>Evidence:</strong> '+escH(x.evidence)+'</div>':'')
         +(x.corrective_action?'<div style="font-size:11px;color:#185FA5;margin-bottom:4px"><strong>Required action:</strong> '+escH(x.corrective_action)+'</div>':'')
+        +(x.verification_evidence?'<div style="font-size:11px;color:var(--text2)"><strong>Verification:</strong> '+escH(x.verification_evidence)+' · '+escH(x.verified_by||'')+'</div>':'')
         +'<div style="display:flex;gap:10px;font-size:11px;color:var(--text2)">'
         +(x.assigned_to?'<span>'+escH(x.assigned_to)+'</span>':'')
         +(x.due_date?'<span>Due '+new Date(x.due_date).toLocaleDateString('en-GB')+'</span>':'')
         +(x.finding_ref?'<span style="font-family:monospace">'+escH(x.finding_ref)+'</span>':'')
         +'</div>'
-        +(isMgr()?'<div style="margin-top:8px;display:flex;gap:6px">'
-          +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0333">Mark closed</button>'
-          +'</div>':'')
+        +'<div style="margin-top:8px;display:flex;gap:6px"><button type="button" class="btn btn-sm audit-finding-source" data-inspection-id="'+escH(x.inspection_id||'')+'">Open source audit</button>'
+        +(isMgr()&&x.status!=='closed'?'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0333">Verify &amp; close</button>':'')+'</div>'
         +'</div>';
     });
     el.innerHTML=h+'</div>';
+    if(!el.dataset.sourceBound){el.dataset.sourceBound='1';el.addEventListener('click',function(event){var button=event.target.closest('.audit-finding-source');if(!button)return;var id=button.dataset.inspectionId;if(!id)return;var row=(auditAllData||[]).find(function(x){return x.id===id;});if(row)auditOpenReadOnly(id);else api('/inspections?select=*&id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1').then(function(rows){if(rows?.[0]){auditAllData.push(rows[0]);auditOpenReadOnly(id);}else toast('Source inspection is unavailable.',false);}).catch(function(error){toast(error.message,false);});});}
   }catch(e){el.innerHTML=registerErrorHtml('Audit findings register',e.message);}
 }
 
 async function findingClose(id){
-  try{await api('/audit_findings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Finding closed!');findingsLoad();}
+  var evidence=window.prompt('Describe the closure evidence and how you verified the corrective action:');
+  if(evidence===null)return;
+  if(!evidence.trim()){toast('Verification evidence is required before closure.',false);return;}
+  var reviewer=prof?.full_name||personFullName(prof);
+  if(!reviewer){toast('Your reviewer name is required before closure.',false);return;}
+  try{await api('/audit_findings?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),verified_by:reviewer,verification_evidence:evidence.trim(),updated_at:new Date().toISOString()}});toast('Finding verified and closed.');findingsLoad();}
   catch(e){toast(actionErrorMessage('Close audit finding','Audits & Inspections',e.message),false);}
 }
 
@@ -35112,14 +35195,14 @@ function psNew(){
   document.getElementById('ps-delete-btn').style.display='none';
   ['ps-activity','ps-location','ps-supervisor','ps-team','ps-ra-ref','ps-ptw-ref',
    'ps-tbt-topics','ps-decision-notes','ps-sign-name','ps-sign-datetime'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('ps-date').value=new Date().toISOString().slice(0,16);
+  var now=new Date();document.getElementById('ps-date').value=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
   fillPersonSelect('ps-supervisor', prof?.full_name||personFullName(prof)||'');
   fillRiskAssessmentSelect('ps-ra-ref','');
   document.getElementById('ps-duration').value='';
   document.getElementById('ps-score').textContent='-';
   document.getElementById('ps-tbt-done').checked=false;
   document.getElementById('ps-stop-work').checked=false;
-  document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value==='go';});
+  document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=false;});
   // Load pre-start checklist
   psBuildChecklist(psDefaultChecklist());
   document.getElementById('ps-list-view').style.display='none';
@@ -35171,7 +35254,7 @@ function psOpenData(x){
   if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.prestart_signed_at||'';
   document.getElementById('ps-tbt-done').checked=!!x.tbt_done;
   document.getElementById('ps-stop-work').checked=!!x.stop_work_briefed;
-  var dec=x.decision||'go';
+  var dec=x.decision||'';
   document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value===dec;});
   var savedItems=Array.isArray(x.items)?x.items.filter(function(i){return i&&(i.item||i.item_name);}):[];
   psBuildChecklist(savedItems.length?savedItems:psDefaultChecklist());
@@ -35197,7 +35280,9 @@ async function psSave(){
   if(items.some(function(x){return !x.result;})){psFormError('Please mark each pre-start checklist item as Good, Insufficient, or N/A');return;}
   var goodCnt=items.filter(function(x){return x.result==='good';}).length;
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
-  var dec=document.querySelector('input[name="ps-dec"]:checked')?.value||'go';
+  var dec=document.querySelector('input[name="ps-dec"]:checked')?.value;
+  if(!dec){psFormError('Select an explicit GO, HOLD, or STOP decision before saving.');return;}
+  if(insufCnt&&dec==='go'){psFormError('Insufficient checklist items require a HOLD or STOP decision until resolved.');return;}
   var dt=g('ps-date');
   var body={company_id:context.company,inspection_type:'prestart',site:activity,activity:activity,
     location:g('ps-location'),inspection_date:dt?dt.split('T')[0]:null,if_date:dt?dt.split('T')[0]:null,
