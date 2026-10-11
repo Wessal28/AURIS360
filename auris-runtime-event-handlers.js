@@ -37,6 +37,12 @@ dashNavClick(event,args[0],args[1])
     "r0012": function (event, args) {
 dashNavClick(event,args[0])
     },
+    "r0153": function (event, args) {
+dashOpenCommandPriority(args[0])
+    },
+    "r0154": function (event) {
+showPage('ai-insights',null);aiTab('qr',null)
+    },
     "r0013": function (event, args) {
 clientRolloutToggleCriterion(args[0])
     },

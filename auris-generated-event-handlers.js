@@ -62,7 +62,7 @@ dashNavClick(event,'workschedule')
 dashOpenWidgetDetail('compliance')
     },
     "g0021": function (event) {
-dashNavClick(event,'legal')
+dashOpenComplianceReport()
     },
     "g0022": function (event) {
 dashCloseMeetingChecklist()

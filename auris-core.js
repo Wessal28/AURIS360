@@ -3410,6 +3410,8 @@ function dashOpenMyActions(){
 // --- REAL-TIME DASHBOARD ------------------------------------------
 var _dashLoadGeneration=0;
 var _dashInitialRetryTimer=null;
+var _dashCommandData=null;
+var _dashSourceFailures={};
 async function loadDash(options) {
   options=options||{};
   var loadGeneration=++_dashLoadGeneration;
@@ -3420,26 +3422,27 @@ async function loadDash(options) {
   // appears blank while the live API requests are still loading.
   if(!isPersonalDashRole()) {
     dashRouteView();
-    dashRenderControlCentre({});
+    dashRenderControlCentre({loading:true});
   }
   try {
-    var safe = async function(p) { try { return await p; } catch(e) { hadApiFailure=true;console.warn('Dash API:', e.message); return []; } };
+    var sourceFailures={};
+    var safe = async function(p,key) { try { return await p; } catch(e) { hadApiFailure=true;sourceFailures[key]=true;console.warn('Dash API:', e.message); return []; } };
     var optional = async function(p) { try { return await p; } catch(e) { console.warn('Optional dashboard source:', e.message); return null; } };
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
     var results = await Promise.all([
-      safe(api('/events?select=*'+cf()+'&order=event_date.desc&limit=100')),
-      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=200')),
-      safe(api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active')),
-      safe(api('/permits?select=*'+cf()+'&status=eq.active')),
-      safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc')),
-      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=200')),
-      safe(api('/legal_requirements?select=*'+cf()+'&limit=200')),
-      safe(api('/training_followup?select=id,person_name,expiry_date'+cf())),
-      safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50')),
-      safe(api('/safety_observations?select=id'+cf()+'&limit=10')),
-      safe(api('/risk_assessments?select=*'+cf()+'&limit=100')),
-      safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10')),
+      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yr+'-12-31&order=event_date.desc&limit=500'),'events'),
+      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),'actions'),
+      safe(api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(api('/permits?select=*'+cf()+'&status=eq.active'),'permits'),
+      safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc'),'certs'),
+      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),'inspections'),
+      safe(api('/legal_requirements?select=*'+cf()+'&limit=500'),'legal'),
+      safe(api('/training_followup?select=id,person_name,expiry_date'+cf()),'training'),
+      safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50'),'kpi'),
+      safe(api('/safety_observations?select=id'+cf()+'&limit=10'),'observations'),
+      safe(api('/risk_assessments?select=*'+cf()+'&limit=500'),'risks'),
+      safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10'),'chemicals'),
       optional(api('/contractors?select=*'+cf()+'&limit=200')),
       optional(api('/tools_register?select=*'+cf()+'&limit=200')),
       optional(api('/moc_change_requests?select=*'+cf()+'&limit=200')),
@@ -3449,6 +3452,7 @@ async function loadDash(options) {
     // A newer dashboard request owns the screen. Never let a slower, older
     // response overwrite data loaded for a changed company or manual refresh.
     if(loadGeneration!==_dashLoadGeneration)return;
+    _dashSourceFailures=sourceFailures;
     events = events||[]; actions = actions||[]; people = people||[];
     permits = permits||[]; certs = certs||[]; insps = insps||[];
     legal = legal||[]; training = training||[]; kpiData = kpiData||[];
@@ -3485,15 +3489,16 @@ async function loadDash(options) {
     var expCerts = certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<soon60;});
     sm('d-certs', expCerts.length);
     var trainValid = training.filter(function(x){return !x.expiry_date||new Date(x.expiry_date)>now;});
-    var trainPct = training.length>0 ? Math.round(trainValid.length/Math.max(people.length,1)*100) : 0;
-    sm('d-training-pct', Math.min(trainPct,100)+'%');
+    // Follow-up rows cannot establish unique workforce coverage without a verified person link.
+    var trainPct = null;
+    sm('d-training-pct', _dashSourceFailures.training?'Unable to load':'Not assessed');
 
     // Compliance
     var legalScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
-    var compPct = legalScores.length>0 ? Math.round(legalScores.reduce(function(a,b){return a+b;},0)/legalScores.length) : 0;
-    sm('d-compliance', compPct+'%');
+    var compPct = legalScores.length>0 ? Math.round(legalScores.reduce(function(a,b){return a+b;},0)/legalScores.length) : null;
+    sm('d-compliance', _dashSourceFailures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
     var barInner = document.getElementById('d-compliance-bar-inner');
-    if(barInner) { barInner.style.width=compPct+'%'; barInner.style.background=compPct>=80?'#1D9E75':compPct>=60?'#EF9F27':'#DC2626'; }
+    if(barInner) { barInner.style.width=(compPct||0)+'%'; barInner.style.background=compPct>=80?'#1D9E75':compPct>=60?'#EF9F27':'#DC2626'; }
 
     // Environmental incidents
     var envInc = ytdEvents.filter(function(x){return x.event_type==='environmental';});
@@ -3737,7 +3742,8 @@ function dashNavigateTo(page,id){
       else if(page==='workschedule'&&typeof wsShowDetail==='function')wsShowDetail(id);
       else if(page==='swms'&&typeof swmsOpen==='function')swmsOpen(id);
       else if(page==='training'&&typeof tpOpen==='function')tpOpen(id);
-      else if(page==='actions'&&typeof mapOpenSourceRecord==='function')mapOpenSourceRecord(id);
+      else if(page==='actions'&&typeof mapOpenDetail==='function')mapOpenDetail(id);
+      else if(page==='legal'&&typeof legalOpenReq==='function')legalOpenReq(id);
     }catch(e){
       console.warn('Dashboard record navigation failed',e);
     }
@@ -3750,6 +3756,24 @@ function dashNavClick(event,page,id){
     event.stopPropagation();
   }
   dashNavigateTo(page,id);
+}
+
+function dashOpenCommandPriority(label){
+  var context=_dashCommandData;
+  if(!context||String(context.companyId||'')!==String(ccid()||'')){loadDash();return;}
+  var rows=context.queues[label],page=context.pages[label];
+  if(!Array.isArray(rows)){
+    dashOpenControlCentreModal(label,'<p>Records are unavailable or this measure has no governed list. Refresh the dashboard and try again.</p>');
+    return;
+  }
+  var body='<p>Scope: '+escH(context.scope)+' · '+context.year+' · '+rows.length+' matching record(s)</p>';
+  body+=rows.length?rows.map(function(x){var title=x.title||x.action||x.description||x.requirement_title||x.name||x.person_name||x.inspection_type||x.reference||x.ref||'Open record';var date=x.target_date||x.due_date||x.expiry_date||x.inspection_date||'';return '<div class="hse-cc-row"><span><strong>'+escH(title)+'</strong><small>'+escH(x.ref||x.reference||x.source_ref||'')+' · '+escH(dashFmtDate(date))+'</small></span><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page,x.id]))+'">Open item</button></div>';}).join(''):'<p>No matching records in this scope.</p>';
+  dashOpenControlCentreModal(label,body);
+}
+
+function dashOpenComplianceReport(){
+  showPage('executive',document.getElementById('nav-executive'));
+  execTab('compliance',document.getElementById('exec-tab-compliance'));
 }
 
 function dashOpenKpiDetail(index){
@@ -3780,6 +3804,7 @@ function dashRenderControlCentre(data){
   }
   aurisSetDisplay(panel,'block');
   data=data||{};
+  if(data.loading){panel.innerHTML='<div class="hse-cc-panel" role="status" aria-live="polite"><div class="hse-cc-panel-title">Loading company performance</div><p>Retrieving incidents, actions, training, permits and risk assessments…</p></div>';return;}
   var now=new Date();
   var events=data.events||[];
   var actions=data.actions||[];
@@ -3845,16 +3870,18 @@ function dashRenderControlCentre(data){
   expiringCerts.slice(0,3).forEach(function(x){
     attention.push({id:x.id||'',priority:'Certificate',tone:'amber',title:x.title||x.name||x.cert_name||'Certificate expiring',meta:x.ref||x.reference||'Certificate / authorisation',owner:x.responsible||'-',due:dashFmtDate(x.expiry_date),page:'fire'});
   });
-  attention=attention.slice(0,10);
+  attention=attention.slice(0,5);
 
   var legalScoreValues=legal.map(function(x){return parseFloat(x.compliance_score);}).filter(function(x){return !isNaN(x);});
-  var legalScore=legalScoreValues.length?Math.round(legalScoreValues.reduce(function(a,b){return a+b;},0)/legalScoreValues.length):0;
+  var legalScore=legalScoreValues.length?Math.round(legalScoreValues.reduce(function(a,b){return a+b;},0)/legalScoreValues.length):null;
   var openCritical=seriousIncidents.length+highRisks.length;
   var trainingScore=training.length?Math.max(0,Math.round((training.length-expiringTraining.length)/training.length*100)):0;
-  var permitScore=permits.length?Math.max(0,Math.round((permits.length-activePermits.length)/permits.length*100)):(activePermits.length?0:100);
+  // Active permits are a count, not a compliance denominator.
+  var permitScore=null;
   var inspectionDue=scheduledInspections.length;
   var userName=(prof&&prof.full_name)||'User';
-  var companyName=(co&&co.name)||(typeof sephsCompanyName==='string'?sephsCompanyName:'All companies');
+  var selectedCompany=typeof sephsCompanyContext!=='undefined'&&sephsCompanyContext&&Array.isArray(saCompanyList)?saCompanyList.find(function(x){return String(x.id)===String(sephsCompanyContext);}):null;
+  var companyName=isSA()&&!sephsCompanyContext?'All companies':(selectedCompany&&selectedCompany.name)||(co&&co.name)||'Current company';
   var firstName=String(userName).split(' ')[0]||'there';
   var dateLabel=now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   var monthLabel=now.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
@@ -3868,9 +3895,9 @@ function dashRenderControlCentre(data){
   var progressDeg=Math.round(actionProgress/donutTotal*360);
   var dueDeg=Math.round(actionDueSoon/donutTotal*360);
   var donutBg='conic-gradient(#EF4444 0 '+overdueDeg+'deg,#22C55E '+overdueDeg+'deg '+(overdueDeg+progressDeg)+'deg,#F59E0B '+(overdueDeg+progressDeg)+'deg '+(overdueDeg+progressDeg+dueDeg)+'deg,#CBD5E1 '+(overdueDeg+progressDeg+dueDeg)+'deg 360deg)';
-  var siteHigh=Math.max(1,seriousIncidents.length+highRisks.length);
-  var siteMid=Math.max(1,openActions.length?Math.min(9,openActions.length):legalGaps.length);
-  var siteLow=Math.max(1,recentInspections.length||1);
+  var siteGroups={};
+  risks.forEach(function(x){var site=String(x.site||x.location||x.site_location||'Unspecified site').trim();if(!siteGroups[site])siteGroups[site]={name:site,count:0,high:0,last:''};var group=siteGroups[site];group.count++;if(dashRiskWeight(x)>=3)group.high++;var date=String(x.review_date||x.updated_at||x.created_at||'');if(date>group.last)group.last=date;});
+  var siteRows=Object.keys(siteGroups).map(function(k){return siteGroups[k];}).sort(function(a,b){return b.high-a.high||b.count-a.count;}).slice(0,5);
   var trendMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var incidentMonthly=[];
   var nearMissMonthly=[];
@@ -3915,7 +3942,7 @@ function dashRenderControlCentre(data){
   upcoming=upcoming.filter(function(x){return x.date;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);}).slice(0,8);
   var complianceBars=[
     {label:'Legal compliance',value:legalScoreValues.length?legalScore:null,color:'#0F6E56',page:'legal'},
-    {label:'Training',value:trainingScore||0,color:'#16A34A',page:'training'},
+    {label:'Training record validity',value:training.length?trainingScore:null,color:'#16A34A',page:'training'},
     {label:'Permits',value:null,color:'#0F6E56',page:'permit'},
     {label:'Inspections',value:null,color:'#1D9E75',page:'inspection'},
     {label:'Risk control',value:null,color:highRisks.length?'#DC2626':'#0F6E56',page:'risk'},
@@ -3923,31 +3950,32 @@ function dashRenderControlCentre(data){
   ];
 
   var metrics=[
-    {label:'Total incidents',value:events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',asset:'incident',page:'events'},
-    {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',asset:'action',page:'actions'},
-    {label:'High risks',value:highRisks.length,hint:seriousIncidents.length+' high incidents',tone:highRisks.length?'red':'green',asset:'risk',page:'risk'},
-    {label:'Training compliance',value:(trainingScore||0)+'%',hint:expiringTraining.length+' due soon',tone:trainingScore>=80?'green':'amber',asset:'training',page:'training'},
-    {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',asset:'permit',page:'permit'},
-    {label:'Scheduled inspections',value:inspectionDue,hint:recentInspections.length+' recorded in 30d',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
+    {label:'Total incidents',value:_dashSourceFailures.events?'Unavailable':events.length,hint:thisMonthEvents.length+' this month',tone:seriousIncidents.length?'red':'blue',asset:'incident',page:'events'},
+    {label:'Open actions',value:_dashSourceFailures.actions?'Unavailable':openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',asset:'action',page:'actions'},
+    {label:'High assessed risks',value:_dashSourceFailures.risks?'Unavailable':highRisks.length,hint:'Open risk assessments rated high or above',tone:highRisks.length?'red':'green',asset:'risk',page:'risk'},
+    {label:'Current training records',value:_dashSourceFailures.training?'Unavailable':training.length,hint:expiringTraining.length+' expiring in 30 days; workforce coverage separate',tone:expiringTraining.length?'amber':'green',asset:'training',page:'training'},
+    {label:'Active permits',value:_dashSourceFailures.permits?'Unavailable':activePermits.length,hint:activePermits.length?'Compliance not assessed here':'No active permits',tone:'blue',asset:'permit',page:'permit'},
+    {label:'Scheduled inspections',value:_dashSourceFailures.inspections?'Unavailable':inspectionDue,hint:'Planned/pending; '+recentInspections.length+' recorded in 30 days',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
   ];
   var commandPriorities=[
-    {label:'Critical risks',value:highRisks.length,page:'risk',tone:highRisks.length?'red':'green'},
-    {label:'Overdue actions',value:overdueActions.length,page:'actions',tone:overdueActions.length?'red':'green'},
-    {label:'Incidents to investigate',value:openIncidents.length,page:'events',tone:openIncidents.length?'amber':'green'},
+    {label:'Critical risks',value:_dashSourceFailures.risks?null:highRisks.length,page:'risk',tone:highRisks.length?'red':'green'},
+    {label:'Overdue actions',value:_dashSourceFailures.actions?null:overdueActions.length,page:'actions',tone:overdueActions.length?'red':'green'},
+    {label:'Incidents to investigate',value:_dashSourceFailures.events?null:openIncidents.length,page:'events',tone:openIncidents.length?'amber':'green'},
     {label:'Pending approvals',value:pendingApprovals&&pendingApprovals.length,page:'approvals',tone:pendingApprovals&&pendingApprovals.length?'amber':'blue'},
     {label:'Contractors to review',value:contractorReviews&&contractorReviews.length,page:'contractor',tone:contractorReviews&&contractorReviews.length?'amber':'blue'},
-    {label:'Training expiry',value:expiringTraining.length,page:'training',tone:expiringTraining.length?'amber':'green'},
+    {label:'Training expiry',value:_dashSourceFailures.training?null:expiringTraining.length,page:'training',tone:expiringTraining.length?'amber':'green'},
     {label:'Equipment out of service',value:quarantinedEquipment&&quarantinedEquipment.length,page:'tools',tone:quarantinedEquipment&&quarantinedEquipment.length?'red':'blue'},
-    {label:'Scheduled inspections',value:scheduledInspections.length,page:'inspection',tone:'blue'},
+    {label:'Scheduled inspections',value:_dashSourceFailures.inspections?null:scheduledInspections.length,page:'inspection',tone:'blue'},
     {label:'MOC awaiting review',value:mocReviews&&mocReviews.length,page:'moc',tone:mocReviews&&mocReviews.length?'amber':'blue'},
     {label:'Missing KPI results',value:null,page:'kpi',tone:'purple'},
     {label:'My open tasks',value:personalTasks.length,page:'actions',tone:personalTasks.length?'amber':'green'}
   ].filter(function(item){return typeof canAccessPage!=='function'||canAccessPage(item.page);});
+  _dashCommandData={companyId:ccid(),scope:companyName,year:now.getFullYear(),queues:{'Critical risks':_dashSourceFailures.risks?null:highRisks,'Overdue actions':_dashSourceFailures.actions?null:overdueActions,'Incidents to investigate':_dashSourceFailures.events?null:openIncidents,'Pending approvals':pendingApprovals,'Contractors to review':contractorReviews,'Training expiry':_dashSourceFailures.training?null:expiringTraining,'Equipment out of service':quarantinedEquipment,'Scheduled inspections':_dashSourceFailures.inspections?null:scheduledInspections,'MOC awaiting review':mocReviews,'My open tasks':_dashSourceFailures.actions?null:personalTasks},pages:Object.fromEntries(commandPriorities.map(function(x){return [x.label,x.page];}))};
   window.__hseCcKpis=metrics;
 
   panel.innerHTML =
     '<div class="hse-cc-top">'
-      +'<div><div class="hse-cc-title">Home Command Centre</div><div class="hse-cc-sub">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'. Here is what is happening across '+escH(companyName)+' today.</div></div>'
+      +'<div><div class="hse-cc-title">Home Command Centre</div><div class="hse-cc-sub">Scope: '+escH(companyName)+' · '+escH(monthLabel)+' · refreshed '+escH(now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))+'</div></div>'
       +'<div class="hse-cc-toolbar">'
         +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
         +'<button class="hse-cc-tool-btn primary" data-auris-generated-onclick="g0009"><i class="ti ti-chart-bar"></i>Executive View</button>'
@@ -3959,16 +3987,17 @@ function dashRenderControlCentre(data){
     +'<div class="hse-cc-kpis">'
       +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.page]))+'"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
-    +'<div class="hse-cc-priority-strip" aria-label="Cross-module priorities">'+commandPriorities.map(function(item){return '<button type="button" class="hse-cc-priority-tile '+item.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.page]))+'"><strong>'+escH(item.value==null?(item.page==='kpi'?'Review':'—'):item.value)+'</strong><span>'+escH(item.label)+'</span></button>';}).join('')+'</div>'
+    +'<div class="hse-cc-priority-strip" aria-label="Cross-module priorities">'+commandPriorities.map(function(item){return '<button type="button" class="hse-cc-priority-tile '+item.tone+'" data-auris-runtime-onclick="r0153" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.label]))+'"><strong>'+escH(item.value==null?(item.page==='kpi'?'Review':'Unavailable'):item.value)+'</strong><span>'+escH(item.label)+'</span></button>';}).join('')+'</div>'
+    +'<div class="hse-cc-panel" aria-label="What needs my attention today"><div class="hse-cc-panel-title">What needs my attention today?</div><div class="hse-cc-list">'+(attention.length?attention.map(function(x){return '<div class="hse-cc-row"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.priority)+' · '+escH(x.owner)+' · due '+escH(x.due)+'</small></span><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'">Open item</button></div>';}).join(''):'<div class="hse-cc-empty">No priority items recorded</div>')+'</div></div>'
     +'<div class="hse-cc-grid">'
-      +'<div class="hse-cc-panel" data-cc-widget="riskmap" data-auris-generated-onclick="g0012"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="riskmap"><div class="hse-cc-panel-title">Assessed risks by site</div><div class="hse-cc-list">'+(_dashSourceFailures.risks?'<div class="hse-cc-empty">Unable to load risk assessments</div>':siteRows.length?siteRows.map(function(x){return '<div class="hse-cc-row"><strong>'+escH(x.name)+'</strong><span>'+x.high+' high / '+x.count+' assessed · last review '+escH(dashFmtDate(x.last))+'</span></div>';}).join(''):'<div class="hse-cc-empty">No assessed site risks recorded</div>')+'</div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="actions" data-auris-generated-onclick="g0013"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all actions</div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="trend" data-auris-generated-onclick="g0015"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" data-auris-generated-onclick="g0016">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
       +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">Priority work ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="upcoming" data-auris-generated-onclick="g0018"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0019">View calendar</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=x.value==null?null:Math.max(0,Math.min(100,x.value));return '<div class="hse-cc-row" data-auris-runtime-onclick="r0012" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+(v==null?0:v)+'%;background:'+x.color+'"></i></div><strong>'+(v==null?'—':v+'%')+'</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=x.value==null?null:Math.max(0,Math.min(100,x.value));return '<div class="hse-cc-row" data-auris-runtime-onclick="r0012" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+(v==null?0:v)+'%;background:'+x.color+'"></i></div><strong>'+(v==null?'Not assessed':v+'%')+'</strong></div>';}).join('')+'</div><button type="button" class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</button></div>'
     +'</div>';
 }
 
@@ -5174,7 +5203,7 @@ function dashRenderComplianceRings(compPct, trainPct, permits) {
     +'<text x="50" y="62" text-anchor="middle" font-size="8" fill="#6B7280">legal</text>'
     +'</svg>'
     +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;text-align:left">'
-    +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Training</span><span style="font-weight:700;color:'+(trainPct>=85?'#10B981':trainPct>=70?'#F59E0B':'#DC2626')+'">'+Math.min(trainPct,100)+'%</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Training coverage</span><span style="font-weight:700">'+(trainPct==null?'Not assessed':Math.min(trainPct,100)+'%')+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Active PTW</span><span style="font-weight:700">'+permits+'</span></div>'
     +'</div>';
 }
@@ -5262,14 +5291,7 @@ function dashRenderPriorityActions(actions) {
 
 function dashRenderTrainingCompliance(expCerts, valid, people) {
   var el = document.getElementById('dash-training-compliance'); if(!el) return;
-  var pct = people.length>0 ? Math.min(Math.round(valid.length/people.length*100),100) : 0;
-  var color = pct>=80?'#1D9E75':pct>=60?'#EF9F27':'#DC2626';
-  el.innerHTML = '<div style="margin-bottom:8px">'
-    +'<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px">'
-    +'<span>Overall compliance</span><span style="color:'+color+'">'+pct+'%</span></div>'
-    +'<div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
-    +'<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:99px;transition:width .8s"></div>'
-    +'</div></div>'
+  el.innerHTML = '<div style="margin-bottom:8px;font-size:11px">'+valid.length+' current follow-up records; workforce compliance is not assessed without verified person links.</div>'
     +(expCerts.length>0?
       '<div style="font-size:11px;font-weight:600;color:#C2410C;margin-bottom:4px">Due: '+expCerts.length+' certificate'+(expCerts.length>1?'s':'')+' expiring &lt; 60 days:</div>'
       +expCerts.slice(0,4).map(function(x){
@@ -5278,16 +5300,20 @@ function dashRenderTrainingCompliance(expCerts, valid, people) {
           +(x.expiry_date?' <span style="color:#DC2626">'+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
           +'</div>';
       }).join('')
-    : '<div style="font-size:11px;color:#1D9E75;text-align:center;padding:8px">All certificates current</div>');
+    : '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">No expiring certificates in the loaded register; coverage has not been verified.</div>');
 }
 
 
 // --- EXECUTIVE DASHBOARD ------------------------------------------
 var execData = {};
+var _execLoadGeneration=0;
 
 async function loadExecutive() {
   try {
-    var safe = async function(p){try{return await p;}catch(e){console.warn('Exec:',e.message);return [];}};
+    var generation=++_execLoadGeneration,failures={};
+    var summary=document.getElementById('exec-evidence-summary');
+    if(summary)summary.textContent='Loading management decisions and data completeness…';
+    var safe = async function(p,key){try{return await p;}catch(e){failures[key]=true;console.warn('Exec:',e.message);return [];}};
     var yr = new Date().getFullYear();
     var yrFilter = document.getElementById('exec-year-filter')?.value || '';
     var useYr = yrFilter ? parseInt(yrFilter) : yr;
@@ -5303,40 +5329,42 @@ async function loadExecutive() {
     }
 
     var results = await Promise.all([
-      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.asc')),
-      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500')),
-      safe(api('/people?select=id,department,status'+cf()+'&status=eq.active')),
-      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=50')),
-      safe(api('/legal_requirements?select=*'+cf())),
-      safe(api('/authorisations?select=*'+cf())),
-      safe(api('/spill_reports?select=*'+cf())),
-      safe(api('/waste_records?select=*'+cf()+'&order=created_at.desc&limit=100')),
-      safe(api('/fuel_consumption?select=*'+cf()+'&order=created_at.desc&limit=100')),
+      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.desc&limit=500'),'events'),
+      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),'actions'),
+      safe(api('/people?select=id,department,status'+cf()+'&status=eq.active'),'people'),
+      safe(api('/inspections?select=*'+cf()+'&inspection_date=gte.'+yrStart+'&inspection_date=lte.'+yrEnd+'&order=inspection_date.desc&limit=500'),'inspections'),
+      safe(api('/legal_requirements?select=*'+cf()),'legal'),
+      safe(api('/authorisations?select=*'+cf()),'certs'),
+      safe(api('/spill_reports?select=*'+cf()),'spills'),
+      safe(api('/waste_records?select=*'+cf()+'&order=created_at.desc&limit=100'),'waste'),
+      safe(api('/fuel_consumption?select=*'+cf()+'&order=created_at.desc&limit=100'),'fuel'),
+      safe(api('/events?select=id'+cf()+'&event_date=gte.'+(useYr-1)+'-01-01&event_date=lte.'+(useYr-1)+'-12-31&limit=500'),'previousEvents'),
     ]);
 
-    var [events,actions,people,insps,legal,certs,spills,waste,fuel] = results;
+    if(generation!==_execLoadGeneration)return;
+    var [events,actions,people,insps,legal,certs,spills,waste,fuel,previousEvents] = results;
     events=events||[]; actions=actions||[]; people=people||[];
     insps=insps||[]; legal=legal||[]; certs=certs||[];
     spills=spills||[]; waste=waste||[]; fuel=fuel||[];
 
-    execData = {events,actions,people,insps,legal,certs,spills,waste,fuel,yr:useYr};
+    execData = {events,actions,people,insps,legal,certs,spills,waste,fuel,yr:useYr,failures};
 
     var now = new Date();
     var manhours = people.length * 2000 * (useYr<yr?12:(now.getMonth()+1)) / 12;
     var ltiEvts = events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
     var recEvts = events.filter(function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;});
-    var ltifr = manhours>0?(ltiEvts.length/manhours*1000000).toFixed(2):'0.00';
-    var trir = manhours>0?(recEvts.length/manhours*200000).toFixed(2):'0.00';
+    var ltifr = manhours>0?(ltiEvts.length/manhours*1000000).toFixed(2):'N/A';
+    var trir = manhours>0?(recEvts.length/manhours*200000).toFixed(2):'N/A';
 
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
     // Overview metrics
     sm('exec-ltifr', ltifr); sm('exec-trir', trir);
     var lScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
-    var compPct = lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
-    sm('exec-compliance', compPct+'%');
+    var compPct = lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
+    sm('exec-compliance', failures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
     var cpInner = document.getElementById('exec-compliance-prog-inner');
-    if(cpInner){cpInner.style.width=compPct+'%';}
+    if(cpInner){cpInner.style.width=(compPct||0)+'%';}
 
     // Days since LTI
     var lastLTI = ltiEvts.slice(-1)[0];
@@ -5352,10 +5380,13 @@ async function loadExecutive() {
     sm('exec-nm', events.filter(function(x){return x.event_type==='near_miss';}).length);
 
     // Compliance tab
-    sm('exec-legal-pct', compPct+'%');
-    var avgAudit = insps.length>0?Math.round(insps.reduce(function(s,x){var t=(x.score_good||0)+(x.score_insuf||0);return s+(t>0?(x.score_good||0)/t*100:0);},0)/insps.length):0;
-    sm('exec-audit-pct', avgAudit+'%');
-    sm('exec-training-pct', people.length>0?Math.min(100,Math.round(certs.length/people.length*100))+'%':'-');
+    sm('exec-legal-pct', failures.legal?'Unable to load':compPct==null?'Not assessed':compPct+'%');
+    var scoredAudits=insps.filter(function(x){return Number(x.score_good||0)+Number(x.score_insuf||0)>0;});
+    var avgAudit = scoredAudits.length?Math.round(scoredAudits.reduce(function(s,x){return s+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/scoredAudits.length):null;
+    sm('exec-audit-pct', failures.inspections?'Unable to load':avgAudit==null?'Not assessed':avgAudit+'%');
+    var certifiedPeople=new Set(certs.map(function(x){return x.person_id||x.people_id||x.employee_id||null;}).filter(Boolean));
+    sm('exec-training-pct', failures.certs||failures.people?'Unable to load':people.length&&certifiedPeople.size?Math.min(100,Math.round(certifiedPeople.size/people.length*100))+'%':'Not available');
+    if(summary)summary.innerHTML=execEvidenceSummary(events,actions,legal,people,certs,previousEvents||[],failures,useYr,manhours,ltiEvts.length,recEvts.length);
 
     // ESG metrics
     sm('exec-env-inc', events.filter(function(x){return x.event_type==='environmental';}).length);
@@ -5384,7 +5415,7 @@ async function loadExecutive() {
     var trEl = document.getElementById('exec-trir-trend');
     if(trEl) trEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+recEvts.length+' recordable incident'+(recEvts.length!==1?'s':'')+'</span>';
 
-  } catch(e) { console.error('Executive dashboard:', e); }
+  } catch(e) { console.error('Executive dashboard:', e);var summary=document.getElementById('exec-evidence-summary');if(summary)summary.textContent='Unable to load executive evidence. Refresh and try again.'; }
 }
 
 function execTab(tab, btn) {
@@ -5398,16 +5429,38 @@ function execTab(tab, btn) {
   });
 }
 
+function execEvidenceSummary(events,actions,legal,people,certs,previousEvents,failures,year,hours,ltiCount,recordableCount){
+  var scope=isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company';
+  var previousCutoff=year===new Date().getFullYear()?new Date().getMonth()+1:12;
+  var previousComparable=previousEvents.filter(function(x){var d=new Date(x.event_date||'');return !isNaN(d.getTime())&&d.getMonth()<previousCutoff;});
+  var unknownEmployment=events.filter(function(x){return !['employee','contractor','visitor'].includes(String(x.ws1_contract_type||'').toLowerCase());}).length;
+  var unknownDepartment=events.filter(function(x){return !x.department&&!x.person_dept;}).length;
+  var unassessedLegal=legal.filter(function(x){return x.compliance_score==null||String(x.applicable||'').toLowerCase()==='not assessed';}).length;
+  var gaps=legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;});
+  var overdue=actions.filter(function(x){return !dashIsDoneStatus(x.status)&&dashIsOverdue(x.target_date||x.due_date);});
+  var decisions=[
+    {title:'Resolve overdue corrective actions',record:overdue[0],page:'actions',evidence:overdue.length+' overdue action(s)',response:'Assign resources and confirm revised due dates',due:overdue[0]?.target_date||overdue[0]?.due_date},
+    {title:'Address legal compliance gaps',record:gaps[0],page:'legal',evidence:gaps.length+' scored requirement(s) below 80%',response:'Review evidence and approve a corrective plan',due:gaps[0]?.target_date},
+    {title:'Improve incident classification',record:events.find(function(x){return !x.department&&!x.person_dept||!x.ws1_contract_type;}),page:'events',evidence:unknownEmployment+' missing employment type; '+unknownDepartment+' missing department',response:'Complete source incident classifications',due:null}
+  ];
+  var html='<div class="card-title">Leadership attention · '+escH(scope)+' · '+year+'</div>';
+  html+='<p>Incidents: '+(failures.events?'Unavailable':events.length)+' this year versus '+(failures.previousEvents?'Unavailable':previousComparable.length)+' for the same months last year. Targets: not configured. Snapshot: '+escH(new Date().toLocaleString('en-GB'))+'.</p>';
+  html+='<p>Data completeness: '+unknownEmployment+'/'+events.length+' incidents lack employment type; '+unknownDepartment+'/'+events.length+' lack department; '+unassessedLegal+'/'+legal.length+' legal requirements unassessed. Exposure hours are estimated from '+people.length+' active people × 2,000 hours/year; LTIFR uses '+ltiCount+' cases × 1,000,000 / '+Math.round(hours)+' hours and TRIR uses '+recordableCount+' cases × 200,000 / '+Math.round(hours)+' hours. Verify actual hours before formal reporting.</p>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+decisions.map(function(x){var record=x.record,owner=record?(record.responsible||record.owner||record.assigned_to||'Unassigned'):'Unassigned';return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><strong>'+escH(x.title)+'</strong><p>'+escH(x.evidence)+'</p><small>Proposed response: '+escH(x.response)+'<br>Owner: '+escH(owner)+' · Due: '+escH(x.due?dashFmtDate(x.due):'Not set')+'</small>'+(record&&record.id?'<div style="margin-top:8px"><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,record.id]))+'">Open evidence</button></div>':'')+'</div>';}).join('')+'</div>';
+  return html;
+}
+
 function execRenderAnnualTrend(events) {
   var el=document.getElementById('exec-annual-trend'); var labEl=document.getElementById('exec-trend-labels');
   if(!el) return;
   var months=[]; var yr=execData.yr||new Date().getFullYear();
   for(var i=0;i<12;i++){
     var cnt=events.filter(function(x){var d=x.event_date||'';return d.startsWith(yr+'-'+String(i+1).padStart(2,'0'));}).length;
-    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],cnt});
+    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],cnt,future:yr===new Date().getFullYear()&&i>new Date().getMonth()});
   }
   var maxV=Math.max(...months.map(function(m){return m.cnt;}),1);
   el.innerHTML=months.map(function(m){
+    if(m.future)return '<div title="Not yet occurred" style="flex:1;text-align:center;color:#94a3b8;font-size:9px">—</div>';
     var h=Math.max(Math.round(m.cnt/maxV*120),m.cnt>0?4:0);
     var c=m.cnt>=5?'#DC2626':m.cnt>=3?'#F97316':m.cnt>=1?'#EF9F27':'#e5e7eb';
     return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
@@ -5473,11 +5526,11 @@ function execRenderContractorComparison(events) {
 
 function execRenderIncidentTypes(events) {
   var el=document.getElementById('exec-incident-types'); if(!el) return;
-  var types={}; events.forEach(function(x){var t=x.event_type||'other';types[t]=(types[t]||0)+1;});
+  var types={}; events.forEach(function(x){var t=String(x.event_type||'other').toLowerCase();if(t==='environment')t='environmental';types[t]=(types[t]||0)+1;});
   var sorted=Object.entries(types).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
   var maxV=sorted[0]?.[1]||1;
   el.innerHTML=sorted.map(function(e){
-    var cfg=window.IMS_TYPE_CFG?IMS_TYPE_CFG[e[0]]:{emoji:'*',label:e[0],color:'#6B7280'};
+    var cfg=window.IMS_TYPE_CFG?IMS_TYPE_CFG[e[0]]:{emoji:'',label:e[0].replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}),color:'#6B7280'};
     var pct=Math.round(e[1]/maxV*100);
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
       +'<span style="font-size:13px;width:18px">'+cfg.emoji+'</span>'
@@ -5496,10 +5549,11 @@ function execRenderLostTime(events) {
   for(var i=0;i<12;i++){
     var mo=String(i+1).padStart(2,'0');
     var ltDays=events.filter(function(x){return (x.event_date||'').startsWith(yr+'-'+mo);}).reduce(function(s,x){return s+(parseInt(x.lost_time_days)||0);},0);
-    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],d:ltDays});
+    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],d:ltDays,future:yr===new Date().getFullYear()&&i>new Date().getMonth()});
   }
   var maxV=Math.max(...months.map(function(m){return m.d;}),1);
   el.innerHTML=months.map(function(m){
+    if(m.future)return '<div title="Not yet occurred" style="flex:1;text-align:center;color:#94a3b8;font-size:9px">—</div>';
     var h=Math.max(Math.round(m.d/maxV*110),m.d>0?4:0);
     return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'
       +'<span style="font-size:9px;font-weight:700;color:var(--text2)">'+m.d+'</span>'
@@ -5515,7 +5569,7 @@ function execRenderLocationRank(events) {
   var sorted=Object.entries(locs).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
   if(!sorted.length){el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:10px">No location data</div>';return;}
   var maxV=sorted[0][1];
-  el.innerHTML='<div class="table-scroll"><table class="data-table" style="min-width:520px;font-size:11px"><thead><tr><th>Rank</th><th>Location</th><th>Incidents</th><th>Risk bar</th></tr></thead><tbody>'
+  el.innerHTML='<div class="table-scroll"><table class="data-table" style="min-width:520px;font-size:11px"><thead><tr><th>Rank</th><th>Location</th><th>Incidents</th><th>Count bar</th></tr></thead><tbody>'
     +sorted.map(function(e,i){
       var pct=Math.round(e[1]/maxV*100);
       var c=e[1]>=5?'#DC2626':e[1]>=3?'#F97316':'#185FA5';
@@ -5570,22 +5624,9 @@ function execRenderCAAge(actions) {
 
 function execRenderESGScorecard(compPct, spills, events) {
   var el=document.getElementById('exec-esg-scorecard'); if(!el) return;
-  var envEvents=events.filter(function(x){return x.event_type==='environmental';});
-  var scores=[
-    {label:'Environmental compliance',score:Math.max(0,100-envEvents.length*10-spills*5),icon:'*'},
-    {label:'Legal compliance',score:compPct,icon:'*'},
-    {label:'Incident severity',score:Math.max(0,100-events.filter(function(x){return ['critical','high'].includes(x.severity);}).length*8),icon:'*'},
-    {label:'Waste management',score:spills>0?Math.max(20,80-spills*15):95,icon:'*'},
-  ];
-  el.innerHTML=scores.map(function(s){
-    var c=s.score>=80?'#1D9E75':s.score>=60?'#EF9F27':'#DC2626';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6">'
-      +'<span style="font-size:14px">'+s.icon+'</span>'
-      +'<div style="flex:1"><div style="font-size:11px;font-weight:600;margin-bottom:2px">'+s.label+'</div>'
-      +'<div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
-      +'<div style="width:'+s.score+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div></div>'
-      +'<span style="font-size:13px;font-weight:800;color:'+c+'">'+s.score+'%</span></div>';
-  }).join('');
+  var environmental=events.filter(function(x){return ['environment','environmental'].includes(String(x.event_type||'').toLowerCase());}).length;
+  var rows=[['Recorded environmental incidents',environmental],['Recorded spills',spills],['Scored legal requirement average',compPct==null?'Not assessed':compPct+'%']];
+  el.innerHTML='<p>Recorded measures only; no composite ESG score is calculated.</p>'+rows.map(function(row){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>'+escH(row[0])+'</span><strong>'+escH(row[1])+'</strong></div>';}).join('');
 }
 
 function execRenderSustainability(waste, fuel) {
@@ -5623,17 +5664,18 @@ function execBuildAIContext(type){
   var periodEvents=events.filter(function(x){return inRange(x,'event_date');});
   var lti=events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
   var rec=events.filter(function(x){return x.injury_type||['injury','lti','medical_treatment','restricted_work'].includes(x.event_type);});
-  var openActions=actions.filter(function(x){return !['closed','cancelled'].includes(x.status||'');});
+  var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
   var overdue=openActions.filter(function(x){return (x.target_date||x.due_date)&&new Date(x.target_date||x.due_date)<now;});
   var lScores=legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
-  var compPct=lScores.length?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
-  var avgAudit=insps.length?Math.round(insps.reduce(function(s,x){var t=(x.score_good||0)+(x.score_insuf||0);return s+(t?((x.score_good||0)/t*100):0);},0)/insps.length):0;
-  var manhours=people.length*2000; var ltifr=manhours?(lti.length/manhours*1000000).toFixed(2):'N/A'; var trir=manhours?(rec.length/manhours*200000).toFixed(2):'N/A';
+  var compPct=lScores.length?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
+  var scoredInsps=insps.filter(function(x){return Number(x.score_good||0)+Number(x.score_insuf||0)>0;});
+  var avgAudit=scoredInsps.length?Math.round(scoredInsps.reduce(function(s,x){return s+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/scoredInsps.length):null;
+  var manhours=people.length*2000*(d.yr===now.getFullYear()?(now.getMonth()+1)/12:1); var ltifr=manhours?(lti.length/manhours*1000000).toFixed(2):'N/A'; var trir=manhours?(rec.length/manhours*200000).toFixed(2):'N/A';
   var sevCount={critical:0,high:0,medium:0,low:0}; events.forEach(function(x){if(sevCount.hasOwnProperty(x.severity))sevCount[x.severity]++;});
   var highRecent=periodEvents.filter(function(x){return ['critical','high'].includes(x.severity);}).slice(0,8).map(function(x){return {ref:x.event_ref||x.reference_no||x.id, severity:x.severity, type:x.event_type, location:x.location, date:x.event_date, description:String(x.description||x.event_description||'').slice(0,180)};});
   var overdueList=overdue.slice(0,10).map(function(x){return {ref:x.action_ref||x.id, title:x.title||x.description, priority:x.priority, responsible:x.assigned_to_name||x.responsible, due:x.target_date||x.due_date, status:x.status};});
   var badInsps=insps.filter(function(x){return (x.score_insuf||0)>0;}).slice(0,8).map(function(x){return {ref:x.reference_no||x.id, site:x.site||x.if_site, date:x.inspection_date||x.if_date, insufficient:x.score_insuf||0, type:x.inspection_type};});
-  return {company:co?.name||'Current company', period:range.label, generated_at:new Date().toLocaleString('en-GB'), workforce:people.length, ytd:{incidents:events.length, lti:lti.length, recordable:rec.length, ltifr:ltifr, trir:trir, severity:sevCount, legal_compliance_pct:compPct, audit_score_pct:avgAudit, open_actions:openActions.length, overdue_actions:overdue.length, spills:spills.length, certificates_tracked:certs.length}, period_metrics:{incidents:periodEvents.length, high_or_critical:highRecent.length}, recent_high_risk_events:highRecent, overdue_actions:overdueList, inspections_with_findings:badInsps};
+  return {company:isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company',period:range.label,generated_at:new Date().toLocaleString('en-GB'),workforce:people.length,definitions:{open_actions:'Current action status excluding completed/closed/cancelled',legal_compliance_pct:'Mean scored legal requirement; unassessed excluded',audit_score_pct:'Mean score on scored inspections, not inspection completion',ltifr:'LTI cases per million estimated hours',trir:'Recordable cases per 200,000 estimated hours',estimated_hours:Math.round(manhours),source_failures:d.failures||{}},ytd:{incidents:events.length,lti:lti.length,recordable:rec.length,ltifr:ltifr,trir:trir,severity:sevCount,legal_compliance_pct:compPct,audit_score_pct:avgAudit,open_actions:openActions.length,overdue_actions:overdue.length,spills:spills.length,certificates_tracked:certs.length},period_metrics:{incidents:periodEvents.length,high_or_critical:highRecent.length},recent_high_risk_events:highRecent,overdue_actions:overdueList,inspections_with_findings:badInsps};
 }
 function execAIReportText(data){
   if(!data)return '';
@@ -5675,7 +5717,7 @@ async function execAIReport(type) {
   outEl.innerHTML = '<div style="text-align:center;padding:18px;color:#5B21B6;font-weight:800">Generating AI executive report...</div>';
   var ctx = execBuildAIContext(type);
   var brief={weekly_summary:'weekly executive HSE summary',executive_summary:'board executive HSE summary',monthly_report:'monthly HSE management report',annual_stats:'annual HSE statistics review'}[type]||'executive HSE report';
-  var prompt='You are AURIS360, a senior HSE executive reporting assistant. Prepare a '+brief+' from the live data below. Return STRICT JSON only with keys: executive_summary string, red_flags array of strings, positive_notes array of strings, management_decisions array of strings, next_week_priorities array of strings, recommended_actions array of strings. Be specific, use the numbers provided, avoid exaggeration, and write in a professional board-ready tone. Data: '+JSON.stringify(ctx);
+  var prompt='Prepare a '+brief+' from this scoped snapshot. Return STRICT JSON with keys: executive_summary string, red_flags array, positive_notes array, management_decisions array, next_week_priorities array, recommended_actions array. Cite exact source reference and date for factual record-level claims; say evidence is insufficient when records are absent. Do not infer safety from zero counts or invent targets, benchmarks, probabilities or certification coverage. Distinguish estimated exposure hours from verified hours. Data: '+JSON.stringify(ctx);
   try {
     var raw=await callAI([{role:'user',content:prompt}], 'You are a senior HSE director preparing concise board-ready safety performance reports. Output valid JSON only.');
     var data=aiExtractJson(raw)||raw;
@@ -5700,16 +5742,19 @@ async function execGenerateReport(type) {
   var ltifr = manhours>0?(ltiCnt/manhours*1000000).toFixed(2):'N/A';
   var trir = manhours>0?(recCnt/manhours*200000).toFixed(2):'N/A';
   var lScores=(d.legal||[]).filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
-  var compPct=lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
+  var compPct=lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):null;
   var ctx = 'Organisation HSE data for '+yr+':\n'
     +'- Total incidents: '+(d.events||[]).length+'\n'
     +'- LTIs: '+ltiCnt+', Recordable: '+recCnt+'\n'
     +'- LTIFR: '+ltifr+', TRIR: '+trir+'\n'
     +'- Workforce: '+(d.people||[]).length+' active\n'
-    +'- Legal compliance: '+compPct+'%\n'
-    +'- Open actions: '+(d.actions||[]).filter(function(x){return x.status!=='closed';}).length+'\n'
+    +'- Mean scored legal requirements: '+(compPct==null?'Not assessed':compPct+'%')+'; unassessed requirements excluded\n'
+    +'- Open actions: '+(d.actions||[]).filter(function(x){return !dashIsDoneStatus(x.status);}).length+'\n'
     +'- Environmental incidents: '+(d.events||[]).filter(function(x){return x.event_type==='environmental';}).length+'\n'
-    +'- Spills: '+(d.spills||[]).length+'\n';
+    +'- Spills: '+(d.spills||[]).length+'\n'
+    +'- Company scope: '+(isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company')+'\n'
+    +'- Exposure hours are estimated, not verified: '+Math.round(manhours)+'\n'
+    +'- Source limitations: '+JSON.stringify(d.failures||{})+'\n';
   var prompts = {
     monthly: ctx+'\n\nWrite a professional Monthly HSE Report for management. Include: Executive summary, Incident statistics, Compliance status, Training update, Actions update, Environmental performance, and Priorities for next month. Professional tone, ~400 words.',
     board: ctx+'\n\nWrite a Board-Level HSE Dashboard Report. Include: Safety performance vs targets, Critical incidents, Compliance headline, Key risks and mitigations, Executive decisions required. Board presentation style, ~350 words.',
@@ -5719,7 +5764,7 @@ async function execGenerateReport(type) {
     compliance: ctx+'\n\nWrite a Compliance Status Report. Cover: Legal compliance score, Gap analysis summary, Regulatory notifications, Open corrective actions by age, Audit performance, Compliance calendar outlook. ~350 words.',
   };
   try {
-    textEl.textContent = await callAI([{role:'user',content:prompts[type]||ctx+'\n\nWrite a comprehensive HSE report. ~400 words.'}]) || 'No report generated.';
+    textEl.textContent = await callAI([{role:'user',content:(prompts[type]||ctx+'\n\nWrite a concise HSE report.')+'\nUse only these figures. Cite a source reference and date for record-level claims or state that evidence is unavailable. Do not invent targets, benchmarks, risk probabilities, certification coverage, or positive conclusions from missing records.'}]) || 'No report generated.';
   } catch(e) { textEl.textContent = aiFriendlyError(e); }
 }
 
@@ -5804,17 +5849,28 @@ function applyAIAvailability() {
 window.addEventListener('load',function(){applyAIAvailability();aiInitDrag();});
 
 async function getCtx(){
-try{
-const[k,e,i,a,pe,certs]=await Promise.all([api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&limit=20'),api('/inspections?select=*'+cf()+'&limit=10'),api('/action_tracker?select=*'+cf()),api('/people?select=*'+cf()),api('/people_certifications?select=*'+cf())]);
-const soon=new Date();soon.setDate(soon.getDate()+30);
-return `Company: ${co?.name||'Unknown'} | Industry: ${co?.industry||'Unknown'}
-KPIs: ${(k||[]).length} total, ${(k||[]).filter(x=>x.status==='on_track').length} on track, ${(k||[]).filter(x=>x.status==='at_risk').length} at risk
-Events: ${(e||[]).length} total, ${(e||[]).filter(x=>x.severity==='high'||x.severity==='critical').length} high/critical
-Inspections: ${(i||[]).length}, avg good: ${i?.length?Math.round((i||[]).reduce((s,x)=>s+x.score_good,0)/(i||[]).length):0}/24
-Actions: ${(a||[]).length} total, ${(a||[]).filter(x=>x.status==='open').length} open, ${(a||[]).filter(x=>x.priority==='critical').length} critical
-People: ${(pe||[]).length} active (${(pe||[]).filter(x=>x.person_type==='employee').length} employees, ${(pe||[]).filter(x=>x.person_type==='contractor').length} contractors)
-Expiring certs (30d): ${(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length}`;
-}catch(e){return 'Unable to load data.';}
+  var now=new Date(),year=now.getFullYear(),company=isSA()&&!sephsCompanyContext?'All companies':(typeof sidebarViewedCompany==='function'&&sidebarViewedCompany()?.name)||co?.name||'Current company';
+  var [events,actions,inspections,legal,people,certs,kpis]=await Promise.all([
+    api('/events?select=*'+cf()+'&event_date=gte.'+year+'-01-01&event_date=lte.'+year+'-12-31&order=event_date.desc&limit=500'),
+    api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500'),
+    api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),
+    api('/legal_requirements?select=*'+cf()+'&limit=500'),
+    api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active&limit=500'),
+    api('/authorisations?select=*'+cf()+'&limit=500'),
+    api('/kpi_monthly_data?select=*'+cf()+'&year=eq.'+year+'&limit=500')
+  ]);
+  var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var legalScores=legal.filter(function(x){return x.compliance_score!=null&&x.compliance_score!=='';}).map(function(x){return Number(x.compliance_score);}).filter(function(x){return Number.isFinite(x);});
+  var legalAverage=legalScores.length?Math.round(legalScores.reduce(function(a,b){return a+b;},0)/legalScores.length):null;
+  var inspected=inspections.filter(function(x){var d=new Date(x.inspection_date||'');return !isNaN(d.getTime())&&d.getFullYear()===year;});
+  var auditScored=inspected.filter(function(x){return Number(x.score_good||0)+Number(x.score_insuf||0)>0;});
+  var auditAverage=auditScored.length?Math.round(auditScored.reduce(function(sum,x){return sum+Number(x.score_good||0)/(Number(x.score_good||0)+Number(x.score_insuf||0))*100;},0)/auditScored.length):null;
+  var soon=new Date(now);soon.setDate(soon.getDate()+30);
+  var scope={company:company,company_id:ccid(),period:year+' year to date',snapshot_at:now.toISOString(),limits:'Each source is capped at 500 rows; counts may be incomplete at the cap.'};
+  var metrics={incidents_ytd:events.length,open_actions_current:openActions.length,total_actions_current:actions.length,completed_inspections_ytd:inspected.length,audit_score_percent:auditAverage,audit_score_denominator:auditScored.length,legal_score_percent:legalAverage,legal_score_denominator:legalScores.length,unassessed_legal:legal.length-legalScores.length,active_people:people.length,authorisations:certs.length,authorisations_expiring_30d:certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}).length,kpi_results_ytd:kpis.length};
+  var source=function(rows,fields){return rows.slice(0,30).map(function(x){var o={};fields.forEach(function(f){if(x[f]!=null&&x[f]!=='')o[f]=x[f];});return o;});};
+  var evidence={incidents:source(events,['id','event_ref','event_date','event_type','severity','status','location','department']),actions:source(openActions,['id','ref','source_ref','title','status','priority','target_date','due_date','responsible']),inspections:source(inspected,['id','reference_no','inspection_date','inspection_type','site','score_good','score_insuf']),legal_gaps:source(legal.filter(function(x){return x.compliance_score!=null&&Number(x.compliance_score)<80;}),['id','reference','legislation','section_title','compliance_score','target_date']),expiring_authorisations:source(certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon;}),['id','person_id','authorisation_type','expiry_date'])};
+  return JSON.stringify({scope:scope,metrics:metrics,definitions:{open_actions:'All action_tracker statuses except closed/completed/cancelled, current snapshot',audit_score:'Mean score_good/(score_good+score_insuf) on scored inspections in selected year; not inspection completion',legal_score:'Mean compliance_score on assessed legal requirements; unassessed excluded',authorisations:'Record count, not workforce compliance'},evidence:evidence,limitations:'Do not infer site/activity hazards, certificate coverage, probability, or positive control effectiveness from aggregate counts. Cite an exact record ID and date for each factual finding. Separate hypotheses from confirmed facts.'});
 }
 
 // ===================================================================
@@ -5884,12 +5940,20 @@ function aiTab(tab, btn) {
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='insights' && !aiInsightsCache) genFullAI();
+  if(tab==='safetyos') safetyOSPopulateSelectors();
   if(tab==='rams') aiLoadSavedRamsHistory();
   if(tab==='chat') document.getElementById('ai-chat-input')?.focus();
 }
 
 function aiScrollToChat() {
   aiTab('chat', document.getElementById('aitab-chat'));
+}
+
+function aiInsightCitationLinks(result,snapshot){
+  var pages={incidents:'events',actions:'actions',inspections:'inspection',legal_gaps:'legal',expiring_authorisations:'training'};
+  var found=[];
+  Object.keys(pages).forEach(function(kind){(snapshot.evidence[kind]||[]).forEach(function(row){var ref=String(row.event_ref||row.ref||row.reference||row.reference_no||row.id||'');if(ref&&String(result).includes(ref)&&row.id)found.push({page:pages[kind],id:row.id,ref:ref,date:row.event_date||row.inspection_date||row.target_date||row.expiry_date||''});});});
+  return found.length?'<div><strong>Source records cited in the AI interpretation</strong><div style="display:flex;flex-wrap:wrap;gap:6px">'+found.map(function(x){return '<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'">'+escH(x.ref)+' · '+escH(dashFmtDate(x.date))+'</button>';}).join('')+'</div></div>':'<p>No source record references were cited in the AI interpretation. Treat it as unverified commentary.</p>';
 }
 
 // -- Full HSE insights (enhanced) ----------------------------------------------
@@ -5900,38 +5964,21 @@ async function genFullAI() {
   contentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600">Analysing your HSE data...</div><div style="font-size:12px;margin-top:8px;color:var(--text2)">This takes about 10-15 seconds</div></div>';
   if(dateEl) dateEl.textContent = 'Updated: '+new Date().toLocaleString('en-GB');
   try {
-    var ctx = await getCtx();
-    var now = new Date();
-    var safe = async function(p){try{return await p;}catch(e){return 'Unable to generate this section. Try refreshing.';} };
-    // Run 3 AI calls in parallel
-    var results = await Promise.all([
-      safe(callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nProvide a comprehensive HSE performance analysis with: (1) Overall safety status, (2) Top 3 immediate concerns with specific data points, (3) Positive trends to acknowledge, (4) 5 specific actionable recommendations prioritised by risk. Be specific, reference actual numbers from the data.'}])),
-      safe(callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nIdentify the top 5 safety risk hotspots and leading indicators that suggest where the next incident is most likely to occur. Format as numbered list with: Location/area, Evidence from data, Probability assessment (High/Medium/Low), Immediate preventive action.'}])),
-      safe(callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nAnalyse KPI performance and training compliance. Identify: (1) KPIs at risk of not being met, (2) Training gaps by department, (3) Certificates/authorisations expiring in 60 days, (4) Compliance recommendations. Keep concise.'}])),
-    ]);
-    aiInsightsCache = results;
-    // Compute AI risk score from context
-    var evCount = (ctx.match(/\d+ incidents/i)||['0'])[0];
-    var aiRiskScore = Math.min(100, Math.max(0, parseInt(evCount)||0 * 3 + 20));
+    var ctx = await getCtx(),snapshot=JSON.parse(ctx);
+    var result=await callAI([{role:'user',content:'Use only this governed snapshot: '+ctx+'\nGive at most three concise interpretations and next steps. Distinguish confirmed record-backed facts from hypotheses. Cite exact source IDs and dates for each factual claim. If supporting records are absent, say evidence is insufficient. Do not invent risk scores, probabilities, sites, training coverage or positive findings from zero counts.'}], 'You are AURIS HSE analysis. Use only supplied evidence, distinguish aggregate indicators from record-level facts, and state limitations.');
+    aiInsightsCache=[result];
     var sm = function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    sm('ai-risk-score', aiRiskScore+'%');
-    sm('ai-compliance-score', '-');
-    // Count recommendations
-    var recCount = (results[0].match(/\d+\./g)||[]).length;
-    sm('ai-rec-count', recCount || '5');
-    contentEl.innerHTML = [
-      {title:'HSE Performance Summary', color:'#185FA5', bg:'#EFF6FF', content:results[0]},
-      {title:'Risk Hotspots & Leading Indicators', color:'#DC2626', bg:'#FEF2F2', content:results[1]},
-      {title:'KPI & Training Compliance Analysis', color:'#065F46', bg:'#ECFDF5', content:results[2]},
-    ].map(function(section){
-      return '<div class="card" style="border-left:4px solid '+section.color+';margin-bottom:10px">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-        + '<div class="card-title" style="margin:0;color:'+section.color+'">'+section.title+'</div>'
-        + '<button class="btn btn-sm" data-auris-generated-onclick="g0043" data-content="'+escH(section.content)+'"><i class="ti ti-copy"></i></button>'
-        + '</div>'
-        + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#1a1a1a">'+escH(section.content)+'</div>'
-        + '</div>';
-    }).join('');
+    sm('ai-risk-score',snapshot.metrics.open_actions_current);
+    sm('ai-compliance-score',snapshot.metrics.legal_score_percent==null?'Not assessed':snapshot.metrics.legal_score_percent+'%');
+    var findings=[
+      {title:'Open corrective actions',count:snapshot.metrics.open_actions_current,rows:snapshot.evidence.actions,page:'actions',next:'Review due dates and close verified actions.'},
+      {title:'Legal requirements needing review',count:snapshot.evidence.legal_gaps.length,rows:snapshot.evidence.legal_gaps,page:'legal',next:'Assess gaps and approve corrective plans.'},
+      {title:'Year-to-date incidents',count:snapshot.metrics.incidents_ytd,rows:snapshot.evidence.incidents,page:'events',next:'Validate classifications and investigate open records.'}
+    ];
+    sm('ai-rec-count',findings.filter(function(x){return x.count>0;}).length);
+    contentEl.innerHTML='<p>Scope: '+escH(snapshot.scope.company)+' · '+escH(snapshot.scope.period)+' · snapshot '+escH(new Date(snapshot.scope.snapshot_at).toLocaleString('en-GB'))+'. Sources are bounded to 500 records each; counts at that limit need verification.</p>'+
+      findings.map(function(x){var row=x.rows[0];return '<div class="card"><div class="card-title">'+escH(x.title)+': '+x.count+'</div><p>'+escH(x.next)+'</p>'+(row&&row.id?'<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,row.id]))+'">Open source record '+escH(row.event_ref||row.ref||row.reference||row.id)+'</button>':'<small>No source record available in this snapshot.</small>')+'</div>';}).join('')+
+      '<details class="card"><summary>Show AI interpretation and limitations</summary><div style="white-space:pre-wrap;line-height:1.6;margin-top:10px">'+escH(result)+'</div>'+aiInsightCitationLinks(result,snapshot)+'</details>';
   } catch(e) {
     contentEl.innerHTML = '<div style="padding:20px;background:#FCEBEB;border-radius:10px;border:1px solid #fecaca">'
       + '<div style="font-weight:700;color:#DC2626;margin-bottom:8px">AURIS AI analysis unavailable</div>'
@@ -6089,7 +6136,7 @@ function aiPrintRAMS(){if(!aiCurrentRams||!aiCurrentRams.content){toast('Generat
 // -- Toolbox Talk Generator ----------------------------------------------------
 function aiToolboxInput(){
   var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
-  return {topic:g('tbt-topic'),audience:g('tbt-audience'),duration:g('ai-tbt-duration'),style:g('tbt-style'),incident:g('tbt-incident'),context:g('tbt-context')};
+  return {topic:g('tbt-topic'),audience:g('tbt-audience'),duration:g('ai-tbt-duration'),style:g('tbt-style'),language:g('tbt-language')||'English',incident:g('tbt-incident'),context:g('tbt-context')};
 }
 function aiToolboxBuildTemplateHtml(record){
   record=record||aiCurrentToolboxTalk||{};var input=record.input||{},ref=record.ref||'TBT-DRAFT',today=record.generatedDate||new Date().toISOString().slice(0,10),presenter=prof?.full_name||prof?.name||prof?.email||'To be assigned';
@@ -6097,7 +6144,7 @@ function aiToolboxBuildTemplateHtml(record){
     +aurisHeader('Toolbox Talk / Safety Briefing',input.topic||record.topic||'Generated Toolbox Talk',ref)
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Talk Control</div><div class="rpt-grid">'
     +fld('Reference',ref)+fld('Status',record.savedId?'Draft in AURIS':'Unsaved draft')+fld('Date',today)+fld('Presenter',presenter)
-    +fld('Target audience',input.audience||'-')+fld('Duration',input.duration||'-')+fld('Site / context',input.context||'-')+fld('Language style',input.style||'-')
+    +fld('Target audience',input.audience||'-')+fld('Duration',input.duration||'-')+fld('Site / context',input.context||'-')+fld('Language style',input.style||'-')+fld('Language',input.language||'English')
     +'</div></div><div class="rpt-section"><div class="rpt-section-title blue">Toolbox Talk Content — Review Before Delivery</div><div class="ai-toolbox-body">'+aiRamsContentHtml(record.content||'')+'</div></div>'
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Attendance and Acknowledgement</div><table><thead><tr><th>No.</th><th>Name</th><th>Department / employer</th><th>Signature</th><th>Date / time</th></tr></thead><tbody>'
     +[1,2,3,4,5,6].map(function(_,i){return '<tr><td>'+(i+1)+'</td><td>&nbsp;</td><td></td><td></td><td></td></tr>';}).join('')+'</tbody></table></div>'
@@ -6119,11 +6166,12 @@ async function aiGenerateToolboxTalk() {
   outEl.textContent = 'Generating toolbox talk on: '+topic+'...';
   var incidentRef = '';
   if(input.incident==='recent_incident') {
-    try { var evts = await api('/events?select=description,event_type&company_id=eq.'+prof?.company_id+'&order=created_at.desc&limit=1'); if(evts?.[0]) incidentRef = '\nReference recent incident: '+escH(evts[0].description||evts[0].event_type||'a recent workplace incident')+'\n'; } catch(ex) {}
+    try { var evts = await api('/events?select=id,event_ref,event_date,description,event_type'+cf()+'&order=created_at.desc&limit=1'); if(evts?.[0]) incidentRef = '\nReference recent incident '+String(evts[0].event_ref||evts[0].id)+' dated '+String(evts[0].event_date||'unknown')+': '+String(evts[0].description||evts[0].event_type||'incident')+'\n'; } catch(ex) {}
   }
   var prompt = 'Write a '+input.duration+' toolbox talk on the topic: '+topic+'\n\n'
     + 'Audience: '+input.audience+'\n'
     + 'Style: '+input.style+'\n'
+    + 'Language: '+input.language+'. Write the entire talk in this language.\n'
     + (input.context?'Context/Site: '+input.context+'\n':'')
     + incidentRef
     + '\nStructure the toolbox talk as:\n'
@@ -6324,7 +6372,21 @@ function safetyOSMatch(row,terms){
   var hay=Object.keys(row||{}).map(function(k){var v=row[k];return typeof v==='object'?JSON.stringify(v||{}):String(v||'');}).join(' ').toLowerCase();
   return t.some(function(x){return hay.indexOf(x)!==-1||x.split(/\s+/).some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
 }
-async function safetyOSFetch(path){try{return await api(path);}catch(e){console.warn('SafetyOS data:',e.message);return [];} }
+async function safetyOSFetch(path){return api(path);}
+async function safetyOSPopulateSelectors(){
+  var status=document.getElementById('safetyos-selectors-status');
+  if(status)status.textContent='Loading registered workers and controls…';
+  try{
+    var rows=await Promise.all([
+      api('/people?select=*'+cf()+'&status=eq.active&limit=250'),
+      api('/tools_register?select=id,ref_number,name,status'+cf()+'&limit=250'),
+      api('/risk_assessments?select=id,ra_ref,title,status'+cf()+'&limit=250'),
+      api('/permit_to_work?select=id,permit_ref,permit_type,status'+cf()+'&limit=250')
+    ]);
+    [['safetyos-worker',rows[0],function(x){return x.full_name||[x.first_name,x.last_name].filter(Boolean).join(' ')||x.id;},true],['safetyos-equipment',rows[1],function(x){return [x.ref_number,x.name].filter(Boolean).join(' · ')||x.id;}],['safetyos-ra',rows[2].filter(function(x){return /approved|active|current/i.test(String(x.status||''));}),function(x){return [x.ra_ref,x.title].filter(Boolean).join(' · ')||x.id;}],['safetyos-permit',rows[3],function(x){return [x.permit_ref,x.permit_type,x.status].filter(Boolean).join(' · ')||x.id;}]].forEach(function(entry){var el=document.getElementById(entry[0]);if(!el)return;var old=el.value;el.options.length=1;entry[1].forEach(function(row){var label=entry[2](row),option=new Option(label,entry[3]?label:row.id);option.dataset.id=row.id;el.add(option);});el.value=old;});
+    if(status)status.textContent='Select records from the current company. AI cannot release work; a responsible supervisor must verify conditions and authorise the start.';
+  }catch(e){if(status)status.textContent='Unable to load registered workers and controls. Refresh and try again before making a readiness decision.';}
+}
 function safetyOSCompact(rows,keys,limit){
   return (rows||[]).slice(0,limit||8).map(function(r){var o={};keys.forEach(function(k){if(r&&r[k]!==undefined&&r[k]!==null&&r[k]!=='')o[k]=r[k];});return o;});
 }
@@ -6342,19 +6404,19 @@ async function safetyOSCollectContext(input){
     safetyOSFetch('/chemical_register?select=*'+cf()+'&status=neq.deleted&order=product_name.asc&limit=120'),
     safetyOSFetch('/tools_register?select=*'+cf()+'&order=created_at.desc&limit=120')
   ]);
-  var peopleRows=(results[0]||[]).filter(function(r){return safetyOSMatch(r,[input.worker]);});
+  var peopleRows=(results[0]||[]).filter(function(r){return input.worker_id?String(r.id)===String(input.worker_id):safetyOSMatch(r,[input.worker]);});
   return {
     request:input,
     people:safetyOSCompact(peopleRows,['id','full_name','name','email','job_title','department','role','site_location','status'],10),
-    certifications:safetyOSCompact((results[1]||[]).filter(function(r){return safetyOSMatch(r,[input.worker,input.task]);}),['person_id','certificate_name','training_name','status','expiry_date','valid_until'],12),
-    risk_assessments:safetyOSCompact((results[2]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','ra_ref','title','activity','status','overall_risk_level','review_date','location','site','department'],10),
-    permits:safetyOSCompact((results[3]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','permit_ref','permit_type','status','work_description','location','valid_from','valid_to','created_at'],10),
+    certifications:safetyOSCompact((results[1]||[]).filter(function(r){return input.worker_id?String(r.person_id||'')===String(input.worker_id):safetyOSMatch(r,[input.worker,input.task]);}),['person_id','certificate_name','training_name','status','expiry_date','valid_until'],12),
+    risk_assessments:safetyOSCompact((results[2]||[]).filter(function(r){return input.risk_assessment_id?String(r.id)===String(input.risk_assessment_id):safetyOSMatch(r,terms);}),['id','ra_ref','title','activity','status','overall_risk_level','review_date','location','site','department'],10),
+    permits:safetyOSCompact((results[3]||[]).filter(function(r){return input.permit_id?String(r.id)===String(input.permit_id):safetyOSMatch(r,terms);}),['id','permit_ref','permit_type','status','work_description','location','valid_from','valid_to','created_at'],10),
     toolbox_talks:safetyOSCompact((results[4]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','tbt_ref','title','topic','talk_date','location','presenter','attendance_count','status'],10),
     inspections:safetyOSCompact((results[5]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','reference_no','inspection_type','site','location','inspection_date','status','score_good','score_insuf'],10),
     recent_incidents:safetyOSCompact((results[6]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','event_ref','event_type','event_date','severity','status','location','description'],10),
     open_actions:safetyOSCompact((results[7]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','title','source_ref','priority','status','target_date','due_date','responsible','department'],12),
     chemicals:safetyOSCompact((results[8]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','chemical_ref','product_name','risk_level','location','department','process_use','review_date','sds_revision_date'],10),
-    equipment:safetyOSCompact((results[9]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','ref_number','name','category','status','inspection_status','next_inspection_date','location','assigned_to'],10)
+    equipment:safetyOSCompact((results[9]||[]).filter(function(r){return input.equipment_id?String(r.id)===String(input.equipment_id):safetyOSMatch(r,terms);}),['id','ref_number','name','category','status','inspection_status','next_inspection_date','location','assigned_to'],10)
   };
 }
 function safetyOSFallbackDecision(ctx,cause){
@@ -6395,7 +6457,7 @@ async function safetyOSRunCheck(){
   var out=document.getElementById('safetyos-output');if(!out)return;
   if(typeof canUseAI==='function'&&!canUseAI()){out.innerHTML=aiFriendlyErrorHtml(new Error('restricted'));return;}
   var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
-  var input={task:g('safetyos-task'),location:g('safetyos-location'),worker:g('safetyos-worker'),work_type:g('safetyos-worktype')||'general',planned_date:g('safetyos-date')||new Date().toISOString().slice(0,10),context:g('safetyos-context')};
+  var input={task:g('safetyos-task'),location:g('safetyos-location'),worker:g('safetyos-worker'),worker_id:document.getElementById('safetyos-worker')?.selectedOptions?.[0]?.dataset.id||'',equipment_id:g('safetyos-equipment'),risk_assessment_id:g('safetyos-ra'),permit_id:g('safetyos-permit'),work_type:g('safetyos-worktype')||'general',planned_date:g('safetyos-date')||new Date().toISOString().slice(0,10),context:g('safetyos-context')};
   if(!input.task){toast('Enter the planned work/task first',false);return;}
   out.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:800;color:var(--text)">SafetyOS is checking work readiness...</div><div style="font-size:12px;margin-top:6px">Reviewing live records: RA/RAMS, PTW, TBT, training, inspections, incidents, actions, chemicals and equipment.</div></div>';
   try{
@@ -6414,10 +6476,20 @@ async function safetyOSRunCheck(){
 function safetyOSRenderDecision(data,ctx){
   var out=document.getElementById('safetyos-output');if(!out)return;
   var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var highRisk=['hot_work','confined_space','working_at_height','electrical','lifting','chemical','excavation'].includes(ctx.request?.work_type);
+  var expired=[],missing=[];
+  var today=String(ctx.request?.planned_date||new Date().toISOString().slice(0,10));
+  if(!(ctx.risk_assessments||[]).some(function(x){return /approved|active|current/i.test(String(x.status||''));}))missing.push('No matching approved RA/RAMS was confirmed.');
+  if(highRisk&&!(ctx.permits||[]).some(function(x){return /approved|active|issued/i.test(String(x.status||''))&&(!x.valid_to||String(x.valid_to).slice(0,10)>=today);}))missing.push('No valid approved permit was confirmed for high-risk work.');
+  if(ctx.request?.worker_id&&!(ctx.people||[]).length)missing.push('Selected worker was not found in the active people register.');
+  (ctx.certifications||[]).forEach(function(x){if((x.expiry_date||x.valid_until)&&String(x.expiry_date||x.valid_until).slice(0,10)<today)expired.push('Certification '+(x.certificate_name||x.training_name||x.person_id||'record')+' expired.');});
+  (ctx.equipment||[]).forEach(function(x){if(/quarantin|out.of.service|defect|unsafe/i.test(String(x.status||'')))expired.push('Equipment '+(x.ref_number||x.name||x.id)+' is not serviceable.');if(x.next_inspection_date&&String(x.next_inspection_date).slice(0,10)<today)expired.push('Equipment '+(x.ref_number||x.name||x.id)+' inspection date has passed.');});
+  if(missing.length||expired.length){data.blocking_items=arr(data.blocking_items).concat(missing,expired);data.missing_records=arr(data.missing_records).concat(missing);data.decision='NO_GO';}
+  else if(String(data.decision||'').toUpperCase()==='GO')data.decision='CONDITIONAL_GO';
   var decision=String(data.decision||'CONDITIONAL_GO').toUpperCase();
   var cfg=decision==='GO'?{label:'GO',color:'#0F6E56',bg:'#ECFDF5'}:decision==='NO_GO'?{label:'NO-GO',color:'#B91C1C',bg:'#FEF2F2'}:{label:'CONDITIONAL GO',color:'#B45309',bg:'#FFFBEB'};
   var section=function(title,items,icon){items=arr(items);if(!items.length)return '';return '<div style="margin-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:5px">'+escH(icon||'-')+' '+escH(title)+'</div><ul style="margin:0 0 0 18px;color:#334155;font-size:12px;line-height:1.55">'+items.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';};
-  var h=(data.fallback_notice?'<div style="padding:10px;margin-bottom:10px;border-radius:8px;background:#FFF7ED;color:#9A3412;font-size:12px"><b>Conservative fallback:</b> '+escH(data.fallback_notice)+'</div>':'')+'<div style="border-left:5px solid '+cfg.color+';background:'+cfg.bg+';border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:900;text-transform:uppercase;color:'+cfg.color+'">SafetyOS decision</div><div style="font-size:30px;font-weight:900;color:'+cfg.color+';margin-top:2px">'+cfg.label+'</div><div style="font-size:13px;color:#111827;margin-top:5px">'+escH(data.decision_summary||'Review required before work starts.')+'</div><div style="font-size:11px;color:#475569;margin-top:6px">Confidence: '+escH(data.confidence||'medium')+'</div></div>';
+  var h=(data.fallback_notice?'<div style="padding:10px;margin-bottom:10px;border-radius:8px;background:#FFF7ED;color:#9A3412;font-size:12px"><b>Conservative fallback:</b> '+escH(data.fallback_notice)+'</div>':'')+'<div style="border-left:5px solid '+cfg.color+';background:'+cfg.bg+';border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:900;text-transform:uppercase;color:'+cfg.color+'">AI readiness advisory · manual release required</div><div style="font-size:30px;font-weight:900;color:'+cfg.color+';margin-top:2px">'+cfg.label+'</div><div style="font-size:13px;color:#111827;margin-top:5px">'+escH(data.decision_summary||'Review required before work starts.')+'</div><div style="font-size:11px;color:#475569;margin-top:6px">Responsible supervisor must inspect field conditions and record the final release decision in the work/permit record.</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">RA/RAMS</div><div style="font-size:20px;font-weight:900">'+(ctx.risk_assessments||[]).length+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Permits</div><div style="font-size:20px;font-weight:900">'+(ctx.permits||[]).length+'</div></div>'
@@ -6435,29 +6507,25 @@ async function aiPredictiveRisk() {
   outEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div><div>Analysing incident patterns...</div></div>';
   try {
     var ctx = await getCtx();
-    var prompt = 'You are a predictive safety analytics expert. Based on the following HSE data, predict where incidents are most likely to occur in the next 30-60 days.\n\n'+ctx+'\n\n'
+    var prompt = 'Review qualitative leading safety signals in this HSE snapshot. This is not a validated predictive model.\n\n'+ctx+'\n\n'
       + 'Provide:\n'
-      + '1. TOP 3 PREDICTED RISK AREAS (with probability assessment High/Medium/Low)\n'
-      + '   For each: Area/Activity | Pattern evidence from data | Predicted incident type | Probability | Prevention actions (top 3)\n\n'
+      + '1. UP TO THREE EVIDENCE-BACKED SIGNALS\n'
+      + '   For each: confirmed source record ID/date, possible concern, and preventive action. If no matching source exists, label it a hypothesis and do not name a site or activity.\n\n'
       + '2. LEADING INDICATORS TO MONITOR\n'
       + '   List 5 specific metrics to track weekly\n\n'
       + '3. RECOMMENDED PREVENTIVE INTERVENTIONS\n'
       + '   Specific actions for the next 2 weeks\n\n'
       + '4. CONFIDENCE STATEMENT\n'
-      + '   Based on data quality and volume, how confident is this prediction?\n\n'
-      + 'Be data-driven. Reference actual patterns from the incident history.';
+      + '   State missing data and why no numerical incident probability can be estimated.\n\n'
+      + 'Do not provide numerical probabilities, percentages, or a risk score. Do not describe zero records as proof of effective controls.';
     var result = await callAI([{role:'user',content:prompt}],
-      'You are a data scientist specialising in safety predictive analytics. Identify patterns in incident data to predict future risks. Be specific about probabilities and evidence.');
+      'You are a cautious HSE analyst. Separate confirmed record-backed findings from hypotheses. Never fabricate numerical probabilities or source references.');
+    if (/\b\d+(?:\.\d+)?\s*%|\b(?:probability|likelihood)\s*(?:of|:|=)\s*\d/i.test(result)) {
+      outEl.textContent = 'The generated analysis included an unvalidated numerical prediction. Please review the underlying records; no probability is available from this data.';
+      return;
+    }
     // Render as styled sections
     outEl.innerHTML = '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#1a1a1a;padding:4px">'+escH(result)+'</div>';
-    // Update risk score
-    var riskEl = document.getElementById('ai-risk-score');
-    if(riskEl) {
-      var highCount = (result.match(/High/gi)||[]).length;
-      var score = Math.min(100, highCount * 15 + 30);
-      riskEl.textContent = score+'%';
-      riskEl.style.color = score>=70?'#DC2626':score>=50?'#EF9F27':'#1D9E75';
-    }
     toast('Predictive risk analysis complete');
   } catch(e) {
     outEl.innerHTML = '<div style="color:#DC2626;padding:10px">'+escH(aiFriendlyError(e))+'</div>';
@@ -6608,8 +6676,8 @@ async function aiChatSend() {
     // Add context on first message
     if(aiChatHistory.length === 0) {
       var ctx = await getCtx();
-      aiChatHistory.push({role:'user', content:'HSE Context data: '+ctx+'\n\nNow I will ask questions about this data. Please answer concisely and reference specific data points where relevant.'});
-      aiChatHistory.push({role:'assistant', content:'Understood. I have your HSE data context loaded. I can see your incident records, KPIs, inspections, training compliance, and more. What would you like to know?'});
+      aiChatHistory.push({role:'user', content:'Governed HSE snapshot: '+ctx+'\nAnswer concisely. Identify company, period and snapshot date. Use the named metric definitions. Every factual record-level claim needs a matching source ID and date; otherwise state that evidence is insufficient. Separate hypotheses from confirmed findings. Never infer certification coverage or a numerical incident probability from aggregate counts.'});
+      aiChatHistory.push({role:'assistant', content:'I will use this scoped snapshot, cite available record IDs, and make missing evidence explicit.'});
     }
     aiChatHistory.push({role:'user', content:msg});
     var reply = await callAI(aiChatHistory);

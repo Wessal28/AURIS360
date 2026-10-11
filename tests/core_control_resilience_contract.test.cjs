@@ -49,7 +49,7 @@ assert.match(functionSource('mapQueueRefBackfill'), /api\(['"]\/action_tracker\?
 
 // The landing dashboard also isolates each source and retries transient login
 // failures, preventing a single unavailable optional source from blanking it.
-assert.match(functionSource('loadDash'), /var safe = async function\(p\)[\s\S]*return \[\]/);
+assert.match(functionSource('loadDash'), /var safe = async function\(p,key\)[\s\S]*sourceFailures\[key\]=true[\s\S]*return \[\]/);
 assert.match(functionSource('loadDash'), /safe\(api\(['"]\/events/);
 assert.match(functionSource('loadDash'), /safe\(api\(['"]\/chemical_register/);
 assert.match(functionSource('loadDash'), /options\.initial&&hadApiFailure[\s\S]*attempt[\s\S]*1500/);

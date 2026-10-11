@@ -35,8 +35,8 @@
 <link rel="stylesheet" href="auris-print.css" media="print"/>
 
 <script src="auris-static-event-handlers.js?v=20260909-indicator-navigation-1"></script>
-<script src="auris-generated-event-handlers.js?v=20260909-indicator-navigation-1&work-record-20260923-1&people-access-20260927-1"></script>
-<script src="auris-runtime-event-handlers.js?v=20261004-risk-view-1"></script>
+<script src="auris-generated-event-handlers.js?v=20260909-indicator-navigation-1&work-record-20260923-1&people-access-20260927-1&trust-20261011-1"></script>
+<script src="auris-runtime-event-handlers.js?v=20261011-trust-1"></script>
 <script src="auris-module-event-handlers-batch-1.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-2.js?v=20261004-risk-view-1"></script>
 <script src="auris-module-event-handlers-batch-3.js?v=20260908-navigation-1"></script>
@@ -113,7 +113,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1"></script>
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
@@ -679,9 +679,9 @@
 
   <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-training-pct" data-tone="green" data-auris-onclick="h0077">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
-    <div class="kpi-label">Training Compliance</div>
+    <div class="kpi-label">Training coverage</div>
     <div class="kpi-value" id="d-training-pct">-</div>
-    <div class="kpi-trend">of workforce certified</div>
+    <div class="kpi-trend">Requires linked people and training records</div>
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-training-pct-spark"></svg>
   </div>
 
@@ -910,13 +910,13 @@
 <div class="card auris-exec-s-bf8f7f0abd">
 <div class="auris-exec-s-525e47b940">TRIR YTD</div>
 <div id="exec-trir" class="auris-exec-s-32fa062d0e">-</div>
-<div class="auris-exec-s-b6cb22c5b1">total recordable rate</div>
+<div class="auris-exec-s-b6cb22c5b1" title="Recordable cases ÷ estimated exposure hours × 200,000. Verify actual hours before using this as an official rate.">per 200,000 estimated hours</div>
 <div id="exec-trir-trend" class="auris-exec-s-3393371eab"></div>
 </div>
 <div class="card auris-exec-s-0df5893da0">
-<div class="auris-exec-s-525e47b940">Compliance</div>
+<div class="auris-exec-s-525e47b940">Legal requirement score</div>
 <div id="exec-compliance" class="auris-exec-s-32fa062d0e">-</div>
-<div class="auris-exec-s-b6cb22c5b1">overall HSE compliance</div>
+<div class="auris-exec-s-b6cb22c5b1">mean of scored legal requirements; unassessed excluded</div>
 <div id="exec-compliance-prog" class="auris-exec-s-659931a888"><div id="exec-compliance-prog-inner" class="auris-exec-s-be75a9b8db"></div></div>
 </div>
 <div class="card auris-exec-s-7c31f3e506">
@@ -927,6 +927,7 @@
 </div>
 
 <!-- Performance trend + Site comparison -->
+<div id="exec-evidence-summary" class="card" role="status" aria-live="polite">Loading management decisions and data completeness…</div>
 <div class="auris-exec-s-95cc0e2392">
 <div class="card">
 <div class="card-title">Annual Safety Performance Trend</div>
@@ -936,7 +937,7 @@
 <div id="exec-trend-labels" class="auris-exec-s-97346626ba"></div>
 </div>
 <div class="card">
-<div class="card-title">Risk Distribution</div>
+<div class="card-title">Incident severity distribution</div>
 <div id="exec-risk-dist" class="auris-exec-s-0fbf9e859f">
 <div class="loading-msg auris-exec-s-33ee298127">Loading...</div>
 </div>
@@ -946,7 +947,7 @@
 <!-- Department + Contractor comparison -->
 <div class="auris-exec-s-0994386629">
 <div class="card">
-<div class="card-title">Department Comparison</div>
+<div class="card-title">Incident counts by department</div>
 <div id="exec-dept-comparison" class="auris-exec-s-67c6459975">
 <div class="loading-msg auris-exec-s-33ee298127">Loading...</div>
 </div>
@@ -995,7 +996,7 @@
 </div>
 </div>
 <div class="card">
-<div class="card-title">Top Incident Locations - Risk Ranking</div>
+<div class="card-title">Top locations by incident count</div>
 <div id="exec-location-rank" class="auris-exec-s-67c6459975"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 </div>
@@ -1005,7 +1006,7 @@
 <div class="auris-exec-s-88a8942883">
 <div class="card auris-exec-s-ee54d13274"><div class="auris-exec-s-d68348462c">Legal Compliance</div><div id="exec-legal-pct" class="auris-exec-s-f068913452">-</div><div class="auris-exec-s-49acb3c3b7">requirements met</div></div>
 <div class="card auris-exec-s-b6d403ee7e"><div class="auris-exec-s-d68348462c">Audit Compliance</div><div id="exec-audit-pct" class="auris-exec-s-c85dfe6fed">-</div><div class="auris-exec-s-49acb3c3b7">inspection score avg</div></div>
-<div class="card auris-exec-s-a5cd1e43c2"><div class="auris-exec-s-d68348462c">Training Compliance</div><div id="exec-training-pct" class="auris-exec-s-2fe91b0e78">-</div><div class="auris-exec-s-49acb3c3b7">of workforce trained</div></div>
+<div class="card auris-exec-s-a5cd1e43c2"><div class="auris-exec-s-d68348462c">Authorisation record coverage</div><div id="exec-training-pct" class="auris-exec-s-2fe91b0e78">-</div><div class="auris-exec-s-49acb3c3b7">workers with a linked authorisation / active workforce</div></div>
 </div>
 <div class="auris-exec-s-28fe69c991">
 <div class="card">
@@ -4475,6 +4476,7 @@ Offline mode - changes will sync when connection is restored
 <div><div class="page-title">Tools &amp; Equipment</div><div class="auris-tools-s-7299078644">Register, inspection checklists, statutory verification and vehicle checks</div></div>
 <div id="tools-header-btns" class="auris-tools-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0502"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" type="button" data-auris-runtime-onclick="r0154"><i class="ti ti-qrcode"></i>QR labels</button>
 <button class="btn btn-primary auris-tools-s-6aa34d7432" id="tools-add-btn" data-auris-onclick="h0503"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
 </div>
@@ -8967,6 +8969,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div id="doc-add-btn" class="auris-documents-s-9c40389b4a">
 <button class="btn" id="dc-print-btn" data-auris-onclick="h0989"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" type="button" data-auris-runtime-onclick="r0154"><i class="ti ti-qrcode"></i>QR labels</button>
 <button class="btn btn-primary auris-documents-s-6aa34d7432" id="dc-new-btn" data-auris-onclick="h0990"><i class="ti ti-plus"></i>New document</button>
 </div>
 </div>
@@ -10154,23 +10157,26 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 
 <!-- Quick action tabs -->
 <div class="auris-ai-insights-s-0904085f3d">
+<span role="heading" aria-level="3">Insights</span>
 <button class="mtg-tab active auris-ai-insights-s-eb99a4c193" id="aitab-insights"    data-auris-onclick="h1118"   >HSE Insights</button>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-safetyos"    data-auris-onclick="h1119"   >SafetyOS Go/No-Go</button>
-<button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-qr"          data-auris-onclick="h1120">QR Labels</button>
+<button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-risk"        data-auris-onclick="h1124"       >Leading signals</button>
+<span role="heading" aria-level="3">Create content</span>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-rams"        data-auris-onclick="h1121"       >RAMS Generator</button>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-toolbox"     data-auris-onclick="h1122"    >Toolbox Talks</button>
+<span role="heading" aria-level="3">Review documents</span>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-compliance"  data-auris-onclick="h1123" >Compliance Check</button>
-<button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-risk"        data-auris-onclick="h1124"       >Predictive Risk</button>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-docs"        data-auris-onclick="h1125"       >Document Analysis</button>
+<span role="heading" aria-level="3">Ask AURIS</span>
 <button class="mtg-tab auris-ai-insights-s-eb99a4c193"        id="aitab-chat"        data-auris-onclick="h1126"       >Ask AURIS</button>
 </div>
 
 <!-- -- INSIGHTS -- -->
 <div id="aiview-insights">
 <div id="ai-quick-stats" class="auris-ai-insights-s-88a8942883">
-<div class="card auris-ai-insights-s-5cfabe2c68" data-auris-onclick="h1127"><div class="auris-ai-insights-s-d68348462c">AI Risk Score</div><div id="ai-risk-score" class="auris-ai-insights-s-ffe267bce1">-</div><div class="auris-ai-insights-s-49acb3c3b7">based on live data</div></div>
-<div class="card auris-ai-insights-s-a6bfc0dd45" data-auris-onclick="h1128"><div class="auris-ai-insights-s-d68348462c">AI Compliance Gap</div><div id="ai-compliance-score" class="auris-ai-insights-s-2062f090bc">-</div><div class="auris-ai-insights-s-49acb3c3b7">predicted gaps</div></div>
-<div class="card auris-ai-insights-s-0e9e3fb6e5" data-auris-onclick="h1129"><div class="auris-ai-insights-s-d68348462c">AI Recommendations</div><div id="ai-rec-count" class="auris-ai-insights-s-6f56b8363e">-</div><div class="auris-ai-insights-s-49acb3c3b7">actionable items</div></div>
+<div class="card auris-ai-insights-s-5cfabe2c68"><div class="auris-ai-insights-s-d68348462c">Open actions</div><div id="ai-risk-score" class="auris-ai-insights-s-ffe267bce1">-</div><div class="auris-ai-insights-s-49acb3c3b7">current action register</div></div>
+<div class="card auris-ai-insights-s-a6bfc0dd45"><div class="auris-ai-insights-s-d68348462c">Legal score</div><div id="ai-compliance-score" class="auris-ai-insights-s-2062f090bc">-</div><div class="auris-ai-insights-s-49acb3c3b7">scored requirements only</div></div>
+<div class="card auris-ai-insights-s-0e9e3fb6e5"><div class="auris-ai-insights-s-d68348462c">Evidence-linked findings</div><div id="ai-rec-count" class="auris-ai-insights-s-6f56b8363e">-</div><div class="auris-ai-insights-s-49acb3c3b7">from live records</div></div>
 </div>
 <div id="ai-insights-content" class="auris-ai-insights-s-f0de252a84">
 <div class="auris-ai-insights-s-473ce77e69">
@@ -10192,13 +10198,16 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="form3group"><label class="form3label">Work / task to be carried out *</label><input id="safetyos-task" placeholder="e.g. Hot work on tank farm, roof maintenance, chemical transfer..."/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Area / location</label><input id="safetyos-location" placeholder="e.g. Warehouse, Tank 4, workshop, roof..."/></div>
-<div class="form3group"><label class="form3label">Worker / team</label><input id="safetyos-worker" placeholder="Name, team, contractor or job role..."/></div>
+<div class="form3group"><label class="form3label">Worker / team</label><select id="safetyos-worker"><option value="">Select a registered worker</option></select></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Work type</label><select id="safetyos-worktype"><option value="general">General work</option><option value="hot_work">Hot work</option><option value="confined_space">Confined space</option><option value="working_at_height">Working at height</option><option value="electrical">Electrical / isolation</option><option value="lifting">Lifting operation</option><option value="chemical">Chemical handling</option><option value="excavation">Excavation</option><option value="vehicle">Vehicle / mobile plant</option></select></div>
 <div class="form3group"><label class="form3label">Planned date</label><input id="safetyos-date" type="date"/></div>
 </div>
 <div class="form3group"><label class="form3label">Additional context</label><textarea id="safetyos-context" class="auris-ai-insights-s-770a4152c1" placeholder="Mention equipment, contractor, permit ref, weather, shift, special conditions, etc."></textarea></div>
+<div class="form3row"><div class="form3group"><label class="form3label">Registered equipment</label><select id="safetyos-equipment"><option value="">Select equipment, if required</option></select></div><div class="form3group"><label class="form3label">Approved RA / RAMS</label><select id="safetyos-ra"><option value="">Select approved assessment</option></select></div></div>
+<div class="form3group"><label class="form3label">Permit to work</label><select id="safetyos-permit"><option value="">Select applicable permit</option></select></div>
+<div id="safetyos-selectors-status" role="status">Loading registered workers and controls…</div>
 <button class="btn btn-primary auris-ai-insights-s-cbb6355413" data-auris-onclick="h1130"><i class="ti ti-shield-check"></i>Run Go/No-Go check</button>
 </div>
 <div class="card">
@@ -10320,6 +10329,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="form3row">
 <div class="form3group"><label class="form3label">Language style</label>
 <select id="tbt-style"><option value="simple and clear">Simple &amp; clear</option><option value="engaging and interactive">Engaging &amp; interactive</option><option value="formal">Formal / regulatory</option></select></div>
+<div class="form3group"><label class="form3label">Language</label><select id="tbt-language"><option value="English">English</option><option value="French">French</option><option value="Mauritian Kreol">Mauritian Kreol</option></select></div>
 <div class="form3group"><label class="form3label">Include recent incident?</label>
 <select id="tbt-incident"><option value="">No - generic</option><option value="recent_incident">Yes - reference recent incident</option></select></div>
 </div>

@@ -18,10 +18,11 @@ test('AI Insights has no inline style attributes', () => {
 });
 
 test('Insight generators, outputs, evidence actions and chat remain runtime-controlled', () => {
-  for (const id of ['aitab-insights', 'aitab-safetyos', 'aitab-qr', 'aitab-rams', 'aitab-toolbox', 'aitab-compliance', 'aitab-risk', 'aitab-docs', 'aitab-chat', 'aiview-safetyos', 'safetyos-output', 'aiview-qr', 'qr-preview', 'aiview-rams', 'rams-history', 'rams-output', 'aiview-toolbox', 'tbt-output', 'aiview-compliance', 'comp-output', 'aiview-risk', 'scenario-output', 'heatmap-output', 'aiview-docs', 'doc-create-actions-btn', 'doc-output', 'ai-chat-messages', 'ai-chat-input']) {
+  for (const id of ['aitab-insights', 'aitab-safetyos', 'aitab-rams', 'aitab-toolbox', 'aitab-compliance', 'aitab-risk', 'aitab-docs', 'aitab-chat', 'aiview-safetyos', 'safetyos-output', 'aiview-qr', 'qr-preview', 'aiview-rams', 'rams-history', 'rams-output', 'aiview-toolbox', 'tbt-output', 'aiview-compliance', 'comp-output', 'aiview-risk', 'scenario-output', 'heatmap-output', 'aiview-docs', 'doc-create-actions-btn', 'doc-output', 'ai-chat-messages', 'ai-chat-input']) {
     assert.match(section, new RegExp(`<[^>]*id="${id}"[^>]*class="[^"]*auris-ai-insights-s-|<[^>]*class="[^"]*auris-ai-insights-s-[^"]*"[^>]*id="${id}"`));
     assert.match(css, new RegExp(`#${id}\\.auris-ai-insights-s-[a-f0-9]{10}\\{`));
   }
+  assert.doesNotMatch(section, /id="aitab-qr"/);
   for (const id of ['ai-risk-score', 'ai-compliance-score', 'ai-rec-count', 'safetyos-task', 'qr-record', 'rams-hazards', 'tbt-incident', 'comp-check-standard', 'predictive-risk-output', 'doc-analysis-type']) {
     assert.match(section, new RegExp(`id="${id}"`));
   }
