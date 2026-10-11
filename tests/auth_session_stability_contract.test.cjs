@@ -18,7 +18,7 @@ test('authentication owns only one refresh timer and transient failure cannot si
 });
 
 test('slow session restoration never deletes the stored session',()=>{
-  const init=html.match(/async function authInitSession\(\) \{[\s\S]*?\n\}\n\n\nasync function authLoadCompanyDropdown/)?.[0]||'';
+  const init=html.match(/async function authInitSession\(\) \{[\s\S]*?\n\}\s*async function authLoadCompanyDropdown/)?.[0]||'';
   assert.match(init,/Restoring your secure session/);
   assert.doesNotMatch(init,/timedOut/);
   assert.doesNotMatch(init,/Set a hard timeout[\s\S]*?authClearSession/);
