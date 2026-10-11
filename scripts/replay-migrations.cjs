@@ -34,6 +34,7 @@ function run(command, commandArgs, options = {}) {
     cwd: root,
     encoding: 'utf8',
     stdio: 'pipe',
+    maxBuffer: 32 * 1024 * 1024,
     env: process.env
   });
   if (result.error) fail(`${command} could not start: ${result.error.message}`);
@@ -47,7 +48,7 @@ function run(command, commandArgs, options = {}) {
     if (diagnostic) console.error(diagnostic);
     fail(`${label} failed with exit code ${result.status}.`);
   }
-  if (!options.capture) {
+  if (!options.capture && !options.quiet) {
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
   }
@@ -103,7 +104,8 @@ if (existingTableCount !== '0') fail(`target is not empty (${existingTableCount}
 
 run(psql, [...commonArgs, '--file', bootstrapPath], { label: 'local Supabase compatibility bootstrap' });
 for (const entry of manifest.migrations) {
-  run(psql, [...commonArgs, '--file', path.join(migrationDir, entry.file)], { label: entry.file });
+  run(psql, [...commonArgs, '--file', path.join(migrationDir, entry.file)], { label: entry.file, quiet: true });
+  console.log(`Applied ${entry.file}`);
 }
 
 const inventorySql = [
