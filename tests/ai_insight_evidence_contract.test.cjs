@@ -29,4 +29,6 @@ test('malformed or unsupported AI output yields no record-backed finding', () =>
   assert.equal(context.aiVerifiedInsightFindings({ findings: [{ source_type: 'incidents', source_id: 'e-1' }] }, { evidence: { incidents: [] } }).length, 0);
   assert.match(source, /legal_gaps_current:legalGaps\.length/);
   assert.doesNotMatch(source, /Sources are bounded to 500 records each/);
+  assert.match(source, /async function safetyOSFetch\(path\)\{return apiAllRows\(path\);\}/);
+  assert.match(source, /async function safetyOSPopulateSelectors\([\s\S]*?apiAllRows\('\/people\?select=\*'/);
 });

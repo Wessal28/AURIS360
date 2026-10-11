@@ -6450,16 +6450,16 @@ function safetyOSMatch(row,terms){
   var hay=Object.keys(row||{}).map(function(k){var v=row[k];return typeof v==='object'?JSON.stringify(v||{}):String(v||'');}).join(' ').toLowerCase();
   return t.some(function(x){return hay.indexOf(x)!==-1||x.split(/\s+/).some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
 }
-async function safetyOSFetch(path){return api(path);}
+async function safetyOSFetch(path){return apiAllRows(path);}
 async function safetyOSPopulateSelectors(){
   var status=document.getElementById('safetyos-selectors-status');
   if(status)status.textContent='Loading registered workers and controls…';
   try{
     var rows=await Promise.all([
-      api('/people?select=*'+cf()+'&status=eq.active&limit=250'),
-      api('/tools_register?select=id,ref_number,name,status'+cf()+'&limit=250'),
-      api('/risk_assessments?select=id,ra_ref,title,status'+cf()+'&limit=250'),
-      api('/permit_to_work?select=id,permit_ref,permit_type,status'+cf()+'&limit=250')
+      apiAllRows('/people?select=*'+cf()+'&status=eq.active'),
+      apiAllRows('/tools_register?select=id,ref_number,name,status'+cf()),
+      apiAllRows('/risk_assessments?select=id,ra_ref,title,status'+cf()),
+      apiAllRows('/permit_to_work?select=id,permit_ref,permit_type,status'+cf())
     ]);
     [['safetyos-worker',rows[0],function(x){return x.full_name||[x.first_name,x.last_name].filter(Boolean).join(' ')||x.id;},true],['safetyos-equipment',rows[1],function(x){return [x.ref_number,x.name].filter(Boolean).join(' · ')||x.id;}],['safetyos-ra',rows[2].filter(function(x){return /approved|active|current/i.test(String(x.status||''));}),function(x){return [x.ra_ref,x.title].filter(Boolean).join(' · ')||x.id;}],['safetyos-permit',rows[3],function(x){return [x.permit_ref,x.permit_type,x.status].filter(Boolean).join(' · ')||x.id;}]].forEach(function(entry){var el=document.getElementById(entry[0]);if(!el)return;var old=el.value;el.options.length=1;entry[1].forEach(function(row){var label=entry[2](row),option=new Option(label,entry[3]?label:row.id);option.dataset.id=row.id;el.add(option);});el.value=old;});
     if(status)status.textContent='Select records from the current company. AI cannot release work; a responsible supervisor must verify conditions and authorise the start.';
@@ -6512,7 +6512,7 @@ function safetyOSFallbackDecision(ctx,cause){
   if(!blocking.length)conditions.push('A competent supervisor must verify the task-specific controls and authorise the start because the AI advisory service did not return a decision.');
   return {
     decision:blocking.length?'NO_GO':'CONDITIONAL_GO',
-    confidence:'high',
+    confidence:'low',
     decision_summary:blocking.length?'Work must not start until the listed readiness gaps are closed and verified.':'Core records were found, but work requires supervisor verification before starting.',
     blocking_items:blocking,
     conditions_to_start:conditions,
