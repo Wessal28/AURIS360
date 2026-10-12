@@ -13,15 +13,21 @@ returns trigger language plpgsql as $$
 declare reviewer public.profiles%rowtype;
 begin
   -- Pre-start GO/HOLD/STOP has its own supervisor sign-off and must remain usable.
+  if tg_op='UPDATE' and (old.inspection_type='prestart') is distinct from
+     (new.inspection_type='prestart') then
+    raise exception 'Pre-start and reviewed inspection workflows cannot be interchanged';
+  end if;
   if new.inspection_type='prestart' then return new; end if;
   if tg_op='UPDATE' then
     if old.review_status in ('pending_review','approved')
        and coalesce(current_setting('auris.inspection_review_decision',true),'') <> 'allowed' then
       raise exception 'Submitted or approved inspections cannot be edited; request changes through the review workflow';
     end if;
-    if (new.review_status,new.reviewed_by_profile_id,new.reviewed_at,new.review_notes,new.submitted_at)
+    if (new.review_status,new.reviewed_by_profile_id,new.reviewed_at,new.review_notes,new.submitted_at,
+        new.sign_reviewer,new.sign_reviewer_date,new.reviewed_by,new.reviewed_date)
        is distinct from
-       (old.review_status,old.reviewed_by_profile_id,old.reviewed_at,old.review_notes,old.submitted_at)
+       (old.review_status,old.reviewed_by_profile_id,old.reviewed_at,old.review_notes,old.submitted_at,
+        old.sign_reviewer,old.sign_reviewer_date,old.reviewed_by,old.reviewed_date)
        and coalesce(current_setting('auris.inspection_review_decision',true),'') <> 'allowed' then
       raise exception 'Use the inspection review workflow to change review fields';
     end if;
@@ -29,7 +35,9 @@ begin
        and coalesce(current_setting('auris.inspection_review_decision',true),'') <> 'allowed' then
       raise exception 'Submit and approve the inspection through the review workflow';
     end if;
-  elsif new.review_status <> 'draft' or new.reviewed_by_profile_id is not null or new.reviewed_at is not null then
+  elsif new.review_status <> 'draft' or new.reviewed_by_profile_id is not null or new.reviewed_at is not null
+    or new.sign_reviewer is not null or new.sign_reviewer_date is not null
+    or new.reviewed_by is not null or new.reviewed_date is not null then
     raise exception 'A new inspection must start as a draft';
   end if;
   if tg_op='INSERT' and new.status in ('completed','closed') then

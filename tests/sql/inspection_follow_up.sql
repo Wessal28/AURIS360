@@ -9,6 +9,12 @@ begin
      '[{"category":"Site","item":"Guard","result":"insufficient","observation":"Repair"}]'::jsonb)
   returning id into source_id;
   begin
+    update public.inspections set sign_reviewer='Forged reviewer' where id=source_id;
+    raise exception 'Direct reviewer signature bypassed the review workflow';
+  exception when raise_exception then
+    if sqlerrm='Direct reviewer signature bypassed the review workflow' then raise; end if;
+  end;
+  begin
     update public.inspections set status='completed' where id=source_id;
     raise exception 'Direct completion bypassed the review workflow';
   exception when raise_exception then
