@@ -78,3 +78,23 @@ test('submission saves first and sends the selected reviewer identity to the rev
   assert.equal(call.options.b.p_inspection_id, 'inspection-1');
   assert.equal(call.options.b.p_reviewer_profile_id, 'reviewer-2');
 });
+
+test('reviewer selector offers only designated independent reviewers', async () => {
+  const select = { options: [], value: '', appendChild(option) { this.options.push(option); } };
+  const context = {
+    document: {
+      getElementById: id => id === 'audit-reviewer-profile' ? select : null,
+      createElement: () => ({ value: '', textContent: '' })
+    },
+    ccid: () => 'company-a', prof: { id: 'author' }, encodeURIComponent, escH: String,
+    api: async () => [
+      { id: 'reviewer', full_name: 'Reviewer', role: 'employee', enabled: true },
+      { id: 'author', full_name: 'Author', role: 'manager', enabled: true },
+      { id: 'ordinary', full_name: 'Ordinary', role: 'manager', enabled: false }
+    ]
+  };
+  load('async function auditLoadReviewers(', 'async function auditManageReviewers(', context);
+  await context.auditLoadReviewers('reviewer');
+  assert.deepEqual(select.options.map(option => option.value), ['reviewer']);
+  assert.equal(select.value, 'reviewer');
+});
