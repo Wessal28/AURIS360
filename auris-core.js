@@ -21371,13 +21371,6 @@ async function ptwActivate(){
   var readiness=ptwReadinessIssues(x);
   if(!ptwApprovalComplete(x)){toast('Permit cannot be activated: required approval levels remain pending.',false);return;}
   if(readiness.length||(Array.isArray(x.blocked_reasons)&&x.blocked_reasons.length)){toast('Permit cannot be activated: '+(readiness[0]||'recorded work blocks remain')+'.',false);return;}
-  var type=x.permit_type_v2||x.permit_type||'';
-  var tests=Array.isArray(x.gas_tests)?x.gas_tests:[];
-  var hasPassingGas=tests.some(function(t){return t.result==='pass';});
-  if(['confined_space','line_breaking'].includes(type)&&!hasPassingGas){toast('A passing gas test is required before activating this permit.',false);return;}
-  var isos=Array.isArray(x.isolations)?x.isolations:[];
-  if(['electrical_isolation','loto'].includes(type)&&!isos.length){toast('At least one isolation point must be recorded before activating this permit.',false);return;}
-  if(x.planned_end&&new Date(x.planned_end)<new Date()){toast('Permit planned end date has passed. Please amend the permit before activation.',false);return;}
   if(x.requires_weather_check&&!x.weather_conditions){
     var weather=await appPrompt({title:'Weather check',message:'Weather conditions are required for outdoor work.',value:'Sunny, wind <5m/s',placeholder:'Weather conditions'});
     if(!weather)return;
