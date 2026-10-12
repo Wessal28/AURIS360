@@ -3296,7 +3296,7 @@ function loadObservationModule(){
   if(typeof window.loadBbsObservations==='function')return window.loadBbsObservations();
   return loadObservation();
 }
-function loadInspectionModule(){buildChecklist();return loadInsps();}
+function loadInspectionModule(){buildChecklist();var submit=document.getElementById('audit-submit-review-btn');if(submit&&!submit.dataset.bound){submit.dataset.bound='1';submit.addEventListener('click',function(){if(auditSaving)return;document.getElementById('audit-status').value='completed';auditSave();});}return loadInsps();}
 function loadNoiseModule(){
   if(typeof window.loadNoiseManagement==='function')return window.loadNoiseManagement();
   return loadNoise();
@@ -21707,7 +21707,7 @@ function auditOpenReadOnly(id){
   document.getElementById('audit-inspection-report')?.closeReport?.();
   var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
   modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
-  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · Full read-only report</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(isMgr()?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section></div></section>';
+  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(row.sign_reviewer_date||row.reviewed_date?'Reviewed report':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(isMgr()?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
@@ -21715,6 +21715,7 @@ function auditOpenReadOnly(id){
   modal.querySelector('.inspection-report-close').addEventListener('click',close);
   modal.querySelector('.inspection-report-edit')?.addEventListener('click',function(){if(String(ccid())!==String(row.company_id)||!isMgr())return;close();if(row.inspection_type==='prestart')psOpen(row.id);else auditOpen(row.id);});
   modal.querySelector('.inspection-report-findings-link').addEventListener('click',function(){if(String(ccid())!==String(row.company_id))return;close();auditSwitchTab('findings');});
+  modal.addEventListener('click',function(event){var button=event.target.closest('.inspection-report-action-link');if(!button||String(ccid())!==String(row.company_id))return;var actionId=button.dataset.actionId;close();showPage('actions');setTimeout(function(){mapOpenDetail(actionId);},150);});
   modal.querySelectorAll('.inspection-photo-preview').forEach(function(button){button.addEventListener('click',function(){
     var viewer=modal.querySelector('.inspection-photo-viewer');
     viewer.querySelector('img').src=button.querySelector('img').src;
@@ -21739,6 +21740,11 @@ function auditOpenReadOnly(id){
     if(!Array.isArray(rows))throw new Error('Invalid findings response');
     findings.innerHTML=auditInspectionFindingsHTML(rows.filter(function(f){return String(f.company_id)===String(row.company_id)&&String(f.inspection_id)===String(row.id);}));
   }).catch(function(){if(modal.isConnected&&String(ccid())===String(company))findings.textContent='Recorded findings could not be loaded. The report may be incomplete. Close and reopen it to retry.';});
+  var linkedActions=modal.querySelector('#inspection-report-actions');
+  api('/action_tracker?select=id,title,description,status,target_date,action_no&company_id=eq.'+encodeURIComponent(row.company_id)+'&source_module=eq.inspection&source_id=eq.'+encodeURIComponent(row.id)+'&order=created_at.asc').then(function(actions){
+    if(!modal.isConnected||String(ccid())!==String(company))return;
+    linkedActions.innerHTML=actions?.length?actions.map(function(action){return '<div class="inspection-report-item"><strong>'+escH(action.title||action.description||'Corrective action')+'</strong> · '+escH(action.status||'open')+(action.target_date?' · Due '+escH(action.target_date):'')+' <button type="button" class="btn btn-sm inspection-report-action-link" data-action-id="'+escH(action.id)+'">Open action</button></div>';}).join(''):'<p>No linked corrective actions recorded.</p>';
+  }).catch(function(){if(modal.isConnected&&String(ccid())===String(company))linkedActions.textContent='Linked actions could not be loaded. Reopen the report to retry.';});
 }
 function auditInspectionFieldsHTML(fields){
   return '<dl class="inspection-report-fields">'+fields.filter(function(f){return f[1]!==null&&f[1]!==undefined&&f[1]!=='';}).map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(String(f[1]))+'</dd></div>';}).join('')+'</dl>';
@@ -21751,7 +21757,7 @@ function auditInspectionReportHTML(row){
     ['Reference',row.reference_no],['Type',row.inspection_type],['Site / department',[row.site||row.if_site,row.department].filter(Boolean).join(' / ')],
     ['Location',row.location||row.gps_address],['Inspection date',row.inspection_date||row.if_date],['Inspector',row.inspector||row.by||row.if_by||row.performed_by],
     ['Standard',row.audit_standard],['Scope',row.audit_scope],['Lead auditor',row.lead_auditor],['Audit team',row.audit_team],['Auditee',row.auditee],
-    ['Status',row.status],['Priority',row.priority],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
+    ['Status',row.status],['Priority',row.priority],['Repeat',row.recurrence_interval&&row.recurrence_interval!=='none'?row.recurrence_interval:null],['Next due',row.next_due_date],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
   ])+'</section><section><h3>Checklist and observations</h3>';
   var items=Array.isArray(row.items)?row.items.filter(function(i){return i&&typeof i==='object';}):[];
   h+=items.length?'<div class="inspection-report-table-wrap"><table class="inspection-report-table"><thead><tr><th>Item</th><th>Result</th><th>Observations</th></tr></thead><tbody>'+items.map(function(c,i){var result=String(c.result||'').toLowerCase();return '<tr class="inspection-result-'+(result==='insufficient'?'insufficient':result==='good'?'good':'other')+'"><th scope="row"><strong>'+escH((i+1)+'. '+(c.item||c.item_name||'Untitled item'))+'</strong>'+(c.category||c.ca?'<small>'+escH(c.category||c.ca)+'</small>':'')+(c.guidance?'<small>'+escH(c.guidance)+'</small>':'')+'</th><td><span class="inspection-result-badge">'+escH(({good:'Good',insufficient:'Insufficient',na:'N/A'})[result]||'Not answered')+'</span></td><td>'+escH(c.observation||c.obs||'—')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No checklist answers were saved with this record. A score alone cannot reconstruct the checklist.</p>';
@@ -34130,6 +34136,7 @@ async function auditLoad(typeFilter) {
     sm('audit-m3overdue', auditAllData.filter(function(x){
       return x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<now;
     }).length);
+    auditRenderDueReminders();
     // Apply filter and render
     auditFilter();
   } catch(e) {
@@ -34148,6 +34155,20 @@ async function auditLoad(typeFilter) {
     var sEl = document.getElementById('audit-m3score');
     if(sEl) sEl.textContent = avgScore!=null ? avgScore+'%' : '-';
   } catch(ex) {}
+}
+
+function auditRenderDueReminders(){
+  var panel=document.getElementById('audit-due-reminders');if(!panel)return;
+  var today=auditLocalDate();
+  var due=(auditAllData||[]).filter(function(row){
+    if(!row.planned_date||!['open','in_progress'].includes(row.status||'open'))return false;
+    var days=Math.ceil((Date.parse(row.planned_date+'T12:00:00')-Date.parse(today+'T12:00:00'))/86400000);
+    return Number.isFinite(days)&&days<=Math.min(90,Math.max(0,Number(row.reminder_days??7)));
+  }).sort(function(a,b){return String(a.planned_date).localeCompare(String(b.planned_date));}).slice(0,8);
+  panel.hidden=!due.length;
+  if(!due.length){panel.innerHTML='';return;}
+  panel.innerHTML='<div class="card" style="padding:12px 16px;margin-bottom:12px;border-color:#f59e0b;background:#fffbeb"><strong>Inspections due for attention</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+due.map(function(row){return '<button type="button" class="btn btn-sm audit-due-open" data-id="'+escH(row.id)+'">'+escH(row.reference_no||row.inspection_type||'Inspection')+' · '+escH(row.site||'Site')+' · '+escH(row.planned_date)+(row.inspector?' · '+escH(row.inspector):'')+'</button>';}).join('')+'</div></div>';
+  if(!panel.dataset.bound){panel.dataset.bound='1';panel.addEventListener('click',function(event){var button=event.target.closest('.audit-due-open');if(button)auditOpenReadOnly(button.dataset.id);});}
 }
 
 function auditFilter() {
@@ -34240,6 +34261,8 @@ function auditNew(preType) {
   document.getElementById('if-date').value = auditLocalDate();
   document.getElementById('audit-priority').value = 'medium';
   document.getElementById('audit-status').value = 'open';
+  document.getElementById('audit-recurrence').value = 'none';
+  document.getElementById('audit-reminder-days').value = '7';
   document.getElementById('if-checklist').innerHTML = '';
   auditClearAI();auditFormFeedback('');
   document.getElementById('audit-photos-list').innerHTML = '';
@@ -34283,6 +34306,8 @@ function auditOpen(id) {
   if(document.getElementById('audit-standard')&&x.audit_standard) document.getElementById('audit-standard').value=x.audit_standard;
   document.getElementById('audit-priority').value = x.priority||'medium';
   document.getElementById('audit-status').value = x.status||'open';
+  document.getElementById('audit-recurrence').value = x.recurrence_interval||'none';
+  document.getElementById('audit-reminder-days').value = x.reminder_days??7;
   // Rebuild checklist from saved items
   var savedItems=Array.isArray(x.items)?x.items:[];
   if(typeof x.items==='string')try{savedItems=JSON.parse(x.items||'[]');}catch(parseError){auditRestoreError=true;auditFormFeedback('Saved checklist data could not be read. The record is unchanged; contact support before editing it.',true);return;}
@@ -34679,7 +34704,7 @@ function auditAddFinding(saved) {
   var idx = container.querySelectorAll('.audit-finding-row').length + 1;
   var row = document.createElement('div'); row.className='audit-finding-row';
   row.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#f9fafb';
-  row.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">'
+  row.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:6px">'
     + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Finding type</label>'
     + '<select class="af-type" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px">'
     + '<option value="major_nc">Major NC</option><option value="minor_nc">Minor NC</option>'
@@ -34689,6 +34714,8 @@ function auditAddFinding(saved) {
     + '<input type="text" class="af-clause" placeholder="e.g. 8.1.3, -14..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
     + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Assigned to</label>'
     + '<select class="af-assigned" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px">'+auditPersonOptions('')+'</select></div>'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Corrective action due</label>'
+    + '<input type="date" class="af-due" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
     + '</div>'
     + '<div style="margin-bottom:6px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Finding description</label>'
     + '<textarea class="af-desc" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="Describe the finding / non-conformance..."></textarea></div>'
@@ -34702,7 +34729,7 @@ function auditAddFinding(saved) {
   container.appendChild(row);
   if(saved&&typeof saved==='object'){
     row.dataset.findingId=saved.id||'';
-    [['.af-type',saved.finding_type],['.af-clause',saved.clause],['.af-desc',saved.description],['.af-evidence',saved.evidence],['.af-action',saved.corrective_action]].forEach(function(pair){var field=row.querySelector(pair[0]);if(field)field.value=pair[1]||'';});
+    [['.af-type',saved.finding_type],['.af-clause',saved.clause],['.af-desc',saved.description],['.af-evidence',saved.evidence],['.af-action',saved.corrective_action],['.af-due',saved.due_date]].forEach(function(pair){var field=row.querySelector(pair[0]);if(field)field.value=pair[1]||'';});
     var assignee=row.querySelector('.af-assigned');if(assignee){assignee.innerHTML=auditPersonOptions(saved.assigned_to||'');assignee.value=saved.assigned_to||'';}
   }
 }
@@ -34814,6 +34841,22 @@ function auditAIApplyReview(){
   auditAIReviewPanel('<b>AI inspection assistant</b><br>Applied <b>'+actionCount+'</b> corrective action(s)'+(findingCount?(' and <b>'+findingCount+'</b> finding(s)'):'')+'. Review responsible persons and due dates before saving.');
   toast('AI inspection suggestions applied for review');
 }
+async function auditReviewPossibleRepeats(findings,site,assetId){
+  if(!findings.length)return true;
+  var prior;
+  try{prior=await api('/audit_findings?select=id,inspection_id,finding_ref,clause,description,corrective_action,status&company_id=eq.'+encodeURIComponent(ccid())+'&order=created_at.desc&limit=300');}
+  catch(error){auditFormFeedback('Previous findings could not be checked. Review the findings register for possible repeats after saving.',true);return true;}
+  var inspections=new Map((auditAllData||[]).map(function(row){return [String(row.id),row];}));
+  var norm=function(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ');};
+  var repeats=(prior||[]).filter(function(row){
+    if(row.inspection_id===auditEditId)return false;
+    var source=inspections.get(String(row.inspection_id));
+    if(!source||!(assetId&&source.equipment_asset_id===assetId)&&norm(source.site||source.if_site)!==norm(site))return false;
+    return findings.some(function(f){return norm(f.description)===norm(row.description)||!!(norm(f.clause)&&norm(f.clause)===norm(row.clause));});
+  }).slice(0,3);
+  if(!repeats.length)return true;
+  return appConfirmAction({title:'Possible repeat finding',message:'Similar findings already exist for this site or asset. Review the previous corrective actions before saving another.',detail:repeats.map(function(row){return (row.finding_ref||'Finding')+': '+row.description+' — '+(row.corrective_action||'No action recorded')+' ('+(row.status||'open')+')';}).join('\n'),confirmText:'Save after review',cancelText:'Return to findings'});
+}
 // Save inspection
 async function auditSave() {
   if(auditSaving)return;
@@ -34847,12 +34890,15 @@ async function auditSave() {
   });
   var incompleteAction = actions.some(function(a){return !a.responsible||!a.target_date;});
   if(incompleteAction){toast('Please assign every corrective action and select a due date',false);return;}
+  var reminderDays=Number(g('audit-reminder-days')??7);
+  if(!Number.isInteger(reminderDays)||reminderDays<0||reminderDays>90){auditFormFeedback('Reminder days must be a whole number between 0 and 90.',true);return;}
   // Collect findings
   var findings = [];
   document.querySelectorAll('.audit-finding-row').forEach(function(row){
     var desc=row.querySelector('.af-desc')?.value?.trim();
-    if(desc)findings.push({id:row.dataset.findingId||null,finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||''});
+    if(desc)findings.push({id:row.dataset.findingId||null,finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||'',due_date:row.querySelector('.af-due')?.value||null});
   });
+  if(findings.some(function(f){return !f.id&&f.corrective_action&&(!f.assigned_to||!f.due_date);})){auditFormFeedback('Assign each new finding action and choose its due date so reminders and escalation can work.',true);return;}
   var body = {
     company_id:ccid(), inspection_type:type,
     site:site, if_site:site, department:g('audit-dept'),
@@ -34863,6 +34909,7 @@ async function auditSave() {
     score_good:goodCnt, score_insuf:insufCnt, items:items,
     action_items:actions, photos:photos,
     priority:g('audit-priority')||'medium', status:g('audit-status')||'open',
+    recurrence_interval:g('audit-recurrence')||'none',reminder_days:reminderDays,
     audit_standard:g('audit-standard'), audit_scope:g('audit-scope'),
     lead_auditor:g('audit-lead-auditor'), audit_team:g('audit-team'), auditee:g('audit-auditee'),
     sign_inspector:g('if-sign-inspector'), sign_date:g('if-sign-date')||null,
@@ -34879,6 +34926,7 @@ async function auditSave() {
   auditSaving=true;if(saveButton)saveButton.disabled=true;
   auditFormFeedback('Saving inspection…',false);
   try {
+    if(!auditEditId&&!(await auditReviewPossibleRepeats(findings,site,body.equipment_asset_id))){auditFormFeedback('Review the possible repeat finding and its previous action before saving.',false);return;}
     var savedId = auditEditId;
     var savedRef = '';
     if(auditEditId){
@@ -34898,22 +34946,25 @@ async function auditSave() {
       }else throw new Error('The database did not confirm the inspection save.');
     }
     var oldFindings=await api('/audit_findings?select=id,finding_ref,status&company_id=eq.'+encodeURIComponent(ccid())+'&inspection_id=eq.'+encodeURIComponent(savedId));
+    var findingIds=[],findingStatuses=[];
     for(var fi=0;fi<findings.length;fi++){
       var finding=findings[fi], match=(oldFindings||[]).find(function(x){return x.id===finding.id;});
-      var findingBody={finding_type:finding.finding_type,clause:finding.clause,description:finding.description,evidence:finding.evidence,corrective_action:finding.corrective_action,assigned_to:finding.assigned_to};
-      if(match)await api('/audit_findings?id=eq.'+encodeURIComponent(match.id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:findingBody});
-      else await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:ccid(),inspection_id:savedId,finding_ref:'F'+String(fi+1).padStart(3,'0'),...findingBody,status:'open',created_by:prof?.id}});
+      var findingBody={finding_type:finding.finding_type,clause:finding.clause,description:finding.description,evidence:finding.evidence,corrective_action:finding.corrective_action,assigned_to:finding.assigned_to,due_date:finding.due_date};
+      if(match){await api('/audit_findings?id=eq.'+encodeURIComponent(match.id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:findingBody});findingIds[fi]=match.id;findingStatuses[fi]=match.status;}
+      else {var insertedFinding=await api('/audit_findings',{m:'POST',p:'return=representation',b:{company_id:ccid(),inspection_id:savedId,finding_ref:'F'+String(fi+1).padStart(3,'0'),...findingBody,status:'open',created_by:prof?.id}});if(!insertedFinding?.[0]?.id)throw new Error('The new finding was not confirmed by the database.');findingIds[fi]=insertedFinding[0].id;}
     }
     var oldActions=await api('/action_tracker?select=id,action_no,status,description&company_id=eq.'+encodeURIComponent(ccid())+'&source_module=eq.inspection&source_id=eq.'+encodeURIComponent(savedId));
     var allActions=actions.map(function(a,i){return {...a,key:'inspection:'+String(i+1)};});
-    findings.forEach(function(f,i){if(f.corrective_action)allActions.push({description:f.corrective_action,responsible:f.assigned_to||'',target_date:null,key:'finding:'+String(i+1)});});
+    findings.forEach(function(f,i){if(f.corrective_action)allActions.push({description:f.corrective_action,responsible:f.assigned_to||'',target_date:f.due_date||null,key:'finding:'+String(i+1),findingId:findingIds[i],findingStatus:findingStatuses[i]});});
     if(insufCnt>0&&!allActions.length)allActions.push({description:'Address '+insufCnt+' insufficient checklist item(s) at '+site,responsible:'',target_date:null});
     for(var ai=0;ai<allActions.length;ai++){
       var a=allActions[ai], key=a.key||'inspection:insufficient';
       var old=(oldActions||[]).find(function(x){return x.action_no===key;})||(oldActions||[]).find(function(x){return !x.action_no&&x.description===a.description;});
       var actionBody={title:a.description.substring(0,80),description:a.description,assigned_to_name:a.responsible||null,target_date:a.target_date||null};
+      var actionId=old?.id;
       if(old)await api('/action_tracker?id=eq.'+encodeURIComponent(old.id)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:actionBody});
-      else await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_no:key,...actionBody,source_type:'inspection',source_module:'inspection',source_id:savedId,source_ref:savedRef,priority:'high',status:'open',created_by:prof?.id}});
+      else {var insertedAction=await api('/action_tracker',{m:'POST',p:'return=representation',b:{company_id:ccid(),action_no:key,...actionBody,source_type:'inspection',source_module:'inspection',source_id:savedId,source_ref:savedRef,priority:'high',status:'open',created_by:prof?.id}});if(!insertedAction?.[0]?.id)throw new Error('The linked action was not confirmed by the database.');actionId=insertedAction[0].id;}
+      if(a.findingId&&actionId)await api('/audit_findings?id=eq.'+encodeURIComponent(a.findingId)+'&company_id=eq.'+encodeURIComponent(ccid()),{m:'PATCH',p:'return=minimal',b:{linked_action_id:actionId,...(old&&['pending_verification','pending_closure','closed'].includes(old.status)&&!['closed','accepted'].includes(a.findingStatus)?{status:'awaiting_verification'}:{})}});
     }
     auditFormFeedback('Inspection '+savedRef+' saved. '+items.filter(function(x){return x.result;}).length+' of '+items.length+' checklist items answered.',false);
     toast('Inspection '+savedRef+' saved.');
@@ -35115,15 +35166,22 @@ async function findingsLoad() {
         +(x.finding_ref?'<span style="font-family:monospace">'+escH(x.finding_ref)+'</span>':'')
         +'</div>'
         +'<div style="margin-top:8px;display:flex;gap:6px"><button type="button" class="btn btn-sm audit-finding-source" data-inspection-id="'+escH(x.inspection_id||'')+'">Open source audit</button>'
+        +(x.linked_action_id?'<button type="button" class="btn btn-sm audit-finding-action" data-action-id="'+escH(x.linked_action_id)+'">View linked action</button>':'')
         +(isMgr()&&x.status!=='closed'?'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0333">Verify &amp; close</button>':'')+'</div>'
         +'</div>';
     });
     el.innerHTML=h+'</div>';
-    if(!el.dataset.sourceBound){el.dataset.sourceBound='1';el.addEventListener('click',function(event){var button=event.target.closest('.audit-finding-source');if(!button)return;var id=button.dataset.inspectionId;if(!id)return;var row=(auditAllData||[]).find(function(x){return x.id===id;});if(row)auditOpenReadOnly(id);else api('/inspections?select=*&id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1').then(function(rows){if(rows?.[0]){auditAllData.push(rows[0]);auditOpenReadOnly(id);}else toast('Source inspection is unavailable.',false);}).catch(function(error){toast(error.message,false);});});}
+    if(!el.dataset.sourceBound){el.dataset.sourceBound='1';el.addEventListener('click',function(event){var actionButton=event.target.closest('.audit-finding-action');if(actionButton){var actionId=actionButton.dataset.actionId;showPage('actions');setTimeout(function(){mapOpenDetail(actionId);},150);return;}var button=event.target.closest('.audit-finding-source');if(!button)return;var id=button.dataset.inspectionId;if(!id)return;var row=(auditAllData||[]).find(function(x){return x.id===id;});if(row)auditOpenReadOnly(id);else api('/inspections?select=*&id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1').then(function(rows){if(rows?.[0]){auditAllData.push(rows[0]);auditOpenReadOnly(id);}else toast('Source inspection is unavailable.',false);}).catch(function(error){toast(error.message,false);});});}
   }catch(e){el.innerHTML=registerErrorHtml('Audit findings register',e.message);}
 }
 
 async function findingClose(id){
+  var finding=(auditFindingsData||[]).find(function(row){return row.id===id;});
+  if(!finding||!isMgr()){toast('Reviewer access is required to close this finding.',false);return;}
+  if(finding.linked_action_id){
+    try{var linked=await api('/action_tracker?select=id,status&company_id=eq.'+encodeURIComponent(ccid())+'&id=eq.'+encodeURIComponent(finding.linked_action_id)+'&limit=1');if(!linked?.[0]||!['pending_verification','pending_closure','closed'].includes(linked[0].status)){toast('Submit the linked corrective action for verification before closing this finding.',false);return;}}
+    catch(error){toast('The linked action could not be checked. Try again after it loads.',false);return;}
+  }
   var evidence=window.prompt('Describe the closure evidence and how you verified the corrective action:');
   if(evidence===null)return;
   if(!evidence.trim()){toast('Verification evidence is required before closure.',false);return;}
