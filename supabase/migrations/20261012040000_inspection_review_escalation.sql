@@ -8,6 +8,18 @@ alter table public.inspections add column if not exists review_notes text;
 alter table public.inspections add constraint inspections_review_status_check
   check (review_status in ('draft','pending_review','changes_requested','approved'));
 
+-- Inspection approval is an explicit company grant, independent of a person's
+-- general job title or ability to edit inspections.
+create table public.inspection_reviewer_grants (
+  company_id uuid not null references public.companies(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  enabled boolean not null default true,
+  granted_by uuid references public.profiles(id),
+  updated_at timestamptz not null default now(),
+  primary key(company_id,profile_id)
+);
+alter table public.inspection_reviewer_grants enable row level security;
+
 create or replace function public.guard_inspection_review()
 returns trigger language plpgsql as $$
 declare reviewer public.profiles%rowtype;
@@ -43,11 +55,13 @@ begin
   if tg_op='INSERT' and new.status in ('completed','closed') then
     raise exception 'A new inspection must be submitted for review before completion';
   end if;
-  if new.reviewer_profile_id is not null then
+  if new.reviewer_profile_id is not null and new.review_status='pending_review' then
     select * into reviewer from public.profiles where id=new.reviewer_profile_id;
-    if not found or reviewer.company_id is distinct from new.company_id
-       or reviewer.role not in ('auditor','manager','site_manager','hse_manager','admin','sephs_admin') then
-      raise exception 'Choose an authorised reviewer in the inspection company';
+    if not found or reviewer.status<>'active' or reviewer.company_id is distinct from new.company_id
+       or not exists(select 1 from public.inspection_reviewer_grants grant_row
+          where grant_row.company_id=new.company_id and grant_row.profile_id=reviewer.id
+            and grant_row.enabled) then
+      raise exception 'Choose a designated reviewer in the inspection company';
     end if;
     if new.reviewer_profile_id=new.created_by then
       raise exception 'An inspector cannot review their own inspection';
@@ -60,7 +74,7 @@ create trigger trg_guard_inspection_review before insert or update on public.ins
 for each row execute function public.guard_inspection_review();
 
 create or replace function public.list_inspection_reviewers(p_company_id uuid)
-returns table(id uuid,full_name text,role text)
+returns table(id uuid,full_name text,role text,enabled boolean)
 language plpgsql security definer set search_path to 'public' as $$
 declare actor public.profiles%rowtype;
 begin
@@ -69,10 +83,60 @@ begin
      or not public.user_access_allowed('inspection','view') then
     raise exception 'Inspection access is required to list reviewers';
   end if;
-  return query select p.id,p.full_name,p.role from public.profiles p
+  return query select p.id,p.full_name,p.role,coalesce(grant_row.enabled,false)
+    from public.profiles p
+    left join public.inspection_reviewer_grants grant_row
+      on grant_row.company_id=p.company_id and grant_row.profile_id=p.id
     where p.company_id=p_company_id
-      and p.role in ('auditor','manager','site_manager','hse_manager','admin','sephs_admin')
+      and p.status='active'
     order by p.full_name,p.id;
+end $$;
+
+create or replace function public.set_inspection_reviewer_grant(p_profile_id uuid,p_enabled boolean)
+returns boolean language plpgsql security definer set search_path to 'public' as $$
+declare actor public.profiles%rowtype; reviewer public.profiles%rowtype;
+begin
+  select * into actor from public.profiles where id=auth.uid();
+  select * into reviewer from public.profiles where id=p_profile_id;
+  if actor.id is null or reviewer.id is null or reviewer.status<>'active'
+     or actor.role not in ('sephs_admin','admin','hse_manager')
+     or (actor.role<>'sephs_admin' and actor.company_id is distinct from reviewer.company_id)
+     or not public.user_access_allowed('inspection','edit') then
+    raise exception 'Only an inspection administrator may designate reviewers in their company';
+  end if;
+  if not p_enabled and exists(select 1 from public.inspections i
+    where i.company_id=reviewer.company_id and i.reviewer_profile_id=reviewer.id
+      and i.review_status='pending_review') then
+    raise exception 'Resolve or reassign pending inspection reviews before removing this reviewer';
+  end if;
+  insert into public.inspection_reviewer_grants(company_id,profile_id,enabled,granted_by,updated_at)
+    values(reviewer.company_id,reviewer.id,p_enabled,actor.id,now())
+    on conflict(company_id,profile_id) do update
+      set enabled=excluded.enabled,granted_by=excluded.granted_by,updated_at=excluded.updated_at;
+  return true;
+end $$;
+
+create or replace function public.reassign_inspection_reviewer(p_inspection_id uuid,p_reviewer_profile_id uuid)
+returns public.inspections language plpgsql security definer set search_path to 'public' as $$
+declare item public.inspections%rowtype; actor public.profiles%rowtype; reviewer public.profiles%rowtype;
+begin
+  select * into actor from public.profiles where id=auth.uid();
+  select * into item from public.inspections where id=p_inspection_id for update;
+  select * into reviewer from public.profiles where id=p_reviewer_profile_id;
+  if item.id is null or actor.id is null or reviewer.id is null
+     or actor.role not in ('sephs_admin','admin','hse_manager')
+     or (actor.role<>'sephs_admin' and actor.company_id is distinct from item.company_id)
+     or item.review_status<>'pending_review' or reviewer.company_id is distinct from item.company_id
+     or reviewer.id=item.created_by or reviewer.status<>'active'
+     or not public.user_access_allowed('inspection','edit')
+     or not exists(select 1 from public.inspection_reviewer_grants grant_row
+       where grant_row.company_id=item.company_id and grant_row.profile_id=reviewer.id and grant_row.enabled) then
+    raise exception 'Only an inspection administrator may reassign pending review to another designated reviewer';
+  end if;
+  perform set_config('auris.inspection_review_decision','allowed',true);
+  update public.inspections set reviewer_profile_id=reviewer.id,updated_at=now()
+    where id=item.id returning * into item;
+  return item;
 end $$;
 
 create or replace function public.submit_inspection_for_review(p_inspection_id uuid,p_reviewer_profile_id uuid)
@@ -86,7 +150,8 @@ begin
   if item.review_status not in ('draft','changes_requested') then raise exception 'This inspection is already submitted or approved'; end if;
   if item.inspection_type='prestart' then raise exception 'Pre-start decisions use supervisor sign-off, not audit review'; end if;
   select * into reviewer from public.profiles where id=p_reviewer_profile_id and company_id=item.company_id;
-  if not found or reviewer.role not in ('auditor','manager','site_manager','hse_manager','admin','sephs_admin')
+  if not found or reviewer.status<>'active' or not exists(select 1 from public.inspection_reviewer_grants grant_row
+      where grant_row.company_id=item.company_id and grant_row.profile_id=reviewer.id and grant_row.enabled)
      or reviewer.id=actor.id then raise exception 'Choose another authorised reviewer in this company'; end if;
   if item.inspection_date is null or nullif(trim(coalesce(item.site,'')),'') is null
      or coalesce(jsonb_array_length(coalesce(item.items,'[]'::jsonb)),0)=0 then
@@ -110,9 +175,10 @@ declare item public.inspections%rowtype; actor public.profiles%rowtype;
 begin
   select * into actor from public.profiles where id=auth.uid();
   select * into item from public.inspections where id=p_inspection_id for update;
-  if not found or actor.id is null or actor.id is distinct from item.reviewer_profile_id
+  if not found or actor.id is null or actor.status<>'active' or actor.id is distinct from item.reviewer_profile_id
      or actor.company_id is distinct from item.company_id
-     or actor.role not in ('auditor','manager','site_manager','hse_manager','admin','sephs_admin')
+     or not exists(select 1 from public.inspection_reviewer_grants grant_row
+       where grant_row.company_id=item.company_id and grant_row.profile_id=actor.id and grant_row.enabled)
      or actor.id=item.created_by or not public.user_access_allowed('inspection','view') then
     raise exception 'Only the assigned independent reviewer may decide this inspection';
   end if;
@@ -134,9 +200,13 @@ end $$;
 revoke all on function public.submit_inspection_for_review(uuid,uuid) from public,anon;
 revoke all on function public.decide_inspection_review(uuid,text,text) from public,anon;
 revoke all on function public.list_inspection_reviewers(uuid) from public,anon;
+revoke all on function public.set_inspection_reviewer_grant(uuid,boolean) from public,anon;
+revoke all on function public.reassign_inspection_reviewer(uuid,uuid) from public,anon;
 grant execute on function public.submit_inspection_for_review(uuid,uuid) to authenticated;
 grant execute on function public.decide_inspection_review(uuid,text,text) to authenticated;
 grant execute on function public.list_inspection_reviewers(uuid) to authenticated;
+grant execute on function public.set_inspection_reviewer_grant(uuid,boolean) to authenticated;
+grant execute on function public.reassign_inspection_reviewer(uuid,uuid) to authenticated;
 
 -- Recurrence starts only after the independent approval, not on submission.
 create or replace function public.prepare_next_recurring_inspection()

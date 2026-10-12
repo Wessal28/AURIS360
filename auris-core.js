@@ -3296,7 +3296,7 @@ function loadObservationModule(){
   if(typeof window.loadBbsObservations==='function')return window.loadBbsObservations();
   return loadObservation();
 }
-function loadInspectionModule(){buildChecklist();var submit=document.getElementById('audit-submit-review-btn');if(submit&&!submit.dataset.bound){submit.dataset.bound='1';submit.addEventListener('click',auditSubmitForReview);}var config=document.getElementById('audit-escalation-config-btn');if(config&&!config.dataset.bound){config.dataset.bound='1';config.addEventListener('click',auditConfigureEscalation);}if(config)config.hidden=!['admin','hse_manager','sephs_admin'].includes(activeRole());return loadInsps();}
+function loadInspectionModule(){buildChecklist();var submit=document.getElementById('audit-submit-review-btn');if(submit&&!submit.dataset.bound){submit.dataset.bound='1';submit.addEventListener('click',auditSubmitForReview);}var config=document.getElementById('audit-escalation-config-btn');if(config&&!config.dataset.bound){config.dataset.bound='1';config.addEventListener('click',auditConfigureEscalation);}var reviewers=document.getElementById('audit-reviewers-config-btn');if(reviewers&&!reviewers.dataset.bound){reviewers.dataset.bound='1';reviewers.addEventListener('click',auditManageReviewers);}var canConfigure=['admin','hse_manager','sephs_admin'].includes(activeRole());if(config)config.hidden=!canConfigure;if(reviewers)reviewers.hidden=!canConfigure;return loadInsps();}
 function loadNoiseModule(){
   if(typeof window.loadNoiseManagement==='function')return window.loadNoiseManagement();
   return loadNoise();
@@ -21708,7 +21708,7 @@ function auditOpenReadOnly(id){
   var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
   modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
   var reviewState=row.review_status||'draft',canReview=reviewState==='pending_review'&&String(row.reviewer_profile_id||'')===String(prof?.id||'')&&String(row.created_by||'')!==String(prof?.id||'');
-  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(reviewState==='approved'?'Approved report':reviewState==='pending_review'?'Awaiting independent review':reviewState==='changes_requested'?'Changes requested':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(canReview?'<button type="button" class="btn inspection-report-approve">Approve</button> <button type="button" class="btn inspection-report-reject">Request changes</button> ':'')+(isMgr()&&!['pending_review','approved'].includes(reviewState)?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
+  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(reviewState==='approved'?'Approved report':reviewState==='pending_review'?'Awaiting independent review':reviewState==='changes_requested'?'Changes requested':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(canReview?'<button type="button" class="btn inspection-report-approve">Approve</button> <button type="button" class="btn inspection-report-reject">Request changes</button> ':'')+(reviewState==='pending_review'&&['admin','hse_manager','sephs_admin'].includes(activeRole())?'<button type="button" class="btn inspection-report-reassign">Reassign reviewer</button> ':'')+(isMgr()&&!['pending_review','approved'].includes(reviewState)?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
@@ -21717,6 +21717,7 @@ function auditOpenReadOnly(id){
   modal.querySelector('.inspection-report-edit')?.addEventListener('click',function(){if(String(ccid())!==String(row.company_id)||!isMgr())return;close();if(row.inspection_type==='prestart')psOpen(row.id);else auditOpen(row.id);});
   modal.querySelector('.inspection-report-approve')?.addEventListener('click',function(){auditReviewDecision(row.id,'approved',modal);});
   modal.querySelector('.inspection-report-reject')?.addEventListener('click',function(){auditReviewDecision(row.id,'changes_requested',modal);});
+  modal.querySelector('.inspection-report-reassign')?.addEventListener('click',function(){auditReassignReviewer(row.id,modal);});
   modal.querySelector('.inspection-report-findings-link').addEventListener('click',function(){if(String(ccid())!==String(row.company_id))return;close();auditSwitchTab('findings');});
   modal.addEventListener('click',function(event){var button=event.target.closest('.inspection-report-action-link');if(!button||String(ccid())!==String(row.company_id))return;var actionId=button.dataset.actionId;close();showPage('actions');setTimeout(function(){mapOpenDetail(actionId);},150);});
   modal.querySelectorAll('.inspection-photo-preview').forEach(function(button){button.addEventListener('click',function(){
@@ -34042,9 +34043,23 @@ async function auditLoadReviewers(selected){
   var company=ccid();select.innerHTML='<option value="">Loading reviewers...</option>';
   try{var rows=await api('/rpc/list_inspection_reviewers',{m:'POST',b:{p_company_id:company}});if(company!==ccid())return;
     select.innerHTML='<option value="">Select an independent reviewer...</option>';
-    (rows||[]).filter(function(p){return ['auditor','manager','site_manager','hse_manager','admin','sephs_admin'].includes(p.role)&&p.id!==prof?.id;}).forEach(function(p){var option=document.createElement('option');option.value=p.id;option.textContent=(p.full_name||'Unnamed reviewer')+' · '+p.role.replace(/_/g,' ');select.appendChild(option);});
+    (rows||[]).filter(function(p){return p.enabled&&p.id!==prof?.id;}).forEach(function(p){var option=document.createElement('option');option.value=p.id;option.textContent=(p.full_name||'Unnamed reviewer')+' · '+p.role.replace(/_/g,' ');select.appendChild(option);});
+    if(!select.options.length)select.innerHTML='<option value="">No designated reviewer is available — ask an administrator</option>';
     select.value=selected||'';
   }catch(error){select.innerHTML='<option value="">Reviewers unavailable — '+escH(error.message)+'</option>';}
+}
+async function auditManageReviewers(){
+  if(!['admin','hse_manager','sephs_admin'].includes(activeRole()))return;
+  try{var company=ccid(),rows=await api('/rpc/list_inspection_reviewers',{m:'POST',b:{p_company_id:company}});if(company!==ccid())return;
+    var modal=document.createElement('div');modal.className='inspection-report-overlay';
+    modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="audit-reviewers-title"><header><div><h2 id="audit-reviewers-title">Designated inspection reviewers</h2><p>Only designated people can approve another person\'s inspection.</p></div><button type="button" class="btn audit-reviewers-close">Close</button></header><div class="inspection-report-body"><div id="audit-reviewers-list"></div></div></section>';
+    document.body.appendChild(modal);modal.querySelector('.audit-reviewers-close').onclick=function(){modal.remove();};
+    var list=modal.querySelector('#audit-reviewers-list');
+    function render(){list.innerHTML=rows.length?rows.map(function(row){return '<div class="inspection-report-item" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><strong>'+escH(row.full_name||'Unnamed user')+'</strong> · '+escH(row.role||'user')+' · '+(row.enabled?'Designated':'Not designated')+'</span><button type="button" class="btn btn-sm audit-reviewer-toggle" data-id="'+escH(row.id)+'">'+(row.enabled?'Remove reviewer':'Designate reviewer')+'</button></div>';}).join(''):'<p>No active company users are available.</p>';}
+    render();list.addEventListener('click',async function(event){var button=event.target.closest('.audit-reviewer-toggle');if(!button)return;var row=rows.find(function(x){return x.id===button.dataset.id;});if(!row)return;button.disabled=true;
+      try{await api('/rpc/set_inspection_reviewer_grant',{m:'POST',b:{p_profile_id:row.id,p_enabled:!row.enabled}});row.enabled=!row.enabled;render();toast(row.enabled?'Reviewer designated.':'Reviewer designation removed.');}
+      catch(error){button.disabled=false;toast('Reviewer setting failed: '+error.message,false);}});
+  }catch(error){toast('Reviewers could not be loaded: '+error.message,false);}
 }
 async function auditSubmitForReview(){
   if(auditSaving)return;
@@ -34065,6 +34080,18 @@ async function auditReviewDecision(id,decision,modal){
     if(!result?.id)throw new Error('The review decision was not confirmed.');
     Object.assign(row,result);modal?.closeReport?.();toast(decision==='approved'?'Inspection approved.':'Changes requested.');auditOpenReadOnly(id);
   }catch(error){toast('Review decision failed: '+error.message,false);}
+}
+async function auditReassignReviewer(id,reportModal){
+  if(!['admin','hse_manager','sephs_admin'].includes(activeRole()))return;
+  var row=(auditAllData||[]).find(function(x){return x.id===id;});if(!row||row.review_status!=='pending_review')return;
+  try{var company=ccid(),reviewers=await api('/rpc/list_inspection_reviewers',{m:'POST',b:{p_company_id:company}});if(company!==ccid())return;
+    var choices=(reviewers||[]).filter(function(person){return person.enabled&&person.id!==row.created_by&&person.id!==row.reviewer_profile_id;});
+    if(!choices.length){toast('Designate another reviewer in Manage reviewers first.',false);return;}
+    var dialog=document.createElement('div');dialog.className='inspection-report-overlay';dialog.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="audit-reassign-title"><header><h2 id="audit-reassign-title">Reassign pending review</h2><button type="button" class="btn audit-reassign-cancel">Cancel</button></header><div class="inspection-report-body"><label class="form3label" for="audit-reassign-select">New designated reviewer</label><select id="audit-reassign-select"></select><button type="button" class="btn btn-primary audit-reassign-save">Reassign</button></div></section>';
+    document.body.appendChild(dialog);var select=dialog.querySelector('#audit-reassign-select');choices.forEach(function(person){var option=document.createElement('option');option.value=person.id;option.textContent=person.full_name||'Unnamed user';select.appendChild(option);});
+    dialog.querySelector('.audit-reassign-cancel').onclick=function(){dialog.remove();};
+    dialog.querySelector('.audit-reassign-save').onclick=async function(){try{var saved=await api('/rpc/reassign_inspection_reviewer',{m:'POST',p:'return=representation',b:{p_inspection_id:id,p_reviewer_profile_id:select.value}});if(!saved?.id)throw new Error('Reassignment was not confirmed.');Object.assign(row,saved);dialog.remove();reportModal?.closeReport?.();toast('Inspection reviewer reassigned.');auditOpenReadOnly(id);}catch(error){toast('Reviewer could not be reassigned: '+error.message,false);}};
+  }catch(error){toast('Reviewers could not be loaded: '+error.message,false);}
 }
 async function auditConfigureEscalation(){
   if(!['admin','hse_manager','sephs_admin'].includes(activeRole()))return;
