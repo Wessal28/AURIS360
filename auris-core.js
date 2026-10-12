@@ -3296,7 +3296,7 @@ function loadObservationModule(){
   if(typeof window.loadBbsObservations==='function')return window.loadBbsObservations();
   return loadObservation();
 }
-function loadInspectionModule(){buildChecklist();var submit=document.getElementById('audit-submit-review-btn');if(submit&&!submit.dataset.bound){submit.dataset.bound='1';submit.addEventListener('click',function(){if(auditSaving)return;document.getElementById('audit-status').value='completed';auditSave();});}return loadInsps();}
+function loadInspectionModule(){buildChecklist();var submit=document.getElementById('audit-submit-review-btn');if(submit&&!submit.dataset.bound){submit.dataset.bound='1';submit.addEventListener('click',auditSubmitForReview);}var config=document.getElementById('audit-escalation-config-btn');if(config&&!config.dataset.bound){config.dataset.bound='1';config.addEventListener('click',auditConfigureEscalation);}if(config)config.hidden=!['admin','hse_manager','sephs_admin'].includes(activeRole());return loadInsps();}
 function loadNoiseModule(){
   if(typeof window.loadNoiseManagement==='function')return window.loadNoiseManagement();
   return loadNoise();
@@ -21707,13 +21707,16 @@ function auditOpenReadOnly(id){
   document.getElementById('audit-inspection-report')?.closeReport?.();
   var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
   modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
-  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(row.sign_reviewer_date||row.reviewed_date?'Reviewed report':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(isMgr()?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
+  var reviewState=row.review_status||'draft',canReview=reviewState==='pending_review'&&String(row.reviewer_profile_id||'')===String(prof?.id||'')&&String(row.created_by||'')!==String(prof?.id||'');
+  modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(reviewState==='approved'?'Approved report':reviewState==='pending_review'?'Awaiting independent review':reviewState==='changes_requested'?'Changes requested':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(canReview?'<button type="button" class="btn inspection-report-approve">Approve</button> <button type="button" class="btn inspection-report-reject">Request changes</button> ':'')+(isMgr()&&!['pending_review','approved'].includes(reviewState)?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
   document.body.appendChild(modal);
   document.body.style.overflow='hidden';
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
   modal.closeReport=close;
   modal.querySelector('.inspection-report-close').addEventListener('click',close);
   modal.querySelector('.inspection-report-edit')?.addEventListener('click',function(){if(String(ccid())!==String(row.company_id)||!isMgr())return;close();if(row.inspection_type==='prestart')psOpen(row.id);else auditOpen(row.id);});
+  modal.querySelector('.inspection-report-approve')?.addEventListener('click',function(){auditReviewDecision(row.id,'approved',modal);});
+  modal.querySelector('.inspection-report-reject')?.addEventListener('click',function(){auditReviewDecision(row.id,'changes_requested',modal);});
   modal.querySelector('.inspection-report-findings-link').addEventListener('click',function(){if(String(ccid())!==String(row.company_id))return;close();auditSwitchTab('findings');});
   modal.addEventListener('click',function(event){var button=event.target.closest('.inspection-report-action-link');if(!button||String(ccid())!==String(row.company_id))return;var actionId=button.dataset.actionId;close();showPage('actions');setTimeout(function(){mapOpenDetail(actionId);},150);});
   modal.querySelectorAll('.inspection-photo-preview').forEach(function(button){button.addEventListener('click',function(){
@@ -21757,7 +21760,7 @@ function auditInspectionReportHTML(row){
     ['Reference',row.reference_no],['Type',row.inspection_type],['Site / department',[row.site||row.if_site,row.department].filter(Boolean).join(' / ')],
     ['Location',row.location||row.gps_address],['Inspection date',row.inspection_date||row.if_date],['Inspector',row.inspector||row.by||row.if_by||row.performed_by],
     ['Standard',row.audit_standard],['Scope',row.audit_scope],['Lead auditor',row.lead_auditor],['Audit team',row.audit_team],['Auditee',row.auditee],
-    ['Status',row.status],['Priority',row.priority],['Repeat',row.recurrence_interval&&row.recurrence_interval!=='none'?row.recurrence_interval:null],['Next due',row.next_due_date],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
+    ['Status',row.status],['Review',row.review_status||'Draft'],['Review notes',row.review_notes],['Reviewed by',row.reviewed_by],['Review date',row.reviewed_date],['Priority',row.priority],['Repeat',row.recurrence_interval&&row.recurrence_interval!=='none'?row.recurrence_interval:null],['Next due',row.next_due_date],['Score',row.score_good!=null?row.score_good+' good / '+(row.score_insuf||0)+' insufficient':null]
   ])+'</section><section><h3>Checklist and observations</h3>';
   var items=Array.isArray(row.items)?row.items.filter(function(i){return i&&typeof i==='object';}):[];
   h+=items.length?'<div class="inspection-report-table-wrap"><table class="inspection-report-table"><thead><tr><th>Item</th><th>Result</th><th>Observations</th></tr></thead><tbody>'+items.map(function(c,i){var result=String(c.result||'').toLowerCase();return '<tr class="inspection-result-'+(result==='insufficient'?'insufficient':result==='good'?'good':'other')+'"><th scope="row"><strong>'+escH((i+1)+'. '+(c.item||c.item_name||'Untitled item'))+'</strong>'+(c.category||c.ca?'<small>'+escH(c.category||c.ca)+'</small>':'')+(c.guidance?'<small>'+escH(c.guidance)+'</small>':'')+'</th><td><span class="inspection-result-badge">'+escH(({good:'Good',insufficient:'Insufficient',na:'N/A'})[result]||'Not answered')+'</span></td><td>'+escH(c.observation||c.obs||'—')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No checklist answers were saved with this record. A score alone cannot reconstruct the checklist.</p>';
@@ -34034,6 +34037,47 @@ let auditTemplates=[], auditFindingsData=[];
 function auditLocalDate(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function auditClearAI(){auditAIRequest++;window.auditAIReviewData=null;var el=document.getElementById('audit-ai-output');if(el){el.textContent='';el.style.display='none';}}
 function auditFormFeedback(message,error){var el=document.getElementById('audit-form-feedback');if(!el)return;el.textContent=message||'';el.hidden=!message;el.classList.toggle('error',!!error);if(message&&error)el.scrollIntoView({block:'nearest'});}
+async function auditLoadReviewers(selected){
+  var select=document.getElementById('audit-reviewer-profile');if(!select)return;
+  var company=ccid();select.innerHTML='<option value="">Loading reviewers...</option>';
+  try{var rows=await api('/rpc/list_inspection_reviewers',{m:'POST',b:{p_company_id:company}});if(company!==ccid())return;
+    select.innerHTML='<option value="">Select an independent reviewer...</option>';
+    (rows||[]).filter(function(p){return ['auditor','manager','site_manager','hse_manager','admin','sephs_admin'].includes(p.role)&&p.id!==prof?.id;}).forEach(function(p){var option=document.createElement('option');option.value=p.id;option.textContent=(p.full_name||'Unnamed reviewer')+' · '+p.role.replace(/_/g,' ');select.appendChild(option);});
+    select.value=selected||'';
+  }catch(error){select.innerHTML='<option value="">Reviewers unavailable — '+escH(error.message)+'</option>';}
+}
+async function auditSubmitForReview(){
+  if(auditSaving)return;
+  var reviewer=document.getElementById('audit-reviewer-profile')?.value;
+  if(!reviewer){auditFormFeedback('Select an independent reviewer before submission.',true);return;}
+  var id=await auditSave({stay:true});if(!id)return;
+  try{var saved=await api('/rpc/submit_inspection_for_review',{m:'POST',p:'return=representation',b:{p_inspection_id:id,p_reviewer_profile_id:reviewer}});
+    if(!saved?.id)throw new Error('The review submission was not confirmed.');
+    toast('Inspection submitted to its reviewer.');auditBackToList();
+  }catch(error){auditFormFeedback('Inspection was saved, but review submission failed: '+error.message,true);toast('Review submission failed: '+error.message,false);}
+}
+async function auditReviewDecision(id,decision,modal){
+  var row=(auditAllData||[]).find(function(x){return x.id===id;});
+  if(!row||row.review_status!=='pending_review'||String(row.reviewer_profile_id)!==String(prof?.id)||String(row.created_by)===String(prof?.id)){toast('Only the assigned independent reviewer can decide this inspection.',false);return;}
+  var notes=window.prompt(decision==='approved'?'Review notes (optional):':'Explain what needs to change:');if(notes===null)return;
+  if(decision==='changes_requested'&&!notes.trim()){toast('A reason is required when requesting changes.',false);return;}
+  try{var result=await api('/rpc/decide_inspection_review',{m:'POST',p:'return=representation',b:{p_inspection_id:id,p_decision:decision,p_notes:notes.trim()}});
+    if(!result?.id)throw new Error('The review decision was not confirmed.');
+    Object.assign(row,result);modal?.closeReport?.();toast(decision==='approved'?'Inspection approved.':'Changes requested.');auditOpenReadOnly(id);
+  }catch(error){toast('Review decision failed: '+error.message,false);}
+}
+async function auditConfigureEscalation(){
+  if(!['admin','hse_manager','sephs_admin'].includes(activeRole()))return;
+  try{var rows=await api('/inspection_escalation_policy?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1'),policy=rows?.[0]||{enabled:true,due_soon_days:7,level_1_overdue_days:1,level_2_overdue_days:7,level_3_overdue_days:21};
+    var modal=document.createElement('div');modal.className='inspection-report-overlay';modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="audit-escalation-title"><header><h2 id="audit-escalation-title">Inspection reminder rules</h2><button type="button" class="btn audit-policy-close">Close</button></header><div class="inspection-report-body"><p>Send due reminders to the inspector. Escalate overdue inspections to supervisors, managers and executives at the configured day thresholds.</p><label><input type="checkbox" id="audit-policy-enabled"> Enable inspection reminders</label><div class="form3row"><div class="form3group"><label class="form3label">Days before due</label><input id="audit-policy-due" type="number" min="0" max="90"></div><div class="form3group"><label class="form3label">Supervisor after overdue days</label><input id="audit-policy-l1" type="number" min="1"></div><div class="form3group"><label class="form3label">Manager after overdue days</label><input id="audit-policy-l2" type="number" min="2"></div><div class="form3group"><label class="form3label">Executive after overdue days</label><input id="audit-policy-l3" type="number" min="3"></div></div><button type="button" class="btn btn-primary audit-policy-save">Save rules</button></div></section>';
+    document.body.appendChild(modal);modal.querySelector('#audit-policy-enabled').checked=policy.enabled;
+    [['due',policy.due_soon_days],['l1',policy.level_1_overdue_days],['l2',policy.level_2_overdue_days],['l3',policy.level_3_overdue_days]].forEach(function(x){modal.querySelector('#audit-policy-'+x[0]).value=x[1];});
+    modal.querySelector('.audit-policy-close').onclick=function(){modal.remove();};
+    modal.querySelector('.audit-policy-save').onclick=async function(){var due=Number(modal.querySelector('#audit-policy-due').value),l1=Number(modal.querySelector('#audit-policy-l1').value),l2=Number(modal.querySelector('#audit-policy-l2').value),l3=Number(modal.querySelector('#audit-policy-l3').value);
+      if(![due,l1,l2,l3].every(Number.isInteger)||due<0||due>90||l1<1||l2<=l1||l3<=l2){toast('Use whole-number thresholds in ascending order.',false);return;}
+      try{await api('/inspection_escalation_policy?on_conflict=company_id',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:{company_id:ccid(),enabled:modal.querySelector('#audit-policy-enabled').checked,due_soon_days:due,level_1_overdue_days:l1,level_2_overdue_days:l2,level_3_overdue_days:l3,updated_at:new Date().toISOString()}});toast('Inspection reminder rules saved.');modal.remove();}catch(error){toast('Reminder rules could not be saved: '+error.message,false);}};
+  }catch(error){toast('Reminder rules could not be loaded: '+error.message,false);}
+}
 
 const AUDIT_TYPE_CFG = {
   workplace:       {emoji:'*',label:'Workplace Inspection',      color:'#1e40af',bg:'#EFF6FF', border:'#bfdbfe'},
@@ -34137,6 +34181,7 @@ async function auditLoad(typeFilter) {
       return x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<now;
     }).length);
     auditRenderDueReminders();
+    auditRenderReviewQueue();
     // Apply filter and render
     auditFilter();
   } catch(e) {
@@ -34169,6 +34214,13 @@ function auditRenderDueReminders(){
   if(!due.length){panel.innerHTML='';return;}
   panel.innerHTML='<div class="card" style="padding:12px 16px;margin-bottom:12px;border-color:#f59e0b;background:#fffbeb"><strong>Inspections due for attention</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+due.map(function(row){return '<button type="button" class="btn btn-sm audit-due-open" data-id="'+escH(row.id)+'">'+escH(row.reference_no||row.inspection_type||'Inspection')+' · '+escH(row.site||'Site')+' · '+escH(row.planned_date)+(row.inspector?' · '+escH(row.inspector):'')+'</button>';}).join('')+'</div></div>';
   if(!panel.dataset.bound){panel.dataset.bound='1';panel.addEventListener('click',function(event){var button=event.target.closest('.audit-due-open');if(button)auditOpenReadOnly(button.dataset.id);});}
+}
+function auditRenderReviewQueue(){
+  var panel=document.getElementById('audit-review-queue');if(!panel)return;
+  var pending=(auditAllData||[]).filter(function(row){return row.review_status==='pending_review'&&String(row.reviewer_profile_id||'')===String(prof?.id||'')&&String(row.created_by||'')!==String(prof?.id||'');});
+  panel.hidden=!pending.length;
+  panel.innerHTML=pending.length?'<div class="card" style="padding:12px 16px;margin-bottom:12px;border-color:#93c5fd;background:#eff6ff"><strong>Inspections awaiting your review</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+pending.map(function(row){return '<button type="button" class="btn btn-sm audit-review-open" data-id="'+escH(row.id)+'">'+escH(row.reference_no||'Inspection')+' · '+escH(row.site||'Site')+'</button>';}).join('')+'</div></div>':'';
+  if(!panel.dataset.bound){panel.dataset.bound='1';panel.addEventListener('click',function(event){var button=event.target.closest('.audit-review-open');if(button)auditOpenReadOnly(button.dataset.id);});}
 }
 
 function auditFilter() {
@@ -34273,6 +34325,7 @@ function auditNew(preType) {
   document.getElementById('audit-score-detail').textContent = '';
   document.getElementById('audit-score-bar').style.width = '0%';
   auditAssetRequest++;var assetSelect=document.getElementById('audit-equipment-asset');if(assetSelect)assetSelect.value='';
+  auditLoadReviewers('');var reviewState=document.getElementById('audit-review-state');if(reviewState)reviewState.textContent='Review pending submission';
   // Load template for type
   auditAutoLoadTemplate(type);
   if(type==='equipment')auditLoadEquipmentAssets('');
@@ -34289,7 +34342,7 @@ function auditOpen(id) {
   auditClearAI();auditFormFeedback('');
   document.getElementById('audit-form3title').textContent = x.site || 'Edit Inspection';
   document.getElementById('audit-form3ref').textContent = x.reference_no || '-';
-  document.getElementById('audit-delete-btn').style.display = isMgr()?'inline-flex':'none';
+  document.getElementById('audit-delete-btn').style.display = isMgr()&&!['pending_review','approved'].includes(x.review_status)?'inline-flex':'none';
   document.getElementById('audit-form3view').style.display = 'block';
   document.getElementById('audit-view-register').style.display = 'none';
   document.getElementById('audit-view-prestart').style.display = 'none';
@@ -34306,6 +34359,8 @@ function auditOpen(id) {
   if(document.getElementById('audit-standard')&&x.audit_standard) document.getElementById('audit-standard').value=x.audit_standard;
   document.getElementById('audit-priority').value = x.priority||'medium';
   document.getElementById('audit-status').value = x.status||'open';
+  if(!['open','in_progress'].includes(document.getElementById('audit-status').value))document.getElementById('audit-status').value='in_progress';
+  auditLoadReviewers(x.reviewer_profile_id||'');var reviewState=document.getElementById('audit-review-state');if(reviewState)reviewState.textContent='Review: '+String(x.review_status||'draft').replace(/_/g,' ')+(x.review_notes?' · '+x.review_notes:'');
   document.getElementById('audit-recurrence').value = x.recurrence_interval||'none';
   document.getElementById('audit-reminder-days').value = x.reminder_days??7;
   // Rebuild checklist from saved items
@@ -34858,10 +34913,13 @@ async function auditReviewPossibleRepeats(findings,site,assetId){
   return appConfirmAction({title:'Possible repeat finding',message:'Similar findings already exist for this site or asset. Review the previous corrective actions before saving another.',detail:repeats.map(function(row){return (row.finding_ref||'Finding')+': '+row.description+' — '+(row.corrective_action||'No action recorded')+' ('+(row.status||'open')+')';}).join('\n'),confirmText:'Save after review',cancelText:'Return to findings'});
 }
 // Save inspection
-async function auditSave() {
+async function auditSave(options) {
+  options=options||{};
   if(auditSaving)return;
   if(auditRestoreError||auditFindingsLoading){auditFormFeedback(auditRestoreError?'Saved inspection data could not be restored. Reopen the record before editing.':'Wait for saved findings to finish loading before saving.',true);return;}
   if(!workflowCanMutate('inspection','inspections'))return;
+  var existingReview=auditEditId?(auditAllData||[]).find(function(x){return x.id===auditEditId;}):null;
+  if(existingReview&&['pending_review','approved'].includes(existingReview.review_status)){auditFormFeedback('This inspection is locked for independent review. Request changes through the reviewer.',true);return;}
   var site = document.getElementById('if-site')?.value?.trim();
   var type = document.getElementById('audit-type')?.value||'workplace';
   if(!site){toast('Please enter location / site',false);return;}
@@ -34913,7 +34971,6 @@ async function auditSave() {
     audit_standard:g('audit-standard'), audit_scope:g('audit-scope'),
     lead_auditor:g('audit-lead-auditor'), audit_team:g('audit-team'), auditee:g('audit-auditee'),
     sign_inspector:g('if-sign-inspector'), sign_date:g('if-sign-date')||null,
-    sign_reviewer:g('if-sign-reviewer'), sign_reviewer_date:g('if-sign-reviewer-date')||null,
     gps_address:g('audit-gps-address'), lat:g('audit-lat')?parseFloat(g('audit-lat')):null,
     lng:g('audit-lng')?parseFloat(g('audit-lng')):null,
     equipment_asset_id:type==='equipment'?g('audit-equipment-asset'):null,
@@ -34969,6 +35026,7 @@ async function auditSave() {
     auditFormFeedback('Inspection '+savedRef+' saved. '+items.filter(function(x){return x.result;}).length+' of '+items.length+' checklist items answered.',false);
     toast('Inspection '+savedRef+' saved.');
     var savedRecord=Object.assign({},body,{id:savedId,reference_no:savedRef||body.reference_no});
+    if(options.stay)return savedId;
     if(savedId&&wsRecordReturnMatches('site')){
       await wsAttachSavedRecord('site',savedRecord);
       wsReturnToWork('site');
