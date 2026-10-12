@@ -15,6 +15,7 @@ function sourceBetween(start, end) {
 test('submission requires a documented and assigned basis for a reduced residual score', () => {
   const validate = vm.runInNewContext(
     `${sourceBetween('function raControlSubmissionIssue(', 'async function raSave(')}; raControlSubmissionIssue`,
+    {raEditingType:'task'},
   );
   const row = {rr: 20, res_rr: 5, further_controls: '', hoc_level: '', action_by: '', target_date: ''};
   assert.match(validate([row]), /additional controls/);
@@ -26,6 +27,7 @@ test('submission requires a documented and assigned basis for a reduced residual
   row.target_date = '2026-10-20';
   assert.equal(validate([row]), '');
   assert.equal(validate([{rr: 5, res_rr: 5}]), '');
+  assert.match(validate([{rr: 0, res_rr: 0}]), /choose both likelihood and severity/);
 });
 
 test('saving the same high-risk assessment twice does not duplicate a linked action', async () => {
@@ -38,7 +40,8 @@ test('saving the same high-risk assessment twice does not duplicate a linked act
     prof: {id: 'user-1'},
     encodeURIComponent,
     api: async (url, options) => {
-      if (!options) return actions.map(action => ({id: action.id, description: action.description}));
+      if (!options) return actions.map(action => ({id: action.id, action_no:action.action_no, description: action.description, responsible:action.responsible, target_date:action.target_date, status:action.status}));
+      if (options.m === 'PATCH') {Object.assign(actions.find(action => url.includes(action.id)), options.b);return [];}
       actions.push({...options.b, id: `action-${actions.length + 1}`});
       return [];
     },

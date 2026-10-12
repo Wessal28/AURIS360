@@ -36,9 +36,9 @@ function project(rows,current,options,now){
     if(f.scope==='mine'&&!(String(row.assessed_by_id||row.created_by||'')===current.userId||name&&owner.toLowerCase().includes(name)))return null;
     if(f.scope==='due'&&!overdue&&!dueSoon)return null;
     if(f.scope==='overdue'&&!overdue)return null;
-    if(f.scope==='high'&&!['high','very high','critical'].some(function(level){return summary.initialLevel.toLowerCase()===level||summary.residualLevel.toLowerCase()===level;}))return null;
+    if(f.scope==='high'&&!['high','very high','critical'].includes(summary.residualLevel.toLowerCase()))return null;
     var hay=[row.ra_ref,row.title,row.activity,row.scope,row.location,row.workshop,row.department,owner,label,status,statusLabel(status),summary.initialLevel,summary.residualLevel].join(' ').toLowerCase();
-    if(search&&!hay.includes(search)||f.type&&(code!==f.type&&label.toLowerCase()!==f.type.toLowerCase())||f.status&&status!==f.status||f.risk&&summary.initialLevel.toLowerCase()!==f.risk.toLowerCase()&&summary.residualLevel.toLowerCase()!==f.risk.toLowerCase())return null;
+    if(search&&!hay.includes(search)||f.type&&(code!==f.type&&label.toLowerCase()!==f.type.toLowerCase())||f.status&&status!==f.status||f.risk&&summary.residualLevel.toLowerCase()!==f.risk.toLowerCase())return null;
     return {id:String(row.id),company_id:String(row.company_id),source_table:'risk_assessments',reference:row.ra_ref||'RA-DRAFT',title:row.title||row.activity||row.workshop||'Untitled risk assessment',type:label,location:row.location||row.workshop||row.site_name||'',department:row.department||'',owner:owner,initial_risk:summary.initialLevel,residual_risk:summary.residualLevel,initial_score:summary.initial,residual_score:summary.residual,rows:summary.rows,status:statusLabel(status),review_date:row.review_date||row.ra_review_date||'',attention:overdue?'Overdue':dueSoon?'Due soon':'—',linked_records:[row.permit_ref?'PTW '+row.permit_ref:'',row.work_order_id?'Work order':'',row.rams_document_name||row.rams_document_url?'RAMS':''].filter(Boolean).join(' · ')};
   }).filter(Boolean);
 }

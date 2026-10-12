@@ -21,8 +21,9 @@ test('projection is tenant-scoped and keeps risk, review and linked-record meani
 });
 test('scope and combinable filters cover personal work, due reviews, high risk and text',()=>{
   const r=runtime(),select=filters=>r.api.project(rows,current,{filters},new Date('2026-09-15T12:00:00Z')).map(x=>x.id);
-  assert.deepEqual(select({scope:'mine'}),['ra-1']);assert.deepEqual(select({scope:'due'}),['ra-1','ra-2']);assert.deepEqual(select({scope:'overdue'}),['ra-1']);assert.deepEqual(select({scope:'high'}),['ra-1','ra-3']);
-  assert.deepEqual(select({search:'solvent',type:'baseline',status:'review',risk:'Medium'}),['ra-2']);assert.deepEqual(select({type:'task',status:'active'}),['ra-1']);
+  assert.deepEqual(select({scope:'mine'}),['ra-1']);assert.deepEqual(select({scope:'due'}),['ra-1','ra-2']);assert.deepEqual(select({scope:'overdue'}),['ra-1']);assert.deepEqual(select({scope:'high'}),[]);
+  assert.deepEqual(select({search:'solvent',type:'baseline',status:'review',risk:'Low'}),['ra-2']);assert.deepEqual(select({type:'task',status:'active'}),['ra-1']);
+  assert.deepEqual(select({risk:'High'}),[],'An initially High assessment with Low or Medium residual risk must not enter the High residual filter');
 });
 test('unknown statuses and types remain visible without unsafe relabelling',()=>{
   const r=runtime(),data=r.api.project([{id:'x',company_id:'co-a',ra_type_v2:'unrecognised',status:'unrecognised'}],current,{filters:{scope:'all'}});
