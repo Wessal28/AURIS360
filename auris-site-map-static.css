@@ -29,3 +29,7 @@
 #sitemap-search.auris-site-map-s-61e156f343{width:100%;margin-bottom:10px}
 #sitemap-selected-title.auris-site-map-s-ab79ea2b85{margin:0}
 #sitemap-summary.auris-site-map-s-a8fbf68576{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.sm-plan-review{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding:9px 11px;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font-size:12px}
+.sm-map-legend{margin-top:8px;color:#475569;font-size:11px;line-height:1.5}
+.sm-create-shortcuts{margin-top:12px;padding:12px}
+.sm-create-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}

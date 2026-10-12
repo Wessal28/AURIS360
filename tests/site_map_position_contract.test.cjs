@@ -13,6 +13,7 @@ function sourceBetween(start,end){
 
 test('unpositioned sites and records do not receive invented map coordinates',()=>{
   const context={siteMapState:{layout:{markers:[]},sites:[{id:'site-1',name:'Yard'}]},smSiteKey:s=>s.id,smSiteName:s=>s.name,smMatch:()=>true};
+  context.smVisibleSites=()=>context.siteMapState.sites;
   context.smMarkerForSite=site=>context.siteMapState.layout.markers.find(m=>m.site_id===site.id)||null;
   vm.createContext(context);
   vm.runInContext(sourceBetween('smSitePosition','smEventPosition')+sourceBetween('smEventPosition','smRiskPosition')+sourceBetween('smRiskPosition','smCancelPlacement'),context);
@@ -22,4 +23,26 @@ test('unpositioned sites and records do not receive invented map coordinates',()
   context.siteMapState.layout.markers.push({site_id:'site-1',x:35,y:62});
   assert.equal(context.smSitePosition(context.siteMapState.sites[0],0).x,35);
   assert.equal(context.smRiskPosition({id:'risk-1'},0).y,62);
+});
+
+test('child layouts show only linked location descendants until Show all is selected',()=>{
+  const sites=[{id:'site-1',name:'Plant'},{id:'area-1',parent_site_id:'site-1',name:'Workshop'},{id:'site-2',name:'Other site'}];
+  const parent={id:'plan-parent',markers:[{site_id:'site-1',linked_plan_id:'plan-child'}]};
+  const child={id:'plan-child',markers:[]};
+  const context={siteMapState:{sites,plans:[parent,child],layout:child,showAllLocations:false},smSiteKey:s=>s.id,smLayoutEmpty:()=>({})};
+  vm.createContext(context);
+  vm.runInContext(sourceBetween('smPlanParents','smVisibleSites')+sourceBetween('smVisibleSites','smToggleAllLocations'),context);
+  assert.deepEqual(Array.from(context.smVisibleSites(),s=>s.id),['site-1','area-1']);
+  context.siteMapState.showAllLocations=true;
+  assert.deepEqual(Array.from(context.smVisibleSites(),s=>s.id),['site-1','area-1','site-2']);
+});
+
+test('replacing a plan increments its revision and flags saved markers for review',()=>{
+  const context={};vm.createContext(context);
+  vm.runInContext(core.slice(core.indexOf('function smMarkPlanReplaced('),core.indexOf('async function smConfirmMarkerReview(')),context);
+  const layout={plan_revision:2,markers:[{site_id:'site-1',x:20,y:30}],markers_review_required:false};
+  context.smMarkPlanReplaced(layout,'previous-plan.png');
+  assert.equal(layout.plan_revision,3);
+  assert.equal(layout.markers_review_required,true);
+  assert.equal(layout.markers_reviewed_at,null);
 });
