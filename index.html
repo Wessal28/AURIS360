@@ -2545,6 +2545,8 @@
 </div>
 <div id="insp-header-btns" class="auris-audit-s-9c40389b4a">
 <button class="btn" id="audit-print-current-btn" data-auris-onclick="h0288"><i class="ti ti-printer"></i>Print current view</button>
+<button type="button" class="btn" id="audit-escalation-config-btn" hidden>Reminder rules</button>
+<button type="button" class="btn" id="audit-reviewers-config-btn" hidden>Manage reviewers</button>
 <button class="btn btn-primary" id="insp-new-btn" data-auris-onclick="h0289"><i class="ti ti-plus"></i>New inspection</button>
 </div>
 </div>
@@ -2577,6 +2579,7 @@
 <div id="audit-view-register">
 <input type="hidden" id="audit-search" data-auris-oninput="h0301"/>
 <div id="audit-due-reminders" role="status" hidden></div>
+<div id="audit-review-queue" role="status" hidden></div>
 <div id="audit-register-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
@@ -2749,7 +2752,7 @@
 <div class="form3group"><label class="form3label">Priority</label>
 <select id="audit-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
 <div class="form3group"><label class="form3label">Status</label>
-<select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="archived">Archived</option></select></div>
+<select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option></select></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label" for="audit-recurrence">Repeat inspection</label><select id="audit-recurrence"><option value="none">One-off</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>
@@ -2821,8 +2824,8 @@
 <div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Sign-off</div>
 <div class="form3group"><label class="form3label">Inspector / Lead auditor</label><select id="if-sign-inspector"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Date signed</label><input type="date" id="if-sign-date"/></div>
-<div class="form3group"><label class="form3label">Reviewer</label><select id="if-sign-reviewer"><option value="">Select person...</option></select></div>
-<div class="form3group"><label class="form3label">Review date</label><input type="date" id="if-sign-reviewer-date"/></div>
+<div class="form3group"><label class="form3label">Assigned independent reviewer</label><select id="audit-reviewer-profile"><option value="">Select a reviewer before submission...</option></select></div>
+<div id="audit-review-state" class="form3group" role="status">Review pending submission</div>
 </div>
 
 <!-- Findings summary (for audits) -->
