@@ -7292,7 +7292,7 @@ var CORE_WORKFLOW_TRANSITIONS={
 };
 var CORE_WORKFLOW_DEDICATED_TRANSITIONS={
   actions:['pending_verification>pending_closure','pending_closure>closed'],
-  risk:['pending_review>active','pending_review>rejected','pending_approval>active','pending_approval>rejected','review>active','review>rejected','active>draft']
+  risk:['pending_review>pending_approval','pending_review>active','pending_review>rejected','pending_approval>active','pending_approval>rejected','review>pending_approval','review>active','review>rejected','active>draft']
 };
 function coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus){
   var from=String(fromStatus||'').toLowerCase();
@@ -17417,9 +17417,9 @@ function raRenderWorkflowBar(rec){
     if(i<steps.length-1)h+='<div style="height:2px;width:34px;background:'+(i<activeIdx?'#1D9E75':'#e5e7eb')+'"></div>';
   });
   h+='<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">';
-  if(rec&&['pending_review','review','pending_approval'].includes(st)&&canAdministerControlledRecord()){
+  if(rec&&['pending_review','review','pending_approval'].includes(st)){
     h+='<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-generated-onclick="g0120"><i class="ti ti-circle-check"></i>Approve</button>';
-    h+='<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" data-auris-generated-onclick="g0121"><i class="ti ti-x"></i>Reject</button>';
+    if(canAdministerControlledRecord())h+='<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" data-auris-generated-onclick="g0121"><i class="ti ti-x"></i>Reject</button>';
   }
   if(rec&&controlledStatusIsLocked(st)&&canAdministerControlledRecord()){
     h+='<button class="btn btn-sm" data-auris-generated-onclick="g0122"><i class="ti ti-lock-open"></i>Release for edit</button>';
@@ -17427,7 +17427,7 @@ function raRenderWorkflowBar(rec){
   h+='</div></div>';
   el.innerHTML=h;
   var actions=document.getElementById('ra-approval-actions-card');
-  if(actions)actions.style.display=canAdministerControlledRecord()?'block':'none';
+  if(actions)actions.style.display=['pending_review','review','pending_approval'].includes(st)||canAdministerControlledRecord()?'block':'none';
   raRenderApprovalRoute(rec);
 }
 
@@ -17442,15 +17442,16 @@ async function raRenderApprovalRoute(rec){
   el.style.display='block';
   el.innerHTML='<i class="ti ti-loader-2"></i> Checking approval route...';
   try{
-    var route=await raGetActiveApprovalWorkflow();
+    var route=await raGetActiveApprovalWorkflow(rec);
     if(!route||!route.workflow){
       el.innerHTML='<i class="ti ti-info-circle"></i> No specific Risk Assessment workflow is configured. Admin/HSE Manager approval applies.';
       return;
     }
     var steps=route.steps||[];
-    var current=steps[0]||null;
+    var request=rec?.id?(await api('/approval_requests?module_name=eq.risk&related_table=eq.risk_assessments&related_id=eq.'+encodeURIComponent(rec.id)+'&status=in.(pending,pending_review,pending_approval)&limit=1'))?.[0]:null;
+    var current=steps.find(function(s){return Number(s.step_no)===Number(request?.current_step_no);})||steps[0]||null;
     var chips=steps.length?steps.map(function(s){
-      var isCurrent=current&&s.step_no===current.step_no;
+      var isCurrent=!['active','approved','rejected'].includes(st)&&current&&s.step_no===current.step_no;
       return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:'+(isCurrent?'#DBEAFE':'#F3F4F6')+';color:'+(isCurrent?'#1E40AF':'#475569')+';font-size:11px;font-weight:800">L'+escH(s.step_no||'?')+' - '+escH(raApprovalStepLabel(s))+'</span>';
     }).join(' '):'<span style="color:#64748b">No required approval steps configured</span>';
     var msg=['active','approved'].includes(st)
@@ -17599,13 +17600,15 @@ function raOpen(id){
 
 // -- Risk Scoring -------------------------------------------------------------
 function raRsSelect(n,prefix){
-  var h='<select title="Severity — use View scoring criteria for the selected matrix" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:70px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
-  for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
+  var labels=raMatrixSnapshot?AurisRiskLibrary.validateMatrix(raMatrixSnapshot).severity:['Negligible','Minor','Moderate','Major','Extreme'];
+  var h='<select title="Severity — selected matrix criteria" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:112px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
+  for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'>'+i+' · '+escH(labels[i-1])+'</option>';
   return h+'</select>';
 }
 function raRopSelect(n,prefix){
-  var h='<select title="Likelihood — use View scoring criteria for the selected matrix" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:70px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
-  for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
+  var labels=raMatrixSnapshot?AurisRiskLibrary.validateMatrix(raMatrixSnapshot).likelihood:['Rare','Unlikely','Possible','Likely','Almost Certain'];
+  var h='<select title="Likelihood — selected matrix criteria" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:112px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
+  for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'>'+i+' · '+escH(labels[i-1])+'</option>';
   return h+'</select>';
 }
 
@@ -17935,7 +17938,7 @@ async function raSave(targetStatus){
       var submitted=['pending_review','pending_approval','review'].includes(status);
       if(submitted){
         await raQueueApprovalRequest(updatedRa);
-        var route=await raGetActiveApprovalWorkflow();
+        var route=await raGetActiveApprovalWorkflow(updatedRa);
         await raQueueApprovalNotice(updatedRa,(route&&route.steps&&route.steps[0])||null);
       }
       raAudit(submitted?'submit':'update',submitted?'Risk assessment submitted for approval':'Risk assessment updated',updatedRa,{old_status:currentRa?.status||null,new_status:status,row_count:rows.length});
@@ -17960,7 +17963,7 @@ async function raSave(targetStatus){
         var newSubmitted=['pending_review','pending_approval','review'].includes(status);
         if(newSubmitted){
           await raQueueApprovalRequest(createdRa);
-          var newRoute=await raGetActiveApprovalWorkflow();
+          var newRoute=await raGetActiveApprovalWorkflow(createdRa);
           await raQueueApprovalNotice(createdRa,(newRoute&&newRoute.steps&&newRoute.steps[0])||null);
         }
         raAudit(newSubmitted?'submit':'create',newSubmitted?'Risk assessment created and submitted for approval':'Risk assessment created',createdRa,{new_status:status,row_count:rows.length});
@@ -17976,14 +17979,19 @@ async function raSave(targetStatus){
   }catch(e){var error=actionErrorMessage('Save risk assessment','Risk Assessment',e.message);raSubmissionFeedback(error);toast(error,false);console.error(e);}
 }
 
-async function raGetActiveApprovalWorkflow(){
+async function raGetActiveApprovalWorkflow(rec){
   var companyId=ccid();
   if(!companyId)return null;
   try{
-    var wf=await api('/approval_workflows?company_id=eq.'+companyId+'&module_name=eq.risk&is_active=eq.true&order=created_at.desc&limit=1');
-    if(!wf||!wf[0])return null;
-    var steps=await api('/approval_workflow_steps?workflow_id=eq.'+wf[0].id+'&order=step_no.asc')||[];
-    return {workflow:wf[0],steps:steps.filter(function(s){return s.required!==false;})};
+    var wf=await api('/approval_workflows?company_id=eq.'+companyId+'&module_name=eq.risk&is_active=eq.true&order=created_at.desc&limit=100');
+    if(!wf||!wf.length)return null;
+    rec=rec||raAllData.find(function(x){return x.id===raEditingId;})||{};
+    var residual=String(raSummariseRows(rec).residualLevel||'').toLowerCase();
+    var specific=wf.find(function(w){var applies=String(w.applies_to||'').toLowerCase();return applies.startsWith('residual:')&&applies.slice(9).split(',').map(function(x){return x.trim();}).includes(residual);});
+    var selected=specific||wf.find(function(w){return !w.applies_to||/\ball\b/i.test(String(w.applies_to));})||(wf.length===1?wf[0]:null);
+    if(!selected)return null;
+    var steps=await api('/approval_workflow_steps?workflow_id=eq.'+selected.id+'&order=step_no.asc')||[];
+    return {workflow:selected,steps:steps.filter(function(s){return s.required!==false;})};
   }catch(e){
     console.warn('[RA] Approval workflow unavailable:',e.message);
     return null;
@@ -18090,15 +18098,18 @@ async function raQueueStatusNotice(rec,event,details){
   }catch(e){}
 }
 
-async function raCurrentApprovalStep(){
-  var route=await raGetActiveApprovalWorkflow();
+async function raCurrentApprovalStep(rec){
+  var route=await raGetActiveApprovalWorkflow(rec);
   if(!route||!route.steps||!route.steps.length)return null;
-  return route.steps[0]||null;
+  var id=rec?.id||raEditingId;
+  var request=id?(await api('/approval_requests?module_name=eq.risk&related_table=eq.risk_assessments&related_id=eq.'+encodeURIComponent(id)+'&status=in.(pending,pending_review,pending_approval)&limit=1'))?.[0]:null;
+  var step=route.steps.find(function(s){return Number(s.step_no)===Number(request?.current_step_no);})||route.steps[0];
+  return {step:step,route:route,request:request};
 }
 
 async function raQueueApprovalRequest(rec){
   try{
-    var route=await raGetActiveApprovalWorkflow();
+    var route=await raGetActiveApprovalWorkflow(rec);
     if(!route||!route.workflow)return;
     var first=(route.steps||[])[0]||null;
     var id=rec?.id||raEditingId;
@@ -18134,16 +18145,33 @@ async function raCloseApprovalRequest(status){
   }
 }
 
+async function raRecordApprovalDecision(request,step,decision){
+  if(!request?.id||!step?.step_no)return;
+  var existing=await api('/approval_decisions?select=id&request_id=eq.'+encodeURIComponent(request.id)+'&step_no=eq.'+encodeURIComponent(step.step_no)+'&limit=1');
+  if(existing?.length)return;
+  await api('/approval_decisions',{m:'POST',p:'return=minimal',b:{request_id:request.id,step_no:step.step_no,decision:decision||'approved',decided_by:prof?.id||null,decided_by_name:prof?.full_name||prof?.email||null}});
+}
+
 async function raApproveCurrent(){
   if(!raEditingId)return;
-  if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve risk assessments',false);return;}
   var currentApprovalRa=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  var pending=await raCurrentApprovalStep(currentApprovalRa),expected=pending?.step||null;
+  if(!expected&&!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve an assessment without a configured approver.',false);return;}
+  if(expected&&!raApprovalStepAllows(expected)){toast('This RA is waiting for '+raApprovalStepLabel(expected)+' according to the approval workflow.',false);return;}
   if(typeof window.raxApprovalGuard==='function'&&!(await window.raxApprovalGuard(currentApprovalRa)))return;
   if(!coreWorkflowRequireTransition('risk',currentApprovalRa.status||'draft','active','Risk assessment'))return;
-  var expected=await raCurrentApprovalStep();
-  if(expected&&!raApprovalStepAllows(expected)){
-    toast('This RA is waiting for '+raApprovalStepLabel(expected)+' according to the approval workflow.',false);
-    return;
+  var next=pending?.route?.steps?.find(function(s){return Number(s.step_no)>Number(expected?.step_no);});
+  if(next){
+    try{
+      var reviewerName=prof?.full_name||prof?.email||'';
+      await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{status:'pending_approval',reviewed_by:reviewerName,ra_sign_reviewer:reviewerName,ra_sign_reviewer_date:raLocalDate(new Date()),updated_at:new Date().toISOString()}});
+      if(pending.request)await api('/approval_requests?id=eq.'+pending.request.id,{m:'PATCH',p:'return=minimal',b:{current_step_no:next.step_no,status:'pending_approval',updated_at:new Date().toISOString()}});
+      await raRecordApprovalDecision(pending.request,expected,'approved').catch(function(error){console.warn('[RA] Approval decision audit could not be saved',error);});
+      Object.assign(currentApprovalRa,{status:'pending_approval',reviewed_by:reviewerName,ra_sign_reviewer:reviewerName,ra_sign_reviewer_date:raLocalDate(new Date())});
+      raRenderWorkflowBar(currentApprovalRa);await raQueueApprovalNotice(currentApprovalRa,next);
+      raAudit('review','Risk assessment advanced to next approval step',currentApprovalRa,{completed_step:expected.step_no,next_step:next.step_no,reviewer:reviewerName});
+      toast('Review recorded. Waiting for '+raApprovalStepLabel(next));return;
+    }catch(e){toastActionError('Advance risk assessment approval','Risk Assessment',e);return;}
   }
   var reviewer=currentApprovalRa.ra_sign_reviewer||null;
   var approver=prof?.full_name||prof?.email||'';
@@ -18172,7 +18200,9 @@ async function raApproveCurrent(){
     controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
     await raCloseApprovalRequest('approved');
+    await raRecordApprovalDecision(pending?.request,expected,'approved').catch(function(error){console.warn('[RA] Approval decision audit could not be saved',error);});
     raAudit('approve','Risk assessment approved and activated',rec,{reviewer:reviewer,approver:approver,new_status:'active'});
+    if(typeof window.raxPrepareBriefing==='function')await window.raxPrepareBriefing(rec).catch(function(error){toast('Assessment approved, but the worker briefing could not be prepared: '+error.message,false);});
     await raQueueStatusNotice(rec,'approved');
     toast('Risk assessment approved and activated');
   }catch(e){toastActionError('Approve risk assessment','Risk Assessment',e);}
@@ -18257,7 +18287,7 @@ async function raGenRef(type){
 
 async function raSyncToMAP(raId, rows){
   var ra=(raAllData||[]).find(function(x){return String(x.id)===String(raId);})||{},sourceRef=raRecordRef(ra);
-  var existing=await api('/action_tracker?select=id,action_no,description,responsible,target_date,status'+cf()+'&source_module=eq.risk&source_id=eq.'+encodeURIComponent(raId)+'&limit=500');
+  var existing=await api('/action_tracker?select=id,action_no,description,responsible,target_date,status'+cf()+'&source_module=eq.risk_assessment&source_id=eq.'+encodeURIComponent(raId)+'&limit=500');
   for(var i=0;i<rows.length;i++){
     var r=rows[i],rl=r.res_rl||r.rl||'',further=String(r.further_controls||'').trim();
     if(!further&&!['Critical','Very High','High'].includes(rl))continue;
@@ -18271,7 +18301,7 @@ async function raSyncToMAP(raId, rows){
       if(found.description!==description||found.responsible!==changes.responsible||String(found.target_date||'')!==String(changes.target_date||''))await api('/action_tracker?id=eq.'+encodeURIComponent(found.id)+cf(),{m:'PATCH',p:'return=minimal',b:changes});
       continue;
     }
-    await api('/action_tracker',{m:'POST',p:'return=minimal',b:Object.assign({company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,status:'open',verification_status:'pending',created_by:prof?.id},changes)});
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:Object.assign({company_id:ccid(),source_module:'risk_assessment',source_id:raId,source_ref:sourceRef,status:'open',verification_status:'pending',created_by:prof?.id},changes)});
   }
 }
 
@@ -19077,10 +19107,11 @@ async function raLoadRevisions(){
         +'<span style="font-size:11px;color:var(--text2)">'+escH(r.changed_by||'-')+'</span>'
         +'</div>'
         +'<div style="font-size:12px;color:#374151">'+escH(r.change_notes||'No notes')+'</div>'
+        +'<button type="button" class="btn btn-sm ra-revision-compare" data-revision-index="'+d.indexOf(r)+'">Compare hazards and controls with current</button>'
         +'</div>';
     });
     h+='</div>';
-    if(el)el.innerHTML=h;
+    if(el){el.innerHTML=h;el.querySelectorAll('.ra-revision-compare').forEach(function(button){button.addEventListener('click',function(){var revision=d[Number(button.dataset.revisionIndex)];if(typeof window.raxShowRevisionComparison==='function')window.raxShowRevisionComparison(revision?.snapshot,raAllData.find(function(x){return x.id===raEditingId;}),revision?.revision);});});}
   }catch(e){el.innerHTML='<div style="color:var(--text2);font-size:12px">Could not load revisions</div>';}
 }
 
@@ -19220,21 +19251,11 @@ async function raGetControlSuggestions(btn){
 }
 
 async function raGetControlSuggestionsForHazard(hazardType){
-  try{
-    var d=await api('/control_library?hazard_type=eq.'+encodeURIComponent(hazardType)+raLibCompanyQuery()+'&limit=5');
-    if(d&&d.length){
-      var rows=document.querySelectorAll('#ra-baseline-body tr, #ra-hira-body tr, #ra-task-body tr');
-      var lastRow=rows[rows.length-1];
-      if(lastRow){
-        var el=lastRow.querySelector('.ra-controls');
-        var hocEl=lastRow.querySelector('.ra-hoc');
-        if(el&&!el.value){
-          el.value=d.map(c=>c.control_description).join('\n');
-          if(hocEl&&d[0].hierarchy_level)hocEl.value=d[0].hierarchy_level;
-        }
-      }
-    }
-  }catch(ex){}
+  // A library control is only a suggestion until the assessor confirms it for this site.
+  var rows=document.querySelectorAll('#ra-baseline-body tr, #ra-hira-body tr, #ra-task-body tr');
+  var lastRow=rows[rows.length-1];
+  if(lastRow&&typeof window.raxOpenHazardRow==='function')window.raxOpenHazardRow(lastRow);
+  else toast('Hazard added. Review site-specific controls and scores before submission.');
 }
 
 // -- Libraries View ------------------------------------------------------------
