@@ -4425,10 +4425,11 @@ Offline mode - changes will sync when connection is restored
 <option value="">All zones</option><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2">Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option>
 </select>
 <select id="atex-filter-status" class="auris-atex-s-d35063206b" data-auris-onchange="h0498">
-<option value="active" selected>Active areas</option><option value="">All statuses</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option>
+<option value="active" selected>Active areas</option><option value="">All statuses</option><option value="awaiting_review">Awaiting review</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option>
 </select>
 </div>
 </div>
+<div id="atex-save-status" role="status" aria-live="polite"></div>
 <div id="atex-list"><div class="loading-msg">Loading ATEX areas...</div></div>
 </div>
 
@@ -4442,6 +4443,7 @@ Offline mode - changes will sync when connection is restored
 <button class="btn btn-primary" data-auris-onclick="h0501"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
+<div id="atex-form-save-status" role="alert" aria-live="assertive"></div>
 </div>
 <div class="auris-atex-s-f1bc427372">
 <div>
@@ -4454,7 +4456,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Plant area</label><input type="text" id="atex-plant"/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Zone type</label><select id="atex-zone"><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2" selected>Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option></select></div>
+<div class="form3group"><label class="form3label">Zone type *</label><select id="atex-zone"><option value="" selected>Select after classification review</option><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2">Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option></select></div>
 <div class="form3group"><label class="form3label">Material type</label><select id="atex-material"><option value="gas_vapour">Gas / vapour</option><option value="dust">Combustible dust</option><option value="hybrid">Hybrid mixture</option></select></div>
 <div class="form3group"><label class="form3label">Substance / dust</label><input type="text" id="atex-substance" placeholder="LPG, solvent vapour, flour dust..."/></div>
 <div class="form3group"><label class="form3label">Source of release</label><input type="text" id="atex-release" placeholder="Valve, filling point, open container..."/></div>
@@ -4471,7 +4473,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card">
 <div class="card-title">Links</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Linked equipment</label><input type="text" id="atex-equipment" placeholder="Ex motors, gas detector, ventilation fan..."/></div>
+<div class="form3group"><label class="form3label">Linked equipment record</label><select id="atex-equipment-id"><option value="">Select equipment...</option></select><label class="form3label">Equipment notes</label><input type="text" id="atex-equipment" placeholder="Ex certificate or installation notes..."/></div>
 <div class="form3group"><label class="form3label">Linked RA reference</label><select id="atex-ra"><option value="">Select risk assessment...</option></select></div>
 <div class="form3group"><label class="form3label">Linked permit record</label><select id="atex-permit"><option value="">Select an actual permit...</option></select></div>
 </div>
@@ -4480,8 +4482,9 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-atex-s-42a6ced8b6">
 <div class="card-title">Inspection & Status</div>
-<div class="form3group"><label class="form3label">Status</label><select id="atex-status"><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option></select></div>
+<div class="form3group"><label class="form3label">Status</label><select id="atex-status"><option value="awaiting_review">Awaiting classification review</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option></select></div>
 <div class="form3group"><label class="form3label">Responsible person</label><select id="atex-resp"><option value="">Select person...</option></select></div>
+<div class="form3group"><label class="form3label">Inspection interval (months)</label><input type="number" id="atex-interval" min="1" max="60" value="12"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Last inspection</label><input type="date" id="atex-last"/></div>
 <div class="form3group"><label class="form3label">Next inspection</label><input type="date" id="atex-next"/></div>
@@ -11327,18 +11330,21 @@ I can help you:<br>
         <div class="auris-site-map-s-116ec43738">
           <div>
             <div class="card-title auris-site-map-s-ab79ea2b85">Operational Location Map</div>
-            <div class="auris-site-map-s-7299078644">Markers use saved positions first. Unpositioned markers are placed automatically until you position them on the plan.</div>
+            <div class="auris-site-map-s-7299078644">Only explicitly positioned markers appear on this plan. Unpositioned locations remain in the list.</div>
           </div>
           <div class="auris-site-map-s-c146410e3a">
             <button class="btn btn-sm" data-auris-onclick="h1231"><i class="ti ti-map-pin-plus"></i>Position selected location</button>
+            <button class="btn btn-sm" id="sitemap-cancel-placement" type="button" hidden>Cancel placement</button>
             <button class="btn btn-sm" id="sitemap-event-toggle" data-auris-onclick="h1232"><i class="ti ti-alert-triangle"></i>Hide incidents</button>
             <button class="btn btn-sm" id="sitemap-risk-toggle" data-auris-onclick="h1233"><i class="ti ti-shield-exclamation"></i>Hide high risks</button>
+            <button class="btn btn-sm" id="sitemap-atex-toggle" type="button">Hide controlled ATEX zones</button>
             <div class="auris-site-map-s-a8697912d2">
               <span><span class="auris-site-map-s-65d72b4357"></span> Low</span>
               <span><span class="auris-site-map-s-b5f14d9f0a"></span> Active</span>
               <span><span class="auris-site-map-s-fdacbacca5"></span> High</span>
               <span><span class="auris-site-map-s-f6015f1b40"></span> Incident dot</span>
               <span><span class="auris-site-map-s-e01dcde4e5"></span> High risk</span>
+              <span>ATEX = controlled zone at a positioned location; blue dot = linked layout</span>
             </div>
           </div>
         </div>

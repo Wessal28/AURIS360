@@ -1145,13 +1145,13 @@ fireSwitchTab('layout')
 this.parentNode.remove()
     },
     "g0382": function (event) {
-showPage('events',null)
+dashNavigateTo('events',siteMapState.selectedEvent&&siteMapState.selectedEvent.id)
     },
     "g0383": function (event) {
 smClearMapEvent()
     },
     "g0384": function (event) {
-showPage('risk',null)
+dashNavigateTo('risk',siteMapState.selectedRisk&&siteMapState.selectedRisk.id)
     },
     "g0385": function (event) {
 smClearMapRisk()

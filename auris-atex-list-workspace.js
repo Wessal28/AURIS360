@@ -2,7 +2,7 @@
 'use strict';
 
 var zones={zone_0:'Zone 0',zone_1:'Zone 1',zone_2:'Zone 2',zone_20:'Zone 20',zone_21:'Zone 21',zone_22:'Zone 22'};
-var statuses={controlled:'Controlled',action_required:'Action required',out_of_service:'Out of service',archived:'Archived'};
+var statuses={awaiting_review:'Awaiting review',controlled:'Controlled',action_required:'Action required',out_of_service:'Out of service',archived:'Archived'};
 function session(){
   var services=root.AurisPlatformServices;
   if(!services||!services.ready(['auth','rbac'])||!services.auth.isAuthenticated())throw new Error('Sign in and select a company to view ATEX areas.');
@@ -30,7 +30,7 @@ function definition(){return {rowKey:'id',views:['list','card','board','calendar
   {key:'reference',label:'Reference',required:true,groupable:false,action:'open'},{key:'title',label:'ATEX area',required:true,groupable:false,action:'open'},
   {key:'location',label:'Location'},{key:'plant_area',label:'Plant area',hidden:true},{key:'zone',label:'Zone'},{key:'material',label:'Material'},{key:'substance',label:'Substance'},{key:'controls',label:'Main controls',hidden:true},{key:'responsible',label:'Responsible person'},
   {key:'next_inspection',label:'Next inspection',type:'date',groupable:false,action:'edit'},{key:'inspection',label:'Inspection',type:'badge',groupable:false,tones:{Overdue:'danger','Due soon':'warning',Current:'success','Not scheduled':'warning'}},{key:'attention',label:'Attention',type:'badge',groupable:false,tones:{'Inspection overdue':'danger','Inspection due soon':'warning','Action required':'warning','Out of service':'danger','—':'success'}},
-  {key:'status',label:'Status',type:'badge',tones:{Controlled:'success','Action required':'warning','Out of service':'danger',Archived:'neutral','Not recorded':'neutral'}},{key:'linked_ra',label:'Risk assessment',hidden:true},{key:'linked_permit',label:'Permit',hidden:true},{key:'updated_at',label:'Updated',type:'datetime',groupable:false,hidden:true}
+  {key:'status',label:'Status',type:'badge',tones:{'Awaiting review':'warning',Controlled:'success','Action required':'warning','Out of service':'danger',Archived:'neutral','Not recorded':'neutral'}},{key:'linked_ra',label:'Risk assessment',hidden:true},{key:'linked_permit',label:'Permit',hidden:true},{key:'updated_at',label:'Updated',type:'datetime',groupable:false,hidden:true}
 ]};}
 function mount(host,rows,options){
   options=options||{};var current=session();if(!root.AurisViewEngine)throw new Error('The shared ATEX register is unavailable. Reload the application.');var projected=project(rows,current,options);
