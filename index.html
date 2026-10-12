@@ -2551,9 +2551,9 @@
 
 <!-- Metrics -->
 <div class="auris-audit-s-0b8cad26ad">
-<div class="card auris-audit-s-b6d403ee7e"><div class="auris-audit-s-d68348462c">Total</div><div id="audit-m3total" class="auris-audit-s-6f56b8363e">-</div></div>
+<div class="card auris-audit-s-b6d403ee7e"><div class="auris-audit-s-d68348462c">All audits &amp; inspections</div><div id="audit-m3total" class="auris-audit-s-6f56b8363e">-</div></div>
 <div class="card auris-audit-s-7a5e61eb83"><div class="auris-audit-s-d68348462c">Completed</div><div id="audit-m3done" class="auris-audit-s-1e4fd5f9ed">-</div></div>
-<div class="card auris-audit-s-03bd966c28"><div class="auris-audit-s-d68348462c">Open Findings</div><div id="audit-m3findings" class="auris-audit-s-ffe267bce1">-</div></div>
+<div class="card auris-audit-s-03bd966c28"><div class="auris-audit-s-d68348462c">All outstanding findings</div><div id="audit-m3findings" class="auris-audit-s-ffe267bce1">-</div></div>
 <div class="card auris-audit-s-c70473e794"><div class="auris-audit-s-d68348462c">Overdue</div><div id="audit-m3overdue" class="auris-audit-s-2062f090bc">-</div></div>
 <div class="card auris-audit-s-24ac637923"><div class="auris-audit-s-d68348462c">Major NCs</div><div id="audit-m3major" class="auris-audit-s-bc6456303a">-</div></div>
 <div class="card auris-audit-s-a5cd1e43c2"><div class="auris-audit-s-d68348462c">Avg Score</div><div id="audit-m3score" class="auris-audit-s-48aeeeda5f">-</div></div>
@@ -2650,7 +2650,7 @@
 </div>
 <div class="card auris-audit-s-d6a6bf375f"><div class="card-title auris-audit-s-ea719d3b52">Go / Hold / Stop</div>
 <div class="auris-audit-s-0fbf9e859f">
-<label class="auris-audit-s-c5a78eb56a"><input class="auris-audit-s-283f12d7fe" type="radio" name="ps-dec" value="go" checked/><span id="ps-decision-go-lbl" class="auris-audit-s-396e3458a1">GO - Safe to proceed</span></label>
+<label class="auris-audit-s-c5a78eb56a"><input class="auris-audit-s-283f12d7fe" type="radio" name="ps-dec" value="go"/><span id="ps-decision-go-lbl" class="auris-audit-s-396e3458a1">GO - Safe to proceed</span></label>
 <label class="auris-audit-s-00ff6b8c67"><input class="auris-audit-s-90cf399257" type="radio" name="ps-dec" value="hold"/><span id="ps-decision-hold-lbl" class="auris-audit-s-2357285a1c">HOLD - Issues to resolve</span></label>
 <label class="auris-audit-s-9a709e2a2d"><input class="auris-audit-s-af62d68b87" type="radio" name="ps-dec" value="stop"/><span id="ps-decision-stop-lbl" class="auris-audit-s-2d66399f0c">STOP - Do NOT proceed</span></label>
 </div>
@@ -2687,6 +2687,7 @@
 <!-- ---------- MAIN INSPECTION / AUDIT FORM ---------- -->
 <div id="audit-form3view" class="auris-audit-s-6aa34d7432">
 <div class="card auris-audit-s-54ec8874e7">
+<div id="audit-form-feedback" role="status" hidden></div>
 <div id="audit-form3banner" class="auris-audit-s-69e187f31c">
 <div>
 <div id="audit-form3type-label" class="auris-audit-s-c542f2bc2e">Inspection</div>
@@ -2696,7 +2697,7 @@
 <div class="auris-audit-s-c9dc9b5648">
 <button class="btn auris-audit-s-5c09edd131" data-auris-onclick="h0308"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="audit-delete-btn" class="btn auris-audit-s-0e610f7b67" data-auris-onclick="h0309"><i class="ti ti-trash"></i></button>
-<button class="btn auris-audit-s-c35b8f39aa" id="audit-ai-btn" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button class="btn auris-audit-s-7e63926b0f" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn auris-audit-s-c35b8f39aa" id="audit-ai-btn" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button id="audit-save-btn" class="btn auris-audit-s-7e63926b0f" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -2719,6 +2720,7 @@
 <div class="audit-type-btn auris-audit-s-22dbfce4ab" data-type="regulatory"      data-auris-onclick="h0322"     ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-629b69c674">Regulatory</div></div>
 </div>
 <input type="hidden" id="audit-type" value="workplace"/>
+<div id="audit-equipment-row" hidden><label class="form3label" for="audit-equipment-asset">Registered equipment</label><select id="audit-equipment-asset"><option value="">Select equipment from this company's register…</option></select><p id="audit-equipment-details" role="status"></p></div>
 <!-- ISO/Audit standard selector (shown for audit types) -->
 <div id="audit-standard-row" class="auris-audit-s-6aa34d7432">
 <div class="form3row">
