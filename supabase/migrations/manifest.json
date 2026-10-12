@@ -271,6 +271,11 @@
       "order": 54,
       "file": "20261012120000_permit_lifecycle_statuses.sql",
       "sha256": "0989adc529c3ac33255a47170b2f642c97d5376873a8825fd06e7425d22ef715"
+    },
+    {
+      "order": 55,
+      "file": "20261013100000_permit_reference_approval_snapshot.sql",
+      "sha256": "1aad27b81f067911c2c418c282b781e98c7a18afa472d173570ebe582cafce2d"
     }
   ]
 }
