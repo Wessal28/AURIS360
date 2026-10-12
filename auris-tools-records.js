@@ -39,7 +39,13 @@ async function toolsReadHistory(row,current){
 function toolsHistoryHtml(result){
   var info=result.info;
   if(result.error)return '<section><h3>'+escH(info.title)+'</h3><p role="alert">This history could not be loaded. Reload this record to retry.</p></section>';
-  return '<section><h3>'+escH(info.title)+'</h3>'+(result.limited?'<p>Showing the latest 200 records. Open the corresponding register for older history.</p>':'')+(result.rows.length?'<div class="equipment-table"><table><thead><tr>'+info.fields.map(function(pair){return '<th>'+escH(pair[1])+'</th>';}).join('')+'</tr></thead><tbody>'+result.rows.map(function(row){return '<tr>'+info.fields.map(function(pair){var value=row[pair[0]],href=pair[0]==='evidence_reference'?toolsEvidenceHref(value):'';return '<td>'+(href?'<a target="_blank" rel="noopener noreferrer" href="'+escH(href)+'">View evidence</a>':escH(value==null||value===''?'—':String(value).replace(/_/g,' ')))+(info.table==='tool_inspections'&&pair[0]==='overall_result'?'<br><button class="btn" data-equipment-inspection="'+escH(row.id)+'">View inspection</button>':'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<p>No records recorded.</p>')+'</section>';
+  return '<section><h3>'+escH(info.title)+'</h3>'+(result.limited?'<p>Showing the latest 200 records. Open the corresponding register for older history.</p>':'')+(result.rows.length?'<div class="equipment-table"><table><thead><tr>'+info.fields.map(function(pair){return '<th>'+escH(pair[1])+'</th>';}).join('')+'</tr></thead><tbody>'+result.rows.map(function(row){return '<tr>'+info.fields.map(function(pair){var value=row[pair[0]],href=pair[0]==='evidence_reference'?toolsEvidenceHref(value):'',reference=pair[0]==='reference'&&['equipment_assurance_records','equipment_maintenance_events','equipment_defects'].includes(info.table);return '<td>'+(href?'<a target="_blank" rel="noopener noreferrer" href="'+escH(href)+'">View evidence</a>':reference?'<button type="button" class="btn btn-sm" data-equipment-reference="'+escH(info.table)+'" data-reference-id="'+escH(row.id)+'" aria-label="Open '+escH(value||'record')+'">'+escH(value||'Open record')+'</button>':escH(value==null||value===''?'—':String(value).replace(/_/g,' ')))+(info.table==='tool_inspections'&&pair[0]==='overall_result'?'<br><button class="btn" data-equipment-inspection="'+escH(row.id)+'">View inspection</button>':'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<p>No records recorded.</p>')+'</section>';
+}
+function toolsShowHistoryEntry(info,row){
+  document.getElementById('equipment-history-entry')?.remove();
+  var overlay=document.createElement('div');overlay.id='equipment-history-entry';overlay.className='equipment-overlay';
+  overlay.innerHTML='<article class="equipment-window" role="dialog" aria-modal="true" aria-label="Equipment history record"><header><div><p>'+escH(info.title)+'</p><h2>'+escH(row.reference||'Record')+'</h2></div><button class="btn" data-history-close>Close</button></header><div class="equipment-content">'+toolsRecordFields(row,info.fields)+'</div></article>';
+  document.body.appendChild(overlay);overlay.querySelector('[data-history-close]').addEventListener('click',function(){overlay.remove();});overlay.addEventListener('click',function(event){if(event.target===overlay)overlay.remove();});
 }
 function toolsShowRecord(row,current,history){
   AurisToolsListWorkspace.assertSession(current);
@@ -52,6 +58,7 @@ function toolsShowRecord(row,current,history){
   host.querySelector('[data-equipment-print]').addEventListener('click',function(){printRegisterView('Equipment Record - '+(row.name||''),'#equipment-record .equipment-content');});
   host.querySelector('[data-equipment-edit]')?.addEventListener('click',function(){toolsRecordWindow(row.id,'edit');});
   host.querySelectorAll('[data-equipment-inspection]').forEach(function(button){button.addEventListener('click',function(){toolsViewInspection(button.dataset.equipmentInspection);});});
+  host.querySelectorAll('[data-equipment-reference]').forEach(function(button){button.addEventListener('click',function(){var record=history.find(function(result){return result.info.table===button.dataset.equipmentReference;}),entry=record?.rows.find(function(item){return String(item.id)===button.dataset.referenceId;});if(entry)toolsShowHistoryEntry(record.info,entry);});});
   host.querySelector('[data-equipment-close]').focus();
 }
 async function toolsOpenLinkedRecord(req){
