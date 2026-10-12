@@ -241,6 +241,21 @@
       "order": 48,
       "file": "20261012060000_fleet_service_schedule.sql",
       "sha256": "407a9731f6c76da92fc4c872868732e3180b4a868b71f8acda67d9aee6f3c7e7"
+    },
+    {
+      "order": 49,
+      "file": "20261012070000_fleet_atomic_monthly_check.sql",
+      "sha256": "a3bea09edcf2c95132df94c28cff3ffbb3d6562ebd69017c10ae055568961220"
+    },
+    {
+      "order": 50,
+      "file": "20261012080000_fleet_follow_up_audit.sql",
+      "sha256": "76b804d31d6804e5880d44b861586d21d4311b4dae0ace9d2b2bf46d9f972e94"
+    },
+    {
+      "order": 51,
+      "file": "20261012090000_equipment_due_reminders.sql",
+      "sha256": "b48f3f997105ad124eb646aa325b0c9387bbb9cda935ae3c2c57d4c1d7fd12e7"
     }
   ]
 }
