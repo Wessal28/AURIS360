@@ -8,7 +8,25 @@ begin
     ('Replay site','2026-10-12','workplace','open','Replay inspector','monthly',
      '[{"category":"Site","item":"Guard","result":"insufficient","observation":"Repair"}]'::jsonb)
   returning id into source_id;
-  update public.inspections set status='completed' where id=source_id;
+  begin
+    update public.inspections set sign_reviewer='Forged reviewer' where id=source_id;
+    raise exception 'Direct reviewer signature bypassed the review workflow';
+  exception when raise_exception then
+    if sqlerrm='Direct reviewer signature bypassed the review workflow' then raise; end if;
+  end;
+  begin
+    update public.inspections set status='completed' where id=source_id;
+    raise exception 'Direct completion bypassed the review workflow';
+  exception when raise_exception then
+    if sqlerrm='Direct completion bypassed the review workflow' then raise; end if;
+  end;
+  if exists(select 1 from public.inspections where recurrence_origin_id=source_id) then
+    raise exception 'A recurrence was prepared before approval';
+  end if;
+  -- The review RPC sets this transaction-local flag after checking the reviewer.
+  perform set_config('auris.inspection_review_decision','allowed',true);
+  update public.inspections set status='completed',review_status='approved' where id=source_id;
+  perform set_config('auris.inspection_review_decision','',true);
   select id,items->0->>'result' into next_id,answer
     from public.inspections where recurrence_origin_id=source_id;
   if next_id is null or answer is not null then
@@ -17,7 +35,9 @@ begin
   if (select inspection_date from public.inspections where id=next_id) <> date '2026-11-12' then
     raise exception 'Next inspection date is incorrect';
   end if;
+  perform set_config('auris.inspection_review_decision','allowed',true);
   update public.inspections set status='closed' where id=source_id;
+  perform set_config('auris.inspection_review_decision','',true);
   if (select count(*) from public.inspections where recurrence_origin_id=source_id) <> 1 then
     raise exception 'Recurring inspection was duplicated';
   end if;
