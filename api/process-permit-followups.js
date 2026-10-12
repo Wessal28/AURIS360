@@ -26,10 +26,14 @@ async function processFollowups(options = {}) {
       if (!company) { company = await loadCompany(context, companyId); companyCache.set(companyId, company); }
       const references = await loadReferences(context, companyId, permits);
       for (const permit of permits) {
-        for (const event of planEvents(permit, references, now)) {
-          const recipients = event.kind === 'permit_approval_reminder'
+        for (let event of planEvents(permit, references, now)) {
+          let recipients = event.kind === 'permit_approval_reminder'
             ? approvalRecipients(permit, company)
             : followupRecipients(permit, company.profiles);
+          if (event.kind === 'permit_approval_reminder' && !recipients.length) {
+            event = { kind: 'permit_approval_route_missing', title: 'Approval level ' + event.level + ' has no configured contact', level: event.level };
+            recipients = managerRecipients(company.profiles);
+          }
           for (const recipient of recipients) {
             const notification = notificationFor(permit, event, recipient, day, now);
             if (await queue(context, notification)) queued++;
@@ -145,6 +149,11 @@ function followupRecipients(permit, profiles) {
   return [...new Map(selected.map(profile => [profile.id, { profile_id: profile.id, email: bestEmail(profile), name: profile.full_name || bestEmail(profile) }])).values()];
 }
 
+function managerRecipients(profiles) {
+  return profiles.filter(profile => MANAGER_ROLES.has(profile.role) && bestEmail(profile))
+    .map(profile => ({ profile_id: profile.id, email: bestEmail(profile), name: profile.full_name || bestEmail(profile) }));
+}
+
 function notificationFor(permit, event, recipient, day, now) {
   const ref = permit.permit_number || permit.id;
   const url = 'https://auris360.app/?goto=permit';
@@ -154,7 +163,7 @@ function notificationFor(permit, event, recipient, day, now) {
     subject: '[AURIS360] ' + event.title + ': ' + ref,
     body_html: '<p>' + escapeHtml(event.title) + ' for permit <strong>' + escapeHtml(ref) + '</strong>.</p><p>Review the permit and record the required decision or confirmation in AURIS360.</p>',
     to_email: recipient.email, to_name: recipient.name, status: 'pending', channel: recipient.profile_id ? 'in_app' : 'email',
-    priority: ['permit_closure_followup', 'permit_expired_unstarted', 'permit_document_review'].includes(event.kind) ? 'high' : 'normal',
+    priority: ['permit_closure_followup', 'permit_expired_unstarted', 'permit_document_review', 'permit_approval_route_missing'].includes(event.kind) ? 'high' : 'normal',
     related_id: permit.id, related_table: 'permits', related_module: 'permit', related_ref: ref,
     record_url: url, metadata: { event: event.kind, approval_level: event.level || null, planned_end: permit.planned_end || null,
       relationship: { module: 'permit', table: 'permits', id: permit.id, ref, company_id: permit.company_id, url } },

@@ -131,3 +131,29 @@ test('a previously queued daily reminder is counted as a duplicate, not a new no
     if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_KEY;else process.env.SUPABASE_SERVICE_KEY=oldKey;
   }
 });
+
+test('unconfigured approval route alerts managers without giving them approval authority',async()=>{
+  const oldUrl=process.env.SUPABASE_URL,oldKey=process.env.SUPABASE_SERVICE_KEY;
+  process.env.SUPABASE_URL='https://example.invalid';process.env.SUPABASE_SERVICE_KEY='test-service-key';
+  const pending={...permit,status:'pending_approval',approval_level_required:1,approval_l1_status:'pending'};
+  const writes=[];
+  const fetchImpl=async(url,init={})=>{
+    const route=new URL(url).pathname;
+    if(init.method==='POST'){writes.push(JSON.parse(init.body));return {ok:true,status:201};}
+    let rows=[];
+    if(route.endsWith('/permits'))rows=[pending];
+    if(route.endsWith('/profiles'))rows=[profile];
+    if(route.endsWith('/risk_assessments'))rows=[references.risks.get(id(3))];
+    return {ok:true,json:async()=>rows};
+  };
+  try{
+    await worker.processFollowups({now,fetchImpl});
+    assert.equal(writes.length,1);
+    assert.equal(writes[0].type,'permit_approval_route_missing');
+    assert.equal(writes[0].recipient_profile_id,profile.id);
+    assert.match(writes[0].subject,/no configured contact/);
+  }finally{
+    if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;
+    if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_KEY;else process.env.SUPABASE_SERVICE_KEY=oldKey;
+  }
+});
