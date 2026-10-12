@@ -74,7 +74,7 @@ begin
      and old.status is distinct from new.status then
     update public.audit_findings
        set status='awaiting_verification',updated_at=now()
-     where company_id=new.company_id and linked_action_id=new.id
+     where company_id is not distinct from new.company_id and linked_action_id=new.id
        and status in ('open','in_progress');
   end if;
   return new;
