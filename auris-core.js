@@ -27250,7 +27250,7 @@ function fleetOpenVehicleForm(id){
 // ===== ATEX / HAZARDOUS AREA MODULE =====
 let atexAreas=[], atexEditId=null;
 const ATEX_ZONE_LABELS={zone_0:'Zone 0',zone_1:'Zone 1',zone_2:'Zone 2',zone_20:'Zone 20',zone_21:'Zone 21',zone_22:'Zone 22'};
-const ATEX_STATUS_CFG={controlled:['#EAF3DE','#3B6D11','Controlled'],action_required:['#FEF9EC','#854F0B','Action required'],out_of_service:['#FCEBEB','#A32D2D','Out of service'],archived:['#f3f4f6','#6B7280','Archived']};
+const ATEX_STATUS_CFG={awaiting_review:['#EFF6FF','#1D4ED8','Awaiting review'],controlled:['#EAF3DE','#3B6D11','Controlled'],action_required:['#FEF9EC','#854F0B','Action required'],out_of_service:['#FCEBEB','#A32D2D','Out of service'],archived:['#f3f4f6','#6B7280','Archived']};
 
 async function loadATEX(){
   var add=document.getElementById('atex-add-btn');
@@ -27259,7 +27259,13 @@ async function loadATEX(){
   if(print)print.style.display='inline-flex';
   var sf=document.getElementById('atex-filter-status');if(sf&&!sf.value)sf.value='active';
   var plan=document.getElementById('atex-plan-btn');if(plan&&!plan.dataset.bound){plan.dataset.bound='1';plan.addEventListener('click',atexToggleZoningPlan);}
+  ['atex-last','atex-interval'].forEach(function(id){var input=document.getElementById(id);if(input&&!input.dataset.dueBound){input.dataset.dueBound='1';input.addEventListener('change',atexUpdateNextInspection);}});
   await atexLoadRegister();
+}
+function atexUpdateNextInspection(){
+  var last=document.getElementById('atex-last')?.value,months=Number(document.getElementById('atex-interval')?.value),next=document.getElementById('atex-next');
+  if(!last||!next||!Number.isInteger(months)||months<1||months>60)return;
+  var date=new Date(last+'T12:00:00');date.setMonth(date.getMonth()+months);next.value=date.toISOString().slice(0,10);
 }
 
 async function atexLoadRegister(){
@@ -27304,7 +27310,7 @@ function atexRender(){
         openRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
           if(!row||String(row.company_id||'')!==String(typeof ccid==='function'?ccid():''))throw new Error('This ATEX area is outside the current company. Reload the register.');
-          return atexRecordWindow(id,'view');
+          return atexShowRecord(row,AurisAtexListWorkspace.session());
         },
         editRecord:function(id){
           var row=(atexAreas||[]).find(function(item){return String(item.id)===String(id);});
@@ -27353,7 +27359,7 @@ function atexRenderZoningPlan(){
   var el=document.getElementById('atex-zoning-plan');if(!el||el.hidden)return;
   var zones=['zone_0','zone_1','zone_2','zone_20','zone_21','zone_22'];
   var colors={zone_0:'#7F1D1D',zone_1:'#DC2626',zone_2:'#F97316',zone_20:'#581C87',zone_21:'#7E22CE',zone_22:'#A855F7'};
-  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><div class="card-title">ATEX site zoning plan</div><div style="font-size:12px;color:var(--text2)">Tenant-specific hazardous areas grouped by gas/vapour and dust zone. Use the Site Map module for spatial plan placement.</div></div><button class="btn btn-sm" id="atex-open-site-map"><i class="ti ti-map-pin"></i>Open Site Map</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px">'+zones.map(function(z){var rows=(atexAreas||[]).filter(function(x){return x.zone_type===z&&x.status!=='archived';});return '<section style="border:2px solid '+colors[z]+';border-radius:10px;overflow:hidden;background:#fff"><div style="padding:8px 10px;background:'+colors[z]+';color:#fff;font-weight:900">'+escH(ATEX_ZONE_LABELS[z])+' <span style="float:right">'+rows.length+'</span></div><div style="padding:9px 10px;min-height:70px;font-size:11px">'+(rows.length?rows.map(function(x){return '<div style="padding:4px 0;border-bottom:1px solid var(--border)"><strong>'+escH(x.area_name||x.area_ref||'Area')+'</strong><br>'+escH(x.location||x.plant_area||'Location not set')+'</div>';}).join(''):'No areas assigned')+'</div></section>';}).join('')+'</div>';
+  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><div class="card-title">Zone overview</div><div style="font-size:12px;color:var(--text2)">Classification summary only. Open Site Map for a spatial plan.</div></div><button class="btn btn-sm" id="atex-open-site-map"><i class="ti ti-map-pin"></i>Open spatial plan</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px">'+zones.map(function(z){var rows=(atexAreas||[]).filter(function(x){return x.zone_type===z&&x.status!=='archived';});return '<section style="border:2px solid '+colors[z]+';border-radius:10px;overflow:hidden;background:#fff"><div style="padding:8px 10px;background:'+colors[z]+';color:#fff;font-weight:900">'+escH(ATEX_ZONE_LABELS[z])+' <span style="float:right">'+rows.length+'</span></div><div style="padding:9px 10px;min-height:70px;font-size:11px">'+(rows.length?rows.map(function(x){return '<div style="padding:4px 0;border-bottom:1px solid var(--border)"><strong>'+escH(x.area_name||x.area_ref||'Area')+'</strong><br>'+escH(x.location||x.plant_area||'Location not set')+'</div>';}).join(''):'No areas assigned')+'</div></section>';}).join('')+'</div>';
   el.querySelector('#atex-open-site-map')?.addEventListener('click',function(){showPage('sitemap',null);toast('Site Map opened for spatial plan placement.');});
 }
 
@@ -27365,6 +27371,11 @@ function atexShowForm(show){
 async function atexLoadReferenceOptions(selectedRA,selectedPermit){
   var raSel=document.getElementById('atex-ra');
   var permitSel=document.getElementById('atex-permit');
+  var equipmentSel=document.getElementById('atex-equipment-id');
+  if(equipmentSel){
+    equipmentSel.innerHTML='<option value="">Select equipment...</option>';
+    try{var assets=await api('/tools_register?select=id,ref_number,name,serial_number,status'+cf()+'&order=name.asc&limit=300');(assets||[]).forEach(function(asset){var option=document.createElement('option');option.value=asset.id;option.textContent=[asset.ref_number,asset.name,asset.serial_number].filter(Boolean).join(' · ')+(asset.status==='out_of_service'?' [Out of service]':'');equipmentSel.appendChild(option);});}catch(error){console.warn('ATEX equipment selector:',error.message);}
+  }
   if(raSel){
     await fillRiskAssessmentSelect('atex-ra',selectedRA);
   }
@@ -27377,24 +27388,24 @@ async function atexLoadReferenceOptions(selectedRA,selectedPermit){
 
 async function atexNew(){
   atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
+  var feedback=document.getElementById('atex-form-save-status');if(feedback)feedback.textContent='';
   atexEditId=null;
   document.getElementById('atex-form3title').textContent='New ATEX Area';
   document.getElementById('atex-del-btn').style.display='none';
-  ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-equipment-id','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   await atexLoadReferenceOptions();
   atexAssertEditor();
   fillPersonSelect('atex-resp');
-  document.getElementById('atex-zone').value='zone_2';
+  document.getElementById('atex-zone').value='';
   document.getElementById('atex-material').value='gas_vapour';
-  document.getElementById('atex-status').value='controlled';
-  var next=new Date();next.setFullYear(next.getFullYear()+1);
-  var nx=document.getElementById('atex-next');if(nx)nx.value=next.toISOString().slice(0,10);
+  document.getElementById('atex-status').value='awaiting_review';
+  document.getElementById('atex-interval').value='12';
   atexShowForm(true);
 }
 
 async function atexEdit(id){
-  if(!atexOpeningRecord)return atexRecordWindow(id,'edit');
   atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
+  var feedback=document.getElementById('atex-form-save-status');if(feedback)feedback.textContent='';
   var x=atexAreas.find(r=>r.id===id);if(!x)return;
   atexEditId=id;
   document.getElementById('atex-form3title').textContent='Edit ATEX Area';
@@ -27403,10 +27414,12 @@ async function atexEdit(id){
   atexAssertEditor();
   var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  document.getElementById('atex-equipment-id').value=x.linked_equipment_id||'';
   fillPersonSelect('atex-resp',x.responsible_person||'');
-  document.getElementById('atex-zone').value=x.zone_type||'zone_2';
+  document.getElementById('atex-zone').value=x.zone_type||'';
   document.getElementById('atex-material').value=x.material_type||'gas_vapour';
   document.getElementById('atex-status').value=x.status||'controlled';
+  document.getElementById('atex-interval').value=x.inspection_interval_months||12;
   atexShowForm(true);
 }
 
@@ -27421,11 +27434,18 @@ async function atexSave(){
   if(!g('atex-location')){toast('Please enter the ATEX area location',false);return;}
   if(!g('atex-substance')){toast('Please enter the flammable substance or combustible dust',false);return;}
   if(!g('atex-ventilation')||!g('atex-ignition')){toast('Please describe ventilation and ignition source controls',false);return;}
+  if(!g('atex-zone')){toast('Select the reviewed ATEX zone before saving',false);return;}
+  var interval=Number(g('atex-interval'));
+  if(!Number.isInteger(interval)||interval<1||interval>60){toast('Enter an inspection interval of 1 to 60 months',false);return;}
   var nextDate=g('atex-next');
-  if(!nextDate){var d=new Date();d.setFullYear(d.getFullYear()+1);nextDate=d.toISOString().slice(0,10);}
+  if(!nextDate&&g('atex-last')){var d=new Date(g('atex-last')+'T12:00:00');d.setMonth(d.getMonth()+interval);nextDate=d.toISOString().slice(0,10);}
+  if(!nextDate){toast('Enter the last inspection or next inspection date',false);return;}
   var raLink=verifiedReferenceSelection('atex-ra'),permitLink=verifiedReferenceSelection('atex-permit'),permitOpt=document.getElementById('atex-permit')?.selectedOptions?.[0];
-  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:raLink.ref,linked_ra_id:raLink.id,linked_permit_ref:permitLink.ref,linked_permit_id:permitLink.id,linked_permit_type:permitOpt?.dataset?.permitType||null,last_inspection_date:g('atex-last'),next_inspection_date:nextDate,status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone'),material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_equipment_id:g('atex-equipment-id'),linked_ra_ref:raLink.ref,linked_ra_id:raLink.id,linked_permit_ref:permitLink.ref,linked_permit_id:permitLink.id,linked_permit_type:permitOpt?.dataset?.permitType||null,last_inspection_date:g('atex-last'),next_inspection_date:nextDate,inspection_interval_months:interval,status:g('atex-status')||'awaiting_review',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
   var previous=atexEditId?(atexAreas.find(function(x){return x.id===atexEditId;})||{}):{};
+  var classificationInputs=['zone_type','material_type','substance','source_of_release','ventilation_controls','ignition_controls','linked_equipment_id'];
+  var reviewRequired=!!atexEditId&&previous.status==='controlled'&&classificationInputs.some(function(key){return String(previous[key]||'')!==String(body[key]||'');});
+  if(reviewRequired)body.status='awaiting_review';
   var shouldCreateAction=['action_required','out_of_service'].includes(body.status)&&previous.status!==body.status;
   var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
   try{
@@ -27459,8 +27479,9 @@ async function atexSave(){
         }});
       }catch(ex){console.warn('ATEX MAP action failed',ex);}
     }
+    var status=document.getElementById('atex-save-status');if(status)status.innerHTML='<div class="badge badge-green" style="padding:9px 12px;margin:8px 0">Saved ATEX area '+escH(savedAtexRef)+'.'+(reviewRequired?' Classification changed; status returned to awaiting review.':'')+'</div>';
     toast('ATEX area saved');atexBack();
-  }catch(e){toast(actionErrorMessage('Save ATEX area','ATEX areas',e.message),false);}
+  }catch(e){var message=actionErrorMessage('Save ATEX area','ATEX areas',e.message);var status=document.getElementById('atex-form-save-status');if(status)status.textContent=message;toast(message,false);}
 }
 
 async function atexDelete(){
@@ -43797,7 +43818,7 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,selectedEvent:null,selectedRisk:null,showEvents:true,showRisks:true,plans:[],layout:null,placing:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],atex:[],selected:null,selectedEvent:null,selectedRisk:null,showEvents:true,showRisks:true,showAtex:true,plans:[],layout:null,placing:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
@@ -43963,40 +43984,29 @@ function smCoord(row,keys){
 }
 function smSitePosition(site,i){
   var m=smMarkerForSite(site);
-  if(m)return {x:m.x,y:m.y,manual:true};
-  var lat=parseFloat(site.lat||site.latitude),lng=parseFloat(site.lng||site.longitude);
-  return {
-    x:isFinite(lng)?Math.max(8,Math.min(92,((lng+180)/360)*100)):(12+(i*23)%76),
-    y:isFinite(lat)?Math.max(10,Math.min(90,((90-lat)/180)*100)):(16+(i*31)%68),
-    manual:false
-  };
+  return m&&Number.isFinite(Number(m.x))&&Number.isFinite(Number(m.y))?{x:Number(m.x),y:Number(m.y),manual:true}:null;
 }
 function smEventPosition(ev,i){
   var manual=((siteMapState.layout||{}).markers||[]).find(function(m){return m.record_type==='event'&&String(m.record_id)===String(ev.id);});
-  if(manual)return {x:manual.x,y:manual.y,manual:true};
-  var lat=smCoord(ev,['lat','latitude','gps_lat','gps_latitude']);
-  var lng=smCoord(ev,['lng','lon','long','longitude','gps_lng','gps_longitude']);
-  if(lat!==null&&lng!==null)return {x:Math.max(4,Math.min(96,((lng+180)/360)*100)),y:Math.max(4,Math.min(96,((90-lat)/180)*100)),gps:true};
-  var sites=siteMapState.sites||[];
-  var site=sites.find(function(s){return smMatch(ev,s);});
-  if(site){
-    var base=smSitePosition(site,sites.indexOf(site));
-    return {x:Math.max(4,Math.min(96,base.x+(((i%5)-2)*2.4))),y:Math.max(4,Math.min(96,base.y+((Math.floor(i/5)%5)-2)*2.4)),gps:false};
-  }
-  return {x:18+(i*17)%64,y:24+(i*19)%56,gps:false};
+  return manual&&Number.isFinite(Number(manual.x))&&Number.isFinite(Number(manual.y))?{x:Number(manual.x),y:Number(manual.y),manual:true}:null;
 }
 function smRiskPosition(r,i){
+  var manual=((siteMapState.layout||{}).markers||[]).find(function(m){return m.record_type==='risk'&&String(m.record_id)===String(r.id);});
+  if(manual&&Number.isFinite(Number(manual.x))&&Number.isFinite(Number(manual.y)))return {x:Number(manual.x),y:Number(manual.y),manual:true};
   var sites=siteMapState.sites||[];
   var site=sites.find(function(s){return smMatch(r,s);});
-  if(site){
-    var base=smSitePosition(site,sites.indexOf(site));
-    return {x:Math.max(4,Math.min(96,base.x+(((i%4)-1.5)*3.2))),y:Math.max(4,Math.min(96,base.y+((Math.floor(i/4)%4)-1.5)*3.2)),site:true};
-  }
-  return {x:22+(i*19)%58,y:28+(i*23)%48,site:false};
+  return site?smSitePosition(site,sites.indexOf(site)):null;
+}
+function smCancelPlacement(){siteMapState.placing=null;siteMapState.placingRecord=null;smRenderCanvas();}
+function smPlanImageFailed(){
+  var status=document.getElementById('sitemap-plan-status');if(!status)return;
+  status.innerHTML='<span style="color:#B91C1C;font-weight:800">Plan image could not load.</span> <button type="button" class="btn btn-sm" id="sitemap-retry-plan">Retry</button> Use Upload plan to replace it.';
+  status.querySelector('#sitemap-retry-plan')?.addEventListener('click',function(){var image=document.querySelector('#sitemap-canvas img');if(image){status.textContent='Retrying plan image...';image.src=(siteMapState.layout.image_url||siteMapState.layout.image||'')+(String(siteMapState.layout.image_url||'').includes('?')?'&':'?')+'retry='+Date.now();}});
 }
 function smPositionSelectedSite(){
   if(!siteMapState.selected){toast('Select a site or area first',false);return;}
   siteMapState.placing=siteMapState.selected;
+  siteMapState.placingRecord=null;
   var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteMapState.selected);});
   toast('Click on the plan/map to position '+(site?smSiteName(site):'the selected location'));
   smRenderCanvas();
@@ -44034,17 +44044,17 @@ function smPrintMapHtml(){
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
   var sites=siteMapState.sites||[];
-  var markers=sites.map(function(s,i){
+  var markers=sites.filter(function(s,i){return !!smSitePosition(s,i);}).map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n),p=smSitePosition(s,i);
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
     var x=p.x, y=p.y;
     return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:'+col+';color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:12px;height:12px;border-radius:999px;background:#185FA5;border:1px solid #fff;font-size:6pt;line-height:12px;text-align:center">L</span>':'')+'</div>';
   }).join('');
-  var eventDots=smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40).map(function(ev,i){
+  var eventDots=smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase())&&!!smEventPosition(e);}).slice(0,40).map(function(ev,i){
     var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase(), col=/critical|high/.test(sev)?'#DC2626':'#F97316';
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:'+col+';border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25)"></div>';
   }).join('');
-  var riskDots=(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40).map(function(r,i){
+  var riskDots=(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''))&&!!smRiskPosition(r);}).slice(0,40).map(function(r,i){
     var p=smRiskPosition(r,i);
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:3px;background:#C2410C;color:#fff;border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);font-size:8pt;font-weight:900;line-height:15px;text-align:center">R</div>';
   }).join('');
@@ -44057,7 +44067,7 @@ function smPrintMapHtml(){
     +'<div class="report-page">'
     +aurisHeader('Interactive Site Map',layout.title||'Site / area map',layout.id||'DRAFT')
     +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Map legend:</strong> numbered circles = locations, orange/red circles = open incidents, brown squares = high-risk RA hotspots, blue L = linked child layout.</div>'
-    +'<div class="sm3print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm3print-empty">No uploaded plan image. Auto-positioned location overview.</div>')+markers+eventDots+riskDots+'</div>'
+    +'<div class="sm3print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm3print-empty">No uploaded plan image. Position markers after uploading a plan.</div>')+markers+eventDots+riskDots+'</div>'
     +'<div class="rpt-section"><div class="rpt-section-title">Location Records Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Location</th><th>Linked layout</th><th>Total</th><th>Incidents</th><th>BBS</th><th>Inspections</th><th>RA</th><th>PTW</th><th>Actions</th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="10" style="text-align:center;color:#6b7280">No sites or areas available.</td></tr>')
     +'</tbody></table></div>'
@@ -44119,9 +44129,10 @@ async function loadSiteMap(){
     smApi('/inspections?select=*'+cf()+'&order=inspection_date.desc,created_at.desc&limit=250'),
     smApi('/risk_assessments?select=*'+cf()+'&order=created_at.desc&limit=250'),
     smApiCompat('/permits?select=*'+cf()+'&order=created_at.desc&limit=250','/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=250'),
-    smApi('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=250')
+    smApi('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=250'),
+    smApi('/atex_areas?select=*'+cf()+'&status=eq.controlled&order=area_name.asc&limit=250')
   ]);
-  siteMapState=Object.assign(siteMapState,{sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],selected:null});
+  siteMapState=Object.assign(siteMapState,{sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],atex:results[7]||[],selected:null});
   locationSites=(results[0]||[]).slice();
   if(!siteMapState.sites.length)siteMapState.sites=smBuildVirtualSites();
   await smLoadPlans();
@@ -44164,13 +44175,15 @@ function smRenderSiteList(){
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id, linkedTitle=linked?smLinkedPlanTitle(linked):'';
     return '<button type="button" data-auris-runtime-onclick="r0143" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
       +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'"></i></div>'
-      +'<div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div>'+(linked?'<span class="badge badge-blue">Linked map</span>':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
+      +'<div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="font-weight:900;font-size:13px;overflow-wrap:anywhere">'+escH(smSiteName(s))+'</div>'+(linked?'<span class="badge badge-blue">Linked map</span>':'')+(!marker?'<span class="badge badge-amber">Unpositioned</span>':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
       +(linked?'<div style="font-size:11px;color:#185FA5;font-weight:800;margin-top:4px"><i class="ti ti-corner-down-right"></i> '+escH(linkedTitle||'Linked layout')+'</div>':'')
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span>'+(linked?'<span class="badge badge-purple" data-auris-runtime-onclick="r0144" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'">Open map</span>':'')+'</div></div></button>';
   }).join('');
 }
 function smRenderCanvas(){
   var el=document.getElementById('sitemap-canvas');if(!el)return;
+  var atexToggle=document.getElementById('sitemap-atex-toggle');if(atexToggle){atexToggle.textContent=(siteMapState.showAtex?'Hide':'Show')+' controlled ATEX zones';atexToggle.onclick=function(){siteMapState.showAtex=!siteMapState.showAtex;smRenderCanvas();};}
+  var cancel=document.getElementById('sitemap-cancel-placement');if(cancel){cancel.hidden=!(siteMapState.placing||siteMapState.placingRecord);cancel.onclick=smCancelPlacement;}
   smUpdateMapEventToggle();
   smUpdateMapRiskToggle();
   var sites=siteMapState.sites||[];
@@ -44179,18 +44192,18 @@ function smRenderCanvas(){
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
   var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
-  var openEvents=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
-  var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
+  var openEvents=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase())&&!!smEventPosition(e);}).slice(0,40):[];
+  var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''))&&!!smRiskPosition(r);}).slice(0,40):[];
   el.innerHTML=context+'<div data-sitemap-canvas="true" data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing||siteMapState.placingRecord?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
     +(siteMapState.placing||siteMapState.placingRecord?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the '+(siteMapState.placingRecord?'incident':'selected location')+'</div>':'')
-    +sites.map(function(s,i){
+    +sites.filter(function(s,i){return !!smSitePosition(s,i);}).map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var pos=smSitePosition(s,i), x=pos.x, y=pos.y;
       var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
       return '<button type="button" data-auris-runtime-onclick="r0144" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'" title="'+escH(smSiteName(s))+(linked?' - opens '+smLinkedPlanTitle(linked):'')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
         +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18);position:relative"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'" style="font-size:22px"></i>'+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:999px;background:#185FA5;border:2px solid #fff"></span>':'')+'</div>'
-        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+(linked?' link':(pos.manual?'':' *'))+'</div></button>';
+        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s))+' - '+n+(linked?' link':'')+'</div></button>';
     }).join('')
     +openEvents.map(function(ev,i){
       var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase();
@@ -44201,7 +44214,10 @@ function smRenderCanvas(){
     +highRisks.map(function(r,i){
       var p=smRiskPosition(r,i), title=smRecordTitle(r,['ra_ref','title','activity']);
       return '<button type="button" data-auris-runtime-onclick="r0146" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id||'']))+'" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:#C2410C;color:#fff;width:22px;height:22px;border-radius:6px;box-shadow:0 3px 10px rgba(194,65,12,.35);cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center"><i class="ti ti-shield-exclamation" style="font-size:14px"></i></button>';
-    }).join('')+'</div>';
+    }).join('')
+    +(siteMapState.showAtex?(siteMapState.atex||[]).map(function(area){var site=sites.find(function(s){return smMatch(area,s);}),position=site&&smSitePosition(site);if(!position)return '';return '<button type="button" class="sm-atex-marker" data-atex-id="'+escH(area.id)+'" title="'+escH((area.area_ref||'ATEX')+' · '+(area.area_name||'Area')+' · '+(ATEX_ZONE_LABELS[area.zone_type]||area.zone_type))+'" style="position:absolute;left:'+Math.min(98,position.x+4)+'%;top:'+Math.min(98,position.y+4)+'%;background:#7F1D1D;color:#fff;border:2px solid #fff;border-radius:5px;padding:3px 5px;font-size:10px;font-weight:800;z-index:5">ATEX '+escH((ATEX_ZONE_LABELS[area.zone_type]||area.zone_type||'').replace('Zone ',''))+'</button>';}).join(''):'')+'</div>';
+  el.querySelectorAll('.sm-atex-marker').forEach(function(button){button.addEventListener('click',function(event){event.stopPropagation();var area=(siteMapState.atex||[]).find(function(item){return String(item.id)===button.dataset.atexId;});if(area){showPage('atex',null);setTimeout(function(){atexShowRecord(area,AurisAtexListWorkspace.session());},150);}});});
+  var planImage=el.querySelector('img');if(planImage){planImage.addEventListener('error',smPlanImageFailed);planImage.addEventListener('load',function(){var status=document.getElementById('sitemap-plan-status');if(status&&status.textContent.includes('plan image'))status.textContent='Plan image loaded.';});}
 }
 function smSelectSite(id,scroll){
   var sites=siteMapState.sites||[];
@@ -44241,7 +44257,7 @@ function smRenderDetails(site){
     +smSection('Permits','ti-key','permit',rec.permits,['permit_ref','permit_type','work_description'],function(r){return [r.status,smSafeDate(r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Actions','ti-list-check','actions',rec.actions,['title','source_ref'],function(r){return [r.priority,r.status,r.due_date||r.target_date].filter(Boolean).join(' - ');});
   el.querySelectorAll('.sm-position-record').forEach(function(b){b.addEventListener('click',function(ev){ev.stopPropagation();smPositionRecord('event',b.dataset.id);});});
-  el.querySelectorAll('.sm-record-open').forEach(function(cell){cell.addEventListener('click',function(ev){if(ev.target.closest('button'))return;if(cell.dataset.page==='events'&&typeof imv2OpenIncidentReadOnly==='function')imv2OpenIncidentReadOnly(cell.dataset.id);else showPage(cell.dataset.page,null);});});
+  el.querySelectorAll('.sm-record-open').forEach(function(cell){cell.addEventListener('click',function(ev){if(ev.target.closest('button'))return;dashNavigateTo(cell.dataset.page,cell.dataset.id);});});
 }
 
 function fireCertTypeLabel(t) {

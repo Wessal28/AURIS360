@@ -256,6 +256,11 @@
       "order": 51,
       "file": "20261012090000_equipment_due_reminders.sql",
       "sha256": "b48f3f997105ad124eb646aa325b0c9387bbb9cda935ae3c2c57d4c1d7fd12e7"
+    },
+    {
+      "order": 52,
+      "file": "20261012100000_atex_inspection_interval.sql",
+      "sha256": "8860830890b2973f6cc4442936b58a5c9798cb0ad868ab21a7a319151228e5aa"
     }
   ]
 }
