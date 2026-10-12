@@ -37,8 +37,22 @@ test('a completed service exposes its next due date and overdue attention',()=>{
   const r=runtime(),data=r.api.project([vehicles[0]],current,{services:[{equipment_id:'veh-1',status:'completed',completed_date:'2026-09-01',next_due_date:'2026-10-01'}]},new Date('2026-10-12T12:00:00Z'));
   assert.equal(data[0].next_service,'2026-10-01');assert.equal(data[0].service_attention,'Overdue');
 });
+test('meter due, recorded fuel efficiency and later incidents create review attention without inventing data',()=>{
+  const r=runtime(),rows=[vehicles[0]],history=[{tool_id:'veh-1',inspection_date:'2026-10-01',overall_result:'pass'}];
+  const fuelRows=[
+    {vehicle_equipment:'DXB-001',record_date:'2026-08-01',quantity:40,unit:'litres',meter_reading_start:1000,meter_reading_end:1500},
+    {vehicle_equipment:'DXB-001',record_date:'2026-08-15',quantity:40,unit:'litres',meter_reading_start:1500,meter_reading_end:2000},
+    {vehicle_equipment:'DXB-001',record_date:'2026-09-01',quantity:40,unit:'litres',meter_reading_start:2000,meter_reading_end:2500},
+    {vehicle_equipment:'DXB-001',record_date:'2026-10-10',quantity:100,unit:'litres',meter_reading_start:2500,meter_reading_end:3000}
+  ];
+  const data=r.api.project(rows,current,{inspections:history,fuel:fuelRows,services:[{equipment_id:'veh-1',status:'completed',completed_date:'2026-09-01',next_due_meter:2900}],incidents:[{event_type:'vehicle_incident',vehicle_reg:'DXB-001',incident_date:'2026-10-05'}]},new Date('2026-10-12T12:00:00Z'))[0];
+  assert.equal(data.service_attention,'Overdue');assert.equal(data.fuel_rate,20);assert.equal(data.fuel_attention,'Review unusual consumption');assert.equal(data.incident_review,'Inspection review required');
+  const sparse=r.api.project(rows,current,{fuel:[{vehicle_equipment:'DXB-001',quantity:5}]},new Date('2026-10-12T12:00:00Z'))[0];
+  assert.equal(sparse.fuel_rate,null);assert.equal(sparse.fuel_attention,'Insufficient meter data');
+});
 test('shared fleet register exposes guarded open, check and edit actions',async()=>{
   const r=runtime(),calls=[];r.api.mount({},vehicles,{inspections,fuel,incidents,canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),checkRecord:(id,c)=>calls.push(['check',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'fleet-management');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','check','edit']);assert.deepEqual(Array.from(m.options.actions,x=>x.icon),['ti-eye','ti-clipboard-check','ti-edit']);assert.ok(m.options.actions.every(action=>!action.href),'fleet actions must stay in the current app');await m.options.onAction('open',m.data[0]);await m.options.onAction('check',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','veh-1','co-a'],['check','veh-1','co-a'],['edit','veh-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},vehicles,{inspections,fuel,incidents,canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}
 });
 test('release wiring publishes the fleet register before the core loader',()=>{const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-fleet-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisFleetListWorkspace\.mount\(el,fleetVehicles/);assert.match(read('sw-assets.js'),/auris-fleet-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-fleet-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-fleet-list-workspace\.js/);assert.doesNotMatch(read('auris-fleet-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);});
+test('vehicle details open servicing and editing inside the current app',()=>{const core=read('auris-core.js');assert.match(core,/class="btn btn-primary r5-add-service"/);assert.match(core,/id="r5-fleet-edit"/);assert.doesNotMatch(core,/Add servicing record in new window|Edit vehicle in new window/);});
