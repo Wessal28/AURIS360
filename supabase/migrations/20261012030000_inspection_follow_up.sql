@@ -50,12 +50,12 @@ begin
   update public.inspections set next_due_date = due_on where id = new.id;
   insert into public.inspections
     (company_id,inspection_type,site,if_site,department,inspection_date,if_date,
-     planned_date,inspector,by,if_by,audit_standard,audit_scope,lead_auditor,audit_team,
+     planned_date,inspector,if_by,audit_standard,audit_scope,lead_auditor,audit_team,
      auditee,priority,status,items,created_by,equipment_asset_id,recurrence_interval,
      reminder_days,recurrence_origin_id)
   values
     (new.company_id,new.inspection_type,new.site,new.if_site,new.department,due_on,due_on,
-     due_on,new.inspector,new.by,new.if_by,new.audit_standard,new.audit_scope,new.lead_auditor,
+     due_on,new.inspector,new.if_by,new.audit_standard,new.audit_scope,new.lead_auditor,
      new.audit_team,new.auditee,new.priority,'open',
      (select coalesce(jsonb_agg(checklist_item.value - 'result' - 'observation'), '[]'::jsonb)
         from jsonb_array_elements(coalesce(new.items,'[]'::jsonb)) as checklist_item(value)),
@@ -111,10 +111,10 @@ begin
   from public.inspections i
   join public.profiles p on p.company_id=i.company_id
     and regexp_replace(lower(coalesce(p.full_name,'')),'[^a-z0-9]+','','g')=
-        regexp_replace(lower(coalesce(i.inspector,i.performed_by,i.by,'')),'[^a-z0-9]+','','g')
+        regexp_replace(lower(coalesce(i.inspector,i.performed_by,i.if_by,'')),'[^a-z0-9]+','','g')
   join public.notification_settings ns on ns.company_id=i.company_id
   where i.status in ('open','in_progress') and i.planned_date is not null
-    and nullif(trim(coalesce(i.inspector,i.performed_by,i.by,'')),'') is not null
+    and nullif(trim(coalesce(i.inspector,i.performed_by,i.if_by,'')),'') is not null
     and i.planned_date<=p_run_date+least(90,greatest(0,coalesce(i.reminder_days,7)))
     and coalesce(ns.email_enabled,true) and coalesce(ns.notify_on_audit,true)
     and public.notification_best_email(array[p.real_email,p.email]) is not null
