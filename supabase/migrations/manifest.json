@@ -236,6 +236,11 @@
       "order": 47,
       "file": "20261012050000_risk_assessment_workflow_status.sql",
       "sha256": "5bdd45a4f0cc1d71ed477aeabbbc08579510721f54c49a40db549eccca451350"
+    },
+    {
+      "order": 48,
+      "file": "20261012060000_fleet_service_schedule.sql",
+      "sha256": "407a9731f6c76da92fc4c872868732e3180b4a868b71f8acda67d9aee6f3c7e7"
     }
   ]
 }

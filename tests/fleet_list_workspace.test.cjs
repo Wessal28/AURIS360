@@ -26,6 +26,17 @@ test('fleet filters combine search, status and check state',()=>{
   assert.deepEqual(select({status:'maintenance'}),['veh-2']);assert.deepEqual(select({check:'overdue'}),['veh-1','veh-3']);assert.deepEqual(select({check:'due_soon'}),['veh-2']);assert.deepEqual(select({check:'with_incidents'}),['veh-1']);assert.deepEqual(select({search:'hilux',status:'active'}),['veh-1']);
 });
 test('unknown vehicle status remains visible without unsafe relabelling',()=>{const r=runtime(),data=r.api.project([{id:'x',company_id:'co-a',registration_number:'X',status:'awaiting_service'}],current,{});assert.equal(data.length,1);assert.equal(data[0].status,'awaiting service');});
+test('a recent failed check stays restricted until a later authorised release',()=>{
+  const r=runtime(),failed=[{tool_id:'veh-1',inspection_date:'2026-10-12',created_at:'2026-10-12T08:00:00Z',overall_result:'fail'}];
+  const before=r.api.project(vehicles,current,{inspections:failed},new Date('2026-10-12T12:00:00Z'))[0];
+  assert.equal(before.check,'Current');assert.equal(before.check_result,'fail');assert.equal(before.status,'Restricted - failed check');
+  const released=r.api.project(vehicles,current,{inspections:failed,services:[{equipment_id:'veh-1',release_status:'released',updated_at:'2026-10-12T10:00:00Z'}]},new Date('2026-10-12T12:00:00Z'))[0];
+  assert.equal(released.status,'Active');
+});
+test('a completed service exposes its next due date and overdue attention',()=>{
+  const r=runtime(),data=r.api.project([vehicles[0]],current,{services:[{equipment_id:'veh-1',status:'completed',completed_date:'2026-09-01',next_due_date:'2026-10-01'}]},new Date('2026-10-12T12:00:00Z'));
+  assert.equal(data[0].next_service,'2026-10-01');assert.equal(data[0].service_attention,'Overdue');
+});
 test('shared fleet register exposes guarded open, check and edit actions',async()=>{
   const r=runtime(),calls=[];r.api.mount({},vehicles,{inspections,fuel,incidents,canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),checkRecord:(id,c)=>calls.push(['check',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'fleet-management');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','check','edit']);assert.deepEqual(Array.from(m.options.actions,x=>x.icon),['ti-eye','ti-clipboard-check','ti-edit']);assert.ok(m.options.actions.every(action=>!action.href),'fleet actions must stay in the current app');await m.options.onAction('open',m.data[0]);await m.options.onAction('check',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','veh-1','co-a'],['check','veh-1','co-a'],['edit','veh-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},vehicles,{inspections,fuel,incidents,canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}

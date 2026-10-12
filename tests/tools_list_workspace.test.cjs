@@ -26,6 +26,10 @@ test('unknown equipment values remain visible and are labelled safely',()=>{
   const r=runtime(),data=r.api.project([{id:'x',company_id:'co-a',category:'special_asset',status:'awaiting_release'}],current,{filters:{}},new Date('2026-09-15T12:00:00Z'));
   assert.equal(data.length,1);assert.equal(data[0].category,'special asset');assert.equal(data[0].status,'awaiting release');assert.equal(data[0].inspection,'Never inspected');
 });
+test('a current failed inspection makes equipment unavailable even before status refresh',()=>{
+  const r=runtime(),data=r.api.project([rows[0]],current,{inspections:{'eq-1':{inspection_date:'2026-09-15',overall_result:'fail'}}},new Date('2026-09-15T12:00:00Z'));
+  assert.equal(data[0].inspection,'Current');assert.equal(data[0].inspection_result,'fail');assert.equal(data[0].availability,'Unavailable - failed inspection');assert.equal(data[0].status,'Restricted - failed check');
+});
 test('shared equipment register exposes exact actions and protects sessions',async()=>{
   const r=runtime(),calls=[];r.api.mount({},rows,{inspections,canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),inspectRecord:(id,c)=>calls.push(['inspect',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'tools-equipment');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','inspect','edit']);await m.options.onAction('open',m.data[0]);await m.options.onAction('inspect',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','eq-1','co-a'],['inspect','eq-1','co-a'],['edit','eq-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},rows,{inspections,canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}

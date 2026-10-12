@@ -23059,7 +23059,7 @@ async function esgLoadFuel(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-function esgFuelNew(){esgFuelEditId=null;document.getElementById('esg-fuel-form3title').textContent='New Fuel / Energy Record';esgResetForm(['ff-vehicle','ff-odo-start','ff-odo-end','ff-purpose','ff-dept','ff-cost','ff-notes'],['ff-date'],{'ff-type':'diesel','ff-unit':'litres'});document.getElementById('ff-date').value=new Date().toISOString().slice(0,10);document.getElementById('ff-qty').value='';document.getElementById('ff-co2-display').textContent='-';esgShowForm('esg-fuel-form');}
+function esgFuelNew(){esgFuelEditId=null;document.getElementById('fleet-fuel-vehicle-select')?.remove();var vehicleField=document.getElementById('ff-vehicle');if(vehicleField)vehicleField.hidden=false;document.getElementById('esg-fuel-form3title').textContent='New Fuel / Energy Record';esgResetForm(['ff-vehicle','ff-odo-start','ff-odo-end','ff-purpose','ff-dept','ff-cost','ff-notes'],['ff-date'],{'ff-type':'diesel','ff-unit':'litres'});document.getElementById('ff-date').value=new Date().toISOString().slice(0,10);document.getElementById('ff-qty').value='';document.getElementById('ff-co2-display').textContent='-';esgShowForm('esg-fuel-form');}
 function esgFuelEdit(id){
   var x=esgFuelData.find(function(r){return r.id===id;});if(!x)return;esgFuelEditId=id;
   document.getElementById('esg-fuel-form3title').textContent='Edit Fuel Record';
@@ -23074,6 +23074,7 @@ function esgFuelEdit(id){
 function esgFuelBack(){document.getElementById('esg-fuel-form').style.display='none';document.getElementById('esg-view-fuel').style.display='block';document.querySelectorAll('[id^="esg-tab-"]').forEach(function(t){t.classList.remove('active');});var tab=document.getElementById('esg-tab-fuel');if(tab)tab.classList.add('active');esgLoadFuel();}
 async function esgFuelSave(){
   var qty=parseFloat(document.getElementById('ff-qty')?.value);if(!qty||qty<=0){toast('Please enter quantity',false);return;}
+  if(document.getElementById('fleet-fuel-vehicle-select')&&!document.getElementById('fleet-fuel-vehicle-select').value){toast('Select a registered vehicle for this fleet fuel entry.',false);return;}
   var tp=document.getElementById('ff-type')?.value||'diesel';
   var co2=qty*(CO2_FACTORS[tp]||2.5);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
@@ -25850,7 +25851,7 @@ function toolsFilterRegister(){
     +'<th>Serial / model</th>'
     +'<th>Location</th>'
     +'<th>Assigned to</th>'
-    +'<th>Inspection</th>'
+    +'<th>Current inspection / result</th>'
     +'<th>Statutory</th>'
     +'<th>Status</th>'
     +'<th style="text-align:right">Actions</th>'
@@ -25873,7 +25874,7 @@ function toolsFilterRegister(){
       +'<td style="padding:10px 12px"><div>'+escH(x.serial_number||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.model||'')+'</div></td>'
       +'<td style="padding:10px 12px">'+escH(x.location||'--')+'</td>'
       +'<td style="padding:10px 12px">'+escH(x.assigned_to_name||'General use')+'</td>'
-      +'<td style="padding:10px 12px"><span style="background:'+inspBg+';color:'+inspColor+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(inspState.last?('Last '+inspState.label):inspState.label)+'</span></td>'
+      +'<td style="padding:10px 12px"><span style="background:'+inspBg+';color:'+inspColor+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(inspState.last?('Current inspection: '+inspState.label):inspState.label)+'</span><div style="font-size:11px;font-weight:800;color:'+(String(toolsLastInspectionByTool[x.id]?.overall_result||'').toLowerCase()==='fail'?'var(--red)':'var(--text2)')+'">'+escH(inspState.last?('Result: '+(toolsLastInspectionByTool[x.id]?.overall_result||'Not recorded')):'Result: Not checked')+'</div></td>'
       +'<td style="padding:10px 12px">'+(x.requires_statutory?(x.next_statutory_date?'<span style="color:'+(isStatDue?'#8B5CF6':'inherit')+';font-weight:'+(isStatDue?'800':'500')+'">'+new Date(x.next_statutory_date).toLocaleDateString('en-GB')+(isStatDue?' due':'')+'</span>':'Required'):'--')+'</td>'
       +'<td style="padding:10px 12px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH((x.status||'active').replace(/_/g,' '))+'</span></td>'
       +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" data-auris-generated-onclick="g0225"><i class="ti ti-clipboard-check"></i>Inspect</button> <button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0226"><i class="ti ti-edit"></i></button> '+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0227"><i class="ti ti-trash"></i></button>':'')+'</td>'
@@ -26109,24 +26110,27 @@ async function toolsLoadPersonal(){
         +'<div style="display:flex;align-items:center;gap:10px">'
         +'<div style="width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">'+person.charAt(0)+'</div>'
         +'<div><div style="font-weight:700;font-size:14px">'+escH(person)+'</div>'
-        +'<div style="font-size:11px;color:var(--text2)">'+tools.length+' tool'+(tools.length!==1?'s':'')+' assigned - weekly self-check required</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+tools.length+' tool'+(tools.length!==1?'s':'')+' assigned - pre-use checks and item-specific periodic inspections</div>'
         +'</div></div>'
-        +'<button class="btn btn-sm btn-primary" style="font-size:11px" data-auris-runtime-onclick="r0087" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([person]))+'"><i class="ti ti-clipboard-check"></i>Weekly check</button>'
+        +'<button class="btn btn-sm btn-primary" style="font-size:11px" data-auris-runtime-onclick="r0087" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([person]))+'"><i class="ti ti-clipboard-check"></i>Open inspections</button>'
         +'</div>';
       html+='<table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<thead><tr style="background:#f9fafb"><th style="'+TOOLS_TH_STYLE_LIGHT+'">Ref</th>'
         +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Equipment</th>'
         +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Category</th>'
-        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Frequency</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Periodic frequency</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Periodic check</th>'
         +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Status</th>'
         +'</tr></thead><tbody>';
       tools.forEach(function(t,ti){
         var bg=ti%2===0?'#fff':'#fafafa';
+        var checkState=toolsInspectionState(t,new Date());
         html+='<tr style="border-bottom:1px solid #f5f5f5;background:'+bg+'">'
           +'<td style="padding:7px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(t.ref_number||'-')+'</td>'
           +'<td style="padding:7px 12px;font-weight:600">'+escH(t.name||'-')+'</td>'
           +'<td style="padding:7px 12px">'+escH(TOOL_CAT_LABELS[t.category]||t.category)+'</td>'
           +'<td style="padding:7px 12px;text-transform:capitalize">'+escH(t.inspection_frequency||'weekly')+'</td>'
+          +'<td style="padding:7px 12px;color:'+(checkState.due?'var(--red)':'var(--text2)')+'">'+escH(checkState.due?'Due - '+checkState.label:checkState.label)+'</td>'
           +'<td style="padding:7px 12px"><span style="background:'+(t.status==='active'?'#EAF3DE':'#FCEBEB')+';color:'+(t.status==='active'?'#3B6D11':'#A32D2D')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+escH(t.status||'active')+'</span></td>'
           +'</tr>';
       });
@@ -26357,7 +26361,7 @@ async function toolsStartInspection(toolId,returnTab){
   if(!tool){toast('Equipment not found',false);return false;}
   toolsInspEquipId=toolId;
   toolsInspEditingId=null;
-  [['insp-type','periodic'],['insp-result','pass'],['insp-defects',''],['insp-actions','']].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1];});
+  [['insp-type','periodic'],['insp-result',''],['insp-defects',''],['insp-actions','']].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1];});
   // Set header info
   document.getElementById('insp-equip-name').textContent=tool.name||'-';
   document.getElementById('insp-equip-ref').textContent=tool.ref_number||'';
@@ -26398,9 +26402,9 @@ async function toolsEditInspection(id){
     if(checks.length){
       var body=document.getElementById('insp-checklist-body');body.replaceChildren();
       checks.forEach(function(check,index){
-        var tr=document.createElement('tr');tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(check.item||('Check '+(index+1)))+'</td>'+['ok','fail','na'].map(function(result){return '<td style="padding:6px;text-align:center"><input type="radio" name="chk'+index+'" value="'+result+'" id="ci-'+result+'-'+index+'" data-auris-generated-onchange="g0233"'+((check.result||'na')===result?' checked':'')+'></td>';}).join('')+'<td style="padding:4px 12px"><input type="text" class="insp-note-'+index+'" placeholder="Notes..." value="'+escH(check.note||'')+'"></td>';body.appendChild(tr);
+        var tr=document.createElement('tr');tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(check.item||('Check '+(index+1)))+'</td>'+['ok','fail','na'].map(function(result){return '<td style="padding:6px;text-align:center"><input type="radio" name="chk'+index+'" value="'+result+'" id="ci-'+result+'-'+index+'" data-auris-generated-onchange="g0233"'+(check.result===result?' checked':'')+'></td>';}).join('')+'<td style="padding:4px 12px"><input type="text" class="insp-note-'+index+'" placeholder="Notes..." value="'+escH(check.note||'')+'"></td>';body.appendChild(tr);
       });
-      toolsInspScore();document.getElementById('insp-result').value=record.overall_result||'pass';
+      toolsInspScore();document.getElementById('insp-result').value=record.overall_result||'';
     }
   }catch(error){toast(error.message||'Inspection could not be opened for editing.',false);}
 }
@@ -26432,7 +26436,7 @@ async function toolsLoadChecklist(category,tool){
       tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item.check_item||item.item||'')+'</td>'
         +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="ok" id="ci-ok-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
         +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="fail" id="ci-fail-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
-        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#6B7280" checked></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#6B7280"></td>'
         +'<td style="padding:4px 12px"><input type="text" class="insp-note-'+i+'" placeholder="Notes..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
       tbody.appendChild(tr);
     });
@@ -26452,11 +26456,11 @@ function toolsInspScore(){
     else if(naR?.checked)na++;
   });
   var el=document.getElementById('insp-score-display');
-  if(el)el.textContent=ok+' OK - '+fail+' Fail - '+na+' N/A';
+  if(el)el.textContent=ok+' OK - '+fail+' Fail - '+na+' N/A - '+(rows.length-ok-fail-na)+' Not checked';
   // Auto-set result
   var res=document.getElementById('insp-result');
   if(res&&fail>0)res.value='fail';
-  else if(res)res.value='pass';
+  else if(res)res.value=rows.length&&ok+na===rows.length?'pass':'';
 }
 
 function toolsInspFormBack(){
@@ -26486,13 +26490,21 @@ async function toolsSaveInspection(){
     var ok=document.getElementById('ci-ok-'+i)?.checked;
     var fail=document.getElementById('ci-fail-'+i)?.checked;
     var note=tr.querySelector('input[type="text"]')?.value||'';
-    results.push({item:item,result:ok?'ok':fail?'fail':'na',note:note});
+    results.push({item:item,result:ok?'ok':fail?'fail':document.getElementById('ci-na-'+i)?.checked?'na':'',note:note});
   });
+  if(results.some(function(item){return !item.result;})){toast('Answer every checklist item before saving the inspection.',false);return false;}
+  var failedItems=results.filter(function(item){return item.result==='fail';});
+  var defectsField=document.getElementById('insp-defects');
+  if(failedItems.length&&defectsField&&!defectsField.value.trim())defectsField.value=failedItems.map(function(item){return item.item+(item.note?' - '+item.note:'');}).join('; ');
+  var selectedResult=document.getElementById('insp-result')?.value;
+  if(!selectedResult){toast('Confirm the overall inspection result.',false);return false;}
+  if(failedItems.length&&selectedResult!=='fail'){toast('A failed checklist item requires an overall FAIL result.',false);return false;}
+  if(selectedResult==='fail'&&!defectsField?.value.trim()){toast('Describe the failed items before saving.',false);return false;}
   var body={
     company_id:ccid(),tool_id:toolsInspEquipId,
     inspection_type:document.getElementById('insp-type')?.value||'periodic',
     inspection_date:date,inspected_by:inspId||null,inspected_by_name:inspName||null,
-    overall_result:document.getElementById('insp-result')?.value||'pass',
+    overall_result:selectedResult,
     checklist_results:results,
     defects_found:document.getElementById('insp-defects')?.value||null,
     actions_taken:document.getElementById('insp-actions')?.value||null,
@@ -26516,7 +26528,7 @@ async function toolsSaveInspection(){
     }else{
       toast('Inspection saved!');
     }
-    toolsInspFormBack();
+    if(typeof window.teuAfterInspectionSave!=='function')toolsInspFormBack();
     return true;
   }catch(e){toastActionError('Save equipment inspection','Tools & Equipment',e);console.error(e);return false;}
 }
@@ -26994,7 +27006,7 @@ function fleetRender(){
   if(window.AurisFleetListWorkspace){
     try{
       return window.AurisFleetListWorkspace.mount(el,fleetVehicles||[],{
-        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],recordHref:fleetRecordHref,
+        inspections:fleetInspections||[],fuel:fleetFuel||[],incidents:fleetIncidents||[],services:fleetServices||[],recordHref:fleetRecordHref,
         filters:{search:q,status:statusFilter,check:checkFilter},canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){
           var set=function(id,next){var control=document.getElementById(id);if(control)control.value=next||'';};
@@ -27116,8 +27128,13 @@ function fleetOpenVehicleDetail(id){
   var fuel=fleetFuel.filter(function(x){return fleetFuelMatchesVehicle(x,v);});
   var services=fleetServices.filter(function(x){return String(x.equipment_id)===String(id);});
   var modal=document.createElement('div');modal.id='fleet-detail-modal';modal.className='r5-record-modal';
-  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true" aria-label="Vehicle record"><header><div><div class="r5-kicker">Fleet record · Read only</div><h2>'+escH(fleetLabel(v))+'</h2><p>'+escH([v.name,v.brand,v.model].filter(Boolean).join(' - '))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><nav class="r5-view-tabs"><button class="active" data-tab="details">Details</button><button data-tab="inspections">Inspection records ('+inspections.length+')</button><button data-tab="fuel">Fuel consumption ('+fuel.length+')</button><button data-tab="services">Servicing records ('+services.length+')</button></nav><section data-panel="details" class="r5-view-panel"><div class="r5-detail-grid">'+[['Registration',v.registration_number],['Reference',v.ref_number],['Make',v.brand],['Model',v.model],['Location',v.location],['Assigned to',v.assigned_to_name||'General use'],['Status',String(v.status||'active').replace(/_/g,' ')],['Notes',v.notes]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div></section><section data-panel="inspections" class="r5-view-panel" hidden>'+fleetDetailRows(inspections,[['Date',function(x){return x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-';}],['Type',function(x){return String(x.inspection_type||'').replace(/_/g,' ');}],['Inspector','inspected_by_name'],['Result','overall_result'],['Defects','defects_found']])+'</section><section data-panel="fuel" class="r5-view-panel" hidden>'+fleetDetailRows(fuel,[['Date',function(x){return x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'-';}],['Quantity (L)','quantity'],['Cost','cost'],['Odometer','odometer'],['CO2 kg','carbon_kg']])+'</section><section data-panel="services" class="r5-view-panel" hidden><div class="r5-panel-actions">'+(isMgr()?'<a class="btn btn-primary" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'service'))+'">Add servicing record in new window</a>':'')+'</div>'+fleetDetailRows(services,[['Reference','reference'],['Type',function(x){return String(x.maintenance_type||'').replace(/_/g,' ');}],['Status',function(x){return String(x.status||'').replace(/_/g,' ');}],['Planned','planned_date'],['Completed','completed_date'],['Technician','technician'],['Cost','cost']])+'</section><footer><button class="btn" id="r5-fleet-print"><i class="ti ti-printer"></i>Print vehicle record</button>'+(isMgr()?'<a class="btn" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'edit'))+'">Edit vehicle in new window</a>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
+  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true" aria-label="Vehicle record"><header><div><div class="r5-kicker">Fleet record · Read only</div><h2>'+escH(fleetLabel(v))+'</h2><p>'+escH([v.name,v.brand,v.model].filter(Boolean).join(' - '))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><nav class="r5-view-tabs"><button class="active" data-tab="details">Details</button><button data-tab="inspections">Inspection records ('+inspections.length+')</button><button data-tab="fuel">Fuel consumption ('+fuel.length+')</button><button data-tab="services">Servicing records ('+services.length+')</button></nav><section data-panel="details" class="r5-view-panel"><div class="r5-detail-grid">'+[['Registration',v.registration_number],['Reference',v.ref_number],['Make',v.brand],['Model',v.model],['Location',v.location],['Assigned to',v.assigned_to_name||'General use'],['Status',String(v.status||'active').replace(/_/g,' ')],['Notes',v.notes]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div></section><section data-panel="inspections" class="r5-view-panel" hidden>'+fleetDetailRows(inspections,[['Date',function(x){return x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'-';}],['Type',function(x){return String(x.inspection_type||'').replace(/_/g,' ');}],['Inspector','inspected_by_name'],['Result','overall_result'],['Defects','defects_found']])+'</section><section data-panel="fuel" class="r5-view-panel" hidden>'+fleetDetailRows(fuel,[['Date',function(x){return x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'-';}],['Quantity (L)','quantity'],['Cost','cost'],['Odometer','odometer'],['CO2 kg','carbon_kg']])+'</section><section data-panel="services" class="r5-view-panel" hidden><div class="r5-panel-actions">'+(isMgr()?'<a class="btn btn-primary" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'service'))+'">Add servicing record in new window</a>':'')+'</div>'+fleetDetailRows(services,[['Reference','reference'],['Type',function(x){return String(x.maintenance_type||'').replace(/_/g,' ');}],['Status',function(x){return String(x.status||'').replace(/_/g,' ');}],['Planned','planned_date'],['Completed','completed_date'],['Next due','next_due_date'],['Next meter','next_due_meter'],['Technician','technician'],['Cost','cost']])+'</section><footer><button class="btn" id="r5-fleet-print"><i class="ti ti-printer"></i>Print vehicle record</button>'+(isMgr()?'<a class="btn" target="_blank" rel="noopener" href="'+escH(fleetRecordHref(id,'edit'))+'">Edit vehicle in new window</a>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
   document.body.appendChild(modal);
+  var serviceTable=modal.querySelector('[data-panel="services"] table');
+  if(serviceTable){
+    serviceTable.querySelector('thead tr')?.insertAdjacentHTML('beforeend','<th>Actions</th>');
+    serviceTable.querySelectorAll('tbody tr').forEach(function(row,index){var service=services[index];if(!service)return;var cell=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='btn btn-sm';button.textContent='Open service';button.setAttribute('aria-label','Open service '+(service.reference||''));button.addEventListener('click',function(){modal.remove();fleetOpenServiceRecord(id,service.id);});cell.appendChild(button);row.appendChild(cell);});
+  }
   modal.querySelectorAll('a[href*="fleetMode"]').forEach(function(link){
     var mode=new URL(link.href).searchParams.get('fleetMode');
     var button=document.createElement('button');button.type='button';button.className=link.className;
@@ -27132,31 +27149,88 @@ function fleetOpenVehicleDetail(id){
   modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
 
+function fleetServiceScheduleFields(modal,record){
+  var section=document.createElement('div');section.className='form3row fleet-service-schedule';
+  section.innerHTML='<div class="form3group"><label class="form3label">External job number (optional)</label><input id="fleet-svc-external" value="'+escH(record.external_job_number||'')+'"></div><div class="form3group"><label class="form3label">Service interval (days)</label><input id="fleet-svc-days" type="number" min="1" value="'+escH(record.service_interval_days||'')+'"></div><div class="form3group"><label class="form3label">Service interval (km)</label><input id="fleet-svc-km" type="number" min="0" step="0.1" value="'+escH(record.service_interval_km||'')+'"></div><div class="form3group"><label class="form3label">Service interval (hours)</label><input id="fleet-svc-hours" type="number" min="0" step="0.1" value="'+escH(record.service_interval_hours||'')+'"></div><div class="form3group"><label class="form3label">Meter reading at completion (km or hours)</label><input id="fleet-svc-meter" type="number" min="0" step="0.1" value="'+escH(record.completed_meter??'')+'"></div>';
+  modal.querySelector('footer')?.before(section);
+}
+function fleetServiceScheduleValues(modal,completedDate){
+  var val=function(id){return modal.querySelector('#'+id)?.value.trim()||'';},days=Number(val('fleet-svc-days')),km=Number(val('fleet-svc-km')),hours=Number(val('fleet-svc-hours')),meter=val('fleet-svc-meter')===''?null:Number(val('fleet-svc-meter'));
+  if([days,km,hours].some(function(n){return n<0||!Number.isFinite(n);})||(meter!==null&&(!Number.isFinite(meter)||meter<0)))throw new Error('Service intervals and meter readings must be positive numbers.');
+  if(km&&hours)throw new Error('Choose either a distance interval or an operating-hours interval.');
+  if((km||hours)&&completedDate&&meter===null)throw new Error('Enter the completion meter reading to calculate the next service point.');
+  var due=null;if(days&&completedDate){var date=new Date(completedDate+'T12:00:00');date.setDate(date.getDate()+days);due=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');}
+  return {external_job_number:val('fleet-svc-external')||null,service_interval_days:days||null,service_interval_km:km||null,service_interval_hours:hours||null,completed_meter:meter,next_due_date:due,next_due_meter:meter===null?null:meter+(km||hours)||null};
+}
 function fleetOpenServiceForm(vehicleId){
   if(!fleetOpeningLinkedRecord)return fleetRecordWindow(vehicleId,'service');
   var editContext=AurisFleetListWorkspace.session();fleetAssertEditor(editContext);
   var v=fleetVehicles.find(function(x){return String(x.id)===String(vehicleId);});if(!v)return;
   var modal=document.createElement('div');modal.className='r5-record-modal';modal.id='fleet-service-modal';
   modal.innerHTML='<div class="card r5-record-dialog r5-record-form"><header><div><div class="r5-kicker">Fleet maintenance</div><h2>Add servicing record</h2><p>'+escH(fleetLabel(v))+'</p></div><button class="btn btn-sm r5-close"><i class="ti ti-x"></i></button></header><div class="form3row"><div class="form3group"><label class="form3label">Reference *</label><input id="r5-svc-ref" placeholder="e.g. SVC-2026-014"></div><div class="form3group"><label class="form3label">Service type</label><select id="r5-svc-type"><option value="preventive">Preventive</option><option value="corrective">Corrective</option><option value="breakdown">Breakdown</option><option value="recall">Recall</option><option value="modification">Modification</option></select></div><div class="form3group"><label class="form3label">Status</label><select id="r5-svc-status"><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Planned date</label><input id="r5-svc-planned" type="date"></div><div class="form3group"><label class="form3label">Completed date</label><input id="r5-svc-completed" type="date"></div><div class="form3group"><label class="form3label">Technician / provider</label><input id="r5-svc-tech"></div></div><div class="form3group"><label class="form3label">Work required / problem</label><textarea id="r5-svc-problem"></textarea></div><div class="form3group"><label class="form3label">Work performed</label><textarea id="r5-svc-work"></textarea></div><div class="form3row"><div class="form3group"><label class="form3label">Cost</label><input id="r5-svc-cost" type="number" min="0" step="0.01"></div><div class="form3group"><label class="form3label">Evidence reference</label><input id="r5-svc-evidence"></div></div><footer><button class="btn r5-close">Cancel</button><button class="btn btn-primary r5-save-service"><i class="ti ti-device-floppy"></i>Save servicing record</button></footer></div>';
-  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
-  modal.querySelector('.r5-save-service').addEventListener('click',async function(){try{fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}var ref=modal.querySelector('#r5-svc-ref').value.trim();if(!ref){toast('Service reference is required.',false);return;}var body={company_id:ccid(),equipment_id:vehicleId,reference:ref,maintenance_type:modal.querySelector('#r5-svc-type').value,status:modal.querySelector('#r5-svc-status').value,planned_date:modal.querySelector('#r5-svc-planned').value||null,completed_date:modal.querySelector('#r5-svc-completed').value||null,technician:modal.querySelector('#r5-svc-tech').value||null,problem_description:modal.querySelector('#r5-svc-problem').value||null,work_performed:modal.querySelector('#r5-svc-work').value||null,cost:parseFloat(modal.querySelector('#r5-svc-cost').value)||null,evidence_reference:modal.querySelector('#r5-svc-evidence').value||null,created_by:prof?.id||null};try{await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:body});toast('Servicing record saved.');modal.remove();await loadFleet();await fleetOpenLinkedRecord({record:vehicleId,company:editContext.companyId,table:'tools_register',mode:'view'});}catch(e){toastActionError('Save servicing record','Fleet',e);}});
+  document.body.appendChild(modal);fleetServiceScheduleFields(modal,{});var generatedRef='SVC-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-8);modal.querySelector('#r5-svc-ref').value=generatedRef;modal.querySelector('#r5-svc-ref').readOnly=true;modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
+  modal.querySelector('.r5-save-service').addEventListener('click',async function(){try{fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}var ref=modal.querySelector('#r5-svc-ref').value.trim();if(!ref){toast('Service reference is required.',false);return;}var body={company_id:ccid(),equipment_id:vehicleId,reference:ref,maintenance_type:modal.querySelector('#r5-svc-type').value,status:modal.querySelector('#r5-svc-status').value,planned_date:modal.querySelector('#r5-svc-planned').value||null,completed_date:modal.querySelector('#r5-svc-completed').value||null,technician:modal.querySelector('#r5-svc-tech').value||null,problem_description:modal.querySelector('#r5-svc-problem').value||null,work_performed:modal.querySelector('#r5-svc-work').value||null,cost:parseFloat(modal.querySelector('#r5-svc-cost').value)||null,evidence_reference:modal.querySelector('#r5-svc-evidence').value||null,created_by:prof?.id||null};try{Object.assign(body,fleetServiceScheduleValues(modal,body.completed_date));await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:body});toast('Servicing record saved.');modal.remove();await loadFleet();await fleetOpenLinkedRecord({record:vehicleId,company:editContext.companyId,table:'tools_register',mode:'view'});}catch(e){toastActionError('Save servicing record','Fleet',e);}});
+}
+
+function fleetOpenServiceRecord(vehicleId,serviceId){
+  var vehicle=(fleetVehicles||[]).find(function(v){return String(v.id)===String(vehicleId)&&String(v.company_id)===String(ccid());});
+  var service=(fleetServices||[]).find(function(s){return String(s.id)===String(serviceId)&&String(s.equipment_id)===String(vehicleId)&&String(s.company_id)===String(ccid());});
+  if(!vehicle||!service){toast('This service record is unavailable in the selected company.',false);return;}
+  document.getElementById('fleet-service-record-modal')?.remove();
+  var modal=document.createElement('div');modal.id='fleet-service-record-modal';modal.className='r5-record-modal';
+  var editable=isMgr();
+  modal.innerHTML='<div class="card r5-record-dialog r5-record-form" role="dialog" aria-modal="true" aria-label="Service record"><header><div><div class="r5-kicker">Fleet servicing · '+escH(vehicle.registration_number||vehicle.ref_number||'')+'</div><h2>'+escH(service.reference||'Service record')+'</h2></div><button class="btn btn-sm r5-close" aria-label="Close"><i class="ti ti-x"></i></button></header><div class="r5-detail-grid">'+[['Type',service.maintenance_type],['Status',service.status],['Planned',service.planned_date],['Completed',service.completed_date],['Technician',service.technician],['Work required',service.problem_description],['Work performed',service.work_performed],['Release',service.release_status]].map(function(x){return '<div><span>'+escH(x[0])+'</span><strong>'+escH(x[1]||'-')+'</strong></div>';}).join('')+'</div>'+(editable?'<div class="form3row"><div class="form3group"><label class="form3label">Work performed</label><textarea id="fleet-service-work">'+escH(service.work_performed||'')+'</textarea></div><div class="form3group"><label class="form3label">Completed date</label><input id="fleet-service-completed" type="date" value="'+escH(service.completed_date||'')+'"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Post-work test / evidence reference</label><input id="fleet-service-evidence" value="'+escH(service.post_work_test_reference||'')+'"></div><div class="form3group"><label class="form3label">Release authority</label><input id="fleet-service-authority" value="'+escH(service.release_authority||'')+'"></div></div>':'')+'<footer><button class="btn r5-close">Close</button>'+(editable?'<button class="btn fleet-service-complete">Complete service</button><button class="btn btn-primary fleet-service-release">Verify release</button>':'')+'</footer></div>';
+  document.body.appendChild(modal);
+  if(editable)fleetServiceScheduleFields(modal,service);
+  modal.querySelectorAll('.r5-close').forEach(function(button){button.addEventListener('click',function(){modal.remove();});});
+  modal.addEventListener('click',function(event){if(event.target===modal)modal.remove();});
+  if(!editable)return;
+  var editContext=AurisFleetListWorkspace.session();
+  var save=async function(release){
+    try{fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}
+    var work=modal.querySelector('#fleet-service-work').value.trim(),completed=modal.querySelector('#fleet-service-completed').value,evidence=modal.querySelector('#fleet-service-evidence').value.trim(),authority=modal.querySelector('#fleet-service-authority').value.trim();
+    if(!work||!completed){toast('Work performed and completion date are required.',false);return;}
+    if(release&&(!evidence||!authority)){toast('Release requires post-work test evidence and an authority.',false);return;}
+    var buttons=modal.querySelectorAll('.fleet-service-complete,.fleet-service-release');buttons.forEach(function(b){b.disabled=true;});
+    try{
+      if(release){var open=await api('/equipment_defects?select=id&equipment_id=eq.'+encodeURIComponent(vehicleId)+'&status=in.(open,quarantined,under_repair,awaiting_verification)'+cf()+'&limit=1');if(open?.length)throw new Error('Close and verify the linked defect before releasing this vehicle.');}
+      var body={status:'completed',completed_date:completed,work_performed:work,post_work_test_reference:evidence||null,release_status:release?'released':'pending',release_authority:release?authority:null,release_date:release?new Date().toISOString().slice(0,10):null,updated_at:new Date().toISOString()};
+      Object.assign(body,fleetServiceScheduleValues(modal,completed));
+      await api('/equipment_maintenance_events?id=eq.'+encodeURIComponent(serviceId)+cf(),{m:'PATCH',p:'return=minimal',b:body});
+      if(release)await api('/tools_register?id=eq.'+encodeURIComponent(vehicleId)+cf(),{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
+      await loadFleet();modal.remove();toast(release?'Vehicle release verified and recorded.':'Service completed; authorised release remains pending.');
+    }catch(error){toast('Service update failed: '+error.message,false);}finally{buttons.forEach(function(b){b.disabled=false;});}
+  };
+  modal.querySelector('.fleet-service-complete').addEventListener('click',function(){save(false);});
+  modal.querySelector('.fleet-service-release').addEventListener('click',function(){save(true);});
 }
 
 function fleetNewVehicle(){fleetOpenVehicleForm(null);}
 function fleetEditVehicle(id){fleetOpenVehicleForm(id);}
+async function fleetQuarantineFailedCheck(vehicle,inspection){
+  await api('/tools_register?id=eq.'+encodeURIComponent(vehicle.id)+cf(),{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',updated_at:new Date().toISOString()}});
+  vehicle.status='out_of_service';
+  var stamp=String(Date.now()).slice(-8),defectRef='DEF-'+new Date().getFullYear()+'-'+stamp,serviceRef='SVC-'+new Date().getFullYear()+'-'+stamp;
+  var defects=await api('/equipment_defects',{m:'POST',p:'return=representation',b:{company_id:ccid(),equipment_id:vehicle.id,reference:defectRef,source:'inspection',severity:'critical',description:inspection.defects_found||'Failed vehicle check',reported_by:inspection.inspected_by_name,reported_date:inspection.inspection_date,status:'quarantined',quarantine_location:vehicle.location||null,release_required:true,corrective_action_reference:serviceRef,created_by:prof?.id||null}});
+  await api('/equipment_maintenance_events',{m:'POST',p:'return=minimal',b:{company_id:ccid(),equipment_id:vehicle.id,reference:serviceRef,maintenance_type:'corrective',status:'requested',problem_description:inspection.defects_found||'Failed vehicle check',release_required:true,release_status:'pending',notes:'Raised from '+defectRef,created_by:prof?.id||null}});
+  return defects?.[0];
+}
 function fleetMonthlyCheck(id){
   var v=(fleetVehicles||[]).find(function(x){return String(x.id)===String(id);});if(!v)return;
   document.getElementById('fleet-check-modal')?.remove();var modal=document.createElement('div');modal.id='fleet-check-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   var checks=TOOL_INSPECTION_CHECKLISTS.vehicle;
-  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="Monthly vehicle check" style="width:100%;max-width:760px;max-height:90vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Fleet monthly check</div><h2 style="margin:3px 0">'+escH(fleetLabel(v))+'</h2></div><button class="btn btn-sm fleet-check-close"><i class="ti ti-x"></i></button></div><div style="margin:14px 0">'+checks.map(function(c){return '<label style="display:flex;gap:9px;align-items:center;padding:9px;border-bottom:1px solid var(--border)"><span style="flex:1">'+escH(c)+'</span><select class="fleet-check-item" data-label="'+escH(c)+'" aria-label="Result for '+escH(c)+'" required><option value="">Select result</option><option value="ok">Pass</option><option value="fail">Fail</option></select></label>';}).join('')+'</div><div class="form3group"><label class="form3label">Defects found</label><textarea id="fleet-check-defects"></textarea></div><div class="form3group"><label class="form3label">Actions taken</label><textarea id="fleet-check-actions"></textarea></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn fleet-check-close">Cancel</button><button class="btn btn-primary fleet-check-save"><i class="ti ti-device-floppy"></i>Save monthly check</button></div></div>';
+  var vehicleType=String(v.vehicle_type||v.category||'').toLowerCase();
+  if(/plant|forklift|excavat|loader|crane/.test(vehicleType))checks=checks.concat(['Hydraulic system and leaks','Attachments and lifting controls','Emergency stop and warning devices']);
+  else if(/truck|lorry|bus|van/.test(vehicleType))checks=checks.concat(['Load restraint and body condition','Mirrors and blind-spot aids']);
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="Monthly vehicle check" style="width:100%;max-width:760px;max-height:90vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Fleet monthly check</div><h2 style="margin:3px 0">'+escH(fleetLabel(v))+'</h2></div><button class="btn btn-sm fleet-check-close" aria-label="Close"><i class="ti ti-x"></i></button></div><div style="margin:14px 0">'+checks.map(function(c){return '<label style="display:flex;gap:9px;align-items:center;padding:9px;border-bottom:1px solid var(--border)"><span style="flex:1">'+escH(c)+'</span><select class="fleet-check-item" data-label="'+escH(c)+'" aria-label="Result for '+escH(c)+'" required><option value="">Not checked</option><option value="ok">Pass</option><option value="fail">Fail</option><option value="na">N/A - justified</option></select><input class="fleet-check-note" placeholder="Reason for N/A or failure" aria-label="Note for '+escH(c)+'"></label>';}).join('')+'</div><div class="form3group"><label class="form3label">Defects found</label><textarea id="fleet-check-defects"></textarea></div><div class="form3group"><label class="form3label">Actions taken</label><textarea id="fleet-check-actions"></textarea></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn fleet-check-close">Cancel</button><button class="btn btn-primary fleet-check-save"><i class="ti ti-device-floppy"></i>Save monthly check</button></div></div>';
   var today=new Date(),localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
   var dateGroup=document.createElement('div');dateGroup.className='form3group';dateGroup.innerHTML='<label class="form3label" for="fleet-check-date">Inspection date *</label><input id="fleet-check-date" type="date" required value="'+localDate+'">';
   modal.querySelector('div[style="margin:14px 0"]')?.before(dateGroup);
   document.body.appendChild(modal);modal.querySelectorAll('.fleet-check-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
-  modal.querySelector('.fleet-check-save')?.addEventListener('click',async function(){var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));if(controls.some(function(c){return !c.value;})){toast('Select Pass or Fail for every check.',false);controls.find(function(c){return !c.value;})?.focus();return;}var items=controls.map(function(c){return {item:c.dataset.label,result:c.value,note:''};}),failed=items.some(function(x){return x.result==='fail';}),defects=modal.querySelector('#fleet-check-defects')?.value.trim(),actions=modal.querySelector('#fleet-check-actions')?.value.trim();if(failed&&(!defects||!actions)){toast('Failed checks require defects and corrective actions.',false);return;}var inspectionDate=modal.querySelector('#fleet-check-date')?.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')){toast('Select an inspection date.',false);return;}var next=new Date(inspectionDate+'T12:00:00');if(Number.isNaN(next.getTime())){toast('Enter a valid inspection date.',false);return;}next.setDate(next.getDate()+30);var body={company_id:ccid(),tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by:null,inspected_by_name:prof?.full_name||prof?.name||prof?.email||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null,next_inspection_date:[next.getFullYear(),String(next.getMonth()+1).padStart(2,'0'),String(next.getDate()).padStart(2,'0')].join('-'),notes:'Fleet monthly check',created_by:prof?.id||null};try{await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});toast('Monthly vehicle check saved in Fleet.');modal.remove();loadFleet();}catch(e){toastActionError('Save monthly vehicle check','Fleet',e);}});
+  modal.querySelector('.fleet-check-save')?.addEventListener('click',async function(){var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));if(controls.some(function(c){return !c.value;})){toast('Answer every check before saving.',false);controls.find(function(c){return !c.value;})?.focus();return;}var items=controls.map(function(c){return {item:c.dataset.label,result:c.value,note:c.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});if(items.some(function(x){return (x.result==='na'||x.result==='fail')&&!x.note;})){toast('Explain each N/A and failed answer.',false);return;}var failed=items.some(function(x){return x.result==='fail';}),defects=modal.querySelector('#fleet-check-defects')?.value.trim(),actions=modal.querySelector('#fleet-check-actions')?.value.trim();if(failed&&!defects){defects=items.filter(function(x){return x.result==='fail';}).map(function(x){return x.item+' - '+x.note;}).join('; ');modal.querySelector('#fleet-check-defects').value=defects;}if(failed&&!actions){toast('Failed checks require corrective actions.',false);return;}var inspectionDate=modal.querySelector('#fleet-check-date')?.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')){toast('Select an inspection date.',false);return;}var next=new Date(inspectionDate+'T12:00:00');if(Number.isNaN(next.getTime())){toast('Enter a valid inspection date.',false);return;}next.setDate(next.getDate()+30);var body={company_id:ccid(),tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by:null,inspected_by_name:prof?.full_name||prof?.name||prof?.email||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null,next_inspection_date:[next.getFullYear(),String(next.getMonth()+1).padStart(2,'0'),String(next.getDate()).padStart(2,'0')].join('-'),notes:'Fleet monthly check',created_by:prof?.id||null};var save=modal.querySelector('.fleet-check-save');save.disabled=true;save.textContent='Saving...';try{await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});if(failed)await fleetQuarantineFailedCheck(v,body);await loadFleet();toast(failed?'Failed check saved; vehicle restricted with linked defect and repair task.':'Monthly vehicle check saved in Fleet.');modal.remove();}catch(e){toastActionError('Save monthly vehicle check / restriction','Fleet',e);}finally{save.disabled=false;save.innerHTML='<i class="ti ti-device-floppy"></i>Save monthly check';}});
   modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
-function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew==='function'){esgFuelNew();var el=document.getElementById('ff-vehicle');if(el)el.value=label||'';}},180);}
+function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew!=='function')return;esgFuelNew();var input=document.getElementById('ff-vehicle');if(!input)return;var select=document.createElement('select');select.id='fleet-fuel-vehicle-select';select.setAttribute('aria-label','Registered vehicle');select.innerHTML='<option value="">Select registered vehicle...</option>'+(fleetVehicles||[]).filter(function(v){return String(v.company_id)===String(ccid());}).map(function(v){var ref=v.registration_number||v.ref_number||v.name||'';return '<option value="'+escH(ref)+'">'+escH(fleetLabel(v)+(v.name&&v.name!==fleetLabel(v)?' - '+v.name:''))+'</option>';}).join('');select.value=label||'';input.value=select.value;input.hidden=true;select.addEventListener('change',function(){input.value=select.value;});input.after(select);},180);}
 
 function fleetOpenVehicleForm(id){
   if(id&&!fleetOpeningLinkedRecord)return fleetRecordWindow(id,'edit');
