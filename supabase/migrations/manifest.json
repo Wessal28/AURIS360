@@ -226,6 +226,11 @@
       "order": 45,
       "file": "20261012030000_inspection_follow_up.sql",
       "sha256": "5521db1b127be14bea32a47c5e5f480c4991a0271f0f17028694434374ef0a03"
+    },
+    {
+      "order": 46,
+      "file": "20261012050000_risk_assessment_workflow_status.sql",
+      "sha256": "5bdd45a4f0cc1d71ed477aeabbbc08579510721f54c49a40db549eccca451350"
     }
   ]
 }

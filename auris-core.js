@@ -14257,7 +14257,7 @@ async function wsOpenRA(){
     wsSetRecordReturnContext('ra',x.id,'form');
     if(choice==='template'&&typeof raShowNewPanel==='function')raShowNewPanel();
     else if(typeof raNew==='function')raNew('baseline');
-    setTimeout(function(){var wo=document.getElementById('ra-linked-wo');if(wo)wo.value=x.id;},180);
+    setTimeout(function(){var wo=document.getElementById('ra-linked-wo');if(wo)wo.value=x.id;if(choice==='new')raPrefillFromWorkOrder(x);},180);
   },250);
 }
 
@@ -17013,7 +17013,7 @@ async function raLoadList(){
     setM('ra-m3active',raAllData.filter(x=>x.status==='active').length);
     setM('ra-m3draft',raAllData.filter(x=>x.status==='draft').length);
     setM('ra-m3pending',raAllData.filter(x=>['pending_review','pending_approval','review'].includes(x.status)).length);
-    setM('ra-m3high',raAllData.filter(x=>['Critical','Very High','High'].includes(x.overall_risk_level||x.risk_level)).length);
+    setM('ra-m3high',raAllData.filter(x=>['Critical','Very High','High'].includes(raSummariseRows(x).residualLevel)).length);
     setM('ra-m3review',raAllData.filter(x=>x.review_date&&String(x.review_date).slice(0,10)<today&&x.status==='active').length);
     raFilterList();
   }catch(e){if(el)el.innerHTML=registerErrorHtml('Risk Assessment register',e.message);console.error(e);}
@@ -17077,8 +17077,8 @@ function raRiskLevelFromScore(score){
 }
 var raMatrixSnapshot=null;
 function raRiskLevelFromFactors(severity, likelihood, snapshot){
-  var s=Math.max(1,Math.min(5,parseInt(severity||1)));
-  var p=Math.max(1,Math.min(5,parseInt(likelihood||1)));
+  var s=parseInt(severity,10),p=parseInt(likelihood,10);
+  if(!Number.isInteger(s)||!Number.isInteger(p)||s<1||s>5||p<1||p>5)return '';
   var matrix=[
     ['Very Low','Very Low','Low','Low','Medium'],
     ['Very Low','Low','Low','Medium','High'],
@@ -17128,11 +17128,11 @@ function raRiskMatrixHtml(){
     h+='</tr>';
   }
   h+='</tbody></table></div>'
-    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>RAMS rule:</strong> assess inherent risk before controls, apply the hierarchy of controls, then reassess residual risk. Residual High or Very High work must not commence until risk is reduced or escalated for senior management / HSE review.</div>';
+    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>Scoring basis:</strong> initial risk is the exposure with existing controls, before additional controls; residual risk is the exposure after additional controls are in place and verified. Residual High or Very High work must not commence until risk is reduced or escalated for senior management / HSE review.</div>';
   return h;
 }
 function raRiskBadge(level,score){
-  if(!level&&!score)return '<span style="color:var(--text2)">-</span>';
+  if(!level&&!score)return '<span style="color:var(--text2)">Not assessed</span>';
   level=level||raRiskLevelFromScore(score);
   var cfg=RL_CFG[level]||['#f3f4f6','#6B7280'];
   return '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:72px;background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800">'+escH(level||'-')+(score?' <span style="opacity:.72;margin-left:4px">('+escH(score)+')</span>':'')+'</span>';
@@ -17293,15 +17293,7 @@ function raRenderFormGuide(tab){
     {key:'revisions',num:5,label:'Revision history',hint:'Keep previous versions controlled and record why changes were made.'}
   ];
   var cur=steps.find(function(s){return s.key===tab;})||steps[0];
-  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +steps.map(function(s){
-      var active=s.key===cur.key;
-      return '<button type="button" data-auris-named-action="ra-form-tab" data-ra-tab="'+escH(s.key)+'" style="border:1px solid '+(active?'#1D9E75':'#dbe3ea')+';background:'+(active?'#E1F5EE':'#fff')+';color:'+(active?'#0F6E56':'#475569')+';border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:'+(active?'#1D9E75':'#eef2f7')+';color:'+(active?'#fff':'#64748b')+';margin-right:5px">'+s.num+'</span>'+escH(s.label)+'</button>';
-    }).join('')
-    +'</div>'
-    +'<div style="font-size:12px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;max-width:620px;line-height:1.4"><strong>Step '+cur.num+': '+escH(cur.label)+'.</strong> '+escH(cur.hint)+'</div>'
-    +'</div>';
+  el.innerHTML='<div style="font-size:12px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;line-height:1.4"><strong>Step '+cur.num+': '+escH(cur.label)+'.</strong> '+escH(cur.hint)+'</div>';
 }
 
 async function raLoadPermitOptions(selected){
@@ -17340,9 +17332,9 @@ function raNew(type){
   ['ra-date','ra-review-date','ra-sign-assessor-date','ra-sign-reviewer-date','ra-sign-approver-date'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
   });
-  var dt=document.getElementById('ra-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var dt=document.getElementById('ra-date');if(dt)dt.value=raLocalDate(new Date());
   var rev=new Date();rev.setFullYear(rev.getFullYear()+1);
-  var rd=document.getElementById('ra-review-date');if(rd)rd.value=rev.toISOString().slice(0,10);
+  var rd=document.getElementById('ra-review-date');if(rd)rd.value=raLocalDate(rev);
   var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
   ['ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver'].forEach(function(id){fillPersonSelect(id);});
   fillPersonSelect('ra-assessed-by',prof?.full_name||'');
@@ -17366,8 +17358,9 @@ function raNew(type){
   var woSel=document.getElementById('ra-linked-wo');
   if(woSel){
     woSel.innerHTML='<option value="">None</option>';
-    try{api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=20').then(function(d){
+    try{api('/work_schedule?select=id,company_id,title,ref_number,description,location,department,team_members,permit_ref'+cf()+'&order=planned_start.desc&limit=80').then(function(d){
       (d||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' - '+w.title;woSel.appendChild(o);});
+      woSel.onchange=function(){var selected=(d||[]).find(function(w){return String(w.id)===String(woSel.value);});if(selected)raPrefillFromWorkOrder(selected);};
     });}catch(ex){}
   }
   raLoadPermitOptions();
@@ -17475,6 +17468,26 @@ function raGetFieldValue(id){
   var el=document.getElementById(id);
   return el?(el.value||'').trim():'';
 }
+function raLocalDate(date){
+  var d=date||new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+async function raPrefillFromWorkOrder(workOrder){
+  if(!workOrder||String(workOrder.company_id||'')!==String(ccid()))return;
+  var fill=function(id,value){var el=document.getElementById(id);if(el&&!el.value&&value)el.value=value;};
+  fill('ra-title',workOrder.title);fill('ra-activity',workOrder.title);
+  fill('ra-workshop',workOrder.location);fill('ra-site-name',workOrder.location);
+  fill('ra-dept',workOrder.department);fill('ra-job-seg',workOrder.ref_number);
+  fill('ra-linked-permit',workOrder.permit_ref);
+  var context=['Work order '+(workOrder.ref_number||''),workOrder.description,workOrder.team_members?'Team: '+workOrder.team_members:''].filter(Boolean);
+  try{
+    var links=await api('/work_schedule_links?select=record_ref&work_order_id=eq.'+encodeURIComponent(workOrder.id)+'&link_type=eq.equipment'+cf()+'&limit=100');
+    if(links&&links.length)context.push('Equipment: '+links.map(function(link){return link.record_ref;}).filter(Boolean).join(', '));
+  }catch(error){console.warn('Linked work-order equipment could not be prefilled',error);}
+  fill('ra-scope',context.join('\n'));
+  raUpdateQualityPanel();
+  toast('Work order context prefilled. Confirm the site, team, equipment and permit before saving.');
+}
 function raUpdateQualityPanel(){
   var el=document.getElementById('ra-quality-panel');if(!el)return;
   var rows=[];
@@ -17485,7 +17498,7 @@ function raUpdateQualityPanel(){
     {label:'Assessment date',ok:!!raGetFieldValue('ra-date')},
     {label:'Review date',ok:!!raGetFieldValue('ra-review-date')},
     {label:'Hazard/control rows',ok:rows.length>0,detail:rows.length+' row'+(rows.length===1?'':'s')},
-    {label:'Residual risk assessed',ok:rows.some(function(r){return parseInt(r.res_rr||0)>0;})}
+    {label:'Every hazard explicitly scored',ok:rows.length>0&&rows.every(function(r){return Number(r.rr)>0&&(raEditingType==='dynamic'||Number(r.res_rr)>0);})}
   ];
   var complete=checks.filter(function(c){return c.ok;}).length;
   var pct=Math.round((complete/checks.length)*100);
@@ -17500,9 +17513,9 @@ function raUpdateQualityPanel(){
   var missing=checks.filter(function(c){return !c.ok;}).map(function(c){return c.label;});
   el.innerHTML='<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1.4fr) minmax(220px,1fr);gap:12px;align-items:stretch">'
     +'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:'+bg+'">'
-      +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:6px">Assessment readiness</div>'
+      +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:6px">Content completeness</div>'
       +'<div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px;font-weight:900;color:'+tone+'">'+pct+'%</div><div style="flex:1;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+tone+'"></div></div></div>'
-      +'<div style="font-size:11px;color:var(--text2);margin-top:6px">'+(missing.length?'Missing: '+escH(missing.join(', ')):'Ready for review / approval')+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:6px">'+(missing.length?'Missing: '+escH(missing.join(', ')):'Content complete. Submission also checks controls, tolerability and approval route.')+'</div>'
     +'</div>'
     +'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff">'
       +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:8px">Required checks</div>'
@@ -17586,12 +17599,12 @@ function raOpen(id){
 
 // -- Risk Scoring -------------------------------------------------------------
 function raRsSelect(n,prefix){
-  var h='<select title="Severity: 1 minor, 5 fatality/catastrophic" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" data-auris-generated-onchange="g0123">';
+  var h='<select title="Severity — use View scoring criteria for the selected matrix" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:70px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
 function raRopSelect(n,prefix){
-  var h='<select title="Likelihood: 1 rare, 5 frequent/almost certain" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" data-auris-generated-onchange="g0123">';
+  var h='<select title="Likelihood — use View scoring criteria for the selected matrix" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:70px" data-auris-generated-onchange="g0123"><option value="">Not assessed</option>';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
@@ -17600,15 +17613,15 @@ function raCalcRL(sel){
   var row=sel.closest('tr');if(!row)return;
   var isResidual=sel.classList.contains('r-rs')||sel.classList.contains('r-rop');
   var prefix=isResidual?'r-':'';
-  var s=parseInt(row.querySelector('.'+prefix+'rs')?.value||0)||1;
-  var p=parseInt(row.querySelector('.'+prefix+'rop')?.value||0)||1;
-  var rr=s*p;
+  var s=Number(row.querySelector('.'+prefix+'rs')?.value||0);
+  var p=Number(row.querySelector('.'+prefix+'rop')?.value||0);
+  var rr=s&&p?s*p:0;
   var rlEl=row.querySelector('.'+prefix+'rl');
   if(!rlEl)return;
-  var lvl=raRiskLevelFromFactors(s,p);
+  var lvl=rr?raRiskLevelFromFactors(s,p):'';
   var cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
-  rlEl.innerHTML='<span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+lvl+'</span></span>';
-  rlEl.setAttribute('data-score',rr);rlEl.setAttribute('data-level',lvl);
+  rlEl.innerHTML=rr?'<span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+lvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>';
+  rlEl.setAttribute('data-score',rr||'');rlEl.setAttribute('data-level',lvl);
   raUpdateQualityPanel();
 }
 
@@ -17624,6 +17637,18 @@ function raHOCSelect(selected){
   HOC_LEVELS.forEach(function(lv){h+='<option value="'+lv.key+'"'+(selected===lv.key?' selected':'')+'>'+lv.label+'</option>';});
   return h+'</select>';
 }
+function raActionOwnerSelect(value){
+  var names=tenantPeople().map(function(person){return [person.first_name,person.last_name].filter(Boolean).join(' ');}).filter(Boolean);
+  var external=value&&!names.includes(value);
+  return '<select class="ra-action-by" aria-label="Action owner"><option value="">Select person</option>'
+    +names.map(function(name){return '<option value="'+escH(name)+'"'+(name===value?' selected':'')+'>'+escH(name)+'</option>';}).join('')
+    +'<option value="__external__"'+(external?' selected':'')+'>External person</option></select>'
+    +'<input class="ra-action-external" type="text" placeholder="External person name" value="'+escH(external?value:'')+'"'+(external?'':' hidden')+'>';
+}
+function raBindActionOwner(row){
+  var select=row.querySelector('.ra-action-by'),external=row.querySelector('.ra-action-external');
+  if(select&&external)select.addEventListener('change',function(){external.hidden=select.value!=='__external__';});
+}
 
 // -- Baseline / HIRA Row -------------------------------------------------------
 function raBaselineAddRow(r, bodyOverride, typeOverride){
@@ -17634,9 +17659,9 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
   var body=bodyOverride||document.getElementById(bodyId);
   if(!body)return;
   var num=body.querySelectorAll('tr').length+1;
-  var s=parseInt(r.rs||r.severity||1);var p=parseInt(r.rop||r.probability||1);
-  var rs=parseInt(r.res_s||r.res_severity||1);var rp=parseInt(r.res_p||r.res_probability||1);
-  var rr=s*p;var rrr=rs*rp;
+  var s=Number(r.rs||r.severity||0),p=Number(r.rop||r.probability||0);
+  var rs=Number(r.res_s||r.res_severity||0),rp=Number(r.res_p||r.res_probability||0);
+  var rr=s&&p?s*p:0,rrr=rs&&rp?rs*rp:0;
   var rlLvl=raRiskLevelFromFactors(s,p);
   var rrlLvl=raRiskLevelFromFactors(rs,rp);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
@@ -17645,24 +17670,25 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid #f0f0f0';
   tr.innerHTML=(isHIRA?'<td><select class="ra-hcat" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px;width:90px"><option>Physical</option><option>Mechanical</option><option>Electrical</option><option>Chemical</option><option>Biological</option><option>Ergonomic</option><option>Fire</option><option>Environmental</option><option>Organisational</option></select></td>':'<td><div class="ra-row-num">'+num+'</div></td>')
-    +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||r.activity||'')+'</textarea></td>'
+    +'<td style="padding:5px 8px"><input class="ra-action-key" type="hidden" value="'+escH(r.action_key||('ra-row-'+(globalThis.crypto?.randomUUID?.()||Date.now()+'-'+num)))+'"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||r.activity||'')+'</textarea><button type="button" class="btn btn-sm ra-expand-row">Expand row</button></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||r.potential_harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><input class="ra-who" type="text" style="width:70px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px" value="'+escH(r.who||'')+'" placeholder="Who..."/></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" data-auris-generated-onclick="g0124"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
-    +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
+    +'<td class="rl ra-risk-badge-cell" data-score="'+(rr||'')+'" data-level="'+rlLvl+'">'+(rr?'<span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>')+'</td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px">'+raHOCSelect(r.hoc_level||r.hierarchy||'')+'</td>'
     +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
-    +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
-    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
+    +'<td class="r-rl ra-risk-badge-cell" data-score="'+(rrr||'')+'" data-level="'+rrlLvl+'">'+(rrr?'<span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>')+'</td>'
+    +'<td>'+raActionOwnerSelect(r.action_by||r.responsible||r.owner||'')+'</td>'
     +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:5px 8px"><input class="ra-legal" type="text" style="width:90px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px" value="'+escH(r.legal_ref||r.legal||'')+'" placeholder="OSH Act..."/></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-generated-onclick="g0125"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
+  raBindActionOwner(tr);
   setTimeout(raUpdateQualityPanel,0);
 }
 
@@ -17678,33 +17704,34 @@ function raTaskAddRow(r){
   r=r||{};
   var body=document.getElementById('ra-task-body');if(!body)return;
   var num=body.querySelectorAll('tr').length+1;
-  var s=parseInt(r.rs||1);var p=parseInt(r.rop||1);
-  var rs=parseInt(r.res_s||1);var rp=parseInt(r.res_p||1);
-  var rr=s*p;var rrr=rs*rp;
+  var s=Number(r.rs||0),p=Number(r.rop||0);
+  var rs=Number(r.res_s||0),rp=Number(r.res_p||0);
+  var rr=s&&p?s*p:0,rrr=rs&&rp?rs*rp:0;
   var rlLvl=raRiskLevelFromFactors(s,p);
   var rrlLvl=raRiskLevelFromFactors(rs,rp);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
   var rrlCfg=RL_CFG[rrlLvl]||['#f3f4f6','#6B7280'];
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid #f0f0f0';
-  tr.innerHTML='<td><div class="ra-row-num">'+num+'</div></td>'
+  tr.innerHTML='<td><div class="ra-row-num">'+num+'</div><input class="ra-action-key" type="hidden" value="'+escH(r.action_key||('ra-row-'+(globalThis.crypto?.randomUUID?.()||Date.now()+'-'+num)))+'"></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-task-step" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Task / step description...">'+escH(r.task||r.step||'')+'</textarea></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||'')+'</textarea></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||'')+'</textarea><button type="button" class="btn btn-sm ra-expand-row">Expand row</button></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" data-auris-generated-onclick="g0124"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
-    +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
+    +'<td class="rl ra-risk-badge-cell" data-score="'+(rr||'')+'" data-level="'+rlLvl+'">'+(rr?'<span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>')+'</td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea>'
     +'<input class="ra-hoc" type="hidden" value="'+escH(r.hoc_level||r.hierarchy||'')+'"/><input class="ra-legal" type="hidden" value="'+escH(r.legal_ref||r.legal||'')+'"/></td>'
     +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
-    +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
-    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
+    +'<td class="r-rl ra-risk-badge-cell" data-score="'+(rrr||'')+'" data-level="'+rrlLvl+'">'+(rrr?'<span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>')+'</td>'
+    +'<td>'+raActionOwnerSelect(r.action_by||r.responsible||r.owner||'')+'</td>'
     +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-generated-onclick="g0125"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
+  raBindActionOwner(tr);
   setTimeout(raUpdateQualityPanel,0);
 }
 
@@ -17719,7 +17746,7 @@ function raTaskRender(rows){
 function raDynamicAddRow(r){
   r=r||{};
   var body=document.getElementById('ra-dynamic-body');if(!body)return;
-  var s=parseInt(r.rs||1);var p=parseInt(r.rop||1);var rr=s*p;
+  var s=Number(r.rs||0),p=Number(r.rop||0),rr=s&&p?s*p:0;
   var rlLvl=raRiskLevelFromFactors(s,p);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
   var tr=document.createElement('tr');tr.style.borderBottom='1px solid #f0f0f0';
@@ -17727,7 +17754,7 @@ function raDynamicAddRow(r){
     +'<td style="padding:5px 8px"><textarea class="ra-risk-obs" style="width:100%;min-height:45px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Observed risk description...">'+escH(r.observed_risk||r.harm||'')+'</textarea></td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
-    +'<td class="rl" style="padding:4px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
+    +'<td class="rl" style="padding:4px;text-align:center" data-score="'+(rr||'')+'" data-level="'+rlLvl+'">'+(rr?'<span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span>':'<span class="ra-unassessed">Not assessed</span>')+'</td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:45px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Immediate action taken...">'+escH(r.controls||r.immediate_control||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><select class="ra-decision" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:100px">'
     +'<option value="proceed">Proceed</option>'
@@ -17754,10 +17781,10 @@ function raCollectRows(){
       return {
         condition:tr.querySelector('.ra-condition')?.value||'',
         observed_risk:tr.querySelector('.ra-risk-obs')?.value||'',
-        rs:parseInt(tr.querySelector('.rs')?.value)||1,
-        rop:parseInt(tr.querySelector('.rop')?.value)||1,
-        rr:(parseInt(tr.querySelector('.rs')?.value)||1)*(parseInt(tr.querySelector('.rop')?.value)||1),
-        rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
+        rs:parseInt(tr.querySelector('.rs')?.value)||0,
+        rop:parseInt(tr.querySelector('.rop')?.value)||0,
+        rr:(parseInt(tr.querySelector('.rs')?.value)||0)*(parseInt(tr.querySelector('.rop')?.value)||0),
+        rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||0,parseInt(tr.querySelector('.rop')?.value)||0),
         controls:tr.querySelector('.ra-controls')?.value||'',
         decision:tr.querySelector('.ra-decision')?.value||'proceed'
       };
@@ -17765,48 +17792,50 @@ function raCollectRows(){
   }
   if(type==='task'){
     return Array.from(document.querySelectorAll('#ra-task-body tr')).map(function(tr){
-      var rr=parseInt(tr.querySelector('.rs')?.value||1)*parseInt(tr.querySelector('.rop')?.value||1);
-      var rrr=parseInt(tr.querySelector('.r-rs')?.value||1)*parseInt(tr.querySelector('.r-rop')?.value||1);
+      var rr=parseInt(tr.querySelector('.rs')?.value||0)*parseInt(tr.querySelector('.rop')?.value||0);
+      var rrr=parseInt(tr.querySelector('.r-rs')?.value||0)*parseInt(tr.querySelector('.r-rop')?.value||0);
       return {
         task:tr.querySelector('.ra-task-step')?.value||'',
         hazard:tr.querySelector('.ra-hazard')?.value||'',
         harm:tr.querySelector('.ra-harm')?.value||'',
-        rs:parseInt(tr.querySelector('.rs')?.value)||1,
-        rop:parseInt(tr.querySelector('.rop')?.value)||1,
-        rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
+        rs:parseInt(tr.querySelector('.rs')?.value)||0,
+        rop:parseInt(tr.querySelector('.rop')?.value)||0,
+        rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||0,parseInt(tr.querySelector('.rop')?.value)||0),
         controls:tr.querySelector('.ra-controls')?.value||'',
         further_controls:tr.querySelector('.ra-further-controls')?.value||'',
+        action_key:tr.querySelector('.ra-action-key')?.value||'',
         hoc_level:tr.querySelector('.ra-hoc')?.value||'',
         legal_ref:tr.querySelector('.ra-legal')?.value||'',
-        action_by:tr.querySelector('.ra-action-by')?.value||'',
+        action_by:tr.querySelector('.ra-action-by')?.value==='__external__'?(tr.querySelector('.ra-action-external')?.value||''):(tr.querySelector('.ra-action-by')?.value||''),
         target_date:tr.querySelector('.ra-target-date')?.value||'',
-        res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
-        res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
-        res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||1,parseInt(tr.querySelector('.r-rop')?.value)||1)
+        res_s:parseInt(tr.querySelector('.r-rs')?.value)||0,
+        res_p:parseInt(tr.querySelector('.r-rop')?.value)||0,
+        res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||0,parseInt(tr.querySelector('.r-rop')?.value)||0)
       };
     });
   }
   // Baseline / HIRA / Environmental
   var bodyId=(type==='hira')?'ra-hira-body':'ra-baseline-body';
   return Array.from(document.querySelectorAll('#'+bodyId+' tr')).map(function(tr){
-    var rr=parseInt(tr.querySelector('.rs')?.value||1)*parseInt(tr.querySelector('.rop')?.value||1);
-    var rrr=parseInt(tr.querySelector('.r-rs')?.value||1)*parseInt(tr.querySelector('.r-rop')?.value||1);
+    var rr=parseInt(tr.querySelector('.rs')?.value||0)*parseInt(tr.querySelector('.rop')?.value||0);
+    var rrr=parseInt(tr.querySelector('.r-rs')?.value||0)*parseInt(tr.querySelector('.r-rop')?.value||0);
     return {
       category:tr.querySelector('.ra-hcat')?.value||'',
       hazard:tr.querySelector('.ra-hazard')?.value||'',
       harm:tr.querySelector('.ra-harm')?.value||'',
       who:tr.querySelector('.ra-who')?.value||'',
-      rs:parseInt(tr.querySelector('.rs')?.value)||1,
-      rop:parseInt(tr.querySelector('.rop')?.value)||1,
-      rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
+      rs:parseInt(tr.querySelector('.rs')?.value)||0,
+      rop:parseInt(tr.querySelector('.rop')?.value)||0,
+      rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||0,parseInt(tr.querySelector('.rop')?.value)||0),
       controls:tr.querySelector('.ra-controls')?.value||'',
       further_controls:tr.querySelector('.ra-further-controls')?.value||'',
+      action_key:tr.querySelector('.ra-action-key')?.value||'',
       hoc_level:tr.querySelector('.ra-hoc')?.value||'',
-      action_by:tr.querySelector('.ra-action-by')?.value||'',
+      action_by:tr.querySelector('.ra-action-by')?.value==='__external__'?(tr.querySelector('.ra-action-external')?.value||''):(tr.querySelector('.ra-action-by')?.value||''),
       target_date:tr.querySelector('.ra-target-date')?.value||'',
-      res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
-      res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
-      res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||1,parseInt(tr.querySelector('.r-rop')?.value)||1),
+      res_s:parseInt(tr.querySelector('.r-rs')?.value)||0,
+      res_p:parseInt(tr.querySelector('.r-rop')?.value)||0,
+      res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||0,parseInt(tr.querySelector('.r-rop')?.value)||0),
       legal_ref:tr.querySelector('.ra-legal')?.value||''
     };
   });
@@ -17821,12 +17850,19 @@ function raRowHasContent(r){
 function raControlSubmissionIssue(rows){
   for(var i=0;i<rows.length;i++){
     var row=rows[i],initial=Number(row.rr),residual=Number(row.res_rr);
+    if(!(initial>0)||raEditingType!=='dynamic'&&!(residual>0))return 'Hazard row '+(i+1)+': choose both likelihood and severity for initial'+(raEditingType==='dynamic'?'':' and residual')+' risk.';
     if(!Number.isFinite(initial)||!Number.isFinite(residual)||residual>=initial)continue;
     if(!String(row.further_controls||'').trim())return 'Hazard row '+(i+1)+': describe the additional controls supporting the lower residual risk.';
     if(!String(row.hoc_level||'').trim())return 'Hazard row '+(i+1)+': select the hierarchy of controls level.';
     if(!String(row.action_by||'').trim()||!String(row.target_date||'').trim())return 'Hazard row '+(i+1)+': assign an owner and target date for the additional controls.';
   }
   return '';
+}
+function raSubmissionFeedback(message){
+  var el=document.getElementById('ra-submission-feedback');
+  if(!el){el=document.createElement('div');el.id='ra-submission-feedback';el.setAttribute('role','alert');document.getElementById('ra-quality-panel')?.before(el);}
+  el.textContent=message||'';el.hidden=!message;
+  if(message){el.style.cssText='margin:10px 0;padding:11px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:9px;color:#7c2d12;font-weight:700';el.scrollIntoView({block:'nearest'});}
 }
 async function raSave(targetStatus){
   if(!workflowCanMutate('risk','risk assessments'))return;
@@ -17838,18 +17874,16 @@ async function raSave(targetStatus){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var rows=raCollectRows().filter(raRowHasContent);
   var status=targetStatus||g('ra-status-sel')||'draft';
-  if(currentRa&&!coreWorkflowRequireDirectEdit('risk',currentRa.status||'draft',status,'Risk assessment'))return;
+  raSubmissionFeedback('');
+  if(currentRa&&!coreWorkflowRequireDirectEdit('risk',currentRa.status||'draft',status,'Risk assessment')){raSubmissionFeedback('This assessment is locked by its workflow. Release it for correction or create a revision before submitting.');return;}
   if(status!=='draft'){
-    if(!(g('ra-title')||g('ra-activity')))return toast('Please enter an RA title or activity before submitting',false);
-    if(!g('ra-assessed-by'))return toast('Please select the assessor before submitting',false);
-    if(!g('ra-date'))return toast('Please enter the assessment date before submitting',false);
-    if(!g('ra-review-date'))return toast('Please enter the review date before submitting',false);
-    if(!rows.length)return toast('Please add at least one hazard/control row before submitting',false);
-    var controlIssue=raControlSubmissionIssue(rows);if(controlIssue)return toast(controlIssue,false);
+    var submissionIssue=!(g('ra-title')||g('ra-activity'))?'Enter an RA title or activity.':!g('ra-assessed-by')?'Select the assessor.':!g('ra-date')?'Enter the assessment date.':!g('ra-review-date')?'Enter the review date.':!rows.length?'Add at least one hazard/control row.':raControlSubmissionIssue(rows);
+    if(!submissionIssue&&document.getElementById('rax-tolerability')&&!g('rax-tolerability'))submissionIssue='Confirm residual tolerability in Scope before submitting.';
+    if(submissionIssue){raSubmissionFeedback(submissionIssue);toast(submissionIssue,false);return;}
   }
   if(g('ra-date')&&g('ra-review-date')&&new Date(g('ra-review-date'))<new Date(g('ra-date')))return toast('Review date cannot be before assessment date',false);
   // Calculate overall risk
-  var maxRR=0;var maxLvl='Low';
+  var maxRR=0;var maxLvl='';
   rows.forEach(function(r){
     var rr=parseInt(r.rr||0);
     if(rr>maxRR)maxRR=rr;
@@ -17868,9 +17902,9 @@ async function raSave(targetStatus){
     review_date:g('ra-review-date'),ra_review_date:g('ra-review-date'),
     approved_by:g('ra-approved-by'),ra_approver:g('ra-approved-by'),
     reviewed_by:g('ra-reviewed-by'),
-    ra_sign_assessor:g('ra-sign-assessor'),ra_sign_assessor_date:g('ra-sign-assessor-date'),
-    ra_sign_reviewer:g('ra-sign-reviewer'),ra_sign_reviewer_date:g('ra-sign-reviewer-date'),
-    ra_sign_approver:g('ra-sign-approver'),ra_sign_approver_date:g('ra-sign-approver-date'),
+    ra_sign_assessor:currentRa?.ra_sign_assessor||null,ra_sign_assessor_date:currentRa?.ra_sign_assessor_date||null,
+    ra_sign_reviewer:currentRa?.ra_sign_reviewer||null,ra_sign_reviewer_date:currentRa?.ra_sign_reviewer_date||null,
+    ra_sign_approver:currentRa?.ra_sign_approver||null,ra_sign_approver_date:currentRa?.ra_sign_approver_date||null,
     ra_briefed:g('ra-briefed-persons'),
     rams_document_url:g('ra-rams-url'),rams_document_name:g('ra-rams-name'),
     permit_ref:g('ra-linked-permit'),job_segment:g('ra-job-seg'),
@@ -17939,7 +17973,7 @@ async function raSave(targetStatus){
       await wsAttachSavedRecord('ra',savedRecord);
       wsReturnToWork('ra');
     }
-  }catch(e){toast(actionErrorMessage('Save risk assessment','Risk Assessment',e.message),false);console.error(e);}
+  }catch(e){var error=actionErrorMessage('Save risk assessment','Risk Assessment',e.message);raSubmissionFeedback(error);toast(error,false);console.error(e);}
 }
 
 async function raGetActiveApprovalWorkflow(){
@@ -18111,17 +18145,17 @@ async function raApproveCurrent(){
     toast('This RA is waiting for '+raApprovalStepLabel(expected)+' according to the approval workflow.',false);
     return;
   }
-  var reviewer=raGetFieldValue('ra-sign-reviewer')||prof?.full_name||prof?.email||'';
-  var approver=raGetFieldValue('ra-sign-approver')||prof?.full_name||prof?.email||'';
-  var today=new Date().toISOString().slice(0,10);
+  var reviewer=currentApprovalRa.ra_sign_reviewer||null;
+  var approver=prof?.full_name||prof?.email||'';
+  var today=raLocalDate(new Date());
   var body={
     status:'active',
-    reviewed_by:reviewer||null,
+    reviewed_by:reviewer||currentApprovalRa.reviewed_by||null,
     approved_by:approver||null,
     ra_sign_reviewer:reviewer||null,
     ra_sign_approver:approver||null,
-    ra_sign_reviewer_date:raGetFieldValue('ra-sign-reviewer-date')||today,
-    ra_sign_approver_date:raGetFieldValue('ra-sign-approver-date')||today,
+    ra_sign_reviewer_date:currentApprovalRa.ra_sign_reviewer_date||null,
+    ra_sign_approver_date:today,
     updated_at:new Date().toISOString()
   };
   try{
@@ -18223,13 +18257,21 @@ async function raGenRef(type){
 
 async function raSyncToMAP(raId, rows){
   var ra=(raAllData||[]).find(function(x){return String(x.id)===String(raId);})||{},sourceRef=raRecordRef(ra);
-  var existing=await api('/action_tracker?select=id,description'+cf()+'&source_module=eq.risk&source_id=eq.'+encodeURIComponent(raId)+'&limit=500');
-  var known=new Set((existing||[]).map(function(a){return String(a.description||'');}));
-  for(var r of rows){
-    var rl=r.res_rl||r.rl||'';if(!['Critical','Very High','High'].includes(rl))continue;
-    var description='High residual risk: '+String(r.hazard||r.task||'Unspecified hazard').slice(0,100);if(known.has(description))continue;
-    await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,title:description,description:description,responsible:r.action_by||null,target_date:r.target_date||null,priority:rl==='Critical'?'critical':'high',status:'open',created_by:prof?.id}});
-    known.add(description);
+  var existing=await api('/action_tracker?select=id,action_no,description,responsible,target_date,status'+cf()+'&source_module=eq.risk&source_id=eq.'+encodeURIComponent(raId)+'&limit=500');
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i],rl=r.res_rl||r.rl||'',further=String(r.further_controls||'').trim();
+    if(!further&&!['Critical','Very High','High'].includes(rl))continue;
+    var key=String(r.action_key||'ra-row-'+(i+1));
+    var legacy='High residual risk: '+String(r.hazard||r.task||'Unspecified hazard').slice(0,100);
+    var description=further?'Control for '+String(r.hazard||r.task||'hazard').slice(0,80)+': '+further:legacy;
+    var found=(existing||[]).find(function(a){return a.action_no===key||!a.action_no&&a.description===legacy;});
+    if(found&&/closed|completed|cancelled|verified/.test(String(found.status||'')))continue;
+    var changes={action_no:key,title:description,description:description,responsible:r.action_by||null,target_date:r.target_date||null,priority:rl==='Critical'?'critical':['High','Very High'].includes(rl)?'high':'medium',requires_verification:true};
+    if(found){
+      if(found.description!==description||found.responsible!==changes.responsible||String(found.target_date||'')!==String(changes.target_date||''))await api('/action_tracker?id=eq.'+encodeURIComponent(found.id)+cf(),{m:'PATCH',p:'return=minimal',b:changes});
+      continue;
+    }
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:Object.assign({company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,status:'open',verification_status:'pending',created_by:prof?.id},changes)});
   }
 }
 
@@ -18949,9 +18991,9 @@ function raLoadTemplate(tplId){
   document.getElementById('ra-form3view').style.display='block';
   raFormTab('hazards', document.getElementById('ra-ftab-hazards'));
   setTimeout(function(){
-    if(tpl.type==='task')tpl.rows.forEach(function(r){raTaskAddRow(r);});
-    else tpl.rows.forEach(function(r){raBaselineAddRow(r);});
-    toast('Template loaded - customise for your site conditions');
+    var body=document.getElementById(tpl.type==='task'?'ra-task-body':'ra-baseline-body');if(body)body.innerHTML='';
+    tpl.rows.forEach(function(row){var r=Object.assign({},row,{rs:0,rop:0,res_s:0,res_p:0});if(tpl.type==='task')raTaskAddRow(r);else raBaselineAddRow(r);});
+    toast('Template descriptions loaded. Confirm site applicability, controls and both risk scores before submission.');
   },200);
 }
 
@@ -19124,12 +19166,11 @@ async function raAddFromLibrary(libId){
   var row={
     task:item.task||item.task_step||item.activity||item.category||item.hazard_type||'General activity',
     hazard:item.hazard_description,harm:item.potential_harm||'',who:'All workers',
-    rs:item.default_severity||3,rop:item.default_probability||3,
+    rs:0,rop:0,
     controls:item.controls||item.control_measures||item.existing_controls||'',
     further_controls:item.further_controls||item.additional_controls||item.corrective_actions||'',
     hoc_level:item.hoc_level||item.hierarchy_level||'administrative',
-    res_s:item.res_s||item.residual_severity||item.default_residual_severity||item.default_severity||3,
-    res_p:item.res_p||item.residual_probability||item.default_residual_probability||1,
+    res_s:0,res_p:0,
     legal_ref:item.legal_ref||item.legal_reference||''
   };
   var type=raEditingType;
@@ -19137,7 +19178,7 @@ async function raAddFromLibrary(libId){
   else raBaselineAddRow(row);
   // Also fetch suggested controls
   raGetControlSuggestionsForHazard(item.hazard_type);
-  toast('Hazard added from library: '+item.hazard_description.substring(0,40));
+  toast('Hazard description added. Confirm it applies to this site and score initial and residual risk.');
   document.getElementById('ra-lib-search').value='';
   document.getElementById('ra-lib-results').innerHTML='';
 }
@@ -21701,7 +21742,12 @@ function raOpenReadOnly(id){
   modal.addEventListener('keydown',function(event){if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close(true);}if(event.key==='Tab'){var buttons=Array.from(modal.querySelectorAll('button')),first=buttons[0],last=buttons[buttons.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
   modal.querySelector('.ra-readonly-close').focus();
 }
-function jsaOpenReadOnly(id){var row=(raAllJSA||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;aurisReadOnlyRecordModal('JSA / JHA · Read-only preview',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Scope',row.scope||row.description],['Location',row.location],['Prepared by',row.prepared_by],['Status',row.status],['Revision',row.revision],['Job steps',Array.isArray(row.steps)?row.steps.map(function(x){return x.step||x.task||x.description;}).filter(Boolean).join('\n'):row.steps]]);}
+function jsaOpenReadOnly(id){
+  var row=(raAllJSA||[]).find(function(x){return String(x.id)===String(id)&&String(x.company_id)===String(ccid());});if(!row)return;
+  var steps=Array.isArray(row.steps)?row.steps:[];
+  var detail=steps.map(function(step,i){return 'Step '+(step.step_no||i+1)+': '+(step.task||step.step||step.description||'Untitled')+'\nHazards: '+(Array.isArray(step.hazards)?step.hazards.join('; '):step.hazards||'Not recorded')+'\nControls: '+(Array.isArray(step.controls)?step.controls.join('; '):step.controls||'Not recorded')+'\nPPE: '+(Array.isArray(step.ppe)?step.ppe.join('; '):step.ppe||'Not recorded');}).join('\n\n');
+  aurisReadOnlyRecordModal('JSA / JHA · View',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Job description',row.job_description],['Location',row.location],['Work order',row.work_order_ref],['Prepared by',row.prepared_by],['Reviewed by',row.reviewed_by],['Approved by',row.approved_by],['Status',row.status],['Revision',row.revision],['Job steps, hazards, controls and PPE',detail||'No steps recorded']]);
+}
 function auditOpenReadOnly(id){
   var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;
   document.getElementById('audit-inspection-report')?.closeReport?.();
@@ -41168,7 +41214,7 @@ function raRiskMatrixPrintHtml(snapshot){
       return '<tr><th>P'+p+' '+likelihood[p-1][1]+'</th>'+[1,2,3,4,5].map(function(s){return riskCell(p*s,s,p);}).join('')+'</tr>';
     }).join('')
     +'</tbody></table>'
-    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>RAMS rule:</strong> inherent risk is assessed before controls, controls follow the hierarchy of controls, and residual High / Very High work must not proceed until reduced or escalated for senior management / HSE review.</div>';
+    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>Scoring basis:</strong> initial risk is assessed with existing controls, before additional controls. Residual risk is reassessed after additional controls are in place and verified. High / Very High residual work must not proceed until reduced or escalated for senior management / HSE review.</div>';
 }
 
 // -- 2. RISK ASSESSMENT REPORT ----------------------------------
