@@ -11,7 +11,7 @@ test('ATEX loading discards a response after company change',async()=>{const {ct
 test('opening ATEX editor preserves the selected permit reference',async()=>{
  const {ctx}=runtime();const controls=new Map();ctx.document={getElementById:id=>{if(!controls.has(id))controls.set(id,{value:'',style:{}});return controls.get(id);}};
  ctx.atexAreas=[{id:'r',linked_permit_ref:'PTW-001',linked_permit_type:'hot_work'}];ctx.atexOpeningRecord=true;
- ctx.atexLoadReferenceOptions=async(ra,permit)=>{ctx.document.getElementById('atex-permit').value=permit;};ctx.fillPersonSelect=()=>{};ctx.atexShowForm=()=>{};
+ ctx.atexLoadReferenceOptions=async(ra,permit)=>{ctx.document.getElementById('atex-permit').value=permit;};ctx.atexLoadEquipmentCertificate=()=>{};ctx.fillPersonSelect=()=>{};ctx.atexShowForm=()=>{};
  const core=read('auris-core.js');vm.runInContext(core.slice(core.indexOf('async function atexEdit(id){'),core.indexOf('function atexBack(){')),ctx);
  await ctx.atexEdit('r');assert.equal(controls.get('atex-permit').value,'PTW-001');
 });

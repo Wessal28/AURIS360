@@ -27368,13 +27368,21 @@ function atexShowForm(show){
   document.getElementById('atex-form').style.display=show?'block':'none';
 }
 
-async function atexLoadReferenceOptions(selectedRA,selectedPermit){
+async function atexLoadReferenceOptions(selectedRA,selectedPermit,selectedSite){
   var raSel=document.getElementById('atex-ra');
   var permitSel=document.getElementById('atex-permit');
   var equipmentSel=document.getElementById('atex-equipment-id');
+  var siteSel=document.getElementById('atex-site-id');
+  if(siteSel){
+    siteSel.innerHTML='<option value="">Select a site or area...</option>';
+    try{var sites=await api('/sites?select=id,name,site_code,site_type'+cf()+'&order=name.asc&limit=500');(sites||[]).forEach(function(site){var option=document.createElement('option');option.value=site.id;option.textContent=[site.site_code,site.name,site.site_type].filter(Boolean).join(' · ');siteSel.appendChild(option);});}catch(error){console.warn('ATEX site selector:',error.message);}
+    if(selectedSite)siteSel.value=selectedSite;
+    if(!siteSel.dataset.bound){siteSel.dataset.bound='1';siteSel.addEventListener('change',function(){var chosen=siteSel.selectedOptions[0];var location=document.getElementById('atex-location');if(chosen&&chosen.value&&location&&!location.value.trim())location.value=chosen.textContent.split(' · ').slice(1,2)[0]||chosen.textContent;});}
+  }
   if(equipmentSel){
     equipmentSel.innerHTML='<option value="">Select equipment...</option>';
     try{var assets=await api('/tools_register?select=id,ref_number,name,serial_number,status'+cf()+'&order=name.asc&limit=300');(assets||[]).forEach(function(asset){var option=document.createElement('option');option.value=asset.id;option.textContent=[asset.ref_number,asset.name,asset.serial_number].filter(Boolean).join(' · ')+(asset.status==='out_of_service'?' [Out of service]':'');equipmentSel.appendChild(option);});}catch(error){console.warn('ATEX equipment selector:',error.message);}
+    if(!equipmentSel.dataset.certificateBound){equipmentSel.dataset.certificateBound='1';equipmentSel.addEventListener('change',atexLoadEquipmentCertificate);}
   }
   if(raSel){
     await fillRiskAssessmentSelect('atex-ra',selectedRA);
@@ -27386,14 +27394,27 @@ async function atexLoadReferenceOptions(selectedRA,selectedPermit){
   }
 }
 
+async function atexLoadEquipmentCertificate(){
+  var equipmentId=document.getElementById('atex-equipment-id')?.value||'',status=document.getElementById('atex-equipment-certificate');
+  if(!status)return;
+  if(!equipmentId){status.textContent='Select equipment to check its certificate.';return;}
+  var companyId=ccid();status.textContent='Checking equipment certificate...';
+  try{
+    var records=await api('/equipment_assurance_records?select=reference,result,validation_status,expiry_date&company_id=eq.'+encodeURIComponent(companyId)+'&equipment_id=eq.'+encodeURIComponent(equipmentId)+'&record_type=eq.certificate&order=performed_date.desc&limit=1');
+    if(document.getElementById('atex-equipment-id')?.value!==equipmentId||ccid()!==companyId)return;
+    var cert=records?.[0];status.textContent=cert?'Certificate: '+cert.reference+' · '+(cert.validation_status||cert.result||'Not validated')+(cert.expiry_date?' · expires '+cert.expiry_date:''):'No certificate found for this equipment. Confirm certification before controlling the area.';
+  }catch(error){if(document.getElementById('atex-equipment-id')?.value===equipmentId)status.textContent='Certificate unavailable. Verify it in Tools & Equipment.';}
+}
+
 async function atexNew(){
   atexRecordContext=AurisAtexListWorkspace.session();atexAssertEditor();
   var feedback=document.getElementById('atex-form-save-status');if(feedback)feedback.textContent='';
   atexEditId=null;
   document.getElementById('atex-form3title').textContent='New ATEX Area';
   document.getElementById('atex-del-btn').style.display='none';
-  ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-equipment-id','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-equipment-id','atex-site-id','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes','atex-inspection-result','atex-inspection-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   await atexLoadReferenceOptions();
+  atexLoadEquipmentCertificate();
   atexAssertEditor();
   fillPersonSelect('atex-resp');
   document.getElementById('atex-zone').value='';
@@ -27410,11 +27431,12 @@ async function atexEdit(id){
   atexEditId=id;
   document.getElementById('atex-form3title').textContent='Edit ATEX Area';
   document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
-  await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_ref||x.linked_permit_type);
+  await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_ref||x.linked_permit_type,x.site_id);
   atexAssertEditor();
-  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
+  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes','atex-inspection-result':'last_inspection_result','atex-inspection-notes':'last_inspection_notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   document.getElementById('atex-equipment-id').value=x.linked_equipment_id||'';
+  atexLoadEquipmentCertificate();
   fillPersonSelect('atex-resp',x.responsible_person||'');
   document.getElementById('atex-zone').value=x.zone_type||'';
   document.getElementById('atex-material').value=x.material_type||'gas_vapour';
@@ -27435,19 +27457,23 @@ async function atexSave(){
   if(!g('atex-substance')){toast('Please enter the flammable substance or combustible dust',false);return;}
   if(!g('atex-ventilation')||!g('atex-ignition')){toast('Please describe ventilation and ignition source controls',false);return;}
   if(!g('atex-zone')){toast('Select the reviewed ATEX zone before saving',false);return;}
+  if(g('atex-inspection-result')==='fail'&&!g('atex-last')){toast('Enter the date of the failed inspection',false);return;}
+  if(g('atex-inspection-result')==='fail'&&!g('atex-inspection-notes')?.trim()){toast('Describe the failed controls and required follow-up',false);return;}
   var interval=Number(g('atex-interval'));
   if(!Number.isInteger(interval)||interval<1||interval>60){toast('Enter an inspection interval of 1 to 60 months',false);return;}
   var nextDate=g('atex-next');
   if(!nextDate&&g('atex-last')){var d=new Date(g('atex-last')+'T12:00:00');d.setMonth(d.getMonth()+interval);nextDate=d.toISOString().slice(0,10);}
   if(!nextDate){toast('Enter the last inspection or next inspection date',false);return;}
   var raLink=verifiedReferenceSelection('atex-ra'),permitLink=verifiedReferenceSelection('atex-permit'),permitOpt=document.getElementById('atex-permit')?.selectedOptions?.[0];
-  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone'),material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_equipment_id:g('atex-equipment-id'),linked_ra_ref:raLink.ref,linked_ra_id:raLink.id,linked_permit_ref:permitLink.ref,linked_permit_id:permitLink.id,linked_permit_type:permitOpt?.dataset?.permitType||null,last_inspection_date:g('atex-last'),next_inspection_date:nextDate,inspection_interval_months:interval,status:g('atex-status')||'awaiting_review',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,site_id:g('atex-site-id'),location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone'),material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_equipment_id:g('atex-equipment-id'),linked_ra_ref:raLink.ref,linked_ra_id:raLink.id,linked_permit_ref:permitLink.ref,linked_permit_id:permitLink.id,linked_permit_type:permitOpt?.dataset?.permitType||null,last_inspection_date:g('atex-last'),last_inspection_result:g('atex-inspection-result'),last_inspection_notes:g('atex-inspection-notes'),next_inspection_date:nextDate,inspection_interval_months:interval,status:g('atex-status')||'awaiting_review',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
   var previous=atexEditId?(atexAreas.find(function(x){return x.id===atexEditId;})||{}):{};
-  var classificationInputs=['zone_type','material_type','substance','source_of_release','ventilation_controls','ignition_controls','linked_equipment_id'];
+  var classificationInputs=['zone_type','material_type','substance','source_of_release','ventilation_controls','ignition_controls','linked_equipment_id','site_id'];
   var reviewRequired=!!atexEditId&&previous.status==='controlled'&&classificationInputs.some(function(key){return String(previous[key]||'')!==String(body[key]||'');});
   if(reviewRequired)body.status='awaiting_review';
-  var shouldCreateAction=['action_required','out_of_service'].includes(body.status)&&previous.status!==body.status;
+  if(body.last_inspection_result==='fail')body.status='action_required';
+  var shouldCreateAction=['action_required','out_of_service'].includes(body.status)&&(previous.status!==body.status||body.last_inspection_result==='fail');
   var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
+  var actionWarning='';
   try{
     if(atexEditId){
       var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId+'&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId),{m:'PATCH',p:'return=representation',b:body},'ATEX area');
@@ -27467,20 +27493,21 @@ async function atexSave(){
         }
       }
     }
-    if(shouldCreateAction){
+    if(shouldCreateAction&&savedAtexId){
       try{
-        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        var openActions=await api('/action_tracker?select=id&company_id=eq.'+encodeURIComponent(atexRecordContext.companyId)+'&source_module=eq.atex&source_id=eq.'+encodeURIComponent(savedAtexId)+'&status=in.(open,in_progress)&limit=1');
+        if(!(openActions||[]).length)await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
           company_id:ccid(),title:'ATEX action required: '+name.substring(0,60),
           source_type:'atex',source_module:'atex',source_id:savedAtexId,source_ref:'ATEX - '+savedAtexRef,
           action_type:'corrective',
-          description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.notes||body.ignition_controls||'Review controls and inspection status.'),
+          description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.last_inspection_result==='fail'?'Failed inspection: '+body.last_inspection_notes:body.notes||body.ignition_controls||'Review controls and inspection status.'),
           responsible:body.responsible_person||null,assigned_to_name:body.responsible_person||null,
           priority:body.status==='out_of_service'?'high':'medium',status:'open',created_by:prof?.id
         }});
-      }catch(ex){console.warn('ATEX MAP action failed',ex);}
+      }catch(ex){actionWarning=' Corrective action could not be linked; create or verify it in Master Action Plan.';console.warn('ATEX action failed',ex);}
     }
-    var status=document.getElementById('atex-save-status');if(status)status.innerHTML='<div class="badge badge-green" style="padding:9px 12px;margin:8px 0">Saved ATEX area '+escH(savedAtexRef)+'.'+(reviewRequired?' Classification changed; status returned to awaiting review.':'')+'</div>';
-    toast('ATEX area saved');atexBack();
+    var status=document.getElementById('atex-save-status');if(status)status.innerHTML='<div class="badge '+(actionWarning?'badge-amber':'badge-green')+'" style="padding:9px 12px;margin:8px 0">Saved ATEX area '+escH(savedAtexRef)+'.'+(reviewRequired?' Classification changed; status returned to awaiting review.':'')+escH(actionWarning)+'</div>';
+    toast(actionWarning?'ATEX area saved. '+actionWarning:'ATEX area saved',!actionWarning);atexBack();
   }catch(e){var message=actionErrorMessage('Save ATEX area','ATEX areas',e.message);var status=document.getElementById('atex-form-save-status');if(status)status.textContent=message;toast(message,false);}
 }
 
@@ -43818,15 +43845,15 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],atex:[],selected:null,selectedEvent:null,selectedRisk:null,showEvents:true,showRisks:true,showAtex:true,plans:[],layout:null,placing:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],atex:[],selected:null,selectedEvent:null,selectedRisk:null,showEvents:true,showRisks:true,showAtex:true,showAllLocations:false,plans:[],layout:null,placing:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
 function smSiteKey(s){return String((s&&s.id)||smSiteName(s));}
 function smRowLocation(r){return smText(r.location||r.site||r.area||r.department||r.work_location||r.site_location||r.premises||'');}
 function smCompanyId(){return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');}
-function smLayoutEmpty(){return {id:null,title:'New site map',image:null,image_url:null,image_path:null,markers:[],local_only:false,updated_at:null};}
-function smLayoutNormalise(row){row=row||{};return {id:row.id||null,title:row.title||'Site map',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:Array.isArray(row.markers)?row.markers:[],local_only:!!row.local_only,updated_at:row.updated_at||null};}
+function smLayoutEmpty(){return {id:null,title:'New site map',image:null,image_url:null,image_path:null,markers:[],plan_revision:1,markers_review_required:false,markers_reviewed_at:null,local_only:false,updated_at:null};}
+function smLayoutNormalise(row){row=row||{};return {id:row.id||null,title:row.title||'Site map',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:Array.isArray(row.markers)?row.markers:[],plan_revision:Number(row.plan_revision)||1,markers_review_required:!!row.markers_review_required,markers_reviewed_at:row.markers_reviewed_at||null,local_only:!!row.local_only,updated_at:row.updated_at||null};}
 function smLayoutKey(){return 'auris360_site_map_layout_'+smCompanyId();}
 function smLocalLayout(){try{return smLayoutNormalise(JSON.parse(localStorage.getItem(smLayoutKey())||'{}'));}catch(_){return smLayoutEmpty();}}
 function smLayoutHasContent(p){return !!(p&&(p.image||p.image_url||p.image_path||(p.title&&p.title!=='Site map'&&p.title!=='New site map')));}
@@ -43847,7 +43874,7 @@ async function smSaveLayout(){
   var layout=siteMapState.layout||smLayoutEmpty();
   layout.title=(document.getElementById('sitemap-plan-title')?.value||layout.title||'Site map').trim()||'Site map';
   layout.updated_at=new Date().toISOString();
-  var body={company_id:smCompanyId(),layout_type:'site',title:layout.title,image_url:layout.image_url||layout.image||null,image_path:layout.image_path||null,markers:layout.markers||[],updated_at:layout.updated_at};
+  var body={company_id:smCompanyId(),layout_type:'site',title:layout.title,image_url:layout.image_url||layout.image||null,image_path:layout.image_path||null,markers:layout.markers||[],plan_revision:layout.plan_revision||1,markers_review_required:!!layout.markers_review_required,markers_reviewed_at:layout.markers_reviewed_at||null,updated_at:layout.updated_at};
   try{
     if(layout.id&&layout.id!=='local')await api('/fire_layouts?id=eq.'+layout.id,{m:'PATCH',p:'return=minimal',b:body});
     else{body.created_by=prof?.id||null;var res=await api('/fire_layouts',{m:'POST',p:'return=representation',b:body});if(res&&res[0])layout=smLayoutNormalise(res[0]);}
@@ -43863,14 +43890,26 @@ async function smSaveLayout(){
     smRenderPlanList();smRenderCanvas();toast('Site map saved locally only',false);
   }
 }
-function smNewPlan(){siteMapState.layout=smLayoutEmpty();localStorage.removeItem(smLayoutKey()+'_selected');smRenderPlanList();smRenderCanvas();}
-function smOpenPlan(id){siteMapState.layout=(siteMapState.plans||[]).find(function(p){return p.id===id;})||smLayoutEmpty();if(id)localStorage.setItem(smLayoutKey()+'_selected',id);smRenderPlanList();smRenderCanvas();}
+function smNewPlan(){siteMapState.layout=smLayoutEmpty();siteMapState.showAllLocations=false;localStorage.removeItem(smLayoutKey()+'_selected');smRenderPlanList();smRenderSiteList();smRenderCanvas();}
+function smOpenPlan(id){siteMapState.layout=(siteMapState.plans||[]).find(function(p){return p.id===id;})||smLayoutEmpty();siteMapState.showAllLocations=false;siteMapState.selected=null;if(id)localStorage.setItem(smLayoutKey()+'_selected',id);smRenderPlanList();smRenderSiteList();smRenderCanvas();smSelectSite(null,false);}
 function smPlanParents(id){
   if(!id)return [];
   return (siteMapState.plans||[]).filter(function(p){
     return (p.markers||[]).some(function(m){return String(m.linked_plan_id||'')===String(id);});
   });
 }
+function smVisibleSites(){
+  var sites=siteMapState.sites||[],layout=siteMapState.layout||smLayoutEmpty();
+  if(siteMapState.showAllLocations)return sites;
+  var parents=smPlanParents(layout.id);
+  if(!parents.length)return sites;
+  var allowed=new Set();
+  parents.forEach(function(parent){(parent.markers||[]).filter(function(marker){return String(marker.linked_plan_id||'')===String(layout.id);}).forEach(function(marker){if(marker.site_id||marker.site_key)allowed.add(String(marker.site_id||marker.site_key));});});
+  (layout.markers||[]).forEach(function(marker){if(marker.site_id||marker.site_key)allowed.add(String(marker.site_id||marker.site_key));});
+  var changed=true;while(changed){changed=false;sites.forEach(function(site){if(site.parent_site_id&&allowed.has(String(site.parent_site_id))&&!allowed.has(smSiteKey(site))){allowed.add(smSiteKey(site));changed=true;}});}
+  return sites.filter(function(site){return allowed.has(smSiteKey(site));});
+}
+function smToggleAllLocations(){siteMapState.showAllLocations=!siteMapState.showAllLocations;siteMapState.selected=null;smRenderSiteList();smRenderCanvas();smSelectSite(null,false);}
 function smPlanChildCount(plan){return ((plan&&plan.markers)||[]).filter(function(m){return !!m.linked_plan_id;}).length;}
 function smPlanTypeBadge(plan){
   var childCount=smPlanChildCount(plan), parentCount=smPlanParents(plan&&plan.id).length;
@@ -43888,16 +43927,27 @@ async function smUploadPlan(input){
   if(!file.type.startsWith('image/')){toast('Please upload a PNG or JPG site plan',false);return;}
   if(file.size>5*1024*1024){toast('Please compress the plan image below 5 MB',false);return;}
   var layout=siteMapState.layout||smLayoutEmpty();
+  var oldImage=layout.image_path||layout.image_url||layout.image||'';
   layout.title=(document.getElementById('sitemap-plan-title')?.value||layout.title||file.name.replace(/\.[^.]+$/,'')).trim()||'Site map';
   var ext=(file.name.split('.').pop()||'png').toLowerCase().replace(/[^a-z0-9]/g,'')||'png';
   var path=smCompanyId()+'/site-map-'+Date.now()+'.'+ext;
   try{
     var r=await fetch(SB+'/storage/v1/object/layouts/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'Content-Type':file.type,'x-upsert':'true'},body:file});
     if(!r.ok){var t='';try{t=await r.text();}catch(_){}throw new Error(t||'Storage upload failed');}
-    layout.image_path=path;layout.image_url=SB+'/storage/v1/object/public/layouts/'+path.split('/').map(encodeURIComponent).join('/');layout.image=layout.image_url;siteMapState.layout=layout;await smSaveLayout();
+    layout.image_path=path;layout.image_url=SB+'/storage/v1/object/public/layouts/'+path.split('/').map(encodeURIComponent).join('/');layout.image=layout.image_url;smMarkPlanReplaced(layout,oldImage);siteMapState.layout=layout;await smSaveLayout();
   }catch(e){
-    var rd=new FileReader();rd.onload=function(){layout.image=rd.result;layout.image_url=rd.result;siteMapState.layout=layout;smSaveLayout();};rd.readAsDataURL(file);
+    var rd=new FileReader();rd.onload=function(){layout.image=rd.result;layout.image_url=rd.result;layout.image_path=null;smMarkPlanReplaced(layout,oldImage);siteMapState.layout=layout;smSaveLayout();};rd.readAsDataURL(file);
   }finally{input.value='';}
+}
+function smMarkPlanReplaced(layout,oldImage){
+  if(!oldImage)return;
+  layout.plan_revision=(Number(layout.plan_revision)||1)+1;
+  if((layout.markers||[]).length){layout.markers_review_required=true;layout.markers_reviewed_at=null;}
+}
+async function smConfirmMarkerReview(){
+  var layout=siteMapState.layout;if(!layout||!layout.markers_review_required)return;
+  if(!(await appConfirmAction({title:'Confirm map positions',message:'Have you checked every marker against plan revision '+layout.plan_revision+'?',confirmText:'Confirm positions',cancelText:'Keep review open'})))return;
+  layout.markers_review_required=false;layout.markers_reviewed_at=new Date().toISOString();await smSaveLayout();
 }
 function smRenderPlanList(){
   var el=document.getElementById('sitemap-plan-list');if(!el)return;
@@ -43993,10 +44043,11 @@ function smEventPosition(ev,i){
 function smRiskPosition(r,i){
   var manual=((siteMapState.layout||{}).markers||[]).find(function(m){return m.record_type==='risk'&&String(m.record_id)===String(r.id);});
   if(manual&&Number.isFinite(Number(manual.x))&&Number.isFinite(Number(manual.y)))return {x:Number(manual.x),y:Number(manual.y),manual:true};
-  var sites=siteMapState.sites||[];
+  var sites=smVisibleSites();
   var site=sites.find(function(s){return smMatch(r,s);});
   return site?smSitePosition(site,sites.indexOf(site)):null;
 }
+function smHighInitialRisk(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}
 function smCancelPlacement(){siteMapState.placing=null;siteMapState.placingRecord=null;smRenderCanvas();}
 function smPlanImageFailed(){
   var status=document.getElementById('sitemap-plan-status');if(!status)return;
@@ -44043,21 +44094,22 @@ async function smCanvasClick(ev){
 function smPrintMapHtml(){
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
-  var sites=siteMapState.sites||[];
+  var sites=smVisibleSites();
   var markers=sites.filter(function(s,i){return !!smSitePosition(s,i);}).map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n),p=smSitePosition(s,i);
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
     var x=p.x, y=p.y;
     return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:'+col+';color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:12px;height:12px;border-radius:999px;background:#185FA5;border:1px solid #fff;font-size:6pt;line-height:12px;text-align:center">L</span>':'')+'</div>';
   }).join('');
-  var eventDots=smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase())&&!!smEventPosition(e);}).slice(0,40).map(function(ev,i){
+  var eventDots=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase())&&!!smEventPosition(e);}).slice(0,40).map(function(ev,i){
     var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase(), col=/critical|high/.test(sev)?'#DC2626':'#F97316';
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:'+col+';border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25)"></div>';
-  }).join('');
-  var riskDots=(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''))&&!!smRiskPosition(r);}).slice(0,40).map(function(r,i){
+  }).join(''):'';
+  var riskDots=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return smHighInitialRisk(r)&&!!smRiskPosition(r);}).slice(0,40).map(function(r,i){
     var p=smRiskPosition(r,i);
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:3px;background:#C2410C;color:#fff;border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);font-size:8pt;font-weight:900;line-height:15px;text-align:center">R</div>';
-  }).join('');
+  }).join(''):'';
+  var atexDots=siteMapState.showAtex?(siteMapState.atex||[]).map(function(area){var site=sites.find(function(s){return smMatch(area,s);}),p=site&&smSitePosition(site);return p?'<div style="position:absolute;left:'+Math.min(98,p.x+4)+'%;top:'+Math.min(98,p.y+4)+'%;background:#7F1D1D;color:#fff;border:1px solid #fff;border-radius:3px;padding:2px 4px;font-size:7pt;font-weight:800">ATEX '+escH((ATEX_ZONE_LABELS[area.zone_type]||area.zone_type||'').replace('Zone ',''))+'</div>':'';}).join(''):'';
   var rows=sites.map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
@@ -44066,8 +44118,9 @@ function smPrintMapHtml(){
   return '<link rel="stylesheet" href="/auris-print-site-map.css">'
     +'<div class="report-page">'
     +aurisHeader('Interactive Site Map',layout.title||'Site / area map',layout.id||'DRAFT')
-    +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Map legend:</strong> numbered circles = locations, orange/red circles = open incidents, brown squares = high-risk RA hotspots, blue L = linked child layout.</div>'
-    +'<div class="sm3print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm3print-empty">No uploaded plan image. Position markers after uploading a plan.</div>')+markers+eventDots+riskDots+'</div>'
+    +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Plan revision:</strong> '+escH(layout.plan_revision||1)+' · <strong>Printed:</strong> '+escH(new Date().toLocaleDateString('en-GB'))+' · <strong>Layers:</strong> locations'+(siteMapState.showEvents?', open incidents':'')+(siteMapState.showRisks?', high initial risks':'')+(siteMapState.showAtex?', controlled ATEX zones':'')+(layout.markers_review_required?' · Positions awaiting review':'')+'</div>'
+    +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Map legend:</strong> numbered circles = locations, orange/red circles = open incidents, brown squares = high initial-risk assessments (all statuses), blue L = linked child layout, ATEX = controlled hazardous area.</div>'
+    +'<div class="sm3print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm3print-empty">No uploaded plan image. Position markers after uploading a plan.</div>')+markers+eventDots+riskDots+atexDots+'</div>'
     +'<div class="rpt-section"><div class="rpt-section-title">Location Records Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Location</th><th>Linked layout</th><th>Total</th><th>Incidents</th><th>BBS</th><th>Inspections</th><th>RA</th><th>PTW</th><th>Actions</th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="10" style="text-align:center;color:#6b7280">No sites or areas available.</td></tr>')
     +'</tbody></table></div>'
@@ -44100,7 +44153,7 @@ function smUniqueRows(rows){
   var seen={};return (rows||[]).filter(function(r,i){var key=String(r.id||r.event_ref||r.reference_no||r.ra_ref||('row-'+i));if(seen[key])return false;seen[key]=true;return true;});
 }
 function smMappedRows(rows){
-  var sites=siteMapState.sites||[];
+  var sites=smVisibleSites();
   return smUniqueRows(rows).filter(function(r){return sites.some(function(s){return smMatch(r,s);});});
 }
 function smRecordsForSite(site){
@@ -44146,21 +44199,21 @@ function smBuildVirtualSites(){
   });
   return Object.keys(seen).map(function(k){return seen[k];});
 }
-function smRender(){smRenderSummary();smRenderSiteList();smRenderCanvas();smSelectSite(siteMapState.selected||((siteMapState.sites[0]||{}).id),false);}
+function smRender(){smRenderSummary();smRenderSiteList();smRenderCanvas();smSelectSite(siteMapState.selected||((smVisibleSites()[0]||{}).id),false);}
 function smUpdateMapEventToggle(){var b=document.getElementById('sitemap-event-toggle');if(b)b.innerHTML='<i class="ti ti-alert-triangle"></i>'+(siteMapState.showEvents?'Hide incidents':'Show incidents');}
 function smToggleMapEvents(){siteMapState.showEvents=!siteMapState.showEvents;if(!siteMapState.showEvents)siteMapState.selectedEvent=null;smUpdateMapEventToggle();smRenderCanvas();}
-function smUpdateMapRiskToggle(){var b=document.getElementById('sitemap-risk-toggle');if(b)b.innerHTML='<i class="ti ti-shield-exclamation"></i>'+(siteMapState.showRisks?'Hide high risks':'Show high risks');}
+function smUpdateMapRiskToggle(){var b=document.getElementById('sitemap-risk-toggle');if(b)b.innerHTML='<i class="ti ti-shield-exclamation"></i>'+(siteMapState.showRisks?'Hide high initial risks':'Show high initial risks');}
 function smToggleMapRisks(){siteMapState.showRisks=!siteMapState.showRisks;if(!siteMapState.showRisks)siteMapState.selectedRisk=null;smUpdateMapRiskToggle();smRenderCanvas();}
 function smRenderSummary(){
   var el=document.getElementById('sitemap-summary');if(!el)return;
   var openInc=smMappedRows(siteMapState.events).filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
-  var highRisk=siteMapState.risks.filter(function(x){return /high|critical|very/i.test(String(x.overall_risk_level||''));}).length;
-  var openAct=siteMapState.actions.filter(function(x){return !['closed','completed'].includes(String(x.status||'').toLowerCase());}).length;
-  var total=siteMapState.sites.length;
+  var highRisk=smMappedRows(siteMapState.risks).filter(smHighInitialRisk).length;
+  var openAct=smMappedRows(siteMapState.actions).filter(function(x){return !['closed','completed'].includes(String(x.status||'').toLowerCase());}).length;
+  var total=smVisibleSites().length;
   el.innerHTML=[
     ['Sites / areas',total,'#185FA5','ti-map-pin'],
     ['Open incidents',openInc,'#DC2626','ti-alert-triangle'],
-    ['High risks',highRisk,'#C2410C','ti-shield-exclamation'],
+    ['High initial risks · all statuses',highRisk,'#C2410C','ti-shield-exclamation'],
     ['Open actions',openAct,'#EF9F27','ti-list-check']
   ].map(function(x){return '<div class="card" style="padding:12px 14px;border-left:4px solid '+x[2]+'"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">'+x[0]+'</div><div style="font-size:26px;font-weight:900;color:'+x[2]+'">'+x[1]+'</div></div><i class="ti '+x[3]+'" style="font-size:26px;color:'+x[2]+'"></i></div></div>';}).join('');
 }
@@ -44168,7 +44221,7 @@ function smRiskColor(n){return n>10?'#DC2626':n>4?'#EF9F27':'#1D9E75';}
 function smRenderSiteList(){
   var el=document.getElementById('sitemap-site-list');if(!el)return;
   var q=smNorm(document.getElementById('sitemap-search')?.value||'');
-  var sites=(siteMapState.sites||[]).filter(function(s){return !q||smNorm([smSiteName(s),s.site_code,s.address,s.city,s.site_type].filter(Boolean).join(' ')).indexOf(q)!==-1;});
+  var sites=smVisibleSites().filter(function(s){return !q||smNorm([smSiteName(s),s.site_code,s.address,s.city,s.site_type].filter(Boolean).join(' ')).indexOf(q)!==-1;});
   if(!sites.length){el.innerHTML='<div class="empty">No matching sites or locations.</div>';return;}
   el.innerHTML=sites.map(function(s){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
@@ -44186,17 +44239,17 @@ function smRenderCanvas(){
   var cancel=document.getElementById('sitemap-cancel-placement');if(cancel){cancel.hidden=!(siteMapState.placing||siteMapState.placingRecord);cancel.onclick=smCancelPlacement;}
   smUpdateMapEventToggle();
   smUpdateMapRiskToggle();
-  var sites=siteMapState.sites||[];
+  var sites=smVisibleSites();
   if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
-  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
+  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout · revision '+escH(layout.plan_revision||1)+'</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn-sm" id="sitemap-show-all-locations">'+(siteMapState.showAllLocations?'Show related locations':'Show all locations')+'</button><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+(layout.markers_review_required?'<div class="sm-plan-review" role="status"><strong>Positions need review for this plan revision.</strong> Check each marker before confirming. <button class="btn btn-sm" id="sitemap-confirm-marker-review">Confirm positions</button></div>':'')+smMapEventPreview()+smMapRiskPreview();
   var openEvents=siteMapState.showEvents?smMappedRows(siteMapState.events).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase())&&!!smEventPosition(e);}).slice(0,40):[];
-  var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''))&&!!smRiskPosition(r);}).slice(0,40):[];
+  var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return smHighInitialRisk(r)&&!!smRiskPosition(r);}).slice(0,40):[];
   el.innerHTML=context+'<div data-sitemap-canvas="true" data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing||siteMapState.placingRecord?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
-    +(siteMapState.placing||siteMapState.placingRecord?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the '+(siteMapState.placingRecord?'incident':'selected location')+'</div>':'')
+    +(siteMapState.placing||siteMapState.placingRecord?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place '+escH(siteMapState.placingRecord?'the incident':smSiteName(sites.find(function(site){return smSiteKey(site)===String(siteMapState.placing);})||{}))+'</div>':'')
     +sites.filter(function(s,i){return !!smSitePosition(s,i);}).map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var pos=smSitePosition(s,i), x=pos.x, y=pos.y;
@@ -44215,12 +44268,14 @@ function smRenderCanvas(){
       var p=smRiskPosition(r,i), title=smRecordTitle(r,['ra_ref','title','activity']);
       return '<button type="button" data-auris-runtime-onclick="r0146" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id||'']))+'" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:#C2410C;color:#fff;width:22px;height:22px;border-radius:6px;box-shadow:0 3px 10px rgba(194,65,12,.35);cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center"><i class="ti ti-shield-exclamation" style="font-size:14px"></i></button>';
     }).join('')
-    +(siteMapState.showAtex?(siteMapState.atex||[]).map(function(area){var site=sites.find(function(s){return smMatch(area,s);}),position=site&&smSitePosition(site);if(!position)return '';return '<button type="button" class="sm-atex-marker" data-atex-id="'+escH(area.id)+'" title="'+escH((area.area_ref||'ATEX')+' · '+(area.area_name||'Area')+' · '+(ATEX_ZONE_LABELS[area.zone_type]||area.zone_type))+'" style="position:absolute;left:'+Math.min(98,position.x+4)+'%;top:'+Math.min(98,position.y+4)+'%;background:#7F1D1D;color:#fff;border:2px solid #fff;border-radius:5px;padding:3px 5px;font-size:10px;font-weight:800;z-index:5">ATEX '+escH((ATEX_ZONE_LABELS[area.zone_type]||area.zone_type||'').replace('Zone ',''))+'</button>';}).join(''):'')+'</div>';
+    +(siteMapState.showAtex?(siteMapState.atex||[]).map(function(area){var site=sites.find(function(s){return smMatch(area,s);}),position=site&&smSitePosition(site);if(!position)return '';return '<button type="button" class="sm-atex-marker" data-atex-id="'+escH(area.id)+'" title="'+escH((area.area_ref||'ATEX')+' · '+(area.area_name||'Area')+' · '+(ATEX_ZONE_LABELS[area.zone_type]||area.zone_type))+'" style="position:absolute;left:'+Math.min(98,position.x+4)+'%;top:'+Math.min(98,position.y+4)+'%;background:#7F1D1D;color:#fff;border:2px solid #fff;border-radius:5px;padding:3px 5px;font-size:10px;font-weight:800;z-index:5">ATEX '+escH((ATEX_ZONE_LABELS[area.zone_type]||area.zone_type||'').replace('Zone ',''))+'</button>';}).join(''):'')+'</div><div class="sm-map-legend">Map symbols: pin = positioned location; blue corner = linked child layout; orange/red dot = open incident; brown square = high initial risk (all statuses); ATEX label = controlled area. Unpositioned locations stay in the list.</div>';
   el.querySelectorAll('.sm-atex-marker').forEach(function(button){button.addEventListener('click',function(event){event.stopPropagation();var area=(siteMapState.atex||[]).find(function(item){return String(item.id)===button.dataset.atexId;});if(area){showPage('atex',null);setTimeout(function(){atexShowRecord(area,AurisAtexListWorkspace.session());},150);}});});
+  el.querySelector('#sitemap-show-all-locations')?.addEventListener('click',smToggleAllLocations);
+  el.querySelector('#sitemap-confirm-marker-review')?.addEventListener('click',smConfirmMarkerReview);
   var planImage=el.querySelector('img');if(planImage){planImage.addEventListener('error',smPlanImageFailed);planImage.addEventListener('load',function(){var status=document.getElementById('sitemap-plan-status');if(status&&status.textContent.includes('plan image'))status.textContent='Plan image loaded.';});}
 }
 function smSelectSite(id,scroll){
-  var sites=siteMapState.sites||[];
+  var sites=smVisibleSites();
   var site=sites.find(function(s){return smSiteKey(s)===String(id);})||sites[0];
   if(!site)return;
   siteMapState.selected=smSiteKey(site);
@@ -44230,6 +44285,17 @@ function smSelectSite(id,scroll){
 }
 function smRecordTitle(r,keys){return displayRecordRef(r,keys,'Record');}
 function smModuleButton(page,label){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page]))+'" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
+function smCreateAtSite(page,siteKey){
+  var site=(siteMapState.sites||[]).find(function(row){return smSiteKey(row)===String(siteKey);});
+  if(!site||!site.id||!locationSites.some(function(row){return String(row.id)===String(site.id);})){toast('Choose a saved site or area before creating a linked record.',false);return;}
+  if(!canAccessPage(page)){toast('You do not have access to this module.',false);return;}
+  var areaName=smSiteName(site),parent=site.parent_site_id?(siteMapState.sites||[]).find(function(row){return String(row.id)===String(site.parent_site_id);}):null;
+  showPage(page,null);
+  if(page==='events'){imsNewIncident();var eventLocation=document.getElementById('ev-location');if(eventLocation)eventLocation.value=areaName;}
+  if(page==='inspection'){auditNew('workplace');var inspectionSite=document.getElementById('if-site');if(inspectionSite)inspectionSite.value=areaName;}
+  if(page==='permit'){ptwNew();var permitLocation=document.getElementById('pf-loc');if(permitLocation)permitLocation.value=areaName;}
+  if(page==='risk'){raNew();var riskSite=document.getElementById('ra-site-name'),riskArea=document.getElementById('ra-workshop');if(riskSite)riskSite.value=parent?smSiteName(parent):areaName;if(riskArea&&parent)riskArea.value=areaName;}
+}
 function smSection(name,icon,page,rows,keys,meta){
   return '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:9px 11px;border-bottom:1px solid var(--border)"><div style="font-weight:900;font-size:13px"><i class="ti '+icon+'"></i> '+escH(name)+' <span class="badge badge-grey">'+rows.length+'</span></div>'+smModuleButton(page,'Open')+'</div>'
     +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr title="'+(page==='events'?'Open incident details':'Open '+escH(name)+' module')+'" style="cursor:pointer"><td class="sm-record-open" data-page="'+escH(page)+'" data-id="'+escH(r.id||'')+'" style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><div style="display:flex;gap:5px">'+(page==='events'?'<button type="button" class="btn btn-sm sm-position-record" data-id="'+escH(r.id||'')+'" title="Position incident on map"><i class="ti ti-map-pin-plus"></i></button>':'')+'<i class="ti ti-chevron-right" style="color:var(--text3);margin-top:7px"></i></div></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
@@ -44248,6 +44314,7 @@ function smRenderDetails(site){
     +'<div><div class="form3label">GPS</div><div style="font-weight:800">'+escH(gps||'--')+'</div></div>'
     +'<div><div class="form3label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
     +'</div></div>'
+    +'<div class="card sm-create-shortcuts"><strong>Create at this location</strong><div class="sm-create-actions">'+[['events','Incident'],['inspection','Inspection'],['permit','Permit'],['risk','Risk assessment']].filter(function(item){return canAccessPage(item[0]);}).map(function(item){return '<button type="button" class="btn btn-sm" data-sm-create="'+item[0]+'"><i class="ti ti-plus"></i>'+item[1]+'</button>';}).join('')+'</div></div>'
     +(legacyCount?'<div style="margin:-2px 0 12px;padding:9px 11px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:8px;color:#92400E;font-size:11px;font-weight:700"><i class="ti ti-alert-triangle"></i> '+legacyCount+' record'+(legacyCount===1?'':'s')+' linked by historical text only. Confirm the canonical Site / Area before relying on location totals.</div>':'')
     +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form3label">Linked layout / drill-down map</label><select data-auris-runtime-onchange="r0147" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" data-auris-runtime-onclick="r0148" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'"><i class="ti ti-map-share"></i>Open linked layout</button><button class="btn btn-sm" data-auris-runtime-onclick="r0149" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'" style="color:var(--red)"><i class="ti ti-unlink"></i>Unlink</button>':'<button class="btn btn-sm" data-auris-runtime-onclick="r0150" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
     +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
@@ -44257,6 +44324,7 @@ function smRenderDetails(site){
     +smSection('Permits','ti-key','permit',rec.permits,['permit_ref','permit_type','work_description'],function(r){return [r.status,smSafeDate(r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Actions','ti-list-check','actions',rec.actions,['title','source_ref'],function(r){return [r.priority,r.status,r.due_date||r.target_date].filter(Boolean).join(' - ');});
   el.querySelectorAll('.sm-position-record').forEach(function(b){b.addEventListener('click',function(ev){ev.stopPropagation();smPositionRecord('event',b.dataset.id);});});
+  el.querySelectorAll('[data-sm-create]').forEach(function(button){button.addEventListener('click',function(){smCreateAtSite(button.dataset.smCreate,smSiteKey(site));});});
   el.querySelectorAll('.sm-record-open').forEach(function(cell){cell.addEventListener('click',function(ev){if(ev.target.closest('button'))return;dashNavigateTo(cell.dataset.page,cell.dataset.id);});});
 }
 
