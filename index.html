@@ -2576,6 +2576,7 @@
 <!-- -- REGISTER (list view used by all/workplace/equipment etc tabs) -- -->
 <div id="audit-view-register">
 <input type="hidden" id="audit-search" data-auris-oninput="h0301"/>
+<div id="audit-due-reminders" role="status" hidden></div>
 <div id="audit-register-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
@@ -2677,7 +2678,7 @@
 </select>
 <select id="findings-filter-status" class="auris-audit-s-d35063206b" data-auris-onchange="h0307">
 <option value="">All statuses</option>
-<option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option>
+<option value="open">Open</option><option value="in_progress">In progress</option><option value="awaiting_verification">Awaiting verification</option><option value="closed">Closed</option>
 </select>
 </div>
 </div>
@@ -2697,7 +2698,7 @@
 <div class="auris-audit-s-c9dc9b5648">
 <button class="btn auris-audit-s-5c09edd131" data-auris-onclick="h0308"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="audit-delete-btn" class="btn auris-audit-s-0e610f7b67" data-auris-onclick="h0309"><i class="ti ti-trash"></i></button>
-<button class="btn auris-audit-s-c35b8f39aa" id="audit-ai-btn" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button id="audit-save-btn" class="btn auris-audit-s-7e63926b0f" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn auris-audit-s-c35b8f39aa" id="audit-ai-btn" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button type="button" id="audit-submit-review-btn" class="btn">Submit for review</button><button id="audit-save-btn" class="btn auris-audit-s-7e63926b0f" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -2750,6 +2751,11 @@
 <div class="form3group"><label class="form3label">Status</label>
 <select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="archived">Archived</option></select></div>
 </div>
+<div class="form3row">
+<div class="form3group"><label class="form3label" for="audit-recurrence">Repeat inspection</label><select id="audit-recurrence"><option value="none">One-off</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>
+<div class="form3group"><label class="form3label" for="audit-reminder-days">Show due reminder (days before)</label><input type="number" id="audit-reminder-days" min="0" max="90" value="7"/></div>
+</div>
+<p class="muted">When a recurring inspection is completed, the next open inspection is prepared with this checklist, site and inspector. Its answers start blank.</p>
 </div>
 
 <!-- Checklist with template selector -->
