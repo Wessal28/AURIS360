@@ -9,6 +9,7 @@ const testFiles = [
   'tests/record_edit_session.test.cjs',
   'tests/action_editor_workflow.test.cjs',
   'tests/inspection_forms_behavior.test.cjs',
+  'tests/inspection_follow_up_behavior.test.cjs',
   'tests/index_inline_syntax.test.cjs',
   'tests/deployment_environment_isolation_contract.test.cjs',
   'tests/offline_asset_manifest_contract.test.cjs',
