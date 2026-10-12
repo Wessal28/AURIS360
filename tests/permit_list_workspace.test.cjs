@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8'),core=read('auris-core.js');
 const current={companyId:'co-a',userId:'user-a',role:'manager'};
-const config=vm.runInNewContext(core.slice(core.indexOf('const PTW_TYPE_CFG='),core.indexOf('// -- ENTRY POINT',core.indexOf('const PTW_TYPE_CFG=')))+';({types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG})');
+const config=vm.runInNewContext(core.slice(core.indexOf('const PTW_TYPE_CFG='),core.indexOf('// -- ENTRY POINT',core.indexOf('const PTW_TYPE_CFG=')))+';({types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,normalizeType:ptwCanonicalType})');
 const rows=[
   {id:'a',company_id:'co-a',permit_number:'PTW-2026-001',work_description:'Weld pipe',permit_type_v2:'hot_work',status:'active',work_location:'Factory',permit_issuer_name:'Issuer A',permit_receiver_name:'Receiver A',planned_start:'2026-09-08T08:30:00+04:00',planned_end:'2026-09-08T12:45:00+04:00',risk_level:'high'},
   {id:'b',company_id:'co-a',permit_number:'PTW-2026-002',work_description:'Inspect vessel',permit_type:'confined_space',status:'suspended',location:'Tank',issued_by:'Old issuer',permit_receiver:'Old receiver',planned_end:'2026-09-07T10:00:00Z',priority:'critical'},
@@ -17,7 +17,7 @@ function runtime(){
 test('projection retains exact permit identity, owner, location, time and risk without writing data',()=>{
   const r=runtime(),before=JSON.stringify(rows),data=r.api.project(rows,current,{...config,filters:{scope:'all'}},new Date('2026-09-08T14:00:00Z'));
   assert.equal(data.length,3);assert.equal(data[0].source_table,'permits');assert.equal(data[0].permit_type,'Hot Work');assert.equal(data[0].status,'Active');assert.equal(data[0].risk,'High');
-  assert.equal(data[0].planned_start,rows[0].planned_start);assert.equal(data[0].planned_end,rows[0].planned_end);assert.equal(data[0].attention,'Overdue');
+  assert.equal(data[0].planned_start,rows[0].planned_start);assert.equal(data[0].planned_end,rows[0].planned_end);assert.equal(data[0].attention,'Expired — closure due');
   assert.equal(data[1].issuer,'Old issuer');assert.equal(data[1].receiver,'Old receiver');assert.equal(data[1].location,'Tank');assert.equal(data[1].attention,'—');assert.equal(data[2].reference,'OLD-REF');assert.equal(data[2].attention,'—');assert.equal(JSON.stringify(rows),before);
 });
 test('active/all, both stored type fields and combined search/status filters are preserved',()=>{
@@ -100,7 +100,7 @@ test('in-flight handoff is invalidated by new views, loads, sessions, permission
 });
 test('restored saved filters update all controls and both active-scope navigation surfaces',()=>{
   const elements={},views=[];let mounted,handoffArgs;
-  const context={ptwAllData:rows,ptwListContext:{...current,generation:3},ptwListLoadGeneration:3,ptwListViewGeneration:0,ptwActiveFilter:'active',ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,PTW_TYPE_CFG:config.types,PTW_STATUS_CFG:config.statuses,
+  const context={ptwAllData:rows,ptwListContext:{...current,generation:3},ptwListLoadGeneration:3,ptwListViewGeneration:0,ptwActiveFilter:'active',ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,PTW_TYPE_CFG:config.types,PTW_STATUS_CFG:config.statuses,ptwCanonicalType:config.normalizeType,
     document:{getElementById:id=>elements[id]||(elements[id]={value:'',style:{}}),querySelectorAll:()=>[]},window:{AurisModuleLayout:{setView:(...args)=>views.push(args)},AurisPermitListWorkspace:{mount:(_,data,options)=>mounted=options}},ptwOpenFromRegister:(...args)=>handoffArgs=args};
   vm.runInNewContext(core.slice(core.indexOf('function ptwFilterSet('),core.indexOf('async function ptwLoadList('))+core.slice(core.indexOf('function ptwRenderList(){'),core.indexOf('async function ptwOpenFromRegister(')),context);
   context.ptwRenderList();mounted.onApplyFilters({scope:'all',search:'tank',type:'confined_space',status:'rejected'});

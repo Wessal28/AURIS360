@@ -266,6 +266,11 @@
       "order": 53,
       "file": "20261012110000_atex_site_and_plan_revision.sql",
       "sha256": "255515954c251780509ff3ef2faae929f19ea13919d3ad2958f30a676ebfda5e"
+    },
+    {
+      "order": 54,
+      "file": "20261012120000_permit_lifecycle_statuses.sql",
+      "sha256": "0989adc529c3ac33255a47170b2f642c97d5376873a8825fd06e7425d22ef715"
     }
   ]
 }

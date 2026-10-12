@@ -23,6 +23,7 @@ function localTime(value){
   var parsed=new Date(raw);return Number.isNaN(parsed.getTime())?raw:parsed.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
 }
 function recordedList(value,format){if(!Array.isArray(value))return value==null?'Not recorded':'Unavailable: malformed recorded data. Open permit controls to inspect.';if(!value.length)return 'No entries recorded in this snapshot.';return value.map(function(item,index){return (index+1)+'. '+(item&&typeof item==='object'?format(item):text(item));}).join('\n\n');}
+function readablePeople(value){if(Array.isArray(value))return value.map(readablePeople).filter(Boolean).join(', ');if(value&&typeof value==='object')return value.full_name||value.name||value.person_name||value.employee_name||value.label||[value.first_name,value.last_name].filter(Boolean).join(' ')||'Name not recorded';return value==null?'':String(value);}
 function project(record,current,options){
   if(!root.AurisPermitListWorkspace)throw new Error('The permit record definitions are unavailable. Reload the application.');
   var result=copy(record),display=root.AurisPermitListWorkspace.project([record],current,Object.assign({},options,{filters:{scope:'all'}}))[0];
@@ -34,7 +35,7 @@ function project(record,current,options){
   result.isolation_label=recordedList(record.isolations,function(item){return 'Tag: '+text(item.tag)+'; '+text(item.description)+'\nType: '+text(item.type)+'; Recorded status: '+text(item.status)+'\nIsolated by: '+text(item.by)+'; Verified by: '+text(item.verified_by);});
   result.approval_levels_label=text(record.approval_level_required);
   [1,2,3].forEach(function(level){var prefix='approval_l'+level;result[prefix+'_label']='Recorded status: '+text(record[prefix+'_status'])+'\nBy: '+text(record[prefix+'_by'])+'; At: '+localTime(record[prefix+'_at']);});
-  result.contractor_label=record.contractor_name||record.contractor;result.team_label=record.team_members||record.work_team;result.ppe_label=record.ppe_required||record.ppe;
+  result.contractor_label=record.contractor_name||record.contractor;result.team_label=readablePeople(record.work_team||record.team_members);result.ppe_label=readablePeople(record.ppe_required||record.ppe);
   result.ms_label=record.method_statement_ref||record.ms_ref;result.weather_label=record.requires_weather_check===true?'Required':record.requires_weather_check===false?'Not required in recorded definition':'Not recorded';
   result.suspension_label='Reason: '+text(record.suspension_reason)+'\nBy: '+text(record.suspended_by)+'; At: '+localTime(record.suspended_at);
   result.closure_label='By: '+text(record.closed_by)+'; At: '+localTime(record.closed_at)+'\nNotes: '+text(record.closure_notes);
