@@ -2992,6 +2992,15 @@ function verifiedReferenceStatusOk(selection,allowed){
 }
 async function openVerifiedReferenceSelect(selectId,kind){
   var s=verifiedReferenceSelection(selectId);if(!s.id){toast('Select a verified record first.',false);return;}
+  if(selectId==='pf-ra-ref'&&kind==='ra'){
+    try{
+      var rows=await api('/risk_assessments?select=*'+cf()+'&id=eq.'+encodeURIComponent(s.id)+'&limit=1');
+      var row=rows&&rows[0];if(!row)throw new Error('The selected Risk Assessment is unavailable in this company.');
+      if(!(raAllData||[]).some(function(item){return String(item.id)===String(row.id);}))raAllData.unshift(row);
+      raOpenReadOnly(row.id);
+    }catch(error){toast(actionErrorMessage('Open linked Risk Assessment','Permit to Work',error),false);}
+    return;
+  }
   if(kind==='ra'||kind==='ptw'){await wsOpenLinkedRecord(kind,s.id);return;}
   if(kind==='work'){showPage('workschedule',null);setTimeout(function(){wsShowDetail(s.id);},150);return;}
   if(kind==='document'){showPage('documents',null);setTimeout(function(){dcEdit(s.id);},150);return;}
@@ -20043,11 +20052,12 @@ function ptwTeamValue(){
   return selected.join(', ');
 }
 
-function ptwPrecautionRow(item, checked){
-  return '<label style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;cursor:pointer;min-height:44px">'
-    +'<input type="checkbox" style="accent-color:var(--green);width:16px;height:16px;margin:1px 0 0 0" '+(checked?'checked':'')+'>'
-    +'<span style="font-size:12px;line-height:1.35;color:var(--text);white-space:normal;overflow-wrap:anywhere">'+escH(item||'')+'</span>'
-    +'</label>';
+function ptwPrecautionRow(item,checked,required,reason){
+  required=required!==false;
+  return '<div class="ptw-precaution-row" style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;min-height:44px">'
+    +'<input type="checkbox" aria-label="Verified complete" style="accent-color:var(--green);width:16px;height:16px;margin:1px 0 0 0" '+(checked?'checked':'')+'>'
+    +'<div><span class="ptw-precaution-text" style="font-size:12px;line-height:1.35;color:var(--text);white-space:normal;overflow-wrap:anywhere">'+escH(item||'')+'</span>'
+    +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select class="ptw-precaution-applicability" aria-label="Precaution applicability"><option value="required" '+(required?'selected':'')+'>Required — confirm when done</option><option value="not_applicable" '+(!required?'selected':'')+'>Not applicable</option></select><input class="ptw-precaution-reason" type="text" aria-label="Reason not applicable" placeholder="Reason if not applicable" value="'+escH(reason||'')+'"></div></div></div>';
 }
 
 function ptwPreparePrecautionGrid(el){
@@ -20063,6 +20073,8 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
   var msSel=document.getElementById('pf-ms-ref');
   if(raSel){
     await fillRiskAssessmentSelect('pf-ra-ref',selectedRA);
+    raSel.onchange=ptwRunSmartChecks;
+    ptwRunSmartChecks();
   }
   if(msSel){
     await fillMethodStatementSelect('pf-ms-ref',selectedMS);
@@ -20096,12 +20108,20 @@ async function ptwLoadWorkOrderOptions(selectedId){
   var woSel=document.getElementById('pf-wo');if(!woSel)return;
   woSel.innerHTML='<option value="">None</option>';
   try{
-    var d=await api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=50');
+    var d=await api('/work_schedule?select=id,title,ref_number,description,location,department,ra_ref,risk_level'+cf()+'&order=planned_start.desc&limit=50');
     (d||[]).forEach(function(w){
-      var ref=w.ref_number||w.id;var o=document.createElement('option');o.value=w.id;verifiedReferenceOption(o,w,ref,'work_schedule');o.textContent=ref+' - '+(w.title||'Work order');woSel.appendChild(o);
+      var ref=w.ref_number||w.id;var o=document.createElement('option');o.value=w.id;verifiedReferenceOption(o,w,ref,'work_schedule');o.textContent=ref+' - '+(w.title||'Work order');o.dataset.prefill=JSON.stringify({description:w.description||w.title||'',location:w.location||'',department:w.department||'',ra_ref:w.ra_ref||'',risk_level:w.risk_level||''});woSel.appendChild(o);
     });
   }catch(ex){}
   ptwSelectWithFallback('pf-wo',selectedId);
+  woSel.onchange=ptwPrefillWorkOrder;
+}
+function ptwPrefillWorkOrder(){
+  var option=document.getElementById('pf-wo')?.selectedOptions?.[0];if(!option?.dataset.prefill)return;
+  var source;try{source=JSON.parse(option.dataset.prefill);}catch(_){return;}
+  [['pf-desc',source.description],['pf-loc',source.location],['pf-dept',source.department],['pf-risk',source.risk_level]].forEach(function(pair){var field=document.getElementById(pair[0]);if(field&&pair[1]&&!field.value)field.value=pair[1];});
+  var ra=document.getElementById('pf-ra-ref');if(ra&&source.ra_ref&&!ra.value){ra.value=source.ra_ref;if(ra.value)ptwRunSmartChecks();}
+  toast('Work order details offered for review. Check the location, scope and linked Risk Assessment before saving.');
 }
 
 function ptwCanRecordControls(x){
@@ -20124,8 +20144,9 @@ function ptwValidateBeforeSave(targetStatus, body, precautions){
   if(!verifiedReferenceStatusOk(raLink,['approved','active','current','completed']))return 'The selected Risk Assessment must be approved/current before permit submission.';
   var msLink=verifiedReferenceSelection('pf-ms-ref');
   if(body.method_statement_ref&&(!msLink.verified||!verifiedReferenceStatusOk(msLink,['approved','active','current','effective','published'])))return 'The selected method statement must be a verified approved/current Document Control record.';
-  var unchecked=(precautions||[]).filter(function(p){return !p.checked;});
-  if(unchecked.length)return 'Please confirm all required precautions before submitting for approval.';
+  var unchecked=(precautions||[]).filter(function(p){return p.required!==false&&!p.checked;});
+  if(unchecked.length)return 'Confirm the required precautions actually completed before submitting.';
+  if((precautions||[]).some(function(p){return p.required===false&&!p.not_applicable_reason;}))return 'Explain why each not-applicable precaution does not apply.';
   return null;
 }
 
@@ -20224,6 +20245,7 @@ async function ptwAIAssist(){
 }
 
 const PTW_TYPE_CFG={
+  general:         {label:'General Work',emoji:'',color:'#334155',bg:'#F8FAFC',precautions:['Work scope and affected area reviewed','Risk assessment reviewed with work team','Required controls and PPE available','Emergency arrangements communicated']},
   hot_work:        {label:'Hot Work',        emoji:'*', color:'#DC2626', bg:'#FEF2F2', precautions:['Fire system confirmed functional before work starts','Protect or remove combustible materials within 10m','Fire blanket or welding screen provided where sparks or heat may spread','Suitable extinguisher placed close to the job','Gas bottles and pipework removed or protected from hot work area','Fire alarm call points and emergency routes identified','Area isolated or controlled to prevent unauthorised access','Forced ventilation provided where fumes may be generated','Permanent fire watch appointed during hot work','Continuous fire watch maintained for at least 1 hour after work','Periodic fire watch continued for up to 3 hours based on risk','Adjoining areas, voids and false floors checked for smouldering fire','Final inspection completed before permit closure']},
   confined_space:  {label:'Confined Space',  emoji:'*', color:'#7C3AED', bg:'#F5F3FF', precautions:['Space isolated from all energy and material sources','Contents drained, cleaned and residues tested where applicable','Initial atmosphere test completed by authorised gas tester','Atmosphere within safe limits before entry','Forced ventilation established where required','Continuous gas monitoring maintained during entry','Standby person remains at entry point throughout work','Standby person has reliable communication with entrants and rescue support','Rescue plan, tripod and retrieval equipment available and checked','Suitable access and egress provided and kept clear','Additional lighting suitable for the space provided','Harness and lifeline used where retrieval may be required','Maximum number of entrants defined and controlled','Maximum single-entry duration and minimum break period defined','Entry and exit times recorded for every entrant']},
   excavation:      {label:'Excavation',      emoji:'*',  color:'#92400E', bg:'#FFFBEB', precautions:['Underground services identified using drawings, scan and site checks','Buried services clearly marked before excavation starts','Rollout holes used to verify service location where required','Hand digging only within the defined service exclusion zone','Plant and equipment kept at least 600mm from known services unless authorised','Shoring, battering or benching provided where collapse risk exists','Spoil stored at a safe distance from excavation edge','Excavation fenced or barricaded to prevent falls and unauthorised access','Warning lighting provided when excavation remains open in low light','Safe access and egress provided','Exposed services supported and protected','Excavation covered or made safe if left unattended','Vehicle exclusion zone established around excavation','Utility company contacted where live services may be affected']},
@@ -20235,6 +20257,36 @@ const PTW_TYPE_CFG={
   radiation:       {label:'Radiation',       emoji:'*',  color:'#064E3B', bg:'#F0FDF4', precautions:['Radiation Protection Supervisor (RPS) notified','Controlled/supervised area boundaries established','Dosimeters worn by all personnel in area','Source activity and dose rate confirmed','No pregnant workers in controlled area','Radiation warning signs and barriers in place','Source return/storage confirmed after work']},
   chemical_handling:{label:'Chemical Handling',emoji:'*',color:'#1E3A5F',bg:'#EFF6FF', precautions:['SDS reviewed for all chemicals involved','Appropriate PPE selected based on SDS requirements','Spill containment and neutralisation materials available','Storage compatibility checked','Ventilation adequate for chemical vapours','Incompatible chemicals segregated','Emergency shower/eyewash location confirmed','Waste disposal method identified']}
 };
+
+function ptwCanonicalType(value){
+  var type=String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+  return ({electrical:'electrical_isolation',working_at_height:'work_at_height',height:'work_at_height',confined:'confined_space',lifting:'lifting_operation',chemical:'chemical_handling'})[type]||type;
+}
+function ptwStoredType(type){
+  return ({electrical_isolation:'electrical',work_at_height:'working_at_height',loto:'general',lifting_operation:'general',line_breaking:'general',radiation:'general',chemical_handling:'general'})[type]||type;
+}
+function ptwReadableList(value){
+  if(value==null||value==='')return '';
+  if(Array.isArray(value))return value.map(ptwReadableList).filter(Boolean).join(', ');
+  if(typeof value==='object')return value.full_name||value.name||value.person_name||value.employee_name||value.label||[value.first_name,value.last_name].filter(Boolean).join(' ')||'';
+  return String(value);
+}
+function ptwApprovalComplete(permit){
+  var levels=Math.max(1,Math.min(3,parseInt(permit.approval_level_required,10)||3));
+  for(var i=1;i<=levels;i++)if(permit['approval_l'+i+'_status']!=='approved')return false;
+  return true;
+}
+function ptwReadinessIssues(permit){
+  var issues=[],type=ptwCanonicalType(permit.permit_type_v2||permit.permit_type);
+  if(['approved','active'].includes(permit.status)&&!ptwApprovalComplete(permit))issues.push('Required approval levels are incomplete');
+  if(!permit.ra_ref||!permit.risk_assessment_id)issues.push('A verified Risk Assessment is not linked');
+  var checks=Array.isArray(permit.precautions_checklist)?permit.precautions_checklist:[];
+  if(!checks.length||checks.some(function(item){return !item||(item.required===false?!item.not_applicable_reason:item.checked!==true);}))issues.push('Required precautions have not all been confirmed');
+  if(['confined_space','line_breaking'].includes(type)&&!(Array.isArray(permit.gas_tests)&&permit.gas_tests.some(function(test){return test.result==='pass';})))issues.push('A passing gas test is not recorded');
+  if(['electrical_isolation','loto'].includes(type)&&!(Array.isArray(permit.isolations)&&permit.isolations.some(function(point){return point.status==='isolated'&&point.verified_by;})))issues.push('A verified isolation is not recorded');
+  if(permit.planned_end&&new Date(permit.planned_end)<new Date())issues.push('Permit planned end has passed');
+  return issues;
+}
 
 const PTW_STATUS_CFG={
   draft:            ['#f3f4f6','#6B7280','Draft'],
@@ -20256,6 +20308,7 @@ async function loadPermits(){
 }
 
 function ptwSetView(view){
+  ['ptw-register-actions','ptw-register-overview','ptw-simops-banner'].forEach(function(id){var section=document.getElementById(id);if(section)section.style.display=view==='list'?'':'none';});
   ['ptw-list-view','ptw-detail-view','ptw-form3view',
    'ptw-gas-panel','ptw-isolation-panel','ptw-approval-panel',
    'ptw-closure-panel','ptw-suspension-panel'].forEach(function(id){
@@ -20328,7 +20381,7 @@ function ptwRenderList(){
 
   if(window.AurisPermitListWorkspace){
     var generation=ptwListContext.generation;
-    window.AurisPermitListWorkspace.mount(el,ptwAllData,{types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,filters:{scope:ptwActiveFilter,search:search,type:ftype,status:fstatus},
+    window.AurisPermitListWorkspace.mount(el,ptwAllData,{types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,normalizeType:ptwCanonicalType,filters:{scope:ptwActiveFilter,search:search,type:ftype,status:fstatus},
       onApplyFilters:function(filters){document.getElementById('ptw-search').value=filters.search;document.getElementById('ptw-filter-type').value=filters.type;document.getElementById('ptw-filter-status').value=filters.status;ptwFilterSet(filters.scope,document.getElementById('ptw-btn-'+filters.scope));},
       openRecord:function(id,expected){return ptwOpenFromRegister(id,expected,generation,viewGeneration);}
     });
@@ -20338,7 +20391,7 @@ function ptwRenderList(){
   var filtered=ptwAllData.filter(function(x){
     var mFilter=ptwActiveFilter==='active'?['active','pending_approval','approved','suspended'].includes(x.status):true;
     var mSearch=!search||(x.permit_number||'').toLowerCase().includes(search)||(x.location||'').toLowerCase().includes(search)||(x.work_location||'').toLowerCase().includes(search)||(x.permit_type||'').toLowerCase().includes(search)||(x.work_description||'').toLowerCase().includes(search);
-    var mType=!ftype||(x.permit_type===ftype||x.permit_type_v2===ftype);
+    var mType=!ftype||ptwCanonicalType(x.permit_type_v2||x.permit_type)===ftype;
     var mStatus=!fstatus||x.status===fstatus;
     return mFilter&&mSearch&&mType&&mStatus;
   });
@@ -20366,8 +20419,8 @@ function ptwRenderList(){
     +'<th style="text-align:center">Action</th>'
     +'</tr></thead><tbody>';
   filtered.forEach(function(x,i){
-    var type=x.permit_type_v2||x.permit_type||'hot_work';
-    var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
+    var type=ptwCanonicalType(x.permit_type_v2||x.permit_type)||'hot_work';
+    var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
     var sc=PTW_STATUS_CFG[x.status]||PTW_STATUS_CFG.draft;
     var isOverdue=['active','approved'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<now;
     var startStr=x.planned_start?new Date(x.planned_start).toLocaleString('en-GB'):'-';
@@ -20404,7 +20457,7 @@ async function ptwOpenFromRegister(id,expected,generation,viewGeneration,openCon
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(String(id))||!ptwAllData.some(function(row){return String(row.id)===String(id)&&String(row.company_id||'')===expected.companyId;}))throw new Error('This permit is outside the current register.');
   if(!openControls&&typeof window!=='undefined'&&window.AurisPermitRecordWorkspace){
     var selected=ptwAllData.find(function(row){return String(row.id)===String(id);});
-    return window.AurisPermitRecordWorkspace.open(String(id),{reference:selected.permit_number||selected.permit_ref||'DRAFT',types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,assertContext:assertCurrent,
+    return window.AurisPermitRecordWorkspace.open(String(id),{reference:selected.permit_number||selected.permit_ref||'DRAFT',types:PTW_TYPE_CFG,statuses:PTW_STATUS_CFG,normalizeType:ptwCanonicalType,assertContext:assertCurrent,
       openControls:function(){return ptwOpenFromRegister(id,expected,generation,viewGeneration,true);}});
   }
   var data=await api('/permits?select=*&company_id=eq.'+encodeURIComponent(expected.companyId)+'&id=eq.'+encodeURIComponent(id)+'&limit=1');
@@ -20417,13 +20470,13 @@ async function ptwOpenFromRegister(id,expected,generation,viewGeneration,openCon
 // -- DETAIL VIEW ---------------------------------------------------------------
 async function ptwShowDetail(id){
   var x=ptwAllData.find(function(r){return r.id===id;});
-  if(!x){try{var d=await api('/permits?id=eq.'+id+cf());x=d?.[0];}catch(e){return;}}
-  if(!x)return;
+  if(!x){try{var d=await api('/permits?id=eq.'+id+cf());x=d?.[0];if(x)ptwAllData.unshift(x);}catch(e){toast(actionErrorMessage('Open permit','Permit to Work',e),false);ptwSetView('list');return;}}
+  if(!x){toast('This permit could not be found. Refresh the register and try again.',false);ptwSetView('list');return;}
   ptwCurrentId=id;
   ptwSetView('detail');
 
-  var type=x.permit_type_v2||x.permit_type||'hot_work';
-  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
+  var type=ptwCanonicalType(x.permit_type_v2||x.permit_type)||'hot_work';
+  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
   var sc=PTW_STATUS_CFG[x.status]||PTW_STATUS_CFG.draft;
 
   // Banner
@@ -20442,7 +20495,7 @@ async function ptwShowDetail(id){
     metaEl.innerHTML=s.join('');
   }
   var statusBadge=document.getElementById('ptw-detail-status-badge');
-  if(statusBadge)statusBadge.innerHTML='<span style="background:rgba(255,255,255,.25);color:#fff;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+sc[2]+'</span>';
+  if(statusBadge)statusBadge.innerHTML='<span style="background:rgba(255,255,255,.25);color:#fff;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+(x.status==='approved'&&!ptwApprovalComplete(x)?'Approval incomplete':sc[2])+'</span>';
 
   // Workflow bar
   ptwRenderWorkflowBar(x);
@@ -20489,7 +20542,7 @@ function ptwRenderWorkflowBar(x){
 
 function ptwRenderBlocks(x){
   var el=document.getElementById('ptw-blocks-panel');if(!el)return;
-  var blocks=x.blocked_reasons||[];
+  var blocks=(Array.isArray(x.blocked_reasons)?x.blocked_reasons:[]).concat(ptwReadinessIssues(x));
   if(!blocks.length){el.style.display='none';return;}
   el.style.display='block';
   var h='<div style="background:#FEF6E7;border:2px solid #EF9F27;border-radius:10px;padding:14px 18px">'
@@ -20512,11 +20565,12 @@ function ptwRenderActionButtons(x){
   var canRecord=ptwCanRecordControls(x);
   var canControl=isMgr();
   if(canRecord&&['active','approved','pending_approval'].includes(x.status)){
-    h+=btn('ti-flask','Gas Tests','ptw-open-gas','#065F46');
-    h+=btn('ti-lock','Isolations','ptw-open-isolation','#B45309');
+    h+=btn('ti-flask','Record gas test','ptw-open-gas','#065F46');
+    h+=btn('ti-lock','Manage isolations','ptw-open-isolation','#B45309');
   }
   if(canControl&&x.status==='pending_approval')h+=btn('ti-certificate','Approve/Reject','ptw-open-approval','#185FA5');
-  if(canControl&&x.status==='approved')h+=btn('ti-player-play','Activate Permit','ptw-activate','#185FA5');
+  if(canControl&&x.status==='approved'&&!ptwApprovalComplete(x))h+=btn('ti-alert-triangle','Review pending approvals','ptw-open-approval','#B45309');
+  if(canControl&&x.status==='approved'&&ptwApprovalComplete(x))h+=btn('ti-player-play','Activate Permit','ptw-activate','#185FA5');
   if(canControl&&x.status==='active')h+=btn('ti-circle-check','Close Permit','ptw-open-closure','#1D9E75');
   if(canControl&&['active','approved'].includes(x.status))h+=btn('ti-player-pause','Suspend/Cancel','ptw-open-suspension','#C2410C');
   if(canControl&&x.status==='suspended')h+=btn('ti-player-play','Resume Permit','ptw-resume','#185FA5');
@@ -20540,8 +20594,8 @@ function ptwDetailTab(tab, btn){
 
 function ptwRenderDetails(x){
   var el=document.getElementById('ptw-detail-content');if(!el)return;
-  var type=x.permit_type_v2||x.permit_type||'hot_work';
-  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
+  var type=ptwCanonicalType(x.permit_type_v2||x.permit_type)||'hot_work';
+  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
   var row=function(label,val){return '<div style="display:grid;grid-template-columns:160px 1fr;gap:4px 12px;padding:6px 0;border-bottom:1px solid #f5f5f5"><span style="font-size:12px;color:var(--text2);font-weight:500">'+escH(label)+'</span><span style="font-size:13px">'+escH(val||'-')+'</span></div>';};
   var h='<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">'
     +'<div class="card">'
@@ -20554,7 +20608,7 @@ function ptwRenderDetails(x){
     +row('Permit issuer',x.permit_issuer_name||x.issued_by)
     +row('Permit receiver',x.permit_receiver_name||x.permit_receiver)
     +row('Contractor',x.contractor_name||x.contractor)
-    +row('Work team',x.team_members||(Array.isArray(x.work_team)?x.work_team.join(', '):x.work_team))
+    +row('Work team',ptwReadableList(x.work_team||x.team_members))
     +'</div>'
     +'<div>'
     +'<div class="card" style="margin-bottom:12px;border:2px solid '+cfg.color+'">'
@@ -20565,7 +20619,7 @@ function ptwRenderDetails(x){
     +'</div>'
     +'<div class="card">'
     +'<div class="card-title">PPE Required</div>'
-    +'<div style="font-size:13px">'+(Array.isArray(x.ppe_required)&&x.ppe_required.length?x.ppe_required.join(', '):(x.ppe||'-'))+'</div>'
+    +'<div style="font-size:13px">'+escH(ptwReadableList(x.ppe_required||x.ppe)||'-')+'</div>'
     +(x.requires_weather_check?'<div style="margin-top:10px;padding:8px;background:#FEF9EC;border-radius:6px;font-size:12px;color:#854F0B"><i class="ti ti-cloud-rain"></i> Weather check required before work starts</div>':'')
     +'</div>'
     +'</div>'
@@ -20575,18 +20629,18 @@ function ptwRenderDetails(x){
 
 function ptwRenderChecks(x){
   var el=document.getElementById('ptw-checks-content');if(!el)return;
-  var type=x.permit_type_v2||x.permit_type||'hot_work';
-  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
+  var type=ptwCanonicalType(x.permit_type_v2||x.permit_type)||'hot_work';
+  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
   var checks=Array.isArray(x.precautions_checklist)&&x.precautions_checklist.length?x.precautions_checklist:cfg.precautions.map(function(p){return{item:p,checked:false};});
   var h='<div class="card"><div class="card-title" style="color:'+cfg.color+'">'+cfg.emoji+' Precautions Checklist for '+cfg.label+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:8px 12px">';
   checks.forEach(function(c,i){
     var item=typeof c==='string'?c:(c.item||c);
-    var checked=typeof c==='object'&&c.checked;
+    var checked=typeof c==='object'&&c.checked,notApplicable=typeof c==='object'&&c.required===false;
     h+='<div style="display:grid;grid-template-columns:28px minmax(0,1fr);align-items:start;gap:10px;padding:10px 12px;border:1px solid '+(checked?'#BBF7D0':'var(--border)')+';border-radius:10px;background:'+(checked?'#F0FDF4':'#fff')+';min-height:54px">'
       +'<div style="width:22px;height:22px;border-radius:50%;border:2px solid '+(checked?'var(--green)':'#d1d5db')+';background:'+(checked?'var(--green)':'#fff')+';display:flex;align-items:center;justify-content:center;margin-top:1px">'
       +(checked?'<i class="ti ti-check" style="font-size:12px;color:#fff"></i>':'')+'</div>'
-      +'<span style="font-size:13px;line-height:1.35;color:'+(checked?'#166534':'#1a1a1a')+';white-space:normal;overflow-wrap:anywhere">'+escH(item)+'</span>'
+      +'<span style="font-size:13px;line-height:1.35;color:'+(checked?'#166534':'#1a1a1a')+';white-space:normal;overflow-wrap:anywhere">'+escH(item)+(notApplicable?' <strong>Not applicable — '+escH(c.not_applicable_reason||'reason missing')+'</strong>':'')+'</span>'
       +'</div>';
   });
   h+='</div></div>';
@@ -20611,8 +20665,8 @@ function ptwRenderGasHistory(x){
     +'<thead><tr style="background:#f0fdf4"><th style="padding:8px 14px;text-align:left">Date/Time</th><th style="padding:8px;text-align:center">O2%</th><th style="padding:8px;text-align:center">LEL%</th><th style="padding:8px;text-align:center">H2S ppm</th><th style="padding:8px;text-align:center">CO ppm</th><th style="padding:8px;text-align:left">Tester</th><th style="padding:8px;text-align:center">Result</th></tr></thead><tbody>';
   tests.forEach(function(t,i){
     var bg=i%2===0?'#fff':'#f9fafb';
-    var result=t.result||'pass';
-    var rc=result==='pass'?['#EAF3DE','#3B6D11','PASS']:result==='fail'?['#FCEBEB','#A32D2D','FAIL']:['#FEF9EC','#854F0B','BORDERLINE'];
+    var result=t.result||'pending';
+    var rc=result==='pass'?['#EAF3DE','#3B6D11','PASS']:result==='fail'?['#FCEBEB','#A32D2D','FAIL']:result==='borderline'?['#FEF9EC','#854F0B','BORDERLINE']:['#F1F5F9','#475569','AWAITING READINGS'];
     var o2Check=t.o2?parseFloat(t.o2):null;
     var o2Ok=!o2Check||(o2Check>=19.5&&o2Check<=23.5);
     var lelCheck=t.lel?parseFloat(t.lel):null;
@@ -20710,6 +20764,7 @@ async function ptwLoadLog(id){
 // -- FORM - NEW/EDIT -----------------------------------------------------------
 function ptwNew(){
   ptwEditingId=null;
+  var saveStatus=document.getElementById('ptw-save-status');if(saveStatus)saveStatus.textContent='';
   document.getElementById('ptw-form3title').textContent='New Permit to Work';
   document.getElementById('ptw-form3ref-display').textContent='';
   document.getElementById('ptw-del-btn').style.display='none';
@@ -20730,11 +20785,9 @@ function ptwNew(){
   // Permit issuer is automatically captured from the logged-in user.
   ptwFillIssuerDisplay();
   ptwPopulatePeopleFields();
-  var conSel=document.getElementById('pf-contractor');
-  if(conSel){conSel.innerHTML='<option value="">Internal / No contractor</option>';try{api('/contractors?select=id,contractor_name&status=eq.approved'+cf()).then(function(d){(d||[]).forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});});}catch(ex){}}
-  var woSel=document.getElementById('pf-wo');
-  if(woSel){woSel.innerHTML='<option value="">None</option>';try{api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=30').then(function(d){(d||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' - '+w.title;woSel.appendChild(o);});});}catch(ex){}}
-  ptwLoadReferenceOptions();
+  ptwLoadContractorOptions();
+  ptwLoadWorkOrderOptions();
+  ptwLoadReferenceOptions().catch(function(e){toast('Linked documents could not be loaded: '+e.message,false);});
   ptwSetView('form');
   controlledApplyFormLock('ptw-form3view','ptw-controlled-lock-note',null,'Permit');
 }
@@ -20749,7 +20802,7 @@ function ptwSelectType(type){
   var el=document.getElementById('ptw-precautions-list');
   ptwPreparePrecautionGrid(el);
   el.innerHTML=cfg.precautions.map(function(p){
-    return ptwPrecautionRow(p,true);
+    return ptwPrecautionRow(p,false);
   }).join('');
   // Type-specific form
   ptwBuildTypeForm(type);
@@ -20812,20 +20865,14 @@ function ptwBuildTypeForm(type){
 
 async function ptwRunSmartChecks(){
   var el=document.getElementById('ptw-smart-check-panel');if(!el)return;
-  var raRef=document.getElementById('pf-ra-ref')?.value?.trim();
+  var ra=verifiedReferenceSelection('pf-ra-ref'),raRef=ra.ref;
   var contractorId=document.getElementById('pf-contractor')?.value;
   var blocks=[];
   var warnings=[];
   // Check RA
-  if(!raRef){blocks.push({icon:'ti-alert-triangle',color:'#E24B4A',msg:'Risk Assessment reference is required - permit cannot be issued without RA'});}
-  else{
-    // Check RA exists
-    try{
-      var ras=await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(raRef)+cf()+'&select=id,status&limit=1');
-      if(!ras||!ras.length)warnings.push({icon:'ti-info-circle',color:'#EF9F27',msg:'RA reference "'+raRef+'" not found in system - verify it exists'});
-      else if(ras[0].status!=='active')warnings.push({icon:'ti-refresh',color:'#EF9F27',msg:'Linked RA status is "'+ras[0].status+'" - ensure it is current and active'});
-    }catch(ex){}
-  }
+  if(!raRef){blocks.push({icon:'ti-alert-triangle',color:'#E24B4A',msg:'Select a Risk Assessment before permit submission.'});}
+  else if(!ra.verified)blocks.push({icon:'ti-alert-triangle',color:'#E24B4A',msg:'The selected Risk Assessment is not linked to a verified record.'});
+  else if(!verifiedReferenceStatusOk(ra,['approved','active','current','completed']))blocks.push({icon:'ti-refresh',color:'#E24B4A',msg:'The selected Risk Assessment is '+(ra.status||'not approved')+'. Choose an approved/current revision before submitting.'});
   // Check contractor competency
   if(contractorId){
     try{
@@ -20838,6 +20885,7 @@ async function ptwRunSmartChecks(){
       }
     }catch(ex){}
   }
+  if(raRef!==verifiedReferenceSelection('pf-ra-ref').ref)return;
   if(!blocks.length&&!warnings.length){
     el.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534;font-weight:600"><i class="ti ti-circle-check" style="font-size:16px"></i>Smart checks passed - no blocks detected</div>';
     return;
@@ -20852,13 +20900,16 @@ async function ptwRunSmartChecks(){
 // -- SAVE PERMIT ---------------------------------------------------------------
 async function ptwSave(targetStatus){
   if(!workflowCanMutate('permit','permits'))return;
+  var statusEl=document.getElementById('ptw-save-status');
+  var saveButtons=['ptw-save-draft','ptw-submit-approval'].map(function(id){return document.getElementById(id);}).filter(Boolean);
+  function report(message,error,field){if(statusEl){statusEl.textContent=message;statusEl.style.color=error?'#A32D2D':'#166534';}if(error&&field){var input=document.getElementById(field);input?.focus();input?.scrollIntoView({block:'center'});}toast(message,!error);}
   var currentPermit=ptwEditingId?(ptwAllData.find(function(x){return x.id===ptwEditingId;})||{}):null;
   if(currentPermit&&!controlledRecordCanEdit(currentPermit)){
     toast('This permit is controlled and locked. Use the approval, suspension, cancellation or closure workflow.',false);
     return;
   }
   var type=document.getElementById('pf-type')?.value;
-  if(!type){toast('Please select a permit type',false);return;}
+  if(!type){report('Select a permit type before saving.',true,'pf-type');return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   // Collect PPE
   var ppe=[];
@@ -20866,11 +20917,11 @@ async function ptwSave(targetStatus){
   var extra=g('pf-ppe-extra');if(extra)ppe.push(extra);
   // Collect precautions checklist
   var precautions=[];
-  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
-  document.querySelectorAll('#ptw-precautions-list input[type="checkbox"]').forEach(function(cb,i){
-    var label=cb.closest('label');
-    var txt=(label?.querySelector('span')?.textContent||label?.textContent||cfg.precautions[i]||('Item '+(i+1))).trim();
-    precautions.push({item:txt,checked:cb.checked});
+  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
+  document.querySelectorAll('#ptw-precautions-list .ptw-precaution-row').forEach(function(row,i){
+    var txt=(row.querySelector('.ptw-precaution-text')?.textContent||cfg.precautions[i]||('Item '+(i+1))).trim();
+    var required=row.querySelector('.ptw-precaution-applicability')?.value!=='not_applicable';
+    precautions.push({item:txt,required:required,checked:required&&!!row.querySelector('input[type="checkbox"]')?.checked,not_applicable_reason:required?null:(row.querySelector('.ptw-precaution-reason')?.value||'').trim()});
   });
   // Blocked if no RA ref
   var blocks=[];
@@ -20882,7 +20933,7 @@ async function ptwSave(targetStatus){
   var receiver=ptwReceiverValue();
   var body={
     company_id:ccid(),
-    permit_type_v2:type,permit_type:type,
+    permit_type_v2:type,permit_type:ptwStoredType(type),
     work_description:g('pf-desc'),work_location:g('pf-loc'),location:g('pf-loc'),
     department:g('pf-dept'),priority:g('pf-priority')||'medium',risk_level:g('pf-risk')||'medium',
     planned_start:g('pf-start'),planned_end:g('pf-end'),
@@ -20891,9 +20942,9 @@ async function ptwSave(targetStatus){
     permit_receiver_name:receiver.name,permit_receiver:receiver.id||receiver.name,
     contractor_id:g('pf-contractor')||null,
     work_order_ref:null,
-    team_members:ptwTeamValue(),
+    work_team:ptwTeamValue().split(',').map(function(name){return name.trim();}).filter(Boolean),
     ra_ref:g('pf-ra-ref'),method_statement_ref:g('pf-ms-ref'),
-    ppe_required:ppe,precautions_checklist:precautions,
+    ppe_required:ppe.join(', '),precautions_checklist:precautions,
     approval_level_required:parseInt(g('pf-approval-levels'))||3,
     requires_weather_check:document.getElementById('pf-weather-check')?.checked||false,
     blocked_reasons:blocks,
@@ -20904,22 +20955,25 @@ async function ptwSave(targetStatus){
   body.risk_assessment_id=permitRa.id;body.method_statement_id=permitMs.id;body.work_order_id=permitWo.id;body.work_order_ref=permitWo.ref;
   Object.assign(body,locationIdentityPayload(body.location,null));
   var validation=ptwValidateBeforeSave(targetStatus,body,precautions);
-  if(validation){toast(validation,false);return;}
+  if(validation){report(validation,true,/Risk Assessment/.test(validation)?'pf-ra-ref':/work description/.test(validation)?'pf-desc':/location/.test(validation)?'pf-loc':null);return;}
   if(blocks.length&&targetStatus!=='draft')toast('Saved as draft - RA reference is missing',false);
+  saveButtons.forEach(function(button){button.disabled=true;});
+  if(statusEl){statusEl.textContent=targetStatus==='draft'?'Saving draft...':'Submitting permit for approval...';statusEl.style.color='#185FA5';}
   try{
     if(ptwEditingId){
       var prev=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
       var shouldNotifyL1=body.status==='pending_approval'&&prev.status!=='pending_approval';
-      await apiWriteWithMissingColumnFallback('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body},'Permit');
+      var savedUpdate=await apiWriteWithMissingColumnFallback('/permits?id=eq.'+ptwEditingId+'&company_id=eq.'+ccid(),{m:'PATCH',p:'return=representation',b:body},'Permit');
+      if(!Array.isArray(savedUpdate)||savedUpdate.length!==1)throw new Error('The permit update was not confirmed. Reload the record and retry.');
       // Log
       try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
       var updatedPermit=Object.assign({},prev,{id:ptwEditingId},body);
       ptwAudit(shouldNotifyL1?'submit':'update',shouldNotifyL1?'Permit submitted for approval':'Permit updated',updatedPermit,{old_status:prev.status||null,new_status:body.status||null});
       if(shouldNotifyL1){
-        await ptwQueueApprovalEmail(updatedPermit,1);
-        await ptwQueueStatusNotice(updatedPermit,'submitted',{level:1});
+        try{await ptwQueueApprovalEmail(updatedPermit,1);await ptwQueueStatusNotice(updatedPermit,'submitted',{level:1});}
+        catch(noticeError){toast('Permit saved, but an approval notification could not be sent. Check the approval queue.',false);}
       }
-      toast('Permit updated!');
+      report(targetStatus==='draft'?'Draft saved.':'Permit submitted for approval.',false);
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
       if(wsRecordReturnMatches('ptw')){
@@ -20943,36 +20997,39 @@ async function ptwSave(targetStatus){
           seq=(ptwAllData||[]).filter(function(p){return String(p.permit_number||'').indexOf('PTW-'+typeCode+'-'+yr+'-')===0;}).length+1;
         }
         var ref='PTW-'+typeCode+'-'+yr+'-'+String(seq).padStart(3,'0');
-        await api('/permits?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{permit_number:ref}});
-        res[0].permit_number=ref;res[0].permit_type_v2=type;
+        try{await api('/permits?id=eq.'+res[0].id+'&company_id=eq.'+ccid(),{m:'PATCH',p:'return=minimal',b:{permit_number:ref}});res[0].permit_number=ref;}
+        catch(refError){ref=res[0].permit_number||String(res[0].id);toast('Permit saved, but its display number could not be assigned. Open the saved record to retry numbering.',false);}
+        res[0].permit_type_v2=type;
         ptwAllData.unshift(res[0]);
         try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:res[0].id,action:'Permit created',performed_by:prof?.full_name||'User',new_status:body.status}});}catch(ex){}
         ptwAudit(body.status==='pending_approval'?'submit':'create',body.status==='pending_approval'?'Permit created and submitted for approval':'Permit created',res[0],{new_status:body.status||null});
         if(body.status==='pending_approval'){
-          await ptwQueueApprovalEmail(res[0],1);
-          await ptwQueueStatusNotice(res[0],'submitted',{level:1});
+          try{await ptwQueueApprovalEmail(res[0],1);await ptwQueueStatusNotice(res[0],'submitted',{level:1});}
+          catch(noticeError){toast('Permit saved, but an approval notification could not be sent. Check the approval queue.',false);}
         }
-        toast('Permit created! Ref: '+ref);
+        report((targetStatus==='draft'?'Draft saved':'Permit submitted for approval')+' — '+ref,false);
         ptwCurrentId=res[0].id;
         if(wsRecordReturnMatches('ptw')){
           try{await wsAttachSavedRecord('ptw',res[0]);wsReturnToWork('ptw');}
           catch(linkError){toast('The permit was created, but it could not be linked to the work order. Please retry from the work order. '+(linkError.message||''),false);await ptwShowDetail(res[0].id);}
         }else await ptwShowDetail(res[0].id);
-      }
+      }else throw new Error('The database did not confirm creation. Check the register before retrying.');
     }
-  }catch(e){toast(actionErrorMessage('Save permit','Permit to Work',e.message),false);console.error(e);}
+  }catch(e){report(actionErrorMessage('Save permit','Permit to Work',e.message),true);console.error(e);}
+  finally{saveButtons.forEach(function(button){button.disabled=false;});}
 }
 
 function ptwEditCurrent(){
-  var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
+  var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x){toast('Permit details are unavailable. Reopen the record from the register.',false);return;}
+  var saveStatus=document.getElementById('ptw-save-status');if(saveStatus)saveStatus.textContent='';
   ptwEditingId=ptwCurrentId;
   document.getElementById('ptw-form3title').textContent='Edit Permit';
   document.getElementById('ptw-form3ref-display').textContent=x.permit_number||'';
   document.getElementById('ptw-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('ptw-type-selector').style.display='none';
   document.getElementById('ptw-form3body').style.display='block';
-  var type=x.permit_type_v2||x.permit_type||'hot_work';
-  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
+  var type=ptwCanonicalType(x.permit_type_v2||x.permit_type)||'hot_work';
+  var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.general;
   document.getElementById('pf-type').value=type;
   document.getElementById('pf-type-display').textContent=cfg.emoji+' '+cfg.label;
   var g=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
@@ -20981,8 +21038,8 @@ function ptwEditCurrent(){
   g('pf-dept',x.department);
   ptwPopulatePeopleFields();
   ptwSetReceiverValue(x.permit_receiver,x.permit_receiver_name||x.permit_receiver);
-  g('pf-team3extra',x.team_members);
-  ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref);
+  g('pf-team3extra',ptwReadableList(x.work_team||x.team_members));
+  ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref).catch(function(e){toast('Linked documents could not be loaded: '+e.message,false);});
   ptwLoadContractorOptions(x.contractor_id);
   ptwLoadWorkOrderOptions(x.work_order_id||x.work_order_ref);
   g('pf-priority',x.priority||'medium');
@@ -20993,14 +21050,16 @@ function ptwEditCurrent(){
   var wc=document.getElementById('pf-weather-check');if(wc)wc.checked=!!x.requires_weather_check;
   ptwFillIssuerDisplay({id:x.permit_issuer_id||prof?.id||'',name:x.permit_issuer_name||x.issued_by||prof?.full_name||prof?.email||'Current user'});
   // PPE
-  if(Array.isArray(x.ppe_required)){document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=x.ppe_required.includes(cb.value);});}
+  var savedPpe=ptwReadableList(x.ppe_required||x.ppe).split(',').map(function(item){return item.trim();}).filter(Boolean);
+  document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=savedPpe.includes(cb.value);});
+  g('pf-ppe-extra',savedPpe.filter(function(item){return !Array.from(document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]')).some(function(cb){return cb.value===item;});}).join(', '));
   ptwBuildTypeForm(type);
   var el3=document.getElementById('ptw-precautions-list');
   if(el3&&Array.isArray(x.precautions_checklist)&&x.precautions_checklist.length){
     ptwPreparePrecautionGrid(el3);
     el3.innerHTML=x.precautions_checklist.map(function(p){
       var item=typeof p==='string'?p:(p.item||p);var checked=typeof p==='object'&&p.checked;
-      return ptwPrecautionRow(item,checked);
+      return ptwPrecautionRow(item,checked,typeof p==='object'?p.required!==false:true,typeof p==='object'?p.not_applicable_reason:null);
     }).join('');
   }else if(el3)ptwSelectType(type);
   ptwSetView('form');
@@ -21041,6 +21100,15 @@ async function ptwDelete(){
 }
 
 // -- GAS TEST PANEL ------------------------------------------------------------
+async function ptwLoadEquipmentOptions(selectId,targetId){
+  var select=document.getElementById(selectId);if(!select)return;
+  select.innerHTML='<option value="">Select from equipment register...</option>';
+  try{
+    var rows=await api('/tools_register?select=id,ref_number,name,status'+cf()+'&order=name.asc&limit=200');
+    (rows||[]).filter(function(row){return !['retired','disposed','out_of_service'].includes(String(row.status||'').toLowerCase());}).forEach(function(row){var option=document.createElement('option');option.value=row.id;option.dataset.label=[row.ref_number,row.name].filter(Boolean).join(' — ');option.textContent=option.dataset.label||row.id;select.appendChild(option);});
+    select.onchange=function(){var option=select.selectedOptions?.[0],target=document.getElementById(targetId);if(option?.value&&target){target.value=option.dataset.label||'';target.dispatchEvent(new Event('input'));}};
+  }catch(error){select.innerHTML='<option value="">Equipment register unavailable — enter manually</option>';}
+}
 function ptwOpenGasPanel(){
   ptwSetView('gas');
   ptwGasTests=[];
@@ -21049,7 +21117,9 @@ function ptwOpenGasPanel(){
   document.getElementById('gas-datetime').value=new Date().toISOString().slice(0,16);
   ['gas-tester','gas-equipment','gas-cal-date','gas-o2','gas-lel','gas-h2s','gas-co','gas-location','gas-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var gt=document.getElementById('gas-tester');if(gt)gt.value=ptwCurrentUserName();
-  var gr=document.getElementById('gas-result');if(gr)gr.value='pass';
+  var gr=document.getElementById('gas-result');if(gr)gr.value='pending';
+  ['gas-equipment','gas-cal-date','gas-datetime'].forEach(function(id){var input=document.getElementById(id);if(input)input.oninput=ptwUpdateGasResultPreview;});
+  ptwLoadEquipmentOptions('gas-equipment-record','gas-equipment');
   ptwRenderGasHistoryPanel();
 }
 
@@ -21069,7 +21139,7 @@ function ptwRenderGasHistoryPanel(){
 
 function ptwClassifyGasTest(test){
   var o2=parseFloat(test.o2),lel=parseFloat(test.lel),h2s=parseFloat(test.h2s),co=parseFloat(test.co);
-  if(isNaN(o2)||isNaN(lel))return 'borderline';
+  if(isNaN(o2)||isNaN(lel))return 'pending';
   if(o2<19.5||o2>23.5||lel>=10||(!isNaN(h2s)&&h2s>=5)||(!isNaN(co)&&co>=25))return 'fail';
   if(o2<20||o2>23||lel>=5||(!isNaN(h2s)&&h2s>0)||(!isNaN(co)&&co>=10))return 'borderline';
   return 'pass';
@@ -21078,19 +21148,20 @@ function ptwClassifyGasTest(test){
 function ptwUpdateGasResultPreview(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var result=document.getElementById('gas-result');
-  if(result)result.value=ptwClassifyGasTest({o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co')});
+  if(result)result.value=g('gas-equipment')&&g('gas-cal-date')&&g('gas-datetime')?ptwClassifyGasTest({o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co')}):'pending';
 }
 
 async function ptwAddGasTest(){
   if(!workflowCanMutate('permit','permits'))return;
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
-  var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
+  var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),equipment_id:g('gas-equipment-record')||null,cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
   if(!test.equipment)return toast('Please enter the gas detector / equipment used',false);
   if(!test.cal_date)return toast('Please enter the gas detector calibration date',false);
   if(new Date(test.cal_date)>new Date())return toast('Calibration date cannot be in the future',false);
   if(!test.o2||!test.lel)return toast('Please enter both O2 and LEL readings',false);
   var calculated=ptwClassifyGasTest(test);
-  if(test.result==='pass'&&calculated!=='pass')test.result=calculated;
+  if(calculated==='pending')return toast('Complete the required readings before recording the gas test.',false);
+  test.result=calculated;
   ptwGasTests.push(test);
   ptwRenderGasHistoryPanel();
   // Save to DB
@@ -21124,7 +21195,7 @@ async function ptwAddGasTest(){
     if(clearedGasBlock)try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test block cleared',performed_by:test.tester,details:'Passing gas test recorded. Permit may be resumed after supervisor review.',new_status:permit.status}});}catch(ex){}
     toast(test.result==='fail'?'FAILED gas test - work must stop and permit is blocked':'Gas test recorded! O2: '+test.o2+'% LEL: '+test.lel+'%',test.result!=='fail');
     ['gas-o2','gas-lel','gas-h2s','gas-co','gas-notes','gas-location'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  }catch(e){toastActionError('Add gas test','Permit to Work',e);}
+  }catch(e){ptwGasTests.pop();ptwRenderGasHistoryPanel();toastActionError('Add gas test','Permit to Work',e);}
 }
 
 function ptwGasBack(){ptwShowDetail(ptwCurrentId);}
@@ -21139,7 +21210,8 @@ function ptwOpenIsolationPanel(){
   var ib=document.getElementById('iso-by');if(ib)ib.value=ptwCurrentUserName();
   var dt=document.getElementById('iso-datetime');if(dt)dt.value=new Date().toISOString().slice(0,16);
   var tp=document.getElementById('iso-type');if(tp)tp.value='electrical';
-  var st=document.getElementById('iso-status');if(st)st.value='isolated';
+  var st=document.getElementById('iso-status');if(st)st.value='';
+  ptwLoadEquipmentOptions('iso-asset-record','iso-tag');
   ptwRenderIsolationListPanel();
 }
 
@@ -21163,8 +21235,9 @@ async function ptwAddIsolation(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var tag=g('iso-tag');if(!tag){toast('Please enter isolation tag/ID',false);return;}
   if(!g('iso-desc')){toast('Please describe the isolation point or equipment.',false);return;}
-  if((g('iso-status')||'isolated')==='isolated'&&!g('iso-verified-by')){toast('Please select who verified the isolation.',false);return;}
-  var iso={tag:tag,description:g('iso-desc'),type:g('iso-type'),by:ptwCurrentUserName(),datetime:g('iso-datetime'),verified_by:g('iso-verified-by'),status:g('iso-status')||'isolated'};
+  if(!g('iso-status')){toast('Select the isolation status you have confirmed.',false);return;}
+  if(g('iso-status')==='isolated'&&!g('iso-verified-by')){toast('Please select who verified the isolation.',false);return;}
+  var iso={tag:tag,asset_id:g('iso-asset-record')||null,description:g('iso-desc'),type:g('iso-type'),by:ptwCurrentUserName(),datetime:g('iso-datetime'),verified_by:g('iso-verified-by'),status:g('iso-status')};
   ptwIsolations.push(iso);
   ptwRenderIsolationListPanel();
   try{
@@ -21175,7 +21248,8 @@ async function ptwAddIsolation(){
     toast('Isolation point added: '+tag);
     ['iso-tag','iso-desc','iso-by','iso-verified-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
     var ib=document.getElementById('iso-by');if(ib)ib.value=ptwCurrentUserName();
-  }catch(e){toastActionError('Add isolation','Permit to Work',e);}
+    var status=document.getElementById('iso-status');if(status)status.value='';
+  }catch(e){ptwIsolations.pop();ptwRenderIsolationListPanel();toastActionError('Add isolation','Permit to Work',e);}
 }
 
 function ptwIsolationBack(){ptwShowDetail(ptwCurrentId);}
@@ -21190,6 +21264,11 @@ function ptwOpenApprovalPanel(){
 async function ptwRenderApprovalLevelsPanel(x){
   var el=document.getElementById('ptw-approval-levels-display');if(!el)return;
   el.innerHTML='';
+  if(x.status==='approved'&&!ptwApprovalComplete(x)){
+    var warning=document.createElement('div');warning.className='card';warning.style.border='2px solid #F59E0B';
+    warning.innerHTML='<strong>Approval record is inconsistent.</strong> This permit shows Approved while a required level is pending. Activation is blocked. <button type="button" class="btn btn-sm" id="ptw-reconcile-approval">Return to pending approval</button>';
+    el.appendChild(warning);warning.querySelector('button').addEventListener('click',ptwReconcileApprovalStatus);
+  }
   var levels=parseInt(x.approval_level_required)||3;
   var settings=await ptwGetApprovalSettings();
   var firstPending=ptwFirstPendingApprovalLevel(x);
@@ -21223,6 +21302,20 @@ async function ptwRenderApprovalLevelsPanel(x){
   }
 }
 
+async function ptwReconcileApprovalStatus(){
+  if(!isMgr()||!workflowCanMutate('permit','permits'))return;
+  var permit=ptwAllData.find(function(row){return row.id===ptwCurrentId;});
+  if(!permit||permit.status!=='approved'||ptwApprovalComplete(permit))return;
+  try{
+    var rows=await api('/permits?id=eq.'+permit.id+'&company_id=eq.'+ccid(),{m:'PATCH',p:'return=representation',b:{status:'pending_approval',updated_at:new Date().toISOString()}});
+    if(!rows?.length)throw new Error('The permit update was not confirmed.');
+    Object.assign(permit,rows[0]);
+    ptwAudit('reconcile','Permit returned to pending approval because required levels were incomplete',permit);
+    toast('Permit returned to pending approval. Complete the required levels before activation.');
+    ptwOpenApprovalPanel();
+  }catch(error){toast(actionErrorMessage('Reconcile permit approval','Permit to Work',error),false);}
+}
+
 function ptwFirstPendingApprovalLevel(x){
   var levels=parseInt(x.approval_level_required)||3;
   for(var i=1;i<=levels;i++){
@@ -21234,8 +21327,9 @@ function ptwFirstPendingApprovalLevel(x){
 async function ptwApprove(level, action){
   if(!workflowCanMutate('permit','permits'))return;
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
+  if(x.status!=='pending_approval'){toast('This permit is not awaiting approval. Reopen the current record.',false);return;}
   var firstPending=ptwFirstPendingApprovalLevel(x);
-  if(action==='approved'&&firstPending&&level!==firstPending){toast('Approval must follow the Level 1, Level 2, Level 3 sequence.',false);return;}
+  if(!firstPending||level!==firstPending||!['approved','rejected'].includes(action)){toast('Approval must follow the required level sequence.',false);return;}
   var settings=await ptwGetApprovalSettings();
   var approver=ptwApproverForLevel(settings,level);
   var name=approver.name||prof?.full_name||prof?.email||'Approver';
@@ -21274,14 +21368,9 @@ function ptwApprovalBack(){ptwShowDetail(ptwCurrentId);}
 async function ptwActivate(){
   if(!workflowCanMutate('permit','permits'))return;
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
-  if(Array.isArray(x.blocked_reasons)&&x.blocked_reasons.length){toast('Permit cannot be activated until all smart blocks are cleared.',false);return;}
-  var type=x.permit_type_v2||x.permit_type||'';
-  var tests=Array.isArray(x.gas_tests)?x.gas_tests:[];
-  var hasPassingGas=tests.some(function(t){return t.result==='pass';});
-  if(['confined_space','line_breaking'].includes(type)&&!hasPassingGas){toast('A passing gas test is required before activating this permit.',false);return;}
-  var isos=Array.isArray(x.isolations)?x.isolations:[];
-  if(['electrical_isolation','loto'].includes(type)&&!isos.length){toast('At least one isolation point must be recorded before activating this permit.',false);return;}
-  if(x.planned_end&&new Date(x.planned_end)<new Date()){toast('Permit planned end date has passed. Please amend the permit before activation.',false);return;}
+  var readiness=ptwReadinessIssues(x);
+  if(!ptwApprovalComplete(x)){toast('Permit cannot be activated: required approval levels remain pending.',false);return;}
+  if(readiness.length||(Array.isArray(x.blocked_reasons)&&x.blocked_reasons.length)){toast('Permit cannot be activated: '+(readiness[0]||'recorded work blocks remain')+'.',false);return;}
   if(x.requires_weather_check&&!x.weather_conditions){
     var weather=await appPrompt({title:'Weather check',message:'Weather conditions are required for outdoor work.',value:'Sunny, wind <5m/s',placeholder:'Weather conditions'});
     if(!weather)return;
