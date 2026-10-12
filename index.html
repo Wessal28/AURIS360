@@ -4452,7 +4452,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reference</label><input type="text" id="atex-ref" placeholder="ATEX-001"/></div>
 <div class="form3group"><label class="form3label">Area name *</label><input type="text" id="atex-name" placeholder="Paint mixing room"/></div>
-<div class="form3group"><label class="form3label">Location</label><input type="text" id="atex-location"/></div>
+<div class="form3group"><label class="form3label">Site / area record</label><select id="atex-site-id"><option value="">Select a site or area...</option></select><label class="form3label">Location</label><input type="text" id="atex-location"/></div>
 <div class="form3group"><label class="form3label">Plant area</label><input type="text" id="atex-plant"/></div>
 </div>
 <div class="form3row">
@@ -4473,7 +4473,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card">
 <div class="card-title">Links</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Linked equipment record</label><select id="atex-equipment-id"><option value="">Select equipment...</option></select><label class="form3label">Equipment notes</label><input type="text" id="atex-equipment" placeholder="Ex certificate or installation notes..."/></div>
+<div class="form3group"><label class="form3label">Linked equipment record</label><select id="atex-equipment-id"><option value="">Select equipment...</option></select><div id="atex-equipment-certificate" role="status" class="form3hint">Select equipment to check its certificate.</div><label class="form3label">Equipment notes</label><input type="text" id="atex-equipment" placeholder="Ex certificate or installation notes..."/></div>
 <div class="form3group"><label class="form3label">Linked RA reference</label><select id="atex-ra"><option value="">Select risk assessment...</option></select></div>
 <div class="form3group"><label class="form3label">Linked permit record</label><select id="atex-permit"><option value="">Select an actual permit...</option></select></div>
 </div>
@@ -4489,6 +4489,8 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Last inspection</label><input type="date" id="atex-last"/></div>
 <div class="form3group"><label class="form3label">Next inspection</label><input type="date" id="atex-next"/></div>
 </div>
+<div class="form3group"><label class="form3label">Last inspection result</label><select id="atex-inspection-result"><option value="">Not recorded</option><option value="pass">Pass</option><option value="fail">Failed controls</option></select></div>
+<div class="form3group"><label class="form3label">Inspection findings</label><textarea id="atex-inspection-notes" placeholder="Record failed controls and required follow-up..."></textarea></div>
 </div>
 <div class="card">
 <div class="card-title">Notes</div>
@@ -11336,7 +11338,7 @@ I can help you:<br>
             <button class="btn btn-sm" data-auris-onclick="h1231"><i class="ti ti-map-pin-plus"></i>Position selected location</button>
             <button class="btn btn-sm" id="sitemap-cancel-placement" type="button" hidden>Cancel placement</button>
             <button class="btn btn-sm" id="sitemap-event-toggle" data-auris-onclick="h1232"><i class="ti ti-alert-triangle"></i>Hide incidents</button>
-            <button class="btn btn-sm" id="sitemap-risk-toggle" data-auris-onclick="h1233"><i class="ti ti-shield-exclamation"></i>Hide high risks</button>
+            <button class="btn btn-sm" id="sitemap-risk-toggle" data-auris-onclick="h1233"><i class="ti ti-shield-exclamation"></i>Hide high initial risks</button>
             <button class="btn btn-sm" id="sitemap-atex-toggle" type="button">Hide controlled ATEX zones</button>
             <div class="auris-site-map-s-a8697912d2">
               <span><span class="auris-site-map-s-65d72b4357"></span> Low</span>

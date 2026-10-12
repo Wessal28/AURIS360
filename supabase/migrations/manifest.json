@@ -261,6 +261,11 @@
       "order": 52,
       "file": "20261012100000_atex_inspection_interval.sql",
       "sha256": "8860830890b2973f6cc4442936b58a5c9798cb0ad868ab21a7a319151228e5aa"
+    },
+    {
+      "order": 53,
+      "file": "20261012110000_atex_site_and_plan_revision.sql",
+      "sha256": "255515954c251780509ff3ef2faae929f19ea13919d3ad2958f30a676ebfda5e"
     }
   ]
 }
