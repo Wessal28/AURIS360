@@ -46,3 +46,16 @@ test('replacing a plan increments its revision and flags saved markers for revie
   assert.equal(layout.markers_review_required,true);
   assert.equal(layout.markers_reviewed_at,null);
 });
+
+test('attention layers exclude completed actions and distinguish failed inspections',()=>{
+  const context={Date};vm.createContext(context);
+  vm.runInContext(sourceBetween('smOverdueAction','smFailedInspection')+sourceBetween('smFailedInspection','smText'),context);
+  const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
+  assert.equal(context.smOverdueAction({target_date:yesterday,status:'open'}),true);
+  assert.equal(context.smOverdueAction({target_date:yesterday,status:'completed'}),false);
+  assert.equal(context.smOverdueAction({target_date:tomorrow,status:'open'}),false);
+  assert.equal(context.smFailedInspection({overall_result:'fail'}),true);
+  assert.equal(context.smFailedInspection({status:'closed',score_insuf:2}),true);
+  assert.equal(context.smFailedInspection({overall_result:'pass',score_insuf:0}),false);
+});
