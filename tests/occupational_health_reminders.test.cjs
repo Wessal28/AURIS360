@@ -6,6 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20261013030000_occupational_health_followup_links.sql'), 'utf8');
 const core = fs.readFileSync(path.join(root, 'auris-core.js'), 'utf8');
+const worker = fs.readFileSync(path.join(root, 'auris-ohealth-worker.js'), 'utf8');
 const handler = require('../api/process-occupational-health-reminders.js');
 
 function response() {
@@ -25,7 +26,19 @@ test('OH reminder RPC keeps clinical details out of queued mail and limits recip
 test('automatic Occupational Health actions omit worker names and exposure values', () => {
   assert.doesNotMatch(core, /source_ref:'(?:Medical surveillance|Audiometry|Spirometry) - '\+name/);
   assert.doesNotMatch(core, /description:'OEL exceeded: '\+/);
-  assert.match(core, /description:'Review the linked restricted exposure exceedance\.'/);
+  assert.match(core, /description:'Review restricted exposure\.'/);
+  assert.doesNotMatch(core, /body\.fvc_pct_predicted<80/);
+});
+
+test('all clinical follow-up forms have explicit owners and save hooks', () => {
+  for (const kind of ['exam', 'exposure', 'audiometry', 'spirometry']) {
+    assert.match(worker, new RegExp(kind + ":'[^']+-followup-owner'"));
+  }
+  for (const table of ['medical_surveillance', 'exposure_monitoring', 'audiometry_records', 'spirometry_records']) {
+    assert.match(sql, new RegExp('alter table public\\.' + table + ' add column if not exists follow_up_owner_id'));
+  }
+  assert.match(core, /ohAfterHealthSave\?\.\('audiometry'/);
+  assert.match(core, /ohAfterHealthSave\?\.\('spirometry'/);
 });
 
 test('OH reminder endpoint rejects unauthenticated calls and invokes the service-only RPC', async () => {

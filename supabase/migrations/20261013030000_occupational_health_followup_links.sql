@@ -1,6 +1,8 @@
 -- Keep clinical follow-up ownership explicit and linked records within the same tenant.
 alter table public.medical_surveillance add column if not exists follow_up_owner_id uuid references public.profiles(id) on delete set null;
 alter table public.exposure_monitoring add column if not exists follow_up_owner_id uuid references public.profiles(id) on delete set null;
+alter table public.audiometry_records add column if not exists follow_up_owner_id uuid references public.profiles(id) on delete set null;
+alter table public.spirometry_records add column if not exists follow_up_owner_id uuid references public.profiles(id) on delete set null;
 alter table public.exposure_monitoring add column if not exists risk_assessment_id uuid references public.risk_assessments(id) on delete set null;
 alter table public.exposure_monitoring add column if not exists audiometry_record_id uuid references public.audiometry_records(id) on delete set null;
 alter table public.exposure_monitoring add column if not exists spirometry_record_id uuid references public.spirometry_records(id) on delete set null;
@@ -28,6 +30,12 @@ end $$;
 drop trigger if exists medical_surveillance_links_guard on public.medical_surveillance;
 create trigger medical_surveillance_links_guard before insert or update of company_id,follow_up_owner_id
 on public.medical_surveillance for each row execute function public.check_occupational_health_links();
+drop trigger if exists audiometry_records_links_guard on public.audiometry_records;
+create trigger audiometry_records_links_guard before insert or update of company_id,follow_up_owner_id
+on public.audiometry_records for each row execute function public.check_occupational_health_links();
+drop trigger if exists spirometry_records_links_guard on public.spirometry_records;
+create trigger spirometry_records_links_guard before insert or update of company_id,follow_up_owner_id
+on public.spirometry_records for each row execute function public.check_occupational_health_links();
 drop trigger if exists exposure_monitoring_links_guard on public.exposure_monitoring;
 create trigger exposure_monitoring_links_guard before insert or update of company_id,follow_up_owner_id,risk_assessment_id,audiometry_record_id,spirometry_record_id
 on public.exposure_monitoring for each row execute function public.check_occupational_health_links();
@@ -52,10 +60,10 @@ begin
     select company_id,id,null::uuid,'vaccination_dose_due','vaccination_records',next_dose_date
       from public.vaccination_records where status not in ('declined','not_applicable') and next_dose_date is not null
     union all
-    select company_id,id,null::uuid,'audiometry_retest_due','audiometry_records',next_test_date
+    select company_id,id,follow_up_owner_id,'audiometry_retest_due','audiometry_records',next_test_date
       from public.audiometry_records where next_test_date is not null
     union all
-    select company_id,id,null::uuid,'spirometry_retest_due','spirometry_records',next_test_date
+    select company_id,id,follow_up_owner_id,'spirometry_retest_due','spirometry_records',next_test_date
       from public.spirometry_records where next_test_date is not null
   ), milestones as (
     select d.*,case when due_date>p_run_date+7 then '30-day'
