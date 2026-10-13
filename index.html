@@ -114,8 +114,10 @@
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
 <script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1"></script>
+<link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
+<script src="auris-ohealth-workflow.js?v=20261013-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-emergency-workflow.js?v=20261013-2"></script>
@@ -6199,6 +6201,7 @@ Offline mode - changes will sync when connection is restored
 <option value="travel">Travel</option>
 <option value="routine">Routine</option>
 <option value="pandemic">Pandemic</option>
+<option value="other">Other</option>
 </select>
 <button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-vax-add-btn" data-auris-onclick="h0698"><i class="ti ti-plus"></i>Add vaccination</button>
 </div>
@@ -6224,6 +6227,9 @@ Offline mode - changes will sync when connection is restored
 <option value="chemical">Chemical</option>
 <option value="heat_stress">Heat stress</option>
 <option value="vibration">Vibration</option>
+<option value="biological">Biological</option>
+<option value="radiation">Radiation</option>
+<option value="other">Other</option>
 </select>
 <button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-exp-add-btn" data-auris-onclick="h0700"><i class="ti ti-plus"></i>New measurement</button>
 </div>
@@ -6305,7 +6311,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-ohealth-s-9bcefa3fff"><div class="card-title auris-ohealth-s-ca32b871b2"><i class="ti ti-certificate"></i> Fitness Decision</div>
 <div class="auris-ohealth-s-498a5137d9">
 <label class="auris-ohealth-s-e6499d5863" data-auris-onclick="h0707">
-<input class="auris-ohealth-s-283f12d7fe" type="radio" name="ms-fitness" value="fit" checked> <span class="auris-ohealth-s-485acb7ee6">Fit for work</span></label>
+<input class="auris-ohealth-s-283f12d7fe" type="radio" name="ms-fitness" value="fit"> <span class="auris-ohealth-s-485acb7ee6">Fit for work</span></label>
 <label class="auris-ohealth-s-404ed66541" data-auris-onclick="h0708">
 <input class="auris-ohealth-s-90cf399257" type="radio" name="ms-fitness" value="fit_with_restrictions"> <span class="auris-ohealth-s-fe395009b0">Fit with restrictions</span></label>
 <label class="auris-ohealth-s-3536b249e1" data-auris-onclick="h0709">
@@ -6313,7 +6319,8 @@ Offline mode - changes will sync when connection is restored
 <label class="auris-ohealth-s-8c5a7fbdc5" data-auris-onclick="h0710">
 <input class="auris-ohealth-s-af62d68b87" type="radio" name="ms-fitness" value="permanently_unfit"> <span class="auris-ohealth-s-f59a8847ec">Permanently unfit</span></label>
 </div>
-<input type="hidden" id="msf-fitness" value="fit"/>
+<label class="auris-ohealth-s-f08cc9c7cb"><input type="radio" name="ms-fitness" value="pending" checked> <span>Awaiting assessment</span></label>
+<input type="hidden" id="msf-fitness" value="pending"/>
 <div class="form3group"><label class="form3label">Restrictions (if any)</label><textarea id="msf-restrictions" class="auris-ohealth-s-2b013fa0d9" placeholder="Describe any work restrictions..."></textarea></div>
 <div class="auris-ohealth-s-e8beef2369"><input type="checkbox" id="msf-referral" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-b5bd38212a" for="msf-referral">Referral to specialist required</label></div>
 <div class="form3group"><label class="form3label">Referral details</label><input type="text" id="msf-referral-details"/></div></div>
@@ -6365,6 +6372,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Audiometer calibration date</label><input type="date" id="audf-cal-date"/></div>
 <div class="auris-ohealth-s-fc967cc03b">
 <label class="auris-ohealth-s-f08cc9c7cb"><input type="checkbox" id="audf-baseline" class="auris-ohealth-s-089deee0fc"/> This is a BASELINE test</label>
+<div class="form3group"><label class="form3label" for="audf-comparison-baseline">Comparison baseline</label><select id="audf-comparison-baseline"><option value="">No comparison baseline selected</option></select><small>Select an earlier baseline for the same linked person before confirming STS.</small></div>
 </div>
 </div>
 </div>
@@ -6638,7 +6646,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Sampler / Technician</label><input type="text" id="expf-sampler"/></div>
 </div>
 <div class="form3group"><label class="form3label">Existing controls in place</label><textarea id="expf-controls" class="auris-ohealth-s-07bdff4587"></textarea></div>
-<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="expf-controls-ok" class="auris-ohealth-s-283f12d7fe" checked/><label class="auris-ohealth-s-22514dbec4" for="expf-controls-ok">Controls are adequate</label></div>
+<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="expf-controls-ok" class="auris-ohealth-s-283f12d7fe"/><label class="auris-ohealth-s-22514dbec4" for="expf-controls-ok">Controls are adequate (confirmed)</label></div>
 <div class="form3group"><label class="form3label">Additional controls required</label><textarea id="expf-add-controls" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Recommended actions</label><textarea id="expf-actions" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
@@ -6706,7 +6714,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Exposure type</label><select id="odf-exp-type"><option value="noise">Noise</option><option value="dust">Dust</option><option value="silica">Silica</option><option value="chemical">Chemical</option><option value="vibration">Vibration</option><option value="heat">Heat</option><option value="biological">Biological</option><option value="ergonomic">Ergonomic</option><option value="psychological">Psychological</option><option value="radiation">Radiation</option><option value="other">Other</option></select></div>
 <div class="form3group"><label class="form3label">Years of exposure</label><input type="number" id="odf-exp-years" step="0.5" min="0"/></div>
 </div>
-<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="odf-work-related" class="auris-ohealth-s-283f12d7fe" checked/><label class="auris-ohealth-s-22514dbec4" for="odf-work-related">Work-related disease confirmed</label></div>
+<div class="form3group auris-ohealth-s-ba28bccee4"><label class="form3label auris-ohealth-s-22514dbec4" for="odf-work-related">Work-relatedness decision</label><select id="odf-work-related" class="auris-ohealth-s-283f12d7fe"><option value="">Awaiting assessment</option><option value="true">Confirmed work-related</option><option value="false">Confirmed not work-related</option></select></div>
 <div class="form3group"><label class="form3label">Work-relatedness assessment</label><textarea id="odf-work-assess" class="auris-ohealth-s-07bdff4587"></textarea></div></div>
 <div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Treatment &amp; Outcomes</div>
 <div class="form3row">
