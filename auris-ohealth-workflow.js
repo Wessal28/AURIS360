@@ -51,7 +51,7 @@
     await originalDash();
     try{
       if(!window.ohLoadWorkers)await new Promise(function(resolve,reject){
-        var script=document.createElement('script');script.src='auris-ohealth-worker.js?v=20261013-2';
+        var script=document.createElement('script');script.src='auris-ohealth-worker.js?v=20261013-3';
         script.onload=resolve;script.onerror=function(){reject(new Error('Worker overview could not load.'));};document.head.append(script);
       });
       await window.ohLoadWorkers();
