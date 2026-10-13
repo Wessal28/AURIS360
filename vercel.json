@@ -109,6 +109,9 @@
     "api/process-emergency-reminders.js": {
       "maxDuration": 30
     },
+    "api/process-occupational-health-reminders.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -172,6 +175,10 @@
     {
       "path": "/api/process-emergency-reminders",
       "schedule": "25 7 * * *"
+    },
+    {
+      "path": "/api/process-occupational-health-reminders",
+      "schedule": "30 7 * * *"
     }
   ]
 }

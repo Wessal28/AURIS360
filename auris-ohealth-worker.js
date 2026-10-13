@@ -43,3 +43,62 @@
   }
   window.ohLoadWorkers=loadWorkers;
 })();
+
+/* Follow-up ownership and exposure links load with the OH dashboard. */
+(function(){
+  if(window.__ohExtendedLoaded)return;
+  window.__ohExtendedLoaded=true;
+  var $=function(id){return document.getElementById(id);};
+  window.ohEnsureFollowup=async function(sourceId,kind,dueDate,ownerId){
+    if(!sourceId)return;
+    var company=ccid();
+    var rows=await api('/action_tracker?select=id,target_date,status&source_module=eq.ohealth&source_id=eq.'+encodeURIComponent(sourceId)+cf()+'&limit=10');
+    if(ccid()!==company)return;
+    var open=(rows||[]).find(function(row){return !['closed','cancelled','completed'].includes(row.status);});
+    var ownerSelect=$(kind==='exam'?'msf-followup-owner':'expf-followup-owner');
+    var assignment={assigned_to_id:ownerId||null,assigned_to_name:ownerId?ownerSelect?.selectedOptions?.[0]?.textContent:null,responsible:null,target_date:dueDate||null,source_ref:'Occupational Health follow-up',description:'Review the linked restricted Occupational Health record.'};
+    if(open){await api('/action_tracker?id=eq.'+open.id,{m:'PATCH',p:'return=minimal',b:assignment});return;}
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:Object.assign({company_id:company,source_module:'ohealth',source_id:sourceId,priority:'medium',status:'open',created_by:prof?.id},assignment)});
+  };
+  window.ohAfterHealthSave=async function(kind,id,body){
+    if(!id)return;
+    var table=kind==='exam'?'medical_surveillance':'exposure_monitoring';
+    var ownerId=$(kind==='exam'?'msf-followup-owner':'expf-followup-owner')?.value||null;
+    var links=kind==='exam'?{follow_up_owner_id:ownerId}:{follow_up_owner_id:ownerId,risk_assessment_id:$('expf-risk-assessment')?.value||null,audiometry_record_id:$('expf-audiometry')?.value||null,spirometry_record_id:$('expf-spirometry')?.value||null};
+    try{await api('/'+table+'?id=eq.'+encodeURIComponent(id),{m:'PATCH',p:'return=minimal',b:links});}
+    catch(error){toast('Record saved, but owner or linked records could not be updated: '+error.message,false);return;}
+    var needed=kind==='exam'?(body.follow_up_required||body.referral_required):
+      (body.recommended_actions||body.reassessment_date||body.exceeded_oel);
+    if(needed)try{await window.ohEnsureFollowup(id,kind,body.follow_up_date||body.reassessment_date,ownerId);}
+    catch(error){console.warn('Occupational Health follow-up was not created',error);toast('Record saved, but follow-up action failed: '+error.message,false);}
+  };
+  function requireOwner(kind){
+    var field=$(kind==='exam'?'msf-followup-owner':'expf-followup-owner');
+    var needed=kind==='exam'?($('msf-followup')?.checked||$('msf-referral')?.checked):
+      (!!$('expf-actions')?.value.trim()||!!$('expf-reassess')?.value||
+       (Number($('expf-oel-twa')?.value)>0&&Number($('expf-twa')?.value)>=Number($('expf-oel-twa')?.value)));
+    if(needed&&!field?.value){toast('Select an Occupational Health follow-up owner before saving.',false);field?.focus();return false;}
+    return true;
+  }
+  var originalMsSave=window.msSave,originalExpSave=window.expSave;
+  window.msSave=function(){if(requireOwner('exam'))return originalMsSave();};
+  window.expSave=function(){if(requireOwner('exposure'))return originalExpSave();};
+  async function fillLinks(kind,record){
+    var company=ccid(),recordId=record?.id||null,owner=$(kind==='exam'?'msf-followup-owner':'expf-followup-owner');if(!owner)return;
+    owner.replaceChildren(new Option('Loading owners...',''));
+    try{
+      var queries=[api('/profiles?select=id,full_name,role,status'+cf()+'&status=eq.active&order=full_name')];
+      if(kind==='exposure')queries.push(api('/risk_assessments?select=id,ra_ref,title,status'+cf()+'&order=created_at.desc&limit=300'),api('/audiometry_records?select=id,employee_name,test_date'+cf()+'&order=test_date.desc&limit=300'),api('/spirometry_records?select=id,employee_name,test_date'+cf()+'&order=test_date.desc&limit=300'));
+      var result=await Promise.all(queries);if(ccid()!==company||(kind==='exam'?ohMsEditId:ohExpEditId)!==recordId)return;
+      owner.replaceChildren(new Option('Select owner...',''));
+      (result[0]||[]).filter(function(p){return ['occupational_health','sephs_admin'].includes(p.role);}).forEach(function(p){owner.add(new Option(p.full_name||'Occupational Health user',p.id));});
+      owner.value=record?.follow_up_owner_id||'';
+      if(kind==='exposure'){
+        [['expf-risk-assessment',result[1],'risk_assessment_id',function(r){return (r.ra_ref||'Assessment')+' · '+(r.title||'Untitled');}],['expf-audiometry',result[2],'audiometry_record_id',function(r){return (r.test_date||'Undated')+' · '+(r.employee_name||'Audiometry');}],['expf-spirometry',result[3],'spirometry_record_id',function(r){return (r.test_date||'Undated')+' · '+(r.employee_name||'Spirometry');}]].forEach(function(item){var select=$(item[0]),saved=record?.[item[2]]||'';select.replaceChildren(new Option('None selected',''));(item[1]||[]).forEach(function(r){select.add(new Option(item[3](r),r.id));});if(saved&&!Array.from(select.options).some(function(option){return option.value===saved;}))select.add(new Option('Previously linked record',saved));select.value=saved;});
+      }
+    }catch(error){owner.replaceChildren(new Option('Owners unavailable',''));toast('Occupational Health links unavailable: '+error.message,false);}
+  }
+  var originalMsShowForm=window.msShowForm,originalExpShowForm=window.expShowForm;
+  window.msShowForm=function(){originalMsShowForm();fillLinks('exam',ohMsData.find(function(r){return r.id===ohMsEditId;}));};
+  window.expShowForm=function(){originalExpShowForm();fillLinks('exposure',ohExpData.find(function(r){return r.id===ohExpEditId;}));};
+})();
