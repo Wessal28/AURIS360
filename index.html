@@ -113,11 +113,11 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
-<script src="auris-ohealth-workflow.js?v=20261013-1"></script>
+<script src="auris-ohealth-workflow.js?v=20261013-2"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-emergency-workflow.js?v=20261013-2"></script>
@@ -6304,6 +6304,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Follow-up date</label><input type="date" id="msf-followup-date"/></div>
+<div class="form3group"><label class="form3label">Follow-up owner (Occupational Health)</label><select id="msf-followup-owner"><option value="">Select owner...</option></select></div>
 <div class="form3group"><label class="form3label">Report reference</label><input type="text" id="msf-report-ref"/></div>
 </div></div>
 </div>
@@ -6651,7 +6652,9 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Recommended actions</label><textarea id="expf-actions" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 <div class="form3group"><label class="form3label">Reassessment date</label><input type="date" id="expf-reassess"/></div>
-</div></div>
+<div class="form3group"><label class="form3label">Follow-up owner (Occupational Health)</label><select id="expf-followup-owner"><option value="">Select owner...</option></select></div>
+</div>
+<div class="form3row"><div class="form3group"><label class="form3label">Linked risk assessment</label><select id="expf-risk-assessment"><option value="">None selected</option></select></div><div class="form3group"><label class="form3label">Linked audiometry test</label><select id="expf-audiometry"><option value="">None selected</option></select></div><div class="form3group"><label class="form3label">Linked spirometry test</label><select id="expf-spirometry"><option value="">None selected</option></select></div></div></div>
 </div>
 <div>
 <div class="card auris-ohealth-s-57b252ee5a">
