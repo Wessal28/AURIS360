@@ -5,7 +5,7 @@ alter table public.medical_surveillance
   add column if not exists examination_ref text;
 update public.medical_surveillance
 set examination_ref = 'MED-' || to_char(coalesce(exam_date,current_date),'YYYY') || '-'
-  || upper(substr(replace(id::text,'-',''),1,16))
+  || upper(replace(id::text,'-',''))
 where examination_ref is null;
 alter table public.medical_surveillance
   alter column examination_ref set default ('MED-' || to_char(current_date,'YYYY') || '-'
