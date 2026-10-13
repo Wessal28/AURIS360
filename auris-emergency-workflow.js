@@ -142,4 +142,52 @@
       equipment.forEach(function(row){var button=document.createElement('button');button.className='btn btn-sm';button.textContent='Equipment '+(row.identifier||row.equipment_type||'')+' · '+(row.next_inspection||row.next_service);button.addEventListener('click',async function(){emSwitchTab('equipment',$('em3tab-equipment'));await emEqLoad();emEqRecordWindow(row.id,'view');});box.append(button);});
       certificates.forEach(function(row){var button=document.createElement('button');button.className='btn btn-sm';button.textContent='ERT certificate: '+(row.name||'Member');button.addEventListener('click',function(){emSwitchTab('ert',$('em3tab-ert'));});box.append(button);});host.append(box);}
   }catch(error){console.warn('Emergency review reminders unavailable',error);}};
+
+  // Prefill is explicit: selecting a person alone never asserts a qualification.
+  async function prefillErtTraining(){
+    var name=value('ertf-name'),person=typeof trainPersonByName==='function'?trainPersonByName(name):null;
+    if(!person?.id){toast('Select a linked People record before checking Training certificates.',false);return;}
+    try{
+      var company=ccid(),today=new Date().toISOString().slice(0,10);
+      var rows=await api('/authorisations?select=id,person_id,authorisation_type,issue_date,expiry_date,status&person_id=eq.'+encodeURIComponent(person.id)+'&status=eq.active'+cf()+'&order=expiry_date.desc');
+      if(ccid()!==company||value('ertf-name')!==name)return;
+      var valid=(rows||[]).filter(function(row){return row.expiry_date&&row.expiry_date>=today;});
+      var first=valid.find(function(row){return /first[ -]?aid/i.test(row.authorisation_type||'');});
+      var warden=valid.find(function(row){return /fire[ -]?warden|fire[ -]?marshal/i.test(row.authorisation_type||'');});
+      var ert=valid.find(function(row){return /emergency response|\bERT\b/i.test(row.authorisation_type||'');});
+      if(first){$('ertf-fa-cert').checked=true;$('ertf-fa-expiry').value=first.expiry_date;}
+      if(warden){$('ertf-fw-cert').checked=true;$('ertf-fw-expiry').value=warden.expiry_date;}
+      if(ert&&ert.issue_date){$('ertf-ert-trained').checked=true;$('ertf-ert-date').value=ert.issue_date;}
+      toast(first||warden||ert?'Active Training records copied. Check details before saving.':'No current matching Training certificates with expiry dates were found.',!!(first||warden||ert));
+    }catch(error){toast('Training certificates unavailable: '+error.message,false);}
+  }
+  function ensureErtPrefill(){
+    var name=$('ertf-name');if(!name||$('ertf-training-prefill'))return;
+    var button=document.createElement('button');button.type='button';button.id='ertf-training-prefill';button.className='btn btn-sm';button.textContent='Use Training certificates';
+    button.addEventListener('click',prefillErtTraining);name.closest('.form3group')?.append(button);
+  }
+  async function loadEquipmentChoices(){
+    var select=$('epf-equipment-link');if(!select)return;
+    try{var company=ccid(),rows=await api('/emergency_equipment?select=id,identifier,equipment_type,location,status'+cf()+'&order=identifier');if(ccid()!==company)return;
+      select.replaceChildren(new Option('Select registered equipment...',''));
+      (rows||[]).filter(function(row){return row.status==='operational';}).forEach(function(row){var option=new Option((row.identifier||row.equipment_type)+' · '+row.location,row.id);option.dataset.type=row.equipment_type;option.dataset.location=row.location||'';option.dataset.label=row.identifier||row.equipment_type;select.add(option);});
+    }catch(error){select.replaceChildren(new Option('Equipment unavailable',''));toast('Emergency equipment unavailable: '+error.message,false);}
+  }
+  function ensureEquipmentPrefill(){
+    var list=$('em3plan-resources-list');if(!list||$('epf-equipment-link'))return;
+    var wrap=document.createElement('div');wrap.className='emergency-equipment-prefill';
+    var label=document.createElement('label');label.htmlFor='epf-equipment-link';label.textContent='Add from Emergency Equipment register';
+    var select=document.createElement('select');select.id='epf-equipment-link';select.append(new Option('Select registered equipment...',''));
+    var button=document.createElement('button');button.type='button';button.className='btn btn-sm';button.textContent='Add linked equipment';
+    button.addEventListener('click',function(){var option=select.selectedOptions[0],id=select.value;if(!id){toast('Select registered equipment first.',false);return;}
+      if((emPlanResources||[]).some(function(row){return row.equipment_id===id;})){toast('This equipment is already linked to the plan.',false);return;}
+      emPlanResources.push({type:option.dataset.label,location:option.dataset.location,description:option.dataset.type,equipment_id:id});emRenderPlanResources();toast('Equipment added to plan resources. Save the plan to retain it.');
+    });wrap.append(label,select,button);list.before(wrap);
+  }
+  var originalErtNew=window.ertNew,originalErtEdit=window.ertEdit;
+  window.ertNew=function(){var result=originalErtNew.apply(this,arguments);ensureErtPrefill();return result;};
+  window.ertEdit=function(){var result=originalErtEdit.apply(this,arguments);ensureErtPrefill();return result;};
+  var originalPlanNew=window.emPlanNew,originalPlanEdit=window.emPlanEdit;
+  window.emPlanNew=function(){var result=originalPlanNew.apply(this,arguments);ensureEquipmentPrefill();loadEquipmentChoices();return result;};
+  window.emPlanEdit=function(){var result=originalPlanEdit.apply(this,arguments);ensureEquipmentPrefill();loadEquipmentChoices();return result;};
 })();

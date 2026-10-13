@@ -12,3 +12,7 @@
 #emergency-simulation .equipment-content{display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow:auto}
 #emergency-simulation .equipment-content label{display:flex;align-items:center;gap:7px}
 #emergency-simulation .emergency-simulation-warning{padding:10px;border:1px solid #d67575;border-radius:8px;background:#fff0f0;color:#882222;font-weight:700}
+.emergency-equipment-prefill{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 12px}
+.emergency-equipment-prefill label{font-size:12px;font-weight:700;color:var(--text2)}
+.emergency-equipment-prefill select{min-width:190px;max-width:100%;flex:1;padding:7px;border:1px solid var(--border);border-radius:7px}
+#ertf-training-prefill{margin-top:8px}
