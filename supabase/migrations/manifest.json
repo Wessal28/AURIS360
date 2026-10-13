@@ -281,6 +281,11 @@
       "order": 56,
       "file": "20261013010000_emergency_due_reminders.sql",
       "sha256": "e1734a9dc7f4b57183c1aba0d1926eb1a273c9f6a65ea0999b5907dccdadc55b"
+    },
+    {
+      "order": 57,
+      "file": "20261013020000_occupational_health_safe_defaults.sql",
+      "sha256": "589561c8fb52103d7076ea8d9f6da30c8a909f834104210d8c08a5ba046fec54"
     }
   ]
 }
