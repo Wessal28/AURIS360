@@ -286,6 +286,11 @@
       "order": 57,
       "file": "20261013020000_occupational_health_safe_defaults.sql",
       "sha256": "589561c8fb52103d7076ea8d9f6da30c8a909f834104210d8c08a5ba046fec54"
+    },
+    {
+      "order": 58,
+      "file": "20261014020000_ppe_safety_workflow.sql",
+      "sha256": "168599c7b860a928b3b2c72be308723809be34f73665d09162867183b6385598"
     }
   ]
 }

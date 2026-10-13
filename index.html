@@ -6826,7 +6826,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-ppe-s-14dfb7ae67">
 <div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">Total quantity</div><div id="ppe-inventory-m3total" class="auris-ppe-s-6f56b8363e">-</div></div>
 <div class="card auris-ppe-s-7a5e61eb83"><div class="auris-ppe-s-4422804ebb">Available stock</div><div id="ppe-inventory-m3available" class="auris-ppe-s-1e4fd5f9ed">-</div></div>
-<div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">Issued</div><div id="ppe-inventory-m3issued" class="auris-ppe-s-6f56b8363e">-</div></div>
+<div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">In use</div><div id="ppe-inventory-m3issued" class="auris-ppe-s-6f56b8363e">-</div></div>
 <div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Low stock</div><div id="ppe-inventory-m3low" class="auris-ppe-s-2062f090bc">-</div></div>
 </div>
 <div id="ppe-inventory-list"></div>
@@ -6840,7 +6840,7 @@ Offline mode - changes will sync when connection is restored
 <input type="text" id="ppe-iss-search" class="auris-ppe-s-e205b0937c" placeholder="Search employee, PPE..." data-auris-oninput="h0745"/>
 <select id="ppe-iss-filter-status" class="auris-ppe-s-bd0e58d190" data-auris-onchange="h0746">
 <option value="active">Active only</option><option value="">All</option>
-<option value="expired">Expired</option><option value="returned">Returned</option>
+<option value="expired">Expired</option><option value="quarantined">Quarantined</option><option value="condemned">Condemned</option><option value="returned">Returned</option>
 </select>
 <button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-iss-add-btn" data-auris-onclick="h0747"><i class="ti ti-plus"></i>Issue PPE</button>
 </div>
@@ -6854,7 +6854,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card auris-ppe-s-7a5e61eb83"><div class="auris-ppe-s-4422804ebb">Pass</div><div id="ppe-insp-pass" class="auris-ppe-s-1e4fd5f9ed">-</div></div>
 <div class="card auris-ppe-s-530946d91c"><div class="auris-ppe-s-4422804ebb">Fail</div><div id="ppe-insp-fail" class="auris-ppe-s-e7ad3ebe2e">-</div></div>
 <div class="card auris-ppe-s-03bd966c28"><div class="auris-ppe-s-4422804ebb">Condemned</div><div id="ppe-insp-cond" class="auris-ppe-s-ffe267bce1">-</div></div>
-<div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Due Soon</div><div id="ppe-insp-due" class="auris-ppe-s-2062f090bc">-</div></div>
+<div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Overdue / due in 30 days</div><div id="ppe-insp-due" class="auris-ppe-s-2062f090bc">-</div></div>
 </div>
 <div class="card auris-ppe-s-ae71a9e48f">
 <div class="card-title auris-ppe-s-ab79ea2b85">PPE Inspection Records</div>
@@ -7065,6 +7065,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE item</label><select id="piif-ppe-id" data-auris-onchange="h0770"><option value="">Select PPE...</option></select></div>
 <div class="form3group"><label class="form3label">Employee name</label><select id="piif-emp-name" data-auris-onchange="h0771"><option value="">Select person...</option></select></div>
+<div class="form3group"><label class="form3label">Exact issuance / serial</label><select id="piif-issuance-id"><option value="">Select issued item...</option></select></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="piif-dept"/></div>
 <div class="form3group"><label class="form3label">Inspector</label><select id="piif-inspector"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Inspection date</label><input type="date" id="piif-date"/></div>
@@ -7096,12 +7097,12 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-ppe-s-82d616954c"><div class="card-title auris-ppe-s-48a87f51bd">Overall Result</div>
 <div class="auris-ppe-s-0fbf9e859f">
-<label class="auris-ppe-s-e6499d5863" data-auris-onclick="h0772"><input class="auris-ppe-s-283f12d7fe" type="radio" name="piif-result-radio" value="pass" checked><span class="auris-ppe-s-485acb7ee6">Pass - cleared for use</span></label>
+<label class="auris-ppe-s-e6499d5863" data-auris-onclick="h0772"><input class="auris-ppe-s-283f12d7fe" type="radio" name="piif-result-radio" value="pass"><span class="auris-ppe-s-485acb7ee6">Pass - cleared for use</span></label>
 <label class="auris-ppe-s-3536b249e1" data-auris-onclick="h0773"><input class="auris-ppe-s-d27852021c" type="radio" name="piif-result-radio" value="monitor"><span class="auris-ppe-s-e6aeeaf7e8">Monitor - recheck needed</span></label>
 <label class="auris-ppe-s-8c5a7fbdc5" data-auris-onclick="h0774"><input class="auris-ppe-s-af62d68b87" type="radio" name="piif-result-radio" value="fail"><span class="auris-ppe-s-f59a8847ec">Fail - remove from service</span></label>
 <label class="auris-ppe-s-0dc4a97c22" data-auris-onclick="h0775"><input class="auris-ppe-s-bfff90bfdd" type="radio" name="piif-result-radio" value="condemn"><span class="auris-ppe-s-3ed2ae7f16">Condemn - destroy &amp; replace</span></label>
 </div>
-<input type="hidden" id="piif-result" value="pass"/>
+<input type="hidden" id="piif-result" value=""/>
 </div>
 </div>
 </div>
@@ -7109,6 +7110,7 @@ Offline mode - changes will sync when connection is restored
 
 <!-- Replacement form -->
 <div id="ppe-rep-form" class="auris-ppe-s-6aa34d7432">
+<input type="hidden" id="prf-inspection-id"/><input type="hidden" id="prf-issuance-id"/><input type="hidden" id="prf-new-issuance-id"/>
 <div class="card auris-ppe-s-54ec8874e7">
 <div class="auris-ppe-s-21cd6a56d0">
 <div>
