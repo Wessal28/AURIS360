@@ -3,6 +3,30 @@
   var $=function(id){return document.getElementById(id);};
   var ownerField={exam:'msf-followup-owner',exposure:'expf-followup-owner',audiometry:'audf-followup-owner',spirometry:'spif-followup-owner'};
   var tableFor={exam:'medical_surveillance',exposure:'exposure_monitoring',audiometry:'audiometry_records',spirometry:'spirometry_records'};
+  function clinicalAccess(){return ['occupational_health','sephs_admin','admin'].includes(prof?.role);}
+  async function loadOperationalSummary(){
+    var dashboard=$('oh-view-dash');if(!dashboard)return;
+    document.querySelectorAll('[id^="oh-tab-"]').forEach(function(tab){tab.style.display=tab.id==='oh-tab-dash'?'':'none';});
+    Array.from(dashboard.children).forEach(function(child){child.style.display=child.id==='oh-operational-summary'?'':'none';});
+    var card=$('oh-operational-summary');if(!card){card=document.createElement('section');card.id='oh-operational-summary';card.className='card';dashboard.append(card);}
+    card.replaceChildren();var heading=document.createElement('h3');heading.textContent='Fitness and work restrictions';card.append(heading);
+    var note=document.createElement('p');note.textContent='Operational summary only. Clinical examination, test and disease records are restricted.';card.append(note);
+    if(!['hse_manager','hse_officer','manager','site_manager','supervisor'].includes(prof?.role)){
+      card.append(document.createTextNode('This summary is available to authorised operational roles.'));return;
+    }
+    var company=ccid(),status=document.createElement('p');status.textContent='Loading current fitness decisions...';card.append(status);
+    try{
+      var rows=await api('/rpc/occupational_fitness_summaries',{m:'POST',b:{p_company_id:company}});
+      if(ccid()!==company)return;
+      status.remove();if(!rows?.length){card.append(document.createTextNode('No fitness decisions are available for this company.'));return;}
+      var wrap=document.createElement('div');wrap.className='table-wrap';var table=document.createElement('table');
+      var header=document.createElement('tr');['Worker','Employee ID','Department','Examined','Next due','Fitness','Work restrictions'].forEach(function(value){var th=document.createElement('th');th.textContent=value;header.append(th);});
+      var thead=document.createElement('thead');thead.append(header);table.append(thead);var body=document.createElement('tbody');
+      var labels={fit:'Fit for work',fit_with_restrictions:'Fit with restrictions',temporarily_unfit:'Temporarily unfit',permanently_unfit:'Permanently unfit',pending:'Awaiting assessment'};
+      rows.forEach(function(row){var tr=document.createElement('tr');[row.employee_name,row.employee_id,row.department,row.exam_date,row.next_exam_date,labels[row.fitness_status]||'Awaiting assessment',row.restrictions].forEach(function(value){var td=document.createElement('td');td.textContent=value||'—';tr.append(td);});body.append(tr);});
+      table.append(body);wrap.append(table);card.append(wrap);
+    }catch(error){if(ccid()===company)status.textContent='Fitness summary unavailable: '+error.message;}
+  }
   function ensureWorkerPanel(){
     var dashboard=$('oh-view-dash');if(!dashboard||$('oh-worker-panel'))return;
     var card=document.createElement('section');card.id='oh-worker-panel';card.className='card oh-worker-panel';
@@ -14,7 +38,9 @@
     select.addEventListener('change',function(){loadWorker(select.value);});
   }
   async function loadWorkers(){
-    if(!isMgr())return;
+    if(!clinicalAccess()){await loadOperationalSummary();return;}
+    document.querySelectorAll('[id^="oh-tab-"]').forEach(function(tab){tab.style.display='';});
+    var dashboard=$('oh-view-dash');if(dashboard)Array.from(dashboard.children).forEach(function(child){child.style.display=child.id==='oh-operational-summary'?'none':'';});
     ensureWorkerPanel();var select=$('oh-worker-select');if(!select)return;
     try{var company=ccid(),rows=await api('/people?select=id,first_name,last_name,status'+cf()+'&order=last_name&limit=1000');if(ccid()!==company)return;
       var chosen=select.value;select.replaceChildren(new Option('Select worker...',''));
@@ -43,6 +69,11 @@
       if(follow.children.length===1)follow.append(document.createTextNode('No linked open actions in the loaded records.'));output.append(follow);
     }catch(error){if(ccid()===company)output.textContent='Worker records unavailable: '+error.message;}
   }
+  var originalSwitch=window.ohSwitchTab;
+  window.ohSwitchTab=function(tab,button){
+    if(!clinicalAccess()&&tab!=='dash'){toast('Clinical Occupational Health records require clinical or administrator access.',false);return;}
+    return originalSwitch.apply(this,arguments);
+  };
   window.ohLoadWorkers=loadWorkers;
 })();
 
