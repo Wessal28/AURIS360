@@ -114,9 +114,11 @@
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
 <script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1"></script>
+<link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-1">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
 <script src="auris-form-draft.js?v=20260913-1"></script>
 <script src="kpi-editor-drafts.js?v=20260913-objective-atomic-1"></script>
+<script src="auris-emergency-workflow.js?v=20261013-1"></script>
 <link rel="stylesheet" href="kpi-module-upgrade.css?v=20261011-priority-1">
 <link rel="stylesheet" href="kpi-data-source.css?v=20260908-refresh-reliability-1">
 <link rel="stylesheet" href="kpi-pdf-import.css?v=20260902-1">
@@ -5588,6 +5590,12 @@ Offline mode - changes will sync when connection is restored
 <option value="eyewash">Eyewash Station</option>
 <option value="spill_kit">Spill Kit</option>
 <option value="emergency_light">Emergency Light</option>
+<option value="ppe_kit">PPE Kit</option>
+<option value="alarm_panel">Alarm Panel</option>
+<option value="pa_system">PA System</option>
+<option value="stretcher">Stretcher</option>
+<option value="oxygen_kit">Oxygen Kit</option>
+<option value="other">Other</option>
 </select>
 <button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3eq-add-btn" data-auris-onclick="h0655"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
@@ -5642,7 +5650,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Site / Location</label><input type="text" id="epf-site" placeholder="Site name or facility"/></div>
 <div class="form3group"><label class="form3label">Version</label><input type="text" id="epf-version" value="1.0"/></div>
 <div class="form3group"><label class="form3label">Status</label>
-<select id="epf-status"><option value="draft">Draft</option><option value="active" selected>Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
+<select id="epf-status"><option value="draft" selected>Draft</option><option value="active">Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
 </div>
 <div class="form3group"><label class="form3label">Scope / Objectives</label><textarea id="epf-scope" class="auris-emergency-s-4d5979ac8f" placeholder="What this plan covers and its objectives..."></textarea></div>
 </div>
@@ -5772,12 +5780,13 @@ Offline mode - changes will sync when connection is restored
 <div class="card">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Muster point name</label><input type="text" id="mpf-name" placeholder="e.g. Car Park A, Main Gate, Sports Field"/></div>
+<div class="form3group"><label class="form3label">Site Map location</label><select id="mpf-site"><option value="">Select site...</option></select></div>
 <div class="form3group"><label class="form3label">Location description</label><input type="text" id="mpf-location" placeholder="Detailed location instructions..."/></div>
 <div class="form3group"><label class="form3label">Capacity (persons)</label><input type="number" id="mpf-capacity" min="1"/></div>
 <div class="form3group"><label class="form3label">Assigned warden</label><select id="mpf-warden"><option value="">Select person...</option></select></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Applicable emergencies</label><input type="text" id="mpf-types" placeholder="e.g. Fire, Chemical spill, All emergencies"/></div>
+<div class="form3group"><label class="form3label">Applicable emergencies</label><select id="mpf-types" multiple size="5"><option value="fire">Fire</option><option value="chemical_spill">Chemical spill</option><option value="explosion">Explosion</option><option value="medical">Medical</option><option value="earthquake">Earthquake</option><option value="flood">Flood</option><option value="power_failure">Power failure</option><option value="cyber">Cyber</option><option value="workplace_violence">Workplace violence</option><option value="bomb_threat">Bomb threat</option><option value="gas_leak">Gas leak</option><option value="structural">Structural failure</option><option value="environmental">Environmental</option><option value="pandemic">Pandemic</option><option value="other">Other</option></select><small>Leave all unselected for all emergencies.</small></div>
 <div class="form3group"><label class="form3label">Status</label><select id="mpf-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="under_review">Under review</option></select></div>
 </div>
 <div class="form3group"><label class="form3label">Notes</label><textarea id="mpf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
@@ -5817,6 +5826,7 @@ Offline mode - changes will sync when connection is restored
 <option value="comms_test">Communications test</option>
 </select></div>
 <div class="form3group"><label class="form3label">Drill date</label><input type="date" id="drf-date"/></div>
+<div class="form3group"><label class="form3label">Response plan and revision</label><select id="drf-plan"><option value="">No linked plan</option></select></div>
 <div class="form3group"><label class="form3label">Start time</label><input type="time" id="drf-time"/></div>
 <div class="form3group"><label class="form3label">Status</label>
 <select id="drf-status"><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="postponed">Postponed</option></select></div>
@@ -5853,7 +5863,10 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label auris-emergency-s-df4f0a3612">Areas for improvement</label><textarea id="drf-weaknesses" class="auris-emergency-s-07bdff4587"></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">Observations &amp; findings</label><textarea id="drf-observations" class="auris-emergency-s-07bdff4587"></textarea></div>
-<div class="form3group"><label class="form3label">Corrective actions required</label><textarea id="drf-actions" class="auris-emergency-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">Corrective action required</label><textarea id="drf-actions" class="auris-emergency-s-07bdff4587"></textarea></div>
+<div class="form3row"><div class="form3group"><label class="form3label">Action owner</label><select id="drf-action-owner"><option value="">Select person...</option></select></div><div class="form3group"><label class="form3label">Action due date</label><input type="date" id="drf-action-due"/></div></div>
+<button type="button" class="btn" id="drf-add-action">Add another action</button><div id="drf-additional-actions"></div>
+<div id="drf-linked-actions" class="emergency-linked-actions" aria-live="polite"></div>
 </div>
 </div>
 <div>
@@ -5866,7 +5879,7 @@ Offline mode - changes will sync when connection is restored
 <label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0674"><input class="auris-emergency-s-d27852021c" type="radio" name="drf-rating-radio" value="needs_improvement"> <span class="auris-emergency-s-538fe62910">Needs improvement</span></label>
 <label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0675"><input class="auris-emergency-s-d08f760264" type="radio" name="drf-rating-radio" value="failed"> <span class="auris-emergency-s-538fe62910">Failed</span></label>
 </div>
-<input type="hidden" id="drf-rating" value="satisfactory"/>
+<input type="hidden" id="drf-rating" value=""/>
 </div>
 <div class="card auris-emergency-s-169bb1a458"><div class="card-title auris-emergency-s-ca32b871b2">Sign-off</div>
 <div class="form3group"><label class="form3label">Conducted by</label><select id="drf-conducted-by"><option value="">Select person...</option></select></div>
@@ -5899,6 +5912,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Emergency type</label>
 <select id="actf-type"><option value="fire">Fire</option><option value="chemical_spill">Chemical Spill</option><option value="explosion">Explosion</option><option value="medical">Medical</option><option value="earthquake">Earthquake</option><option value="flood">Flood</option><option value="gas_leak">Gas Leak</option><option value="power_failure">Power Failure</option><option value="other">Other</option></select></div>
+<div class="form3group"><label class="form3label">Response plan and revision</label><select id="actf-plan"><option value="">No linked plan</option></select></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="actf-date"/></div>
 <div class="form3group"><label class="form3label">Time detected</label><input type="time" id="actf-time"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="actf-location"/></div>
@@ -6012,7 +6026,7 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-emergency-s-8f7a06061d"><div class="card-title auris-emergency-s-868661d008">Plan Details</div>
 <div class="form3group"><label class="form3label">Version</label><input type="text" id="bcpf-version" value="1.0"/></div>
-<div class="form3group"><label class="form3label">Status</label><select id="bcpf-status"><option value="draft">Draft</option><option value="active" selected>Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
+<div class="form3group"><label class="form3label">Status</label><select id="bcpf-status"><option value="draft" selected>Draft</option><option value="active">Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
 <div class="form3group"><label class="form3label">Approved by</label><select id="bcpf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Approved date</label><input type="date" id="bcpf-approved-date"/></div>
 <div class="form3group"><label class="form3label">Review date</label><input type="date" id="bcpf-review-date"/></div>
