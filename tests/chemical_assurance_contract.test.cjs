@@ -6,6 +6,23 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
+test('optional chemical use links keep text fields and open exact company-scoped records',()=>{
+  const ui=read('chemical-control-upgrade.js');
+  const core=read('auris-core.js');
+  const sql=read('supabase/migrations/20261014050000_chemical_control_assurance.sql');
+  for(const [column,table] of [['owner_person_id','people'],['site_id','sites'],['ppe_item_id','ppe_catalogue'],['risk_assessment_id','risk_assessments']]){
+    assert.match(sql,new RegExp('add column if not exists '+column+' uuid references public\\.'+table+'\\(id\\)'));
+    assert.match(sql,new RegExp('new\\.'+column+' is not null and not exists'));
+    assert.match(ui,new RegExp("id:'"+column+"'"));
+  }
+  assert.match(ui,/body\[link\.id\]=selected\.value\|\|null/);
+  assert.match(ui,/target='_blank'|anchor\.target='_blank'/);
+  assert.match(ui,/ccu-use-owner/);
+  assert.match(ui,/ccu-use-location/);
+  assert.match(core,/page==='people'&&req\.table==='people'/);
+  assert.match(core,/page==='sitemap'&&req\.table==='sites'/);
+});
+
 function riskHarness(){
   const source=read('auris-core.js');
   const start=source.indexOf('function chemRiskFromForm(){');

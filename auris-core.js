@@ -39780,6 +39780,15 @@ async function deepLinkResume(reason){
     await new Promise(function(resolve){setTimeout(resolve,360);});
     var opened=false;
     if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
+    else if(page==='people'&&req.table==='people'){
+      var linkedPeople=await api('/people?select=*&id=eq.'+encodeURIComponent(req.record)+'&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1');
+      if(linkedPeople?.[0]){if(!peAllData.some(function(row){return String(row.id)===String(req.record);}))peAllData.push(linkedPeople[0]);await peopleOpenProfile(req.record);opened=true;}
+    }
+    else if(page==='sitemap'&&req.table==='sites'){
+      await loadSiteMap();
+      opened=siteMapState.sites.some(function(row){return String(row.id)===String(req.record)&&String(row.company_id)===String(ccid());});
+      if(opened){siteMapState.showAllLocations=true;smRenderSiteList();smRenderCanvas();smSelectSite(req.record,true);}
+    }
     else if(page==='ppe'){opened=await ppeOpenLinkedRecord(req);}
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
     else if(page==='emergency'&&req.table==='emergency_equipment'){opened=await emEqOpenRecordRequest(req);}
