@@ -115,6 +115,9 @@
     "api/process-ppe-reminders.js": {
       "maxDuration": 30
     },
+    "api/process-fire-reminders.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -186,6 +189,10 @@
     {
       "path": "/api/process-ppe-reminders",
       "schedule": "35 7 * * *"
+    },
+    {
+      "path": "/api/process-fire-reminders",
+      "schedule": "40 7 * * *"
     }
   ]
 }

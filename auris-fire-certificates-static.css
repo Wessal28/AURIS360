@@ -95,3 +95,5 @@
 #fire-tab-equipment.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
 #fire-tab-inspections.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
 #fire-tab-layout.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+#fire-findings-rows .fire-finding-row{display:grid;grid-template-columns:2fr repeat(4,minmax(100px,1fr)) auto;gap:8px;margin-bottom:8px;align-items:start}
+@media(max-width:800px){#fire-findings-rows .fire-finding-row{grid-template-columns:1fr 1fr}#fire-findings-rows .fire-finding-row .fi-finding-text{grid-column:1/-1}}
