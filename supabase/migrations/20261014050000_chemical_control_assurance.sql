@@ -5,6 +5,31 @@ alter table public.chemical_sds_versions add column if not exists emergency_summ
 alter table public.chemical_sds_versions add column if not exists emergency_summary_reviewed_at timestamptz;
 alter table public.chemical_sds_versions add column if not exists emergency_summary_reviewed_by uuid;
 alter table public.chemical_use_approvals add column if not exists sds_review_required boolean not null default false;
+alter table public.chemical_use_approvals add column if not exists owner_person_id uuid references public.people(id);
+alter table public.chemical_use_approvals add column if not exists site_id uuid references public.sites(id);
+alter table public.chemical_use_approvals add column if not exists ppe_item_id uuid references public.ppe_catalogue(id);
+alter table public.chemical_use_approvals add column if not exists risk_assessment_id uuid references public.risk_assessments(id);
+
+create function public.chemical_use_link_guard() returns trigger
+language plpgsql set search_path=public,pg_temp as $$
+begin
+  if new.owner_person_id is not null and not exists
+    (select 1 from public.people p where p.id=new.owner_person_id and p.company_id=new.company_id) then
+    raise exception 'Linked person must belong to the selected company'; end if;
+  if new.site_id is not null and not exists
+    (select 1 from public.sites s where s.id=new.site_id and s.company_id=new.company_id) then
+    raise exception 'Linked site must belong to the selected company'; end if;
+  if new.ppe_item_id is not null and not exists
+    (select 1 from public.ppe_catalogue p where p.id=new.ppe_item_id and p.company_id=new.company_id) then
+    raise exception 'Linked PPE must belong to the selected company'; end if;
+  if new.risk_assessment_id is not null and not exists
+    (select 1 from public.risk_assessments r where r.id=new.risk_assessment_id and r.company_id=new.company_id) then
+    raise exception 'Linked assessment must belong to the selected company'; end if;
+  return new;
+end $$;
+create trigger chemical_use_link_guard before insert or update of
+  company_id,owner_person_id,site_id,ppe_item_id,risk_assessment_id
+on public.chemical_use_approvals for each row execute function public.chemical_use_link_guard();
 
 alter table public.chemical_sds_versions add constraint chemical_card_review_content_check
   check (emergency_summary_reviewed_at is null or
