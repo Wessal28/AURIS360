@@ -118,6 +118,9 @@
     "api/process-fire-reminders.js": {
       "maxDuration": 30
     },
+    "api/process-chemical-reminders.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -193,6 +196,10 @@
     {
       "path": "/api/process-fire-reminders",
       "schedule": "40 7 * * *"
+    },
+    {
+      "path": "/api/process-chemical-reminders",
+      "schedule": "45 7 * * *"
     }
   ]
 }

@@ -86,3 +86,9 @@
 #chem3supplier.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
 #chem3task.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
 #chem3use.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+/* Incomplete assessments and unreviewed emergency extracts must remain conspicuous. */
+.chem-risk-unassessed{padding:12px;border:1px solid #d6a147;border-radius:10px;background:#fff8e9;color:#70480a}
+.chem-risk-unassessed strong{font-size:1.1rem}
+.chem-risk-unassessed p{margin:5px 0}
+.chem-risk-unassessed small{display:block;line-height:1.4}
+.ccu-emergency-warning{padding:8px 10px;border-left:3px solid #d79a28;background:#fff8e9;font-weight:600}

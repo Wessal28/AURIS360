@@ -71,7 +71,7 @@
 <script src="auris-fleet-list-workspace.js?v=20261002-3"></script>
 <script src="auris-atex-list-workspace.js?v=20260920-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260920-1"></script>
-<script src="auris-chemical-list-workspace.js?v=20260920-1"></script>
+<script src="auris-chemical-list-workspace.js?v=20261014-1"></script>
 <script src="auris-legal-list-workspace.js?v=20261009-icon-actions-1"></script>
 <script src="auris-ppe-list-workspace.js?v=20260916-1"></script>
 <script src="auris-ohealth-list-workspace.js?v=20260916-1"></script>
@@ -105,7 +105,7 @@
 <link rel="stylesheet" href="auris-tools-records.css?v=20260920-1">
 <script src="auris-tools-records.js?v=20261002-1"></script>
 <script src="auris-emergency-records.js?v=20260920-1"></script>
-<script src="auris-chemical-records.js?v=20261002-1"></script>
+<script src="auris-chemical-records.js?v=20261014-1"></script>
 <link rel="prefetch" href="auris-fire-records.js?v=20261014-1" as="script"/>
 <link rel="prefetch" href="auris-fire-workflow.js?v=20261014-1" as="script"/>
 <link rel="stylesheet" href="auris-atex-records.css?v=20260920-1">
@@ -114,7 +114,7 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261014-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -1159,6 +1159,7 @@
 <option value="high">High</option>
 <option value="medium">Medium</option>
 <option value="low">Low</option>
+<option value="unassessed">Unassessed</option>
 </select>
 </div>
 </div>
@@ -3723,7 +3724,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-chemical-s-c9dc9b5648">
 <button class="btn" data-auris-onclick="h0418"><i class="ti ti-arrow-left"></i>Back</button>
 <button class="btn auris-chemical-s-8cbd87102f" id="chem3del-btn" data-auris-onclick="h0419"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" data-auris-onclick="h0420"><i class="ti ti-device-floppy"></i>Save chemical</button>
+<button class="btn btn-primary" data-auris-onclick="h0420"><i class="ti ti-device-floppy"></i>Save product &amp; assessment</button>
 </div>
 </div>
 
@@ -3784,9 +3785,9 @@ Offline mode - changes will sync when connection is restored
 <div><label class="auris-chemical-s-f8beb71654">Process / use</label><textarea id="chem3use" class="auris-chemical-s-da50f4194a" rows="2"></textarea></div>
 <div><label class="auris-chemical-s-f8beb71654">Quantity stored</label><input id="chem3qty" class="auris-chemical-s-da50f4194a" type="text"></div>
 <div><label class="auris-chemical-s-f8beb71654">Persons exposed</label><input id="chem3persons" class="auris-chemical-s-da50f4194a" type="number" min="0" data-auris-oninput="h0422"></div>
-<div><label class="auris-chemical-s-f8beb71654">Frequency</label><select id="chem3frequency" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="rare">Rare</option><option value="occasional">Occasional</option><option value="weekly">Weekly</option><option value="daily">Daily</option><option value="continuous">Continuous</option></select></div>
-<div><label class="auris-chemical-s-f8beb71654">Duration</label><select id="chem3duration" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="minutes">Minutes</option><option value="short">Short task</option><option value="hours">Several hours</option><option value="shift">Most of shift</option></select></div>
-<div><label class="auris-chemical-s-f8beb71654">Task type</label><select id="chem3task" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="closed_handling">Closed handling</option><option value="open_handling">Open handling</option><option value="mixing">Mixing / pouring</option><option value="spraying">Spraying / mist</option><option value="heating">Heating / vapours</option><option value="confined_space">Confined space</option></select></div>
+<div><label class="auris-chemical-s-f8beb71654">Frequency</label><select id="chem3frequency" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="">Select frequency</option><option value="rare">Rare</option><option value="occasional">Occasional</option><option value="weekly">Weekly</option><option value="daily">Daily</option><option value="continuous">Continuous</option></select></div>
+<div><label class="auris-chemical-s-f8beb71654">Duration</label><select id="chem3duration" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="">Select duration</option><option value="minutes">Minutes</option><option value="short">Short task</option><option value="hours">Several hours</option><option value="shift">Most of shift</option></select></div>
+<div><label class="auris-chemical-s-f8beb71654">Task type</label><select id="chem3task" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="">Select task type</option><option value="closed_handling">Closed handling</option><option value="open_handling">Open handling</option><option value="mixing">Mixing / pouring</option><option value="spraying">Spraying / mist</option><option value="heating">Heating / vapours</option><option value="confined_space">Confined space</option></select></div>
 </div>
 </div>
 
