@@ -189,9 +189,63 @@
     });
     return Object.keys(groups).map(group=>'<section class="ppe-record-section"><h3>'+escH(group)+'</h3><dl>'+groups[group].join('')+'</dl></section>').join('');
   };
+  const originalCatNew=window.ppeCatNew,originalCatEdit=window.ppeCatEdit;
+  function lockStockFields(locked){
+    ['pcf-qty-total','pcf-qty-avail'].forEach(id=>{const field=$(id);if(field){field.readOnly=locked;field.title=locked?'Use Receive stock or Adjust stock from View record':'';}});
+  }
+  window.ppeCatNew=function(){lockStockFields(false);return originalCatNew.apply(this,arguments);};
+  window.ppeCatEdit=function(){const result=originalCatEdit.apply(this,arguments);if(ppeCatEditId)lockStockFields(true);return result;};
+  async function recordStock(item,type,suggestion){
+    if(!isMgr())return;
+    const scope=company();
+    const raw=await appPrompt({title:type==='receipt'?'Receive PPE stock':'Adjust PPE stock',message:type==='receipt'?'Quantity received for '+item.name+' (minimum to rise above reorder threshold: '+suggestion+').':'Enter a signed quantity change for '+item.name+' (for example -1 or 2).',value:type==='receipt'?String(suggestion||1):'',placeholder:type==='receipt'?'Positive whole number':'Signed whole number'});
+    if(raw===null)return;
+    if(!/^[+-]?\d+$/.test(String(raw).trim())||Number(raw)===0||Math.abs(Number(raw))>100000||(type==='receipt'&&Number(raw)<0)){toast('Enter a valid whole-number quantity.',false);return;}
+    const reason=await appPrompt({title:'Reason for stock movement',message:'Record why this PPE balance is changing.',placeholder:type==='receipt'?'Supplier delivery or purchase order':'Count discrepancy, damage or correction'});
+    if(reason===null)return;
+    if(reason.trim().length<4){toast('Enter a reason of at least four characters.',false);return;}
+    const reference=await appPrompt({title:'Source reference',message:'Optional delivery note, purchase order or stock count reference.',placeholder:'Optional reference'});
+    if(reference===null)return;
+    if(company()!==scope){toast('Company changed. Reopen the PPE item.',false);return;}
+    try{
+      await api('/rpc/record_ppe_stock_movement',{m:'POST',p:'return=representation',b:{p_company_id:scope,p_ppe_id:item.id,p_movement_type:type,p_quantity_delta:Number(raw),p_reason:reason.trim(),p_source_reference:reference.trim()||null}});
+      if(company()!==scope)return;
+      toast('PPE stock movement saved.');$('ppe-record-view')?.remove();
+      if($('ppe-view-inventory')?.style.display!=='none')ppeLoadInventory();
+      else ppeLoadCatalogue();
+    }catch(error){toast('Stock movement failed: '+error.message,false);}
+  }
+  async function showStockHistory(host,item){
+    const scope=company(),content=host.querySelector('.ppe-record-content');if(!content)return;
+    content.querySelector('.ppe-stock-history')?.remove();
+    const section=document.createElement('section');section.className='ppe-record-section ppe-stock-history';
+    const heading=document.createElement('h3');heading.textContent='Stock movement history';section.append(heading);
+    const status=document.createElement('p');status.textContent='Loading stock movements...';section.append(status);content.append(section);
+    try{
+      const rows=await api('/ppe_stock_movements?select=movement_type,quantity_delta,reason,source_reference,available_before,available_after,total_before,total_after,created_at'+cf()+'&ppe_id=eq.'+encodeURIComponent(item.id)+'&order=created_at.desc&limit=50');
+      if(company()!==scope||!host.isConnected)return;
+      status.textContent=rows?.length?'History starts with the opening balance; earlier changes are not reconstructed.':'No stock movements recorded yet.';
+      (rows||[]).forEach(row=>{
+        const entry=document.createElement('p');const date=new Date(row.created_at);
+        entry.textContent=(Number.isNaN(date.getTime())?'Date unavailable':date.toLocaleString())+' · '+row.movement_type.replace(/_/g,' ')+' '+(row.quantity_delta>0?'+':'')+row.quantity_delta+' · available '+row.available_before+' → '+row.available_after+' · '+row.reason+(row.source_reference?' · '+row.source_reference:'');
+        section.append(entry);
+      });
+    }catch(error){status.textContent='Stock history unavailable: '+error.message;}
+  }
   window.ppeShowRecord=function(kind,row){
     originalShow.apply(this,arguments);
     const host=$('ppe-record-view'),nav=host?.querySelector('nav');if(!host||!nav)return;
+    if(kind==='catalogue'){
+      const suggestion=Math.max(0,Number(row.reorder_level||0)+1-Number(row.quantity_available||0));
+      if(isMgr()){
+        [['Receive stock','receipt'],['Adjust stock','adjustment']].forEach(([label,type])=>{
+          const button=document.createElement('button');button.type='button';button.className='btn';button.textContent=label;
+          button.onclick=()=>recordStock(row,type,suggestion);nav.append(button);
+        });
+      }
+      const history=document.createElement('button');history.type='button';history.className='btn';history.textContent='Stock history';
+      history.onclick=()=>{history.disabled=true;showStockHistory(host,row).finally(()=>{history.disabled=false;});};nav.append(history);
+    }
     if(kind==='inspections'&&['fail','condemn'].includes(row.overall_result)&&isMgr()){
       const button=document.createElement('button');button.type='button';button.className='btn btn-primary';button.textContent='Create replacement request';
       button.onclick=()=>startReplacement(row).catch(error=>toast(error.message,false));nav.append(button);
@@ -232,7 +286,11 @@
       [...table.tBodies[0].rows].forEach((tr,index)=>{
         const item=ppeCatData[index],balance=byItem.get(item?.id)||{inUse:0,damaged:0,maintenance:0};
         if(tr.cells[4])tr.cells[4].textContent=balance.inUse;
-        if(tr.cells[1]){const detail=document.createElement('div');detail.className='ppe-stock-detail';detail.textContent='Returned damaged: '+balance.damaged+' · Under maintenance: '+balance.maintenance;tr.cells[1].append(detail);}
+        if(tr.cells[1]){const detail=document.createElement('div');detail.className='ppe-stock-detail';detail.textContent='Returned damaged: '+balance.damaged+' · Under maintenance: '+balance.maintenance;tr.cells[1].append(detail);
+          const suggestion=Math.max(0,Number(item?.reorder_level||0)+1-Number(item?.quantity_available||0));
+          if(item?.status==='active'&&suggestion>0){const note=document.createElement('div');note.className='ppe-stock-detail';note.textContent='Suggested minimum receipt: '+suggestion+' to rise above reorder level.';tr.cells[1].append(note);
+            if(isMgr()){const button=document.createElement('button');button.type='button';button.className='btn btn-sm';button.textContent='Receive stock';button.onclick=event=>{event.stopPropagation();recordStock(item,'receipt',suggestion);};tr.cells[1].append(button);}}
+        }
       });
     }catch(error){toast('Stock breakdown unavailable: '+error.message,false);}
   };
