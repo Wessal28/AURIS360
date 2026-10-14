@@ -31,6 +31,9 @@ test('stored SOP HTML and database media URLs use the hardening boundary',()=>{
 
 test('new-window database links are isolated from the opener',()=>{
   assert.match(html,/certUrl[^\n]*rel="noopener noreferrer"/);
-  assert.match(html,/safeDocumentUrl[\s\S]{0,180}rel="noopener noreferrer"/);
+  const fireRecords=fs.readFileSync(path.join(__dirname,'..','auris-fire-records.js'),'utf8');
+  assert.match(fireRecords,/fireDocumentHref\(row\.document_url\)/);
+  assert.match(fireRecords,/url\.protocol==='https:'&&!url\.username&&!url\.password/);
+  assert.match(fireRecords,/target="_blank" rel="noopener noreferrer" href="/);
   assert.match(html,/id="dc-viewer-open"[^>]*rel="noopener noreferrer"/);
 });

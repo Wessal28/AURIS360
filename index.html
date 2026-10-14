@@ -106,7 +106,8 @@
 <script src="auris-tools-records.js?v=20261002-1"></script>
 <script src="auris-emergency-records.js?v=20260920-1"></script>
 <script src="auris-chemical-records.js?v=20261002-1"></script>
-<script src="auris-fire-records.js?v=20260920-1"></script>
+<link rel="prefetch" href="auris-fire-records.js?v=20261014-1" as="script"/>
+<link rel="prefetch" href="auris-fire-workflow.js?v=20261014-1" as="script"/>
 <link rel="stylesheet" href="auris-atex-records.css?v=20260920-1">
 <script src="auris-atex-records.js?v=20260920-1"></script>
 <link rel="stylesheet" href="auris-fleet-records.css?v=20261003-1">
@@ -11638,13 +11639,11 @@ I can help you:<br>
     </div>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Issuing Authority</label><input type="text" id="fc-authority" value="Mauritius Fire & Rescue Service"/></div>
-      <div class="form3group"><label class="form3label">Status</label>
+      <div class="form3group"><label class="form3label">Administrative status</label>
         <select id="fc-status">
-          <option value="valid">Valid</option>
-          <option value="expiring_soon">Expiring Soon</option>
-          <option value="expired">Expired</option>
+          <option value="valid">Active (validity follows expiry date)</option>
           <option value="suspended">Suspended</option>
-          <option value="pending_renewal">Pending Renewal</option>
+          <option value="archived">Archived</option>
         </select>
       </div>
     </div>
@@ -11660,6 +11659,9 @@ I can help you:<br>
       </div>
       <div class="form3group"><label class="form3label">Renewal Date</label><input type="date" id="fc-renewal-date"/></div>
     </div>
+    <div class="form3group"><label class="form3label">Site / area record</label><select id="fc-site-id"><option value="">Select a linked site or area...</option></select></div>
+    <input type="hidden" id="fc-predecessor"/>
+    <p id="fc-renewal-source" class="auris-fire-certificates-s-e3fa01d784"></p>
     <div class="form3group"><label class="form3label">Conditions Attached to Certificate</label><textarea id="fc-conditions" rows="2" placeholder="Any conditions or requirements specified on the certificate..."></textarea></div>
     <div class="form3group"><label class="form3label">Scanned certificate attachment</label><input type="text" id="fc-doc-url" placeholder="Upload scanned certificate or paste link"/>
       <div class="auris-fire-certificates-s-df56cf13b7">
@@ -11704,10 +11706,10 @@ I can help you:<br>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Overall Result</label>
         <select id="fi-result">
+          <option value="pending">Pending / Not assessed</option>
           <option value="satisfactory">Satisfactory</option>
           <option value="satisfactory_with_observations">Satisfactory with Observations</option>
           <option value="unsatisfactory">Unsatisfactory</option>
-          <option value="pending">Pending</option>
         </select>
       </div>
       <div class="form3group"><label class="form3label">Status</label>
@@ -11721,6 +11723,7 @@ I can help you:<br>
     <div class="form3group"><label class="form3label">Findings / Observations</label><textarea id="fi-findings" rows="3" placeholder="Key findings from the inspection..."></textarea></div>
     <div class="form3group"><label class="form3label">Recommendations</label><textarea id="fi-recommendations" rows="2" placeholder="Recommendations made..."></textarea></div>
     <div class="form3group"><label class="form3label">Follow-up Date</label><input type="date" id="fi-followup"/></div>
+    <div id="fire-existing-findings" role="status"></div>
     <!-- Findings table -->
     <div class="auris-fire-certificates-s-92c18f6bda">
       <div class="auris-fire-certificates-s-6232af7c48">
@@ -11772,6 +11775,7 @@ I can help you:<br>
     </div>
     <div class="form3group"><label class="form3label">Description / Label</label><input type="text" id="fe-desc" placeholder="e.g. CO2 Extinguisher 5kg - Reception"/></div>
     <div class="form3group"><label class="form3label">Location *</label><input type="text" id="fe-location" placeholder="e.g. Ground Floor, Reception Area"/></div>
+    <div class="form3group"><label class="form3label">Site / area record</label><select id="fe-site-id"><option value="">Select a linked site or area...</option></select></div>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Make / Model</label><input type="text" id="fe-make" placeholder="Brand and model"/></div>
       <div class="form3group"><label class="form3label">Serial Number</label><input type="text" id="fe-serial" placeholder="Serial / tag number"/></div>

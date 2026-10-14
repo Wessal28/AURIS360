@@ -39820,7 +39820,7 @@ async function deepLinkResume(reason){
     else if(page==='workschedule'){opened=await wsOpenRecordRequest(req);}
     else if(page==='emergency'&&req.table==='emergency_equipment'){opened=await emEqOpenRecordRequest(req);}
     else if(page==='chemical'&&(!req.table||req.table==='chemical_register')){opened=await chemOpenRecordRequest(req);}
-    else if(page==='fire'&&(!req.table||req.table==='fire_certificates')){opened=await fireOpenRecordRequest(req);}
+    else if(page==='fire'){await fireEnsureRecords();opened=await fireOpenLinkedRecord(req);}
     else if(page==='atex'){opened=await atexOpenRecordRequest(req);}
     else if(page==='fleet'&&(!req.table||req.table==='tools_register')){opened=await fleetOpenLinkedRecord(req);}
     else if(page==='tools'&&(!req.table||req.table==='tools_register')){opened=await toolsOpenLinkedRecord(req);}
@@ -42526,7 +42526,13 @@ var fireLayoutCustomSymbolsCache = [];
 var fireLayoutSymbolsSharedReady = false;
 
 // -- Load ---------------------------------------------------------
+var fireRecordsPromise;
+function fireEnsureRecords(){
+  if(!fireRecordsPromise)fireRecordsPromise=['auris-fire-records.js?v=20261014-1','auris-fire-workflow.js?v=20261014-1'].reduce(function(wait,url){return wait.then(function(){return new Promise(function(resolve,reject){var script=document.createElement('script');script.src=url;script.onload=resolve;script.onerror=function(){reject(Error('Fire Certificates could not load. Reload the page.'));};document.head.appendChild(script);});});},Promise.resolve()).catch(function(error){fireRecordsPromise=null;throw error;});
+  return fireRecordsPromise;
+}
 async function loadFire() {
+  try{await fireEnsureRecords();}catch(error){toast(error.message,false);return;}
   var addBtns = ['fire-add-cert-btn','fire-add-insp-btn','fire-add-equip-btn'];
   addBtns.forEach(function(id){
     var el=document.getElementById(id);
@@ -42549,20 +42555,6 @@ async function fireLoadAll() {
   fireAllCerts  = certs  || [];
   fireAllInsp   = insp   || [];
   fireAllEquip  = equip  || [];
-  // Auto-update status based on expiry
-  fireAutoUpdateStatus();
-}
-
-function fireAutoUpdateStatus() {
-  var today = new Date();
-  fireAllCerts = fireAllCerts.map(function(c){
-    if (!c.expiry_date) return c;
-    var exp = new Date(c.expiry_date);
-    var days = Math.ceil((exp - today) / 86400000);
-    if (days < 0) c.status = 'expired';
-    else if (days <= 30) c.status = 'expiring_soon';
-    return c;
-  });
 }
 
 // -- Tab switching -------------------------------------------------
@@ -42607,51 +42599,16 @@ function fireRenderCerts() {
       });
     } catch(error) {workspace.innerHTML=registerErrorHtml('Fire Certificate register',error.message||String(error));console.error(error);return;}
   }
-  var tbody = document.getElementById('fire-cert-tbody');
-  var empty = document.getElementById('fire-cert-empty');
-  if (!tbody) return;
-  // Stats
-  if (!fireAllCerts.length) {
-    tbody.innerHTML = '';
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-  tbody.innerHTML = fireAllCerts.map(function(c){
-    var days = c.expiry_date ? Math.ceil((new Date(c.expiry_date) - new Date()) / 86400000) : null;
-    var daysHtml = days === null ? '<span style="color:var(--text3)">-</span>'
-      : days < 0 ? '<span class="badge badge-red">'+Math.abs(days)+'d overdue</span>'
-      : days <= 30 ? '<span class="badge badge-amber">'+days+'d</span>'
-      : days <= 90 ? '<span class="badge badge-blue">'+days+'d</span>'
-      : '<span class="badge badge-green">'+days+'d</span>';
-    var statusHtml = fireStatusBadge(c.status);
-    var safeDocumentUrl = aurisSafeUrl(c.document_url);
-    var docLink = safeDocumentUrl
-      ? '<a href="'+escH(safeDocumentUrl)+'" target="_blank" rel="noopener noreferrer" class="btn btn-sm" title="View Document"><i class="ti ti-file-text"></i></a>'
-      : '';
-    return '<tr>'
-      + '<td style="font-weight:600">' + escH(c.cert_number||'-') + '</td>'
-      + '<td>' + escH(c.premises_name) + '</td>'
-      + '<td>' + escH(fireCertTypeLabel(c.cert_type)) + '</td>'
-      + '<td>' + (c.issue_date ? new Date(c.issue_date).toLocaleDateString('en-GB') : '-') + '</td>'
-      + '<td>' + (c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('en-GB') : '-') + '</td>'
-      + '<td>' + daysHtml + '</td>'
-      + '<td>' + statusHtml + '</td>'
-      + '<td style="white-space:nowrap">'
-        + docLink
-        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0131" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
-        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0132" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
-      + '</td>'
-      + '</tr>';
-  }).join('');
+  return;
 }
 
 function fireRenderCertStats() {
   var el = document.getElementById('fire-cert-stats');
   if (!el) return;
-  var valid = fireAllCerts.filter(function(c){ return c.status==='valid'; }).length;
-  var expiring = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; }).length;
-  var expired = fireAllCerts.filter(function(c){ return c.status==='expired'; }).length;
+  var projected=AurisFireListWorkspace.project(fireAllCerts,AurisFireListWorkspace.session());
+  var valid = projected.filter(function(c){ return c.status==='Valid'; }).length;
+  var expiring = projected.filter(function(c){ return c.status==='Expiring soon'; }).length;
+  var expired = projected.filter(function(c){ return c.status==='Expired'; }).length;
   var total = fireAllCerts.length;
   el.innerHTML = [
     {label:'Total', val:total, color:'var(--blue)', icon:'ti-certificate'},
@@ -42701,6 +42658,7 @@ function fireRenderInsp() {
       + '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH(i.findings||'-') + '</td>'
       + '<td>' + fireStatusBadge(i.status) + '</td>'
       + '<td style="white-space:nowrap">'
+        + '<button class="btn btn-sm" data-fire-inspection-view="'+escH(i.id)+'" title="View inspection"><i class="ti ti-eye"></i></button>'
         + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0133" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
         + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0134" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
       + '</td>'
@@ -42737,6 +42695,7 @@ function fireRenderEquip() {
       + '<td>' + fireServiceStatusBadge(e) + '</td>'
       + '<td>' + fireEquipStatusBadge(e.status) + '</td>'
       + '<td style="white-space:nowrap">'
+        + '<button class="btn btn-sm" data-fire-equipment-view="'+escH(e.id)+'" title="View equipment"><i class="ti ti-eye"></i></button>'
         + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0135" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
         + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0136" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
       + '</td>'
@@ -42889,7 +42848,7 @@ async function fireSaveLayoutState(){
 function fireEquipIcon(type){
   var custom=fireLayoutCustomSymbol(type);
   if(custom)return custom.symbol||'EQ';
-  return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
+  return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',foam_system:'FS',hydrant:'HY',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||String(type||'EQ').split('_').map(function(x){return x[0]||'';}).join('').slice(0,3).toUpperCase();
 }
 function fireEquipIconHtml(type){
   var custom=fireLayoutCustomSymbol(type);
@@ -42900,7 +42859,7 @@ function fireEquipIconHtml(type){
   }
   var initials={smoke_detector:'SD',heat_detector:'HD',other:'EQ'};
   if(initials[type||''])return '<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+initials[type||'']+'</span>';
-  var map={fire_extinguisher:'ti-fire-extinguisher',fire_hose_reel:'ti-lifebuoy',fire_alarm_panel:'ti-bell-ringing',sprinkler_system:'ti-droplet',emergency_lighting:'ti-bulb',fire_door:'ti-door',fire_blanket:'ti-shield',evacuation_sign:'ti-run',fire_pump:'ti-engine'};
+  var map={fire_extinguisher:'ti-fire-extinguisher',fire_hose_reel:'ti-lifebuoy',fire_alarm_panel:'ti-bell-ringing',sprinkler_system:'ti-droplet',foam_system:'ti-droplet',hydrant:'ti-droplet',emergency_lighting:'ti-bulb',fire_door:'ti-door',fire_blanket:'ti-shield',evacuation_sign:'ti-run',fire_pump:'ti-engine'};
   var icon=map[type||''];
   return icon?'<i class="ti '+icon+'" style="font-size:20px;line-height:1"></i>':'<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+escH(fireEquipIcon(type))+'</span>';
 }
@@ -43392,8 +43351,8 @@ async function fireClearLayout(){
 async function fireRenderDashboard() {
   var el = document.getElementById('fire-overview-content');
   if (!el) return;
-  var expSoon = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; });
-  var expired = fireAllCerts.filter(function(c){ return c.status==='expired'; });
+  var expSoon = fireAllCerts.filter(function(c){ return fireValidity(c)==='Expiring soon'; });
+  var expired = fireAllCerts.filter(function(c){ return fireValidity(c)==='Expired'; });
   var overdueEquip = fireAllEquip.filter(function(e){ return e.next_service_date && new Date(e.next_service_date) < new Date(); });
   var openInsp = fireAllInsp.filter(function(i){ return i.status==='open'||i.status==='follow_up_required'; });
 
@@ -43426,7 +43385,7 @@ async function fireRenderDashboard() {
   html += '<div class="card"><div style="font-weight:600;margin-bottom:12px;font-size:14px">Certificates</div>'
     + '<table style="width:100%;font-size:13px"><tbody>'
     + '<tr><td>Total</td><td style="text-align:right;font-weight:600">'+fireAllCerts.length+'</td></tr>'
-    + '<tr><td style="color:var(--green)">Valid</td><td style="text-align:right">'+fireAllCerts.filter(function(c){return c.status==='valid';}).length+'</td></tr>'
+    + '<tr><td style="color:var(--green)">Valid</td><td style="text-align:right">'+fireAllCerts.filter(function(c){return fireValidity(c)==='Valid';}).length+'</td></tr>'
     + '<tr><td style="color:var(--amber)">Expiring Soon</td><td style="text-align:right">'+expSoon.length+'</td></tr>'
     + '<tr><td style="color:var(--red)">Expired</td><td style="text-align:right">'+expired.length+'</td></tr>'
     + '</tbody></table></div>';
@@ -43450,7 +43409,7 @@ async function fireRenderDashboard() {
           var days = c.expiry_date ? Math.ceil((new Date(c.expiry_date)-new Date())/86400000) : null;
           return '<tr><td>'+escH(c.premises_name)+'</td><td>'+escH(c.cert_number||'-')+'</td>'
             +'<td>'+(c.expiry_date?new Date(c.expiry_date).toLocaleDateString('en-GB'):'-')+'</td>'
-            +'<td>'+fireStatusBadge(c.status)+'</td></tr>';
+            +'<td>'+escH(fireValidity(c))+(c.renewal_submitted?' · Renewal submitted':'')+'</td></tr>';
         }).join('')
       + '</tbody></table></div>';
   }
@@ -43505,6 +43464,8 @@ function fireShowCertForm(id) {
   });
   document.getElementById('fc-type').value = 'fire_certificate';
   document.getElementById('fc-status').value = 'valid';
+  document.getElementById('fc-predecessor').value = '';
+  document.getElementById('fc-site-id').value = '';
   document.getElementById('fc-authority').value = 'Mauritius Fire & Rescue Service';
   document.getElementById('fc-renewal-submitted').value = 'false';
   document.getElementById('fc-issue-date').value = '';
@@ -43522,10 +43483,12 @@ function fireShowCertForm(id) {
     document.getElementById('fc-area').value        = c.floor_area??'';
     document.getElementById('fc-maxocc').value      = c.max_occupancy??'';
     document.getElementById('fc-authority').value   = c.issuing_authority||'Mauritius Fire & Rescue Service';
-    document.getElementById('fc-status').value      = c.status||'valid';
+    document.getElementById('fc-status').value      = ['suspended','archived'].includes(c.status)?c.status:'valid';
+    document.getElementById('fc-predecessor').value = c.supersedes_certificate_id||'';
+    document.getElementById('fc-site-id').value = c.site_id||'';
     document.getElementById('fc-issue-date').value  = c.issue_date||'';
     document.getElementById('fc-expiry-date').value = c.expiry_date||'';
-    document.getElementById('fc-renewal-submitted').value = c.renewal_submitted ? 'true' : 'false';
+    document.getElementById('fc-renewal-submitted').value = c.renewal_submitted||c.status==='pending_renewal' ? 'true' : 'false';
     document.getElementById('fc-renewal-date').value = c.renewal_date||'';
     document.getElementById('fc-conditions').value  = c.conditions||'';
     document.getElementById('fc-doc-url').value     = c.document_url||'';
@@ -43553,6 +43516,8 @@ async function fireSaveCert() {
     max_occupancy:       parseInt(document.getElementById('fc-maxocc').value)||null,
     issuing_authority:   document.getElementById('fc-authority').value.trim()||null,
     status:              document.getElementById('fc-status').value,
+    supersedes_certificate_id: document.getElementById('fc-predecessor').value||null,
+    site_id:             document.getElementById('fc-site-id').value||null,
     issue_date:          document.getElementById('fc-issue-date').value||null,
     expiry_date:         expiry,
     renewal_submitted:   document.getElementById('fc-renewal-submitted').value === 'true',
@@ -43621,7 +43586,7 @@ function fireShowInspForm(id) {
   document.getElementById('fi-inspector').value = '';
   document.getElementById('fi-authority').value = 'Mauritius Fire & Rescue Service';
   document.getElementById('fi-type').value = 'routine';
-  document.getElementById('fi-result').value = 'satisfactory';
+  document.getElementById('fi-result').value = 'pending';
   document.getElementById('fi-status').value = 'open';
   document.getElementById('fi-findings').value = '';
   document.getElementById('fi-recommendations').value = '';
@@ -43636,7 +43601,7 @@ function fireShowInspForm(id) {
     document.getElementById('fi-inspector').value     = i.inspector_name||'';
     document.getElementById('fi-authority').value     = i.inspector_authority||'';
     document.getElementById('fi-type').value          = i.inspection_type||'routine';
-    document.getElementById('fi-result').value        = i.overall_result||'satisfactory';
+    document.getElementById('fi-result').value        = i.overall_result||'pending';
     document.getElementById('fi-status').value        = i.status||'open';
     document.getElementById('fi-findings').value      = i.findings||'';
     document.getElementById('fi-recommendations').value = i.recommendations||'';
@@ -43650,10 +43615,12 @@ function fireAddFindingRow() {
   var container = document.getElementById('fire-findings-rows');
   var idx = container.children.length;
   var div = document.createElement('div');
-  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:start';
+  div.className='fire-finding-row';
   div.innerHTML = '<input type="text" class="fi-finding-text" placeholder="Finding description"/>'
     + '<select class="fi-finding-sev"><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option></select>'
     + '<input type="text" class="fi-finding-action" placeholder="Action required"/>'
+    + '<input type="text" class="fi-finding-owner" placeholder="Owner"/>'
+    + '<input type="date" class="fi-finding-due" aria-label="Action deadline"/>'
     + '<button data-auris-generated-onclick="g0381" style="background:none;border:none;color:var(--red);cursor:pointer;padding:4px"><i class="ti ti-x"></i></button>';
   container.appendChild(div);
 }
@@ -43661,6 +43628,8 @@ function fireAddFindingRow() {
 async function fireSaveInsp() {
   var date = document.getElementById('fi-date').value;
   if (!date) { toast('Inspection date is required', false); return; }
+  if(document.getElementById('fi-result').value==='pending'&&document.getElementById('fi-status').value==='closed'){toast('Select an inspection result before closing.',false);return;}
+  for(var finding of document.querySelectorAll('#fire-findings-rows > div')){if(finding.querySelector('.fi-finding-action')?.value?.trim()&&(!finding.querySelector('.fi-finding-owner')?.value?.trim()||!finding.querySelector('.fi-finding-due')?.value)){toast('Give each finding action an owner and deadline.',false);return;}}
   var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
   var certId = document.getElementById('fi-cert-id').value || null;
 
@@ -43690,7 +43659,8 @@ async function fireSaveInsp() {
       body.created_at = new Date().toISOString();
       var res = await api('/fire_inspections', {m:'POST', p:'return=representation', b:body});
       inspId = res && res[0] ? res[0].id : null;
-      toast('Inspection recorded');
+      if (!inspId) throw new Error('The saved inspection could not be reopened.');
+      fireEditInspId = inspId;
     }
     // Save findings rows
     if (inspId) {
@@ -43699,18 +43669,22 @@ async function fireSaveInsp() {
         var text = rows[r].querySelector('.fi-finding-text')?.value?.trim();
         var sev  = rows[r].querySelector('.fi-finding-sev')?.value;
         var act  = rows[r].querySelector('.fi-finding-action')?.value?.trim();
-        if (text) {
+        var owner= rows[r].querySelector('.fi-finding-owner')?.value?.trim();
+        var due  = rows[r].querySelector('.fi-finding-due')?.value;
+        if (text && rows[r].dataset.saved !== '1') {
           await api('/fire_inspection_findings', {m:'POST', p:'return=minimal', b:{
             inspection_id: inspId, company_id: cid,
-            finding: text, severity: sev, action_required: act||null,
+            finding: text, severity: sev, action_required: act||null,responsible_person:owner||null,due_date:due||null,
             created_at: new Date().toISOString()
           }});
+          rows[r].dataset.saved = '1';
         }
       }
     }
     document.getElementById('fire-insp-modal').style.display = 'none';
     await fireLoadAll();
     fireRenderInsp();
+    toast('Inspection and findings saved');
   } catch(e) { toast(actionErrorMessage('Save fire inspection','Fire Certificates',e.message), false); }
 }
 
@@ -43773,6 +43747,7 @@ function fireShowEquipForm(id) {
   document.getElementById('fe-next-service').value = '';
   document.getElementById('fe-notes').value = '';
   document.getElementById('fe-cert-id').value = '';
+  document.getElementById('fe-site-id').value = '';
 
   if (id) {
     var e = fireAllEquip.find(function(x){ return x.id===id; });
@@ -43790,6 +43765,7 @@ function fireShowEquipForm(id) {
     document.getElementById('fe-next-service').value = e.next_service_date||'';
     document.getElementById('fe-notes').value        = fireNotesWithoutExtType(e.notes)||'';
     document.getElementById('fe-cert-id').value      = e.certificate_id||'';
+    document.getElementById('fe-site-id').value      = e.site_id||'';
   }
   modal.style.display = 'flex';
 }
@@ -43818,12 +43794,14 @@ async function fireSaveEquip() {
     last_service_date: document.getElementById('fe-last-service').value||null,
     next_service_date: document.getElementById('fe-next-service').value||null,
     certificate_id:   document.getElementById('fe-cert-id').value||null,
+    site_id:          document.getElementById('fe-site-id').value||null,
     notes:            finalNotes||null,
     updated_at:       new Date().toISOString()
   };
 
   try {
     if (fireEditEquipId) {
+      delete body.last_service_date;delete body.next_service_date;
       await api('/fire_equipment?id=eq.'+fireEditEquipId, {m:'PATCH', p:'return=minimal', b:body});
       toast('Equipment updated');
     } else {
@@ -43861,8 +43839,8 @@ async function fireDeleteEquip(id) {
 
 // -- PDF Report ----------------------------------------------------
 function firePrintReport() {
-  var expSoon  = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; });
-  var expired  = fireAllCerts.filter(function(c){ return c.status==='expired'; });
+  var expSoon  = fireAllCerts.filter(function(c){ return fireValidity(c)==='Expiring soon'; });
+  var expired  = fireAllCerts.filter(function(c){ return fireValidity(c)==='Expired'; });
   var overdueE = fireAllEquip.filter(function(e){ return e.next_service_date && new Date(e.next_service_date) < new Date(); });
   var dueSoonE = fireAllEquip.filter(function(e){ return fireServiceStatusForEquip(e).key==='due_soon'; });
   function cell(v){return v==null||v===''?'-':escH(v);}
@@ -43879,8 +43857,8 @@ function firePrintReport() {
   }
   function statusText(v){return cell(String(v||'-').replace(/_/g,' '));}
   var certRows=(fireAllCerts||[]).map(function(c){
-    var bg=c.status==='expired'?'#FEE2E2':c.status==='expiring_soon'?'#FEF3C7':'';
-    return row([cell(c.premises_name),cell(c.cert_number),cell(fireCertTypeLabel(c.cert_type)),fireSafeDate(c.issue_date),fireSafeDate(c.expiry_date),cell(c.renewal_submitted?'Yes':'No'),statusText(c.status)],bg);
+    var validity=fireValidity(c),bg=validity==='Expired'?'#FEE2E2':validity==='Expiring soon'?'#FEF3C7':'';
+    return row([cell(c.premises_name),cell(c.cert_number),cell(fireCertTypeLabel(c.cert_type)),fireSafeDate(c.issue_date),fireSafeDate(c.expiry_date),cell(c.renewal_submitted?'Yes':'No'),cell(validity)],bg);
   });
   var equipRows=(fireAllEquip||[]).map(function(e){
     var svc=fireServiceStatusForEquip(e);
@@ -43918,7 +43896,7 @@ function firePrintReport() {
     + aurisHeader('Fire Certificate Compliance Report','Certificates - Inspections - Equipment - Compliance tracking','')
     + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px">'
     + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#185FA5">'+fireAllCerts.length+'</div><div style="font-size:8pt;color:#6B7280">Certificates</div></div>'
-    + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#1D9E75">'+fireAllCerts.filter(function(c){return c.status==='valid';}).length+'</div><div style="font-size:8pt;color:#6B7280">Valid</div></div>'
+    + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#1D9E75">'+fireAllCerts.filter(function(c){return fireValidity(c)==='Valid';}).length+'</div><div style="font-size:8pt;color:#6B7280">Valid</div></div>'
     + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#EF9F27">'+expSoon.length+'</div><div style="font-size:8pt;color:#6B7280">Expiring</div></div>'
     + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#DC2626">'+expired.length+'</div><div style="font-size:8pt;color:#6B7280">Expired</div></div>'
     + '<div style="border:1px solid #D1D5DB;border-radius:6px;padding:8px;text-align:center"><div style="font-size:18pt;font-weight:800;color:#185FA5">'+fireAllEquip.length+'</div><div style="font-size:8pt;color:#6B7280">Equipment</div></div>'
@@ -44484,7 +44462,7 @@ function fireEquipTypeLabel(t) {
   return {fire_extinguisher:'Fire Extinguisher',fire_hose_reel:'Fire Hose Reel',fire_alarm_panel:'Fire Alarm Panel',
     smoke_detector:'Smoke Detector',heat_detector:'Heat Detector',sprinkler_system:'Sprinkler System',
     emergency_lighting:'Emergency Lighting',fire_door:'Fire Door',fire_blanket:'Fire Blanket',
-    evacuation_sign:'Evacuation Sign',fire_pump:'Fire Pump',other:'Other'}[t] || t || '-';
+    evacuation_sign:'Evacuation Sign',fire_pump:'Fire Pump',foam_system:'Foam System',hydrant:'Fire Hydrant',other:'Other'}[t] || String(t||'-').replace(/_/g,' ');
 }
 function fireStatusBadge(s) {
   var map = {valid:'badge-green',expiring_soon:'badge-amber',expired:'badge-red',

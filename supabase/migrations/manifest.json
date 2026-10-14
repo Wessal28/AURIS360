@@ -306,6 +306,11 @@
       "order": 61,
       "file": "20261014030000_ppe_stock_and_reminders.sql",
       "sha256": "9a0834c5ce592351c913bb3dc6e841cbde16772c9dae1274bea21b3bad9f31c9"
+    },
+    {
+      "order": 62,
+      "file": "20261014040000_fire_certificate_followup.sql",
+      "sha256": "769ee06f396b05be222d049c31c0ae70c3a2c5456c1426f0ccf63b95d64de792"
     }
   ]
 }
