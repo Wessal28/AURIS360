@@ -112,6 +112,9 @@
     "api/process-occupational-health-reminders.js": {
       "maxDuration": 30
     },
+    "api/process-ppe-reminders.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -179,6 +182,10 @@
     {
       "path": "/api/process-occupational-health-reminders",
       "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/process-ppe-reminders",
+      "schedule": "35 7 * * *"
     }
   ]
 }
