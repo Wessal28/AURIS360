@@ -311,6 +311,11 @@
       "order": 62,
       "file": "20261014040000_fire_certificate_followup.sql",
       "sha256": "769ee06f396b05be222d049c31c0ae70c3a2c5456c1426f0ccf63b95d64de792"
+    },
+    {
+      "order": 63,
+      "file": "20261014050000_chemical_control_assurance.sql",
+      "sha256": "1626db103217148b5b7cb6cc592cb2af5dcc97c54b4ed7addab9c811db61540b"
     }
   ]
 }
