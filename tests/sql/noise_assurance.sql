@@ -1,10 +1,10 @@
 -- Runs only on disposable migration replay. All fixtures roll back.
 begin;
-create or replace function auth.uid() returns uuid language sql stable as $$ select 'a1800000-0000-4000-8000-000000000001'::uuid $$;
 create or replace function auth.role() returns text language sql stable as $$ select 'service_role'::text $$;
 insert into auth.users(id) values ('a1800000-0000-4000-8000-000000000001');
 insert into public.companies(id,name) values ('a1800000-0000-4000-8000-000000000010','Noise fixture A'),('a1800000-0000-4000-8000-000000000020','Noise fixture B');
 insert into public.profiles(id,company_id,role,status,full_name) values ('a1800000-0000-4000-8000-000000000001','a1800000-0000-4000-8000-000000000010','admin','active','Noise test manager');
+create or replace function auth.uid() returns uuid language sql stable as $$ select 'a1800000-0000-4000-8000-000000000001'::uuid $$;
 do $$ declare c uuid:='a1800000-0000-4000-8000-000000000010'; pr text; m text; a text; report text; rev public.noise_mgmt_exposure_assessments; snapshot jsonb; begin
  insert into public.noise_mgmt_exposure_assessments(company_id,code,subject_type,subject_name,profile_name,status)
  values(c,'TEST-NOISE-PENDING','area','Fictional fixture','Unconfirmed','draft') returning id into a;
