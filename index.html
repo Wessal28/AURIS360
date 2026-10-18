@@ -114,7 +114,8 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1"></script>
+<script src="meeting-reliability.js?v=20261018-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -7240,7 +7241,7 @@ Offline mode - changes will sync when connection is restored
 <div><div class="page-title">Meeting &amp; Communication Management</div><div id="mtg-subtitle" class="auris-meetings-s-7299078644">Safety meetings - Minutes - Toolbox talks - Alerts - Bulletins</div></div>
 <div class="auris-meetings-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0797"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="mtg-new-series-btn" data-auris-onclick="h0798"><i class="ti ti-settings"></i>Manage schedules</button>
+<button class="btn btn-primary" id="mtg-new-series-btn" data-auris-onclick="h0798"><i class="ti ti-settings"></i>New meeting schedule</button>
 </div>
 </div>
 
@@ -7419,7 +7420,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Duration (minutes)</label><input type="number" id="tbtf-duration" value="15" min="5" max="120"/></div>
-<div class="form3group"><label class="form3label">Status</label><select id="tbtf-status"><option value="completed">Completed</option><option value="planned">Planned</option><option value="cancelled">Cancelled</option></select></div>
+<div class="form3group"><label class="form3label">Status</label><select id="tbtf-status"><option value="draft">Draft</option><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
 <div class="card auris-meetings-s-42a6ced8b6"><div class="card-title auris-meetings-s-ca32b871b2">Content</div>
@@ -7505,7 +7506,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Issued date</label><input type="date" id="alertf-issued-date"/></div>
 <div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="alertf-expiry" placeholder="Leave blank for no expiry"/></div>
 <div class="auris-meetings-s-ba28bccee4"><input type="checkbox" id="alertf-req-ack" class="auris-meetings-s-af62d68b87"/><label class="auris-meetings-s-22514dbec4" for="alertf-req-ack">Acknowledgement required</label></div>
-<div class="form3group"><label class="form3label">Status</label><select id="alertf-status"><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+<div class="form3group"><label class="form3label">Status</label><select id="alertf-status"><option value="draft">Draft</option><option value="active">Active</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
 </div>
@@ -7566,7 +7567,7 @@ Offline mode - changes will sync when connection is restored
 <label class="btn auris-meetings-s-b2b6d04b19"><i class="ti ti-upload"></i>Upload document for preview<input class="auris-meetings-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0825"/></label>
 <button type="button" class="btn auris-meetings-s-8e18f99dc9" data-auris-onclick="h0826"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
 <button type="button" class="btn auris-meetings-s-8e18f99dc9" data-auris-onclick="h0827"><i class="ti ti-check"></i>Mark checked without preview</button>
-<div class="form3group"><label class="form3label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+<div class="form3group"><label class="form3label">Status</label><select id="bullf-status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div>
 </div>
 <div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Opened / Checked Register</div><div class="auris-meetings-s-fa530ed1c3">A record is added when a user previews the attachment or clicks Mark checked.</div><div id="bull-check-list"></div></div>
 </div>
@@ -7652,6 +7653,9 @@ Offline mode - changes will sync when connection is restored
 <select id="mom3type">
 <option value="management_review">HSE Management Review</option>
 <option value="hse_committee">HSE Collaboration / Committee Meeting</option>
+<option value="safety_committee">Safety Committee Meeting</option>
+<option value="toolbox_talk">Toolbox Talk</option>
+<option value="emergency_drill">Emergency Drill</option>
 <option value="other">Other Meeting</option>
 </select></div>
 <div class="form3group"><label class="form3label">Meeting title</label><input type="text" id="mom3title" data-auris-oninput="h0836"/></div>
@@ -11820,7 +11824,7 @@ I can help you:<br>
 
 <script src="auris-detached-modules.js?v=20260814-1"></script>
 <link rel="stylesheet" href="safety-awareness.css?v=20261009-1">
-<script src="safety-awareness.js?v=20261009-1"></script>
+<script src="safety-awareness.js?v=20261018-1"></script>
 
 <link rel="stylesheet" href="auris-premium-3d-sidebar.css?v=20260818-1"/>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">

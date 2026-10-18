@@ -143,3 +143,5 @@ run(process.execPath, ['scripts/verify-kpi-review-concurrency.cjs'], {label: 'co
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'environmental_followup.sql')], {label: 'environmental reminder scope and emissions assurance'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assurance.sql')], {label: 'noise approval, immutable evidence, revisions and reports'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_reliability.sql')], {label: 'meeting timezone, stable action identity, atomic saves and awareness access'});

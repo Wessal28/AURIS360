@@ -12,7 +12,7 @@ test('agenda opens stored completed minutes and drafts instead of a blank form',
 });
 
 test('week 16 opens the stored draft for editing and keeps completed minutes read only',()=>{
-  const calls=[];const c={mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
+  const calls=[];const c={AurisMeetingTime:{wall:value=>value.slice(0,10)+'T09:00'},mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
   vm.createContext(c);const start=source.indexOf('function mtgClickWeek(seriesId,week){'),end=source.indexOf('\nfunction mtgWeekToDate',start);vm.runInContext(source.slice(start,end),c);
   c.mtgClickWeek('series-a',16);assert.deepEqual(calls,[['edit','week-16']]);
   c.mtgMinutesData[0].status='completed';c.mtgClickWeek('series-a',16);assert.deepEqual(calls[1],['view','week-16']);
@@ -35,7 +35,7 @@ test('opening a draft retrieves its full company-scoped fields before editing',(
 const vm=require('node:vm');
 function minutesHarness(){
  let company='company-a',rendered=0,error='';const modal={querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}};
- const c={mtgMinutesData:[{id:'meeting-1',company_id:company,status:'completed'}],ccid:()=>company,prof:{id:'user-a'},document:{getElementById:()=>null,createElement:()=>modal,body:{appendChild(){rendered++;}}},mtgSplitAgendaPayload:()=>({items:[]}),mtgSplitRecommendationPayload:()=>({recs:[]}),escH:String,MTG_TYPES:{},isMgr:()=>false,toastActionError:(a,b,e)=>{error=e.message;}};
+ const c={mtgMinutesData:[{id:'meeting-1',company_id:company,status:'completed'}],ccid:()=>company,prof:{id:'user-a'},document:{getElementById:()=>null,createElement:()=>modal,body:{appendChild(){rendered++;}}},mtgSplitAgendaPayload:()=>({items:[]}),mtgSplitRecommendationPayload:()=>({recs:[]}),mtgAttachActions(){},AurisMeetingTime:{display:String},escH:String,MTG_TYPES:{},isMgr:()=>false,toastActionError:(a,b,e)=>{error=e.message;}};
  vm.createContext(c);const start=source.indexOf('async function mtgViewMomReadOnly(id){'),end=source.indexOf('\nasync function mtgOpenMom',start);assert.ok(end>start);vm.runInContext(source.slice(start,end),c);
  return {c,modal,switchCompany(){company='company-b';},get rendered(){return rendered;},get error(){return error;}};
 }

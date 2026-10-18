@@ -331,6 +331,11 @@
       "order": 66,
       "file": "20261018020000_noise_approval_assurance.sql",
       "sha256": "698117b4d08d1cf2602f59b678099968672b259b2532dfb4f6577ad1bf68c2a4"
+    },
+    {
+      "order": 67,
+      "file": "20261018030000_meetings_reliability.sql",
+      "sha256": "fd21f90a7da9f3efad60fbd77523e911a1603aa312bb5ec1dbcdbbe09be6bbd1"
     }
   ]
 }
