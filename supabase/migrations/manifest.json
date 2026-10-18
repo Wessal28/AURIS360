@@ -326,6 +326,11 @@
       "order": 65,
       "file": "20261018010000_environmental_followup.sql",
       "sha256": "a432ab3b3e833170d440cd0db1b1b117ef9b0f33f52650a8e42b253fcce01e45"
+    },
+    {
+      "order": 66,
+      "file": "20261018020000_noise_approval_assurance.sql",
+      "sha256": "13be9ef7d01178e1b4435efe0be0365f745d4d7ed4b762172badc09474600023"
     }
   ]
 }
