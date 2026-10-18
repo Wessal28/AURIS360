@@ -21,7 +21,7 @@ function page(companyId, records) {
 
 test('awareness plan reads only the selected company and escapes stored discussion text', async () => {
   const app = page('11111111-1111-4111-8111-111111111111', [{
-    id: 'topic-1', planned_month: 3, theme: '<script>alert(1)</script>',
+    id: 'topic-1', company_id:'11111111-1111-4111-8111-111111111111', planned_month: 3, theme: '<script>alert(1)</script>',
     discussion_points: ['Check <unsafe> equipment']
   }]);
   await app.window.AurisSafetyAwareness.load();

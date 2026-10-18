@@ -35,7 +35,7 @@ test('opening a draft retrieves its full company-scoped fields before editing',(
 const vm=require('node:vm');
 function minutesHarness(){
  let company='company-a',rendered=0,error='';const modal={querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}};
- const c={mtgMinutesData:[{id:'meeting-1',company_id:company,status:'completed'}],ccid:()=>company,prof:{id:'user-a'},document:{getElementById:()=>null,createElement:()=>modal,body:{appendChild(){rendered++;}}},mtgSplitAgendaPayload:()=>({items:[]}),mtgSplitRecommendationPayload:()=>({recs:[]}),escH:String,MTG_TYPES:{},isMgr:()=>false,toastActionError:(a,b,e)=>{error=e.message;}};
+ const c={mtgMinutesData:[{id:'meeting-1',company_id:company,status:'completed'}],ccid:()=>company,prof:{id:'user-a'},document:{getElementById:()=>null,createElement:()=>modal,body:{appendChild(){rendered++;}}},mtgSplitAgendaPayload:()=>({items:[]}),mtgSplitRecommendationPayload:()=>({recs:[]}),mtgAttachActions(){},AurisMeetingTime:{display:String},escH:String,MTG_TYPES:{},isMgr:()=>false,toastActionError:(a,b,e)=>{error=e.message;}};
  vm.createContext(c);const start=source.indexOf('async function mtgViewMomReadOnly(id){'),end=source.indexOf('\nasync function mtgOpenMom',start);assert.ok(end>start);vm.runInContext(source.slice(start,end),c);
  return {c,modal,switchCompany(){company='company-b';},get rendered(){return rendered;},get error(){return error;}};
 }
