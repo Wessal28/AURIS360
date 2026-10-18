@@ -41,3 +41,11 @@ test('evidence previews reject executable, credential-bearing and foreign storag
  for(const item of [{url:'javascript:alert(1)'},{url:'https://user:secret@example.invalid/private'},{bucket:'evidence',path:'company-b/actions/action-a/evidence.pdf'}])await s.mapEvidencePreview(item,record,session);
  assert.equal(closed,3);assert.equal(opened,0);assert.ok(message);
 });
+
+test('readiness shows the requirements of the current workflow stage',()=>{
+ const {scope:s,elements:e}=runtime();e['map-readiness']={textContent:''};s.mapEditorForm=()=>({'mf-title':'A task','mf-target-date':'2026-10-25','mf-progress':'100','mf-evidence':'Controlled record','mf-verif-notes':'Reviewed','mf-closure-notes':'Complete'});s.mapClosureRead=checks;
+ s.mapReadinessRender({status:'open'});assert.match(e['map-readiness'].textContent,/Start readiness.*Action described.*Target date/);assert.doesNotMatch(e['map-readiness'].textContent,/Verification passed|100%/);
+ s.mapReadinessRender({status:'in_progress',requires_verification:true});assert.match(e['map-readiness'].textContent,/Submission readiness.*100%/);assert.doesNotMatch(e['map-readiness'].textContent,/Verification passed/);
+ s.mapReadinessRender({status:'pending_verification',requires_verification:true});assert.match(e['map-readiness'].textContent,/Verification readiness.*Verification notes/);assert.doesNotMatch(e['map-readiness'].textContent,/Verification passed/);
+ s.mapReadinessRender({status:'pending_closure',requires_verification:true,verification_status:'passed'});assert.match(e['map-readiness'].textContent,/Closure readiness.*Verification passed.*confirmations answered/);
+});
