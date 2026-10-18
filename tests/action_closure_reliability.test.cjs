@@ -29,3 +29,15 @@ test('source aliases filter Meeting and Noise Survey consistently with the share
  const scope={};vm.runInNewContext(fs.readFileSync('auris-action-list-workspace.js','utf8'),scope);const rows=[{id:'meeting',company_id:'co',source_module:'meetings'},{id:'noise',company_id:'co',source_module:'noise'}];
  for(const source of ['meeting','noise_survey']){const result=scope.AurisActionListWorkspace.project(rows,{companyId:'co'},{filters:{source}});assert.equal(result.length,1);assert.equal(result[0].id,source==='meeting'?'meeting':'noise');}
 });
+
+test('evidence retries use the same exact-record idempotency key and keep unsaved input after failure',async()=>{
+ const {scope:s,elements:e}=runtime();s.URL=URL;s.crypto=require('node:crypto');s.mapEvidenceRecord={id:'action-a',company_id:'company-a',status:'in_progress'};s.mapEditorSession={assertCurrent(){}};s.workflowCanMutate=()=>true;s.mapEditorRefresh=()=>{};s.mapEvidenceLoad=async()=>{};s.mapDisplayRef=()=> 'MAP-FIXTURE';
+ e['map-evidence-file']={files:[],value:''};e['map-evidence-url']={value:'https://example.invalid/evidence.pdf'};e['map-evidence-caption']={value:'Reviewed evidence'};e['map-evidence-add']={disabled:false};e['map-evidence-feedback']={textContent:''};const requests=[];s.api=async(url,options)=>{requests.push({url,body:structuredClone(options.b)});if(requests.length===1)throw Error('Network unavailable');return {id:'evidence-a'};};
+ await s.mapEvidenceSave();assert.equal(requests.length,1);assert.equal(e['map-evidence-url'].value,'https://example.invalid/evidence.pdf');assert.equal(s.mapEvidenceDraft(),true);
+ await s.mapEvidenceSave();assert.equal(requests.length,2);assert.equal(requests[0].body.p_idempotency_key,requests[1].body.p_idempotency_key);assert.equal(requests[1].body.p_source_module,'actions');assert.equal(requests[1].body.p_source_table,'action_tracker');assert.equal(requests[1].body.p_source_record_id,'action-a');assert.equal(requests[1].body.p_company_id,'company-a');assert.equal(s.mapEvidencePending,null);assert.equal(s.mapEvidenceDraft(),false);assert.match(e['map-evidence-feedback'].textContent,/saved separately/);
+});
+test('evidence previews reject executable, credential-bearing and foreign storage URLs',async()=>{
+ const {scope:s}=runtime();s.URL=URL;let closed=0,opened=0,message='';s.window.open=()=>({close(){closed++},location:{replace(){opened++}}});s.mapEditorMessage=value=>message=value;const session={assertCurrent(){}};s.mapEditorSession=session;const record={id:'action-a',company_id:'company-a'};
+ for(const item of [{url:'javascript:alert(1)'},{url:'https://user:secret@example.invalid/private'},{bucket:'evidence',path:'company-b/actions/action-a/evidence.pdf'}])await s.mapEvidencePreview(item,record,session);
+ assert.equal(closed,3);assert.equal(opened,0);assert.ok(message);
+});

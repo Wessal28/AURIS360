@@ -63,7 +63,7 @@ language plpgsql security definer set search_path=pg_catalog,public,extensions a
 begin
  if new.status='closed' and old.status is distinct from new.status then
   insert into public.map_activity_log(company_id,action_id,activity_type,performed_by,old_value,new_value,notes)
-   values(new.company_id,new.id,'Action closed',new.closure_approved_by,old.status,new.status,new.closure_notes||E'\nClosure confirmations: '||(select string_agg((array['Completion','Evidence','Verification','Root cause','Similar areas','Residual risk / follow-up'])[n]||': '||case when new.closure_checklist->n::text->>'confirmed'='true' then 'Confirmed' else 'N/A — '||(new.closure_checklist->n::text->>'reason') end,'; ' order by n) from generate_series(1,6) n));
+   values(new.company_id,new.id,'Action closed',new.closure_approved_by,old.status,new.status,new.closure_notes||E'\nClosure confirmations: '||(select string_agg((array['Completion','Evidence','Verification','Root cause','Similar areas','Residual risk / follow-up'])[n]||': '||case when new.closure_checklist->n::text->>'confirmed'='true' then 'Confirmed' else 'N/A - '||(new.closure_checklist->n::text->>'reason') end,'; ' order by n) from generate_series(1,6) n));
  end if;
  return new;
 end $$;
