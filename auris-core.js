@@ -8320,7 +8320,7 @@ async function deleteNoiseSurvey(id){
 // ===== HSE MEETINGS MODULE =====
 // DEDUP: mtg variables declared elsewhere
 
-const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HSE Committee Meeting','other':'Other Meeting'};
+const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HSE Committee Meeting','safety_committee':'Safety Committee Meeting','toolbox_talk':'Toolbox Talk','emergency_drill':'Emergency Drill','other':'Other Meeting'};
 const MTG_RECURRENCE={'monthly':'Monthly','bimonthly':'Every 2 months','quarterly':'Quarterly','triannual':'Every 4 months','biannual':'Every 6 months','annual':'Annual'};
 
 
