@@ -321,6 +321,11 @@
       "order": 64,
       "file": "20261015010000_environmental_reporting_assurance.sql",
       "sha256": "625f4a5a7a857c2c0d2a6ecdc6c5b5a38b6a8fb6fd3dca6885c1222019c3d56b"
+    },
+    {
+      "order": 65,
+      "file": "20261018010000_environmental_followup.sql",
+      "sha256": "23310a5801b6510c19f893e705d52978a5ad7e5cf74ddb8712c7dbc568b5c3c6"
     }
   ]
 }

@@ -27,13 +27,12 @@ test('waste dashboard converts tonnes to kilograms without mixing volume or bags
   assert.equal(totals.bags,4);
   assert.equal(totals.byCategory.recyclable.kg,2000);
 });
-test('fuel factors apply only to compatible units and explain legacy provenance',()=>{
-  const code=source.slice(source.indexOf('const CO2_FACTORS='),source.indexOf('function esgFuelUnitChanged'));
-  const context={};vm.runInNewContext(code+';this.factor=esgFuelFactor;',context);
+test('reference fuel factors apply only to compatible units without assuming a local electricity factor',()=>{
+  const code=source.slice(source.indexOf('const ESG_FUEL_UNITS='),source.indexOf('function esgFuelUnitChanged'));
+  const context={};vm.runInNewContext(fs.readFileSync(path.join(root,'auris-esg-followup.js'),'utf8')+'\n'+code+';this.factor=esgFuelFactor;',context);
   assert.equal(context.factor('electricity','litres'),null);
-  assert.equal(context.factor('electricity','kwh'),0.233);
-  assert.equal(context.factor('diesel','litres'),2.68);
-  assert.match(source,/external provenance unverified/);
+  assert.equal(context.factor('electricity','kwh'),null);
+  assert.equal(context.factor('diesel','litres'),2.66155);
 });
 test('new inspection checklist stays unanswered until explicitly selected',()=>{
   assert.match(source,/esgBuildInspChecklist\(saved\)/);
