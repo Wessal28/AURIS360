@@ -9,7 +9,8 @@ grant select,update on public.meeting_series to authenticated;
 insert into auth.users(id) values('c1800000-0000-4000-8000-000000000001');
 insert into public.companies(id,name) values('c1800000-0000-4000-8000-000000000010','Meetings test A'),('c1800000-0000-4000-8000-000000000020','Meetings test B');
 insert into public.profiles(id,company_id,full_name,role,status) values('c1800000-0000-4000-8000-000000000001','c1800000-0000-4000-8000-000000000010','Meeting test admin','admin','active');
-create or replace function auth.uid() returns uuid language sql stable as $$select 'c1800000-0000-4000-8000-000000000001'::uuid$$;
+create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+select set_config('request.jwt.claim.sub','c1800000-0000-4000-8000-000000000001',true);
 create or replace function auth.role() returns text language sql stable as $$select 'authenticated'::text$$;
 insert into public.people(id,company_id,first_name,last_name) values('c1800000-0000-4000-8000-000000000030','c1800000-0000-4000-8000-000000000010','Fictional','Owner'),('c1800000-0000-4000-8000-000000000031','c1800000-0000-4000-8000-000000000020','Foreign','Owner');
 insert into public.meeting_series(id,company_id,title,meeting_type,recurrence,next_date) values('c1800000-0000-4000-8000-000000000040','c1800000-0000-4000-8000-000000000010','Fictional schedule','management_review','quarterly','2026-10-18');
@@ -38,7 +39,11 @@ end $$;
 reset role;
 -- Exercise real table RLS as the authenticated caller, including the corrected
 -- distinction between Minutes access and Schedule access.
-update public.profiles set permissions='{"access_v1":{"meetings.schedule":{"view":false},"meetings.minutes":{"view":true,"edit":true}}}' where id=auth.uid();
+-- Prepare the test restriction with the local maintenance identity. The user
+-- cannot change their own permissions; restore that identity before RLS checks.
+select set_config('request.jwt.claim.sub','',true);
+update public.profiles set permissions='{"access_v1":{"meetings.schedule":{"view":false},"meetings.minutes":{"view":true,"edit":true}}}' where id='c1800000-0000-4000-8000-000000000001';
+select set_config('request.jwt.claim.sub','c1800000-0000-4000-8000-000000000001',true);
 set local role authenticated;
 do $$begin
  if not exists(select 1 from public.hse_meetings where id='c1800000-0000-4000-8000-000000000050') then raise exception 'minutes access incorrectly depends on Schedule access';end if;
