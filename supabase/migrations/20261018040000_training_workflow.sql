@@ -1,10 +1,12 @@
 alter table public.training_plan add column participant_ids uuid[] not null default '{}';
-alter table public.training_plan add column training_provider text;
+alter table public.training_plan add column if not exists training_provider text;
 alter table public.training_plan add column source_training_id uuid references public.training_followup(id);
 alter table public.training_followup add column attendance_status text not null default 'pending' check(attendance_status in ('pending','attended','absent'));
 alter table public.training_followup add column provider_snapshot text;
 alter table public.training_followup add column location_snapshot text;
 alter table public.training_followup add column duration_hours numeric;
+alter table public.training_followup add column if not exists certificate_url text;
+alter table public.training_followup add column if not exists evidence_url text;
 alter table public.training_followup add column evidence_review_status text not null default 'pending' check(evidence_review_status in ('pending','reviewed','rejected'));
 alter table public.training_followup add column evidence_review_note text;
 alter table public.training_followup add column evidence_reviewed_by uuid;
