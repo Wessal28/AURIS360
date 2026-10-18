@@ -2,7 +2,7 @@
 'use strict';
 
 var types={routine:'Routine',regulatory:'Regulatory',audit:'Audit',follow_up:'Follow-up'};
-var ratings={excellent:'Excellent',good:'Good',satisfactory:'Satisfactory',poor:'Poor',unacceptable:'Unacceptable'};
+var ratings={not_assessed:'Not assessed',excellent:'Excellent',good:'Good',satisfactory:'Satisfactory',poor:'Poor',unacceptable:'Unacceptable'};
 function session(){
   var services=root.AurisPlatformServices;
   if(!services||!services.ready(['auth','rbac'])||!services.auth.isAuthenticated())throw new Error('Sign in and select a company to view environmental inspections.');
@@ -23,7 +23,7 @@ function label(map,value,fallback){var key=String(value||'').toLowerCase();retur
 function project(rows,current,options,now){
   options=options||{};now=now||new Date();var f=filters(options.filters),search=f.search.toLowerCase();
   return (Array.isArray(rows)?rows:[]).filter(function(row){return row&&row.id&&current.companyId&&String(row.company_id||'')===current.companyId;}).map(function(row){
-    var type=String(row.inspection_type||'routine').toLowerCase(),rating=String(row.overall_rating||'satisfactory').toLowerCase(),next=dateState(row.next_inspection_date,now),inspection=dateState(row.inspection_date,now),nc=Number(row.non_conformances||0),signed=row.signed_off===true;
+    var type=String(row.inspection_type||'routine').toLowerCase(),rating=String(row.overall_rating||'not_assessed').toLowerCase(),next=dateState(row.next_inspection_date,now),inspection=dateState(row.inspection_date,now),nc=Number(row.non_conformances||0),signed=row.signed_off===true;
     if(f.type&&type!==f.type.toLowerCase())return null;if(f.rating&&rating!==f.rating.toLowerCase())return null;if(f.signed==='true'&&!signed)return null;if(f.signed==='false'&&signed)return null;
     var flags=[];if(rating==='poor'||rating==='unacceptable')flags.push('rating_risk');if(nc>0)flags.push('open_non_conformance');if(next.expired)flags.push('next_overdue');else if(next.soon)flags.push('next_due_soon');else if(next.missing)flags.push('next_missing');if(!signed)flags.push('signoff_pending');
     if(f.attention&&!flags.includes(f.attention.toLowerCase()))return null;

@@ -1889,7 +1889,7 @@ esgFuelBack()
 esgFuelSave()
     },
     "h0629": function (event) {
-esgCalcCO2()
+esgFuelUnitChanged()
     },
     "h0630": function (event) {
 esgCalcCO2()

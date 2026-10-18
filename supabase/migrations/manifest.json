@@ -316,6 +316,11 @@
       "order": 63,
       "file": "20261014050000_chemical_control_assurance.sql",
       "sha256": "a560bf4a04a50919acf162b489a51b46311925c78ae4a90e7a0861c419da7576"
+    },
+    {
+      "order": 64,
+      "file": "20261015010000_environmental_reporting_assurance.sql",
+      "sha256": "625f4a5a7a857c2c0d2a6ecdc6c5b5a38b6a8fb6fd3dca6885c1222019c3d56b"
     }
   ]
 }

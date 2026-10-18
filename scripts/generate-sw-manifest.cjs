@@ -67,7 +67,8 @@ const lazyModuleAssets = [
   'learning-competency-upgrade.js', 'elearning-course-path.js',
   'contractor-management-upgrade.js', 'chemical-control-upgrade.js',
   'tools-equipment-upgrade.js', 'legal-compliance-upgrade.js',
-    'auris-ohealth-worker.js', 'auris-ppe-workflow.js'
+    'auris-ohealth-worker.js', 'auris-ppe-workflow.js',
+    'auris-esg-module.js'
 ];
 for (const asset of lazyModuleAssets) assetSet.add(asset);
 
