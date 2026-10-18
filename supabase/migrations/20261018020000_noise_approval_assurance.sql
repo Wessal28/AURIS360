@@ -104,6 +104,9 @@ begin
       if not found or parent.status<>'approved' or parent.code<>new.code or new.version_no<=parent.version_no or nullif(btrim(new.change_reason),'') is null then raise exception 'A revision needs its approved predecessor, a higher version and a change reason';end if;
     end if;
     if new.status='approved' then
+      perform pg_advisory_xact_lock(hashtextextended(new.company_id::text||'/noise/'||new.code,0));
+      select * into parent from public.noise_mgmt_exposure_assessments where company_id=new.company_id and code=new.code and status='approved' order by version_no desc limit 1;
+      if found and (new.supersedes_id is distinct from parent.id or new.version_no<=parent.version_no) then raise exception 'Approval must revise the latest approved assessment version';end if;
       if new.data_quality_status not in ('acceptable','limited') or new.data_quality_status is null then raise exception 'Confirm assessment quality before approval';end if;
       if new.data_quality_status='limited' and nullif(btrim(new.limitations),'') is null then raise exception 'Explain the limitations before approval';end if;
       if new.duration_confirmed is not true then raise exception 'Confirm that linked durations represent non-overlapping exposure components';end if;
