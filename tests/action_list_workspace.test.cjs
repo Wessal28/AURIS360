@@ -45,7 +45,7 @@ test('company, profile, role or permissions changed after mount block all callba
   }
 });
 test('action loader ignores superseded or switched-company responses before metrics, cache or backfill',async()=>{
-  const core=read('auris-core.js'),code=core.slice(core.indexOf('async function mapLoadList(){'),core.indexOf('function mapActionTypeCode('));
+  const core=read('auris-core.js'),code=core.slice(core.indexOf('function mapRefreshMetrics(){'),core.indexOf('function mapActionTypeCode('));
   let release,company='co-a',rendered=0,backfilled=0;
   const context={mapListLoadGeneration:0,mapAllData:[],ccid:()=>company,prof:{id:'user-a'},activeRole:()=> 'manager',canAccessPage:()=>true,
     document:{getElementById:()=>({innerHTML:'',style:{}})},cf:()=>'',api:()=>new Promise(resolve=>{release=resolve;}),mapRenderList:()=>rendered++,mapQueueRefBackfill:()=>backfilled++};

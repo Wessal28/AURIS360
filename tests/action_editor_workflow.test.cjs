@@ -29,7 +29,8 @@ test('approvals record the acting user and require notes; closure also checks ve
   const r=runtime();assert.throws(()=>r.run({...row,status:'pending_verification'},{...completed},'verify'),/notes/);
   const verified=r.run({...row,status:'pending_verification'},{...completed,verification_notes:'Checked',verified_by:'Spoofed'},'verify');assert.equal(verified.verified_by,'Actual Reviewer');assert.equal(verified.status,'pending_closure');
   assert.throws(()=>r.run({...row,status:'pending_closure'},{...completed,closure_notes:'Done'},'close'),/required verification/);
-  const closed=r.run({...row,status:'pending_closure',verification_status:'passed'},{...completed,closure_notes:'Done',closure_approved_by:'Spoofed'},'close');assert.equal(closed.closure_approved_by,'Actual Reviewer');assert.equal(closed.status,'closed');
+  r.fields['mcc-na-3']={checked:false};r.fields['mcc-na-4']={checked:false};r.fields['mcc-na-5']={checked:false};r.fields['mcc-na-6']={checked:false};
+  const closed=r.run({...row,status:'pending_closure',verification_status:'passed'},{...completed,closure_checklist:Object.fromEntries([1,2,3,4,5,6].map(n=>[n,{confirmed:true}])),closure_notes:'Done',closure_approved_by:'Spoofed'},'close');assert.equal(closed.closure_approved_by,'Actual Reviewer');assert.equal(closed.status,'closed');
 });
 test('closed and cancelled records are read only; only managers cancel',()=>{
   for(const status of ['closed','cancelled'])assert.throws(()=>runtime().run({...row,status},{},'save'),/read only/);
@@ -45,7 +46,7 @@ test('legacy entry points delegate all editor writes to the same persistence bou
   const core=read('auris-core.js');
   for(const name of ['mapSave','mapChangeStatus','mapApproveVerification','mapFailVerification','mapApproveClosure','mapRejectClosure','mapTriggerEscalation','mapDelete'])assert.match(core,new RegExp('async function '+name+'\\([^]*?return mapEditorCommit\\('));
   assert.match(core,/async function cycleAction\(id\)\{return mapOpenDetail\(id\);\}/);
-  const html=read('index.html');assert.ok(html.indexOf('src="auris-record-edit-session.js')<html.indexOf('src="auris-action-editor.js'));assert.match(html,/id="map-editor-feedback"/);
+  const html=read('index.html');assert.ok(html.indexOf('src="auris-record-edit-session.js')<html.indexOf('src="auris-action-editor-loader.js'));assert.match(html,/id="map-editor-feedback"/);
 });
 test('a restored session hydrates workflow before decisions and rechecks the editor after loading',async()=>{
   const r=runtime();let hydrated=0,checked=0;const session={assertCurrent(){checked++;}};r.scope.mapEditorSession=session;

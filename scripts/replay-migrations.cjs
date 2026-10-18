@@ -147,3 +147,6 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assur
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_reliability.sql')], {label: 'meeting timezone, stable action identity, atomic saves and awareness access'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_workflow.sql')], {label: 'linked training attendance, evidence review and explicit competency decisions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'action_closure.sql')], {label: 'action closure integrity and bounded notification cleanup'});
+run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label: 'action closure timeout rollback and retry'});

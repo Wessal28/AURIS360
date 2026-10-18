@@ -16,3 +16,11 @@
 #map-form3view .mtg-tab{min-width:0;white-space:normal}
 #map-form3view .form3group{min-width:0}
 @container action-editor (max-width:760px){#map-form3view :is(.auris-map-s-5571af1e74,.auris-map-s-67e92fd3c7,.form3row){grid-template-columns:minmax(0,1fr)!important}}
+#map-readiness{padding:12px 18px;color:#334155;background:#f8fafc;line-height:1.6;border-bottom:1px solid #dbe3ed}
+#map-fview-closure .map-closure-item{display:grid;gap:8px;border-bottom:1px solid #e2e8f0;padding:8px 0 14px}
+#map-fview-closure .map-closure-item>input{width:100%;box-sizing:border-box}
+#map-evidence-panel{margin:14px 0;padding:16px;line-height:1.6}
+#map-evidence-compose{display:grid;gap:8px;max-width:640px}
+#map-evidence-compose>input{width:100%;box-sizing:border-box}
+#map-evidence-compose[hidden]{display:none}
+#map-evidence-feedback{color:#334155}
