@@ -57,7 +57,10 @@ begin
   if tg_op='DELETE' then
     update public.notification_queue set status='cancelled'
     where company_id=old.company_id and related_table='hazardous_waste' and related_id=old.id
-      and type='hazardous_waste_milestone' and status='pending';
+      and type='hazardous_waste_milestone' and status in ('pending','sent');
+    update public.user_notifications u set dismissed_at=coalesce(u.dismissed_at,now()),updated_at=now()
+    from public.notification_queue q where u.source_notification_id=q.id and q.company_id=old.company_id
+      and q.related_table='hazardous_waste' and q.related_id=old.id and q.type='hazardous_waste_milestone';
     return old;
   end if;
   if new.responsible_profile_id is not null and not exists (select 1 from public.profiles p
@@ -68,12 +71,16 @@ begin
   if tg_op='UPDATE' then
     update public.notification_queue q set status='cancelled'
     where q.company_id=old.company_id and q.related_table='hazardous_waste' and q.related_id=old.id
-      and q.type='hazardous_waste_milestone' and q.status='pending'
+      and q.type='hazardous_waste_milestone' and q.status in ('pending','sent')
       and (new.status='disposed' or new.company_id is distinct from old.company_id or new.responsible_profile_id is distinct from old.responsible_profile_id
         or (q.metadata->>'kind'='collection' and (new.collection_date is not null
           or new.planned_collection_date is distinct from old.planned_collection_date))
         or (q.metadata->>'kind'='disposal' and (new.disposal_date is not null
           or new.planned_disposal_date is distinct from old.planned_disposal_date)));
+    update public.user_notifications u set dismissed_at=coalesce(u.dismissed_at,now()),updated_at=now()
+    from public.notification_queue q where u.source_notification_id=q.id and q.company_id=old.company_id
+      and q.related_table='hazardous_waste' and q.related_id=old.id
+      and q.type='hazardous_waste_milestone' and q.status='cancelled' and u.dismissed_at is null;
   end if;
   return new;
 end $$;
@@ -99,11 +106,11 @@ begin
       else 'overdue-'||((p_run_date-due_date-1)/7)::text end milestone from due d
   )
   insert into public.notification_queue
-    (company_id,recipient_profile_id,type,subject,body_html,to_email,to_name,status,channel,priority,
+    (company_id,recipient_profile_id,type,subject,body_html,to_email,to_name,status,sent_at,channel,priority,
      related_id,related_table,related_module,related_ref,record_url,idempotency_key,metadata)
   select d.company_id,p.id,'hazardous_waste_milestone','Hazardous waste '||d.kind||' due: '||d.waste_name,
     '<p>Open the linked waste record, confirm the planned milestone and record the actual completion date.</p>',
-    coalesce(nullif(p.real_email,''),p.email,''),p.full_name,'pending','in_app',
+    '',p.full_name,'sent',now(),'in_app',
     case when d.due_date<p_run_date then 'high' else 'normal' end,
     d.id,'hazardous_waste','esg',d.waste_name,
     'https://auris360.app/?goto=esg&table=hazardous_waste&record='||d.id||'&company='||d.company_id,

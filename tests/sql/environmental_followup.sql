@@ -45,12 +45,15 @@ do $$ declare asset uuid; fuel uuid; waste uuid; queued integer; begin
  if queued<>2 then raise exception 'expected two planned milestone reminders, got %',queued; end if;
  perform public.process_environmental_due_reminders('2026-10-18');
  if (select count(*) from public.notification_queue where related_id=waste)<>2 then raise exception 'reminders duplicated'; end if;
- if exists(select 1 from public.notification_queue where related_id=waste and (channel<>'in_app' or recipient_profile_id<>'e1800000-0000-4000-8000-000000000001')) then raise exception 'reminder recipient scope failed'; end if;
+ if exists(select 1 from public.notification_queue where related_id=waste and (channel<>'in_app' or status<>'sent' or to_email<>'' or recipient_profile_id<>'e1800000-0000-4000-8000-000000000001')) then raise exception 'reminder recipient or delivery scope failed'; end if;
+ if (select count(*) from public.user_notifications where related_id=waste and dismissed_at is null)<>2 then raise exception 'reminders missing from recipient inbox'; end if;
  update public.hazardous_waste set collection_date='2026-10-19' where id=waste;
  if exists(select 1 from public.notification_queue where related_id=waste and metadata->>'kind'='collection' and status='pending') then raise exception 'completed collection reminder remains pending'; end if;
+ if exists(select 1 from public.user_notifications u join public.notification_queue q on q.id=u.source_notification_id where q.related_id=waste and q.metadata->>'kind'='collection' and u.dismissed_at is null) then raise exception 'completed collection reminder remains visible'; end if;
  update public.hazardous_waste set status='disposed',disposal_date='2026-10-21' where id=waste;
  perform public.process_environmental_due_reminders('2026-10-23');
  if exists(select 1 from public.notification_queue where related_id=waste and status='pending') then raise exception 'disposed waste still has a pending reminder'; end if;
+ if exists(select 1 from public.user_notifications where related_id=waste and dismissed_at is null) then raise exception 'disposed waste still has a visible reminder'; end if;
  perform set_config('request.jwt.claim.role','authenticated',true);
  begin
    perform public.process_environmental_due_reminders('2026-10-18');raise exception 'non-service reminder execution accepted';
