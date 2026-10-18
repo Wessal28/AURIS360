@@ -4,15 +4,12 @@
 let esgWasteData=[], esgHWData=[], esgFuelData=[], esgWaterData=[], esgSpillData=[], esgInspData=[];
 let esgWasteEditId=null, esgHWEditId=null, esgFuelEditId=null, esgWaterEditId=null, esgSpillEditId=null, esgInspEditId=null;
 
-// Legacy application presets. Their external source/version has not been verified;
-// keep that limitation visible wherever an estimate is shown.
-const CO2_FACTORS={diesel:2.68,petrol:2.31,lpg:1.51,natural_gas:1.89,electricity:0.233,heavy_fuel_oil:3.18,other:2.5};
 const ESG_FUEL_UNITS={diesel:['litres'],petrol:['litres'],lpg:['litres'],natural_gas:['m3'],electricity:['kwh'],heavy_fuel_oil:['litres'],other:['litres','kg','m3','kwh']};
 function esgLocalDate(){var now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');}
 function esgPeriod(){var month=document.getElementById('esg-report-period')?.value||esgLocalDate().slice(0,7);var parts=month.split('-').map(Number);if(parts.length!==2||parts[1]<1||parts[1]>12)return {month:esgLocalDate().slice(0,7),start:esgLocalDate().slice(0,7)+'-01',end:''};var next=new Date(parts[0],parts[1],1);return {month:month,start:month+'-01',end:next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-01'};}
 function esgPeriodQuery(column){var p=esgPeriod();return '&'+column+'=gte.'+p.start+(p.end?'&'+column+'=lt.'+p.end:'');}
 function esgWasteAmounts(rows){var result={kg:0,litres:0,bags:0,other:{},recycledKg:0,byCategory:{}};(rows||[]).forEach(function(row){var n=Number(row.quantity),unit=String(row.unit||'unknown unit').toLowerCase();if(!Number.isFinite(n)||n<0)return;var group=result.byCategory[row.category||'other']||(result.byCategory[row.category||'other']={kg:0,litres:0,bags:0,other:{}});if(unit==='kg'||unit==='tonnes'){var kg=unit==='tonnes'?n*1000:n;result.kg+=kg;group.kg+=kg;if(row.category==='recyclable')result.recycledKg+=kg;}else if(unit==='litres'||unit==='m3'){var litres=unit==='m3'?n*1000:n;result.litres+=litres;group.litres+=litres;}else if(unit==='bags'){result.bags+=n;group.bags+=n;}else{result.other[unit]=(result.other[unit]||0)+n;group.other[unit]=(group.other[unit]||0)+n;}});return result;}
-function esgFuelFactor(type,unit){var allowed=ESG_FUEL_UNITS[type]||[];return allowed.length===1&&allowed[0]===unit?CO2_FACTORS[type]:null;}
+function esgFuelFactor(type,unit){var reference=ESG_REFERENCE_FACTORS[type];return reference&&reference.unit===unit?reference.value:null;}
 function esgFuelUnitChanged(){var type=document.getElementById('ff-type')?.value||'diesel',unit=document.getElementById('ff-unit');if(!unit)return;var allowed=ESG_FUEL_UNITS[type]||[];if(allowed.length===1)unit.value=allowed[0];esgCalcCO2();}
 var esgSdsLinks={};
 function esgSafeDocumentUrl(value){try{var url=new URL(String(value||''));return url.protocol==='https:'&&!url.username&&!url.password?url.href:'';}catch(_){return '';}}
@@ -28,7 +25,7 @@ async function esgLoadChemicalLinks(selectId,selectedId){
     esgUpdateSdsLink();
   }catch(error){select.innerHTML='<option value="">Chemical records unavailable</option>'+(selectedId?'<option value="'+escH(selectedId)+'" selected>Previously linked chemical</option>':'');esgUpdateSdsLink();}
 }
-function esgUpdateSdsLink(){var select=document.getElementById('hwf-chemical'),anchor=document.getElementById('hwf-sds-open'),status=document.getElementById('hwf-sds-status');if(!select||!anchor||!status)return;var href=esgSdsLinks[select.value]||'';anchor.hidden=!href;if(href)anchor.href=href;else anchor.removeAttribute('href');status.textContent=href?'Current validated SDS linked.':'No current validated SDS document linked.';}
+function esgUpdateSdsLink(){var select=document.getElementById('hwf-chemical'),anchor=document.getElementById('hwf-sds-open'),status=document.getElementById('hwf-sds-status');if(!select||!anchor||!status)return;var href=esgSdsLinks[select.value]||'';anchor.hidden=!href;anchor.style.display=href?'inline-flex':'none';if(href)anchor.href=href;else anchor.removeAttribute('href');status.textContent=href?'Current validated SDS linked.':'No current validated SDS document linked.';}
 
 // Environmental inspection checklist items
 const ENV_CHECKLIST=[
@@ -70,6 +67,8 @@ function esgSwitchTab(tab, btn){
 }
 
 async function esgLoadModule(){
+  var bindings={'ff-equipment':function(){esgFuelAssetChanged(true);},'ff-factor-method':esgFactorFieldsChanged,'ff-factor-value':esgFactorInputChanged,'ff-factor-source':esgFactorInputChanged,'ff-factor-version':esgFactorInputChanged,'ff-factor-url':esgFactorInputChanged,'ff-factor-confirmed':esgCalcCO2,'ff-type':function(){document.getElementById('ff-factor-confirmed').checked=false;esgCalcCO2();},'ff-unit':function(){document.getElementById('ff-factor-confirmed').checked=false;esgCalcCO2();},'esg-export-csv':esgExportCsv};
+  Object.keys(bindings).forEach(function(id){var el=document.getElementById(id);if(el&&!el.dataset.esgBound){el.dataset.esgBound='true';el.addEventListener(id==='esg-export-csv'?'click':'change',bindings[id]);}});
   var esgPage=document.getElementById('page-esg');
   if(esgPage&&!esgPage.dataset.viewButtonsBound){esgPage.dataset.viewButtonsBound='true';esgPage.addEventListener('click',function(event){var button=event.target.closest('[data-esg-view]');if(!button)return;var list=button.closest('[id$="-list"]');if(!list)return;esgOpenRecord(list.id,button.dataset.esgView);});}
   var hwChemical=document.getElementById('hwf-chemical');if(hwChemical&&!hwChemical.dataset.bound){hwChemical.dataset.bound='true';hwChemical.addEventListener('change',esgUpdateSdsLink);}
@@ -91,7 +90,8 @@ async function esgLoadModule(){
 async function esgOpenRecord(listId,id){
   var sources={'esg-waste-list':{rows:esgWasteData,kind:'Waste record',table:'waste_records'},'esg-hw-list':{rows:esgHWData,kind:'Hazardous waste record',table:'hazardous_waste'},'esg-fuel-list':{rows:esgFuelData,kind:'Fuel / energy record',table:'fuel_consumption'},'esg-water-list':{rows:esgWaterData,kind:'Water usage record',table:'water_usage'},'esg-spill-list':{rows:esgSpillData,kind:'Spill report',table:'spill_reports'},'esg-insp-list':{rows:esgInspData,kind:'Environmental inspection',table:'environmental_inspections'}};
   var source=sources[listId];if(!source)return;var company=String(ccid()),record=(source.rows||[]).find(function(row){return String(row.id)===String(id)&&String(row.company_id)===company;});if(!record){try{var fresh=await api('/'+source.table+'?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');record=fresh?.[0];}catch(error){return toast('The selected record could not be opened.',false);}}if(!record||String(record.company_id)!==company||String(ccid())!==company)return toast('This record is unavailable in the selected company.',false);
-  aurisReadOnlyRecordModal(source.kind,record.title||record.waste_name||record.waste_type||record.substance||record.area||record.category||'Environmental record',record,aurisReadableRecordFields(record));
+  var details=aurisReadableRecordFields(record);if(listId==='esg-hw-list')details=details.concat([['Planned collection',record.planned_collection_date],['Planned disposal',record.planned_disposal_date],['Actual collection',record.collection_date],['Actual disposal',record.disposal_date]]);if(listId==='esg-fuel-list')details=details.concat([['Factor',record.factor_value],['Factor unit',record.factor_unit],['Source',record.factor_source],['Source version',record.factor_version],['Evidence URL',record.factor_source_url],['Scope',record.factor_scope],['Applicability confirmed',record.factor_confirmed?'Yes':'Unconfirmed historical estimate']]);
+  aurisReadOnlyRecordModal(source.kind,record.title||record.waste_name||record.waste_type||record.substance||record.area||record.category||'Environmental record',record,details);
   var card=document.querySelector('#auris-readonly-record-modal .card[role="dialog"]');if(!card)return;
   var links=[];
   if(record.chemical_id){
@@ -99,6 +99,7 @@ async function esgOpenRecord(listId,id){
     try{var docs=await api('/chemical_sds_versions?select=file_url,validation_status,material_change&chemical_id=eq.'+encodeURIComponent(record.chemical_id)+cf()+'&validation_status=eq.current&limit=1');var doc=docs?.[0];var url=esgSafeDocumentUrl(doc?.file_url);if(!doc?.material_change&&url)links.push({label:'View validated SDS',url:url});}catch(e){console.warn('SDS link unavailable',e);}
   }
   if(record.waste_record_id)links.push({label:'View linked waste record',action:function(){document.getElementById('auris-readonly-record-modal')?.remove();esgOpenRecord('esg-waste-list',record.waste_record_id);}});
+  if(record.equipment_id)links.push({label:'View linked vehicle / equipment',url:deepLinkRecordUrl({module:'tools',table:'tools_register',id:record.equipment_id,company_id:ccid()})});
   if(record.action_id)links.push({label:'Open corrective action',url:deepLinkRecordUrl({module:'actions',table:'action_tracker',id:record.action_id,company_id:ccid()})});
   if(String(ccid())!==String(record.company_id)||!card.isConnected)return;
   if(links.length){var wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:8px;flex-wrap:wrap;padding:12px';links.forEach(function(link){var a=document.createElement(link.action?'button':'a');a.className='btn btn-sm';a.textContent=link.label;if(link.action){a.type='button';a.addEventListener('click',link.action);}else{a.href=link.url;a.target='_blank';a.rel='noopener noreferrer';}wrap.appendChild(a);});card.appendChild(wrap);}
@@ -111,7 +112,7 @@ async function esgLoadDash(){
   try{
     var [waste,fuel,water,spills,hw,inspections]=await Promise.all([
       apiAllRows('/waste_records?select=id,quantity,unit,category'+cf()+esgPeriodQuery('record_date')),
-      apiAllRows('/fuel_consumption?select=id,quantity,unit,fuel_type,carbon_kg'+cf()+esgPeriodQuery('record_date')),
+      apiAllRows('/fuel_consumption?select=id,quantity,unit,fuel_type,carbon_kg,factor_confirmed'+cf()+esgPeriodQuery('record_date')),
       apiAllRows('/water_usage?select=id,quantity,unit'+cf()+esgPeriodQuery('record_date')),
       apiAllRows('/spill_reports?select=id,status'+cf()+'&status=neq.closed'+esgPeriodQuery('spill_date')),
       apiAllRows('/hazardous_waste?select=id,status'+cf()+'&status=neq.disposed'+esgPeriodQuery('generation_date')),
@@ -132,10 +133,11 @@ async function esgLoadDash(){
     setM('esg-m3hazwaste',(hw||[]).length);
     setM('esg-m3inspections',(inspections||[]).length);
     setM('esg-m3recycle',totalWaste>0?Math.round(wasteTotals.recycledKg/totalWaste*100)+'%':'Not available');
+    var unconfirmed=(fuel||[]).filter(function(row){return row.carbon_kg!=null&&!row.factor_confirmed;}).length;setM('esg-m3carbon-note','Recorded estimates · '+unconfirmed+' historical estimates have unconfirmed factors');
     var missingFactors=(fuel||[]).filter(function(row){return row.carbon_kg===null||row.carbon_kg===undefined;}).length;
     var unrated=(inspections||[]).filter(function(row){return !row.overall_rating;}).length;
     var unclearWaste=(waste||[]).filter(function(row){return !row.unit;}).length;
-    setM('esg-report-completeness','Reporting completeness · '+period.month+': '+(waste||[]).length+' waste, '+(fuel||[]).length+' fuel / energy, '+(water||[]).length+' water and '+(inspections||[]).length+' inspection records. Attention: '+unrated+' inspection ratings unanswered, '+missingFactors+' emissions estimates unavailable, '+unclearWaste+' waste units missing. Counts show recorded entries, not whether all expected activity was reported.');
+    setM('esg-report-completeness','Reporting completeness · '+period.month+': '+(waste||[]).length+' waste, '+(fuel||[]).length+' fuel / energy, '+(water||[]).length+' water and '+(inspections||[]).length+' inspection records. Attention: '+unrated+' inspection ratings unanswered, '+missingFactors+' emissions estimates unavailable, '+unconfirmed+' factors unconfirmed, '+unclearWaste+' waste units missing. Counts show recorded entries, not whether all expected activity was reported.');
     // Waste chart
     var bycat={};
     Object.keys(wasteTotals.byCategory).forEach(function(category){bycat[category]=wasteTotals.byCategory[category].kg;});
@@ -216,6 +218,7 @@ async function esgLoadWaste(){
 }
 
 function esgShowForm(formId){
+  esgCaptureContext();
   ['esg-view-dash','esg-view-waste','esg-view-hazwaste','esg-view-fuel','esg-view-water','esg-view-spills','esg-view-inspections','esg-waste-form','esg-hw-form','esg-fuel-form','esg-water-form','esg-spill-form','esg-insp-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   var el=document.getElementById(formId);if(el)el.style.display='block';
 }
@@ -236,7 +239,7 @@ function esgWasteEdit(id){
   var x=esgWasteData.find(function(r){return r.id===id;});if(!x)return;
   esgWasteEditId=id;document.getElementById('esg-waste-form3title').textContent='Edit Waste Record';
   var flds={'wf-type':'waste_type','wf-qty':'quantity','wf-disposal':'disposal_method','wf-contractor':'disposal_contractor','wf-manifest':'manifest_number','wf-location':'location','wf-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var dt=document.getElementById('wf-date');if(dt)dt.value=x.record_date||'';
   var cat=document.getElementById('wf-cat');if(cat)cat.value=x.category||'general';
   var un=document.getElementById('wf-unit');if(un)un.value=x.unit||'kg';
@@ -253,7 +256,7 @@ async function esgWasteSave(){
   var tp=document.getElementById('wf-type')?.value?.trim();if(!tp){toast('Please enter waste type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),record_date:g('wf-date'),waste_type:tp,category:g('wf-cat')||'general',quantity:parseFloat(g('wf-qty'))||0,unit:g('wf-unit')||'kg',disposal_method:g('wf-disposal'),disposal_contractor:g('wf-contractor'),manifest_number:g('wf-manifest'),location:g('wf-location'),notes:g('wf-notes')};
-  try{
+  try{if(!(await esgConfirmDuplicate('waste_records',body,esgWasteEditId)))return;
     if(esgWasteEditId){await api('/waste_records?id=eq.'+esgWasteEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/waste_records',{m:'POST',p:'return=minimal',b:body});toast('Waste record saved!');}
     esgWasteBack();
@@ -302,35 +305,36 @@ async function esgLoadHW(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-function esgHWNew(){esgHWEditId=null;document.getElementById('esg-hw-form3title').textContent='New Hazardous Waste Record';esgResetForm(['hwf-name','hwf-un','hwf-class','hwf-qty','hwf-container','hwf-location','hwf-contractor','hwf-license','hwf-manifest','hwf-disposal-method','hwf-notes'],['hwf-gen-date','hwf-collect-date','hwf-disposal-date'],{'hwf-unit':'kg','hwf-status':'stored'});esgLoadChemicalLinks('hwf-chemical','');esgShowForm('esg-hw-form');}
+function esgHWNew(){esgHWEditId=null;document.getElementById('esg-hw-form3title').textContent='New Hazardous Waste Record';esgResetForm(['hwf-name','hwf-un','hwf-class','hwf-qty','hwf-container','hwf-location','hwf-contractor','hwf-license','hwf-manifest','hwf-disposal-method','hwf-notes'],['hwf-gen-date','hwf-collect-date','hwf-disposal-date'],{'hwf-unit':'kg','hwf-status':'stored'});['hwf-planned-collection','hwf-planned-disposal'].forEach(function(id){document.getElementById(id).value='';});esgLoadWasteOwner({});esgLoadChemicalLinks('hwf-chemical','');esgShowForm('esg-hw-form');}
 function esgHWEdit(id){
   var x=esgHWData.find(function(r){return r.id===id;});if(!x)return;esgHWEditId=id;
   document.getElementById('esg-hw-form3title').textContent='Edit Hazardous Waste';
   var flds={'hwf-name':'waste_name','hwf-un':'un_number','hwf-class':'hazard_class','hwf-qty':'quantity','hwf-container':'container_type','hwf-location':'storage_location','hwf-contractor':'licensed_contractor','hwf-license':'contractor_license_number','hwf-manifest':'manifest_number','hwf-disposal-method':'disposal_method','hwf-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var dates={'hwf-gen-date':'generation_date','hwf-collect-date':'collection_date','hwf-disposal-date':'disposal_date'};
-  Object.entries(dates).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(dates).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var un=document.getElementById('hwf-unit');if(un)un.value=x.unit||'kg';
   var st=document.getElementById('hwf-status');if(st)st.value=x.status||'stored';
-  esgLoadChemicalLinks('hwf-chemical',x.chemical_id);
+  esgLoadWasteOwner(x);document.getElementById('hwf-planned-collection').value=x.planned_collection_date||'';document.getElementById('hwf-planned-disposal').value=x.planned_disposal_date||'';esgLoadChemicalLinks('hwf-chemical',x.chemical_id);
   esgShowForm('esg-hw-form');
 }
 function esgHWBack(){document.getElementById('esg-hw-form').style.display='none';document.getElementById('esg-view-hazwaste').style.display='block';document.querySelectorAll('[id^="esg-tab-"]').forEach(function(t){t.classList.remove('active');});var tab=document.getElementById('esg-tab-hazwaste');if(tab)tab.classList.add('active');esgLoadHW();}
 async function esgHWSave(){
   var name=document.getElementById('hwf-name')?.value?.trim();if(!name){toast('Please enter waste name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var chemicalId=g('hwf-chemical');var body={company_id:ccid(),waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',chemical_id:chemicalId||null,sds_available:!!(chemicalId&&esgSdsLinks[chemicalId]),notes:g('hwf-notes'),updated_at:new Date().toISOString()};
-  try{if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toastActionError('Save hazardous waste record','Environmental / ESG',e);}
+  var chemicalId=g('hwf-chemical');var body={company_id:ccid(),waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),planned_collection_date:g('hwf-planned-collection'),planned_disposal_date:g('hwf-planned-disposal'),responsible_profile_id:g('hwf-owner'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',chemical_id:chemicalId||null,sds_available:!!(chemicalId&&esgSdsLinks[chemicalId]),notes:g('hwf-notes'),updated_at:new Date().toISOString()};
+  try{if(!(await esgConfirmDuplicate('hazardous_waste',body,esgHWEditId)))return;if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toastActionError('Save hazardous waste record','Environmental / ESG',e);}
 }
 async function esgHWDel(id){try{var current=esgHWData.find(x=>x.id===id)||{};if(current.status!=='disposed'&&!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive hazardous waste record',message:'Mark this hazardous waste record as disposed/archived instead of deleting it?',detail:'Hazardous waste records are regulatory evidence and should remain traceable with manifest and contractor details.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/hazardous_waste?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'disposed',notes:esgArchivedNotes(current.notes),updated_at:new Date().toISOString()}});toast('Hazardous waste record archived');esgLoadHW();return;}if(!(await appConfirmDelete('hazardous waste record','This record is already disposed/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toastActionError('Delete hazardous waste record','Environmental / ESG',e);}}
 
 // -- FUEL ----------------------------------------------------------------------
 function esgCalcCO2(){
   var tp=document.getElementById('ff-type')?.value||'diesel';
-  var unit=document.getElementById('ff-unit')?.value||'',qty=parseFloat(document.getElementById('ff-qty')?.value),factor=esgFuelFactor(tp,unit);
+  var unit=document.getElementById('ff-unit')?.value||'',qty=parseFloat(document.getElementById('ff-qty')?.value),snapshot=esgReadFactor(),factor=snapshot?.factor_value;
   var el=document.getElementById('ff-co2-display'),detail=document.getElementById('ff-co2-factor-detail');
-  if(el)el.textContent=Number.isFinite(qty)&&qty>0&&factor!==null?(qty*factor).toFixed(2)+' kg':'Not estimated';
-  if(detail)detail.textContent=factor===null?'No verified factor for this type/unit. Estimate withheld.':qty>0?qty+' '+unit+' × '+factor+' kg CO2e/'+unit+' = '+(qty*factor).toFixed(2)+' kg. Source: AURIS360 legacy preset v1 (external provenance unverified).':'Factor: '+factor+' kg CO2e/'+unit+'. Source: AURIS360 legacy preset v1 (external provenance unverified).';
+  var recorded=document.getElementById('ff-factor-method')?.value==='recorded';
+  if(el)el.textContent=recorded&&factor==null?(snapshot?.carbon_kg==null?'Not estimated':snapshot.carbon_kg+' kg (saved)'):Number.isFinite(qty)&&qty>0&&factor!=null?(qty*factor).toFixed(2)+' kg':'Not estimated';
+  if(detail)detail.textContent=snapshot?(factor==null?'Saved estimate; factor unavailable. ':Number.isFinite(qty)&&qty>0?qty+' '+unit+' × '+factor+' '+snapshot.factor_unit+' = '+(qty*factor).toFixed(2)+' kg CO2e. ':'Factor: '+factor+' '+snapshot.factor_unit+'. Enter a positive quantity. ')+(snapshot.factor_source||'Legacy record: external provenance unverified')+' · '+(snapshot.factor_version||'version unrecorded')+' · '+(snapshot.factor_scope||'scope unrecorded'):'Choose a sourced factor and confirm its applicability. Electricity needs a supplier / locally applicable factor; no UK grid factor is assumed.';
 }
 
 async function esgLoadFuel(){
@@ -354,7 +358,7 @@ async function esgLoadFuel(){
         +'<td style="padding:8px 10px"><span style="background:'+col+'20;color:'+col+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+escH(fuelLabels[x.fuel_type]||x.fuel_type||'-')+'</span></td>'
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.vehicle_equipment||'-')+'</td>'
         +'<td style="padding:8px 10px;text-align:right;font-weight:700">'+(parseFloat(x.quantity||0).toFixed(1))+' '+escH(x.unit||'L')+'</td>'
-        +'<td style="padding:8px 10px;text-align:right;color:#6D28D9;font-weight:600">'+(x.carbon_kg?parseFloat(x.carbon_kg).toFixed(1):'-')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;color:#6D28D9;font-weight:600">'+(x.carbon_kg!=null?parseFloat(x.carbon_kg).toFixed(2):'-')+'</td>'
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.purpose||'-')+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
         +'<button class="btn btn-sm" type="button" data-esg-view="'+x.id+'" title="View record" aria-label="View record"><i class="ti ti-eye"></i></button>'+'<button class="btn btn-sm" data-id="'+x.id+'" title="Edit record" aria-label="Edit record" data-auris-generated-onclick="g0164"><i class="ti ti-edit"></i></button>'
@@ -365,17 +369,17 @@ async function esgLoadFuel(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-function esgFuelNew(){esgFuelEditId=null;document.getElementById('fleet-fuel-vehicle-select')?.remove();var vehicleField=document.getElementById('ff-vehicle');if(vehicleField)vehicleField.hidden=false;document.getElementById('esg-fuel-form3title').textContent='New Fuel / Energy Record';esgResetForm(['ff-vehicle','ff-odo-start','ff-odo-end','ff-purpose','ff-dept','ff-cost','ff-notes'],['ff-date'],{'ff-type':'diesel','ff-unit':'litres'});document.getElementById('ff-date').value=esgLocalDate();document.getElementById('ff-qty').value='';esgCalcCO2();esgShowForm('esg-fuel-form');}
+function esgFuelNew(){esgFuelEditId=null;document.getElementById('fleet-fuel-vehicle-select')?.remove();var vehicleField=document.getElementById('ff-vehicle');if(vehicleField)vehicleField.hidden=false;document.getElementById('esg-fuel-form3title').textContent='New Fuel / Energy Record';esgResetForm(['ff-vehicle','ff-odo-start','ff-odo-end','ff-purpose','ff-dept','ff-cost','ff-notes'],['ff-date'],{'ff-type':'diesel','ff-unit':'litres'});document.getElementById('ff-date').value=esgLocalDate();document.getElementById('ff-qty').value='';document.getElementById('ff-document-ref').value='';esgInitFuelFactor(null);esgLoadFuelAssets(null);esgShowForm('esg-fuel-form');}
 function esgFuelEdit(id){
   var x=esgFuelData.find(function(r){return r.id===id;});if(!x)return;esgFuelEditId=id;
   document.getElementById('esg-fuel-form3title').textContent='Edit Fuel Record';
   var flds={'ff-vehicle':'vehicle_equipment','ff-odo-start':'meter_reading_start','ff-odo-end':'meter_reading_end','ff-purpose':'purpose','ff-dept':'department','ff-cost':'cost','ff-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var dt=document.getElementById('ff-date');if(dt)dt.value=x.record_date||'';
   var tp=document.getElementById('ff-type');if(tp)tp.value=x.fuel_type||'diesel';
   var qty=document.getElementById('ff-qty');if(qty)qty.value=x.quantity||'';
   var un=document.getElementById('ff-unit');if(un)un.value=x.unit||'litres';
-  esgCalcCO2();esgShowForm('esg-fuel-form');
+  document.getElementById('ff-document-ref').value=x.document_reference||'';esgInitFuelFactor(x);esgLoadFuelAssets(x);esgShowForm('esg-fuel-form');
 }
 function esgFuelBack(){document.getElementById('esg-fuel-form').style.display='none';document.getElementById('esg-view-fuel').style.display='block';document.querySelectorAll('[id^="esg-tab-"]').forEach(function(t){t.classList.remove('active');});var tab=document.getElementById('esg-tab-fuel');if(tab)tab.classList.add('active');esgLoadFuel();}
 async function esgFuelSave(){
@@ -384,10 +388,10 @@ async function esgFuelSave(){
   var tp=document.getElementById('ff-type')?.value||'diesel';
   var unit=document.getElementById('ff-unit')?.value||'',allowed=ESG_FUEL_UNITS[tp]||[];
   if(!allowed.includes(unit))return toast('Choose a unit valid for '+tp.replace(/_/g,' ')+'.',false);
-  var factor=esgFuelFactor(tp,unit),co2=factor===null?null:qty*factor;
+  var snapshot=esgReadFactor(),method=document.getElementById('ff-factor-method')?.value;if(method!=='none'&&!snapshot)return toast('Complete the factor source, version, evidence link and applicability confirmation, or choose Do not estimate.',false);var factor=snapshot?.factor_value??null,co2=factor===null?(method==='recorded'?snapshot?.carbon_kg??null:null):qty*factor;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:unit,vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:co2===null?null:Math.round(co2*100)/100,factor_value:factor,factor_unit:factor===null?null:'kg CO2e/'+unit,factor_source:factor===null?null:'AURIS360 legacy preset',factor_version:factor===null?null:'legacy-v1',notes:g('ff-notes')};
-  try{if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved'+(co2===null?'; CO2e not estimated.':'! CO2e: '+co2.toFixed(1)+' kg'));}esgFuelBack();}catch(e){toastActionError('Save fuel record','Environmental / ESG',e);}
+  var body={company_id:ccid(),record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:unit,vehicle_equipment:g('ff-vehicle'),equipment_id:g('ff-equipment'),document_reference:g('ff-document-ref'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:co2===null?null:Math.round(co2*100)/100,factor_value:factor,factor_unit:factor===null?null:'kg CO2e/'+unit,factor_source:snapshot?.factor_source||null,factor_version:snapshot?.factor_version||null,factor_source_url:snapshot?.factor_source_url||null,factor_scope:snapshot?.factor_scope||null,factor_confirmed:snapshot?.factor_confirmed||false,notes:g('ff-notes')};
+  try{if(!(await esgConfirmDuplicate('fuel_consumption',body,esgFuelEditId)))return;if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved'+(co2===null?'; CO2e not estimated.':'! CO2e: '+co2.toFixed(2)+' kg'));}esgFuelBack();}catch(e){toastActionError('Save fuel record','Environmental / ESG',e);}
 }
 async function esgFuelDel(id){try{var current=esgFuelData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive fuel record',message:'Archive this fuel / energy record instead of deleting it?',detail:'Fuel records feed ESG and CO2e history. The record will remain available for audit evidence.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/fuel_consumption?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:esgArchivedNotes(current.notes)}});toast('Fuel record archived');esgLoadFuel();return;}if(!(await appConfirmDelete('fuel record','This record is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toastActionError('Delete fuel record','Environmental / ESG',e);}}
 
@@ -430,16 +434,16 @@ async function esgLoadWater(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-function esgWaterNew(){esgWaterEditId=null;document.getElementById('esg-water-form3title').textContent='New Water Reading';esgResetForm(['waf-meter-id','waf-start','waf-end','waf-purpose','waf-location','waf-cost','waf-notes'],['waf-date'],{'waf-source':'mains','waf-unit':'m3'});document.getElementById('waf-date').value=esgLocalDate();document.getElementById('waf-consumption-display').textContent='-';var hint=document.getElementById('waf-prior-reading');if(hint)hint.textContent='Enter a meter ID to look up its last reading.';var start=document.getElementById('waf-start');if(start)delete start.dataset.previousConsumption;esgShowForm('esg-water-form');}
+function esgWaterNew(){document.getElementById('waf-document-ref').value='';esgWaterEditId=null;document.getElementById('esg-water-form3title').textContent='New Water Reading';esgResetForm(['waf-meter-id','waf-start','waf-end','waf-purpose','waf-location','waf-cost','waf-notes'],['waf-date'],{'waf-source':'mains','waf-unit':'m3'});document.getElementById('waf-date').value=esgLocalDate();document.getElementById('waf-consumption-display').textContent='-';var hint=document.getElementById('waf-prior-reading');if(hint)hint.textContent='Enter a meter ID to look up its last reading.';var start=document.getElementById('waf-start');if(start)delete start.dataset.previousConsumption;esgShowForm('esg-water-form');}
 async function esgWaterPrefillPrevious(){
   if(esgWaterEditId)return;var meter=document.getElementById('waf-meter-id')?.value?.trim(),start=document.getElementById('waf-start'),hint=document.getElementById('waf-prior-reading');if(!meter||!start||start.value)return;
   var company=String(ccid()),date=document.getElementById('waf-date')?.value||esgLocalDate();try{var rows=await api('/water_usage?select=record_date,meter_reading_end,quantity,unit&meter_id=eq.'+encodeURIComponent(meter)+cf()+'&record_date=lt.'+date+'&meter_reading_end=not.is.null&order=record_date.desc&limit=1');if(String(ccid())!==company||document.getElementById('waf-meter-id')?.value?.trim()!==meter||start.value)return;var previous=rows?.[0];if(previous&&Number.isFinite(Number(previous.meter_reading_end))){start.value=previous.meter_reading_end;start.dataset.previousConsumption=previous.quantity||'';var unit=document.getElementById('waf-unit');if(unit)unit.value=previous.unit||'m3';if(hint)hint.textContent='Start prefilled from '+previous.record_date+'; confirm the meter and unit before saving.';}else if(hint)hint.textContent='No previous end reading found for this meter.';}catch(error){if(hint)hint.textContent='Previous reading unavailable; enter it manually.';}
 }
 function esgWaterEdit(id){
   var x=esgWaterData.find(function(r){return r.id===id;});if(!x)return;esgWaterEditId=id;
-  document.getElementById('esg-water-form3title').textContent='Edit Water Record';
+  document.getElementById('esg-water-form3title').textContent='Edit Water Record';document.getElementById('waf-document-ref').value=x.document_reference||'';
   var flds={'waf-meter-id':'meter_id','waf-start':'meter_reading_start','waf-end':'meter_reading_end','waf-purpose':'purpose','waf-location':'location','waf-cost':'cost','waf-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var dt=document.getElementById('waf-date');if(dt)dt.value=x.record_date||'';
   var src=document.getElementById('waf-source');if(src)src.value=x.source||'mains';
   var un=document.getElementById('waf-unit');if(un)un.value=x.unit||'m3';
@@ -453,8 +457,8 @@ async function esgWaterSave(){
   if(qty<=0)qty=parseFloat(document.getElementById('waf-qty')?.value)||0;
   if(qty<=0){toast('Please enter meter readings or quantity',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
-  try{if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{if(body.meter_id&&body.record_date){var existing=await api('/water_usage?select=id,meter_reading_end&meter_id=eq.'+encodeURIComponent(body.meter_id)+'&record_date=eq.'+body.record_date+cf()+'&limit=1');if(existing?.length&&!(await appConfirmAction({title:'Possible duplicate water reading',message:'A reading for this meter and date already exists. Save another?',detail:'Compare the reading and supporting document before continuing.',confirmText:'Save another',cancelText:'Review entry'})))return;}body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toastActionError('Save water record','Environmental / ESG',e);}
+  var body={company_id:ccid(),record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),document_reference:g('waf-document-ref'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
+  try{if(!(await esgConfirmDuplicate('water_usage',body,esgWaterEditId)))return;if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toastActionError('Save water record','Environmental / ESG',e);}
 }
 async function esgWaterDel(id){try{var current=esgWaterData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive water record',message:'Archive this water usage record instead of deleting it?',detail:'Water readings support environmental trend history. The record will remain available for audit evidence.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/water_usage?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:esgArchivedNotes(current.notes)}});toast('Water record archived');esgLoadWater();return;}if(!(await appConfirmDelete('water usage record','This record is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toastActionError('Delete water record','Environmental / ESG',e);}}
 
@@ -506,7 +510,7 @@ function esgSpillEdit(id){
   document.getElementById('esg-spill-form3title').textContent='Edit Spill Report';
   document.getElementById('esg-spill-form3ref').textContent=x.ref_number||'-';
   var flds={'spf-location':'location','spf-substance':'substance','spf-qty':'estimated_quantity','spf-cause':'spill_cause','spf-immediate':'immediate_actions','spf-containment':'containment_method','spf-cleanup':'cleanup_method','spf-cleanup-con':'cleanup_contractor','spf-waste':'waste_generated','spf-root':'root_cause','spf-corrective':'corrective_actions','spf-impact':'environmental_impact','spf-lessons':'lessons_learned','spf-reg-body':'regulatory_body','spf-reg-ref':'regulatory_ref','spf-reporter':'reported_by','spf-time':'spill_time'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   var dt=document.getElementById('spf-date');if(dt)dt.value=x.spill_date||'';
   var sv=document.getElementById('spf-severity');if(sv)sv.value=x.severity||'minor';
   var st=document.getElementById('spf-status');if(st)st.value=x.status||'open';
@@ -529,7 +533,7 @@ async function esgSpillSave(){
   if(!substance||!location){toast('Please enter substance and location',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),spill_date:g('spf-date'),spill_time:g('spf-time'),reported_by:g('spf-reporter'),location:location,substance:substance,chemical_id:g('spf-chemical'),estimated_quantity:g('spf-qty')?parseFloat(g('spf-qty')):null,unit:g('spf-unit')||'litres',spill_cause:g('spf-cause'),reached_drain_watercourse:document.getElementById('spf-drain')?.checked||false,reached_soil:document.getElementById('spf-soil')?.checked||false,immediate_actions:g('spf-immediate'),containment_method:g('spf-containment'),cleanup_method:g('spf-cleanup'),cleanup_contractor:g('spf-cleanup-con'),waste_generated:g('spf-waste'),waste_record_id:g('spf-waste-record'),root_cause:g('spf-root'),corrective_actions:g('spf-corrective'),action_id:g('spf-action'),environmental_impact:g('spf-impact'),lessons_learned:g('spf-lessons'),regulatory_notification_required:document.getElementById('spf-regulator')?.checked||false,regulatory_body:g('spf-reg-body'),regulatory_ref:g('spf-reg-ref'),severity:g('spf-severity')||'minor',status:g('spf-status')||'open',photos_taken:document.getElementById('spf-photos')?.checked||false,updated_at:new Date().toISOString()};
-  try{
+  try{if(!(await esgConfirmDuplicate('spill_reports',body,esgSpillEditId)))return;
     if(esgSpillEditId){await api('/spill_reports?id=eq.'+esgSpillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
       body.created_by=prof?.id;
@@ -603,7 +607,7 @@ function esgInspEdit(id){
   var x=esgInspData.find(function(r){return r.id===id;});if(!x)return;esgInspEditId=id;
   document.getElementById('esg-insp-form3title').textContent='Edit Inspection';
   var flds={'eif-inspector':'inspector','eif-area':'area','eif-findings':'findings','eif-nc':'non_conformances','eif-actions':'corrective_actions'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]??'';});
   fillPersonSelect('eif-inspector',x.inspector||'');
   var dt=document.getElementById('eif-date');if(dt)dt.value=x.inspection_date||'';
   var nd=document.getElementById('eif-next-date');if(nd)nd.value=x.next_inspection_date||'';
@@ -619,7 +623,7 @@ async function esgInspSave(){
   var checklist=ENV_CHECKLIST.map(function(item,i){var ok=document.getElementById('eic-ok-'+i)?.checked;var nc=document.getElementById('eic-nc-'+i)?.checked;var na=document.getElementById('eic-na-'+i)?.checked;var note=document.getElementById('eic-note-'+i)?.value||'';return{item:item,result:ok?'ok':nc?'nc':na?'na':'unanswered',note:note};});
   if(g('eif-rating')&&checklist.some(function(item){return item.result==='unanswered';})){toast('Complete every checklist item, including deliberate N/A answers, before assigning an overall rating.',false);return;}
   var body={company_id:ccid(),inspection_date:g('eif-date'),inspector:g('eif-inspector'),area:area,inspection_type:g('eif-type')||'routine',checklist_results:checklist,findings:g('eif-findings'),non_conformances:parseInt(g('eif-nc'))||0,overall_rating:g('eif-rating')||null,corrective_actions:g('eif-actions'),next_inspection_date:g('eif-next-date')};
-  try{
+  try{if(!(await esgConfirmDuplicate('environmental_inspections',body,esgInspEditId)))return;
     if(esgInspEditId){await api('/environmental_inspections?id=eq.'+esgInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
       body.created_by=prof?.id;

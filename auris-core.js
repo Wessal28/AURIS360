@@ -22779,8 +22779,10 @@ async function cirDeleteRow(id){
 }
 
 // Load the environmental module only when opened.
-var aurisEsgModulePromise;
+var aurisEsgModulePromise,aurisEsgFollowupPromise;
 async function loadESG(){
+  if(!aurisEsgFollowupPromise)aurisEsgFollowupPromise=new Promise(function(resolve,reject){var script=document.createElement('script');script.src='auris-esg-followup.js?v=20261018-1';script.onload=resolve;script.onerror=function(){aurisEsgFollowupPromise=null;reject(new Error('Environmental follow-up could not be loaded. Please retry.'));};document.head.appendChild(script);});
+  await aurisEsgFollowupPromise;
   if(!aurisEsgModulePromise)aurisEsgModulePromise=new Promise(function(resolve,reject){
     var script=document.createElement('script');script.src='auris-esg-module.js?v=20261015-1';
     script.onload=resolve;script.onerror=function(){aurisEsgModulePromise=null;reject(new Error('Environmental module could not be loaded. Please retry.'));};
@@ -26405,6 +26407,7 @@ function fleetKey(v){
 }
 
 function fleetFuelMatchesVehicle(f,v){
+  if(f.equipment_id)return String(f.equipment_id)===String(v.id)&&String(f.company_id)===String(v.company_id);
   var hay=fleetKey(f.vehicle_equipment||'');
   if(!hay)return false;
   return [v.registration_number,v.ref_number,v.name].some(function(x){
@@ -26697,7 +26700,7 @@ function fleetMonthlyCheck(id){
   modal.querySelector('.fleet-check-save')?.addEventListener('click',async function(){var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));if(controls.some(function(c){return !c.value;})){toast('Answer every check before saving.',false);controls.find(function(c){return !c.value;})?.focus();return;}var items=controls.map(function(c){return {item:c.dataset.label,result:c.value,note:c.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});if(items.some(function(x){return (x.result==='na'||x.result==='fail')&&!x.note;})){toast('Explain each N/A and failed answer.',false);return;}var failed=items.some(function(x){return x.result==='fail';}),defects=modal.querySelector('#fleet-check-defects')?.value.trim(),actions=modal.querySelector('#fleet-check-actions')?.value.trim();if(failed&&!defects){defects=items.filter(function(x){return x.result==='fail';}).map(function(x){return x.item+' - '+x.note;}).join('; ');modal.querySelector('#fleet-check-defects').value=defects;}if(failed&&!actions){toast('Failed checks require corrective actions.',false);return;}var inspectionDate=modal.querySelector('#fleet-check-date')?.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')){toast('Select an inspection date.',false);return;}var next=new Date(inspectionDate+'T12:00:00');if(Number.isNaN(next.getTime())){toast('Enter a valid inspection date.',false);return;}next.setDate(next.getDate()+30);var body={company_id:ccid(),tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by:null,inspected_by_name:prof?.full_name||prof?.name||prof?.email||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null,next_inspection_date:[next.getFullYear(),String(next.getMonth()+1).padStart(2,'0'),String(next.getDate()).padStart(2,'0')].join('-'),notes:'Fleet monthly check',created_by:prof?.id||null};var save=modal.querySelector('.fleet-check-save');save.disabled=true;save.textContent='Saving...';try{await api('/rpc/record_fleet_monthly_check',{m:'POST',p:'return=representation',b:{p_company_id:body.company_id,p_vehicle_id:body.tool_id,p_inspection_date:body.inspection_date,p_inspector_name:body.inspected_by_name,p_checklist:body.checklist_results,p_defects:body.defects_found,p_actions:body.actions_taken}});await loadFleet();toast(failed?'Failed check saved; vehicle restricted with linked defect and repair task.':'Monthly vehicle check saved in Fleet.');modal.remove();}catch(e){toastActionError('Save monthly vehicle check / restriction','Fleet',e);}finally{save.disabled=false;save.innerHTML='<i class="ti ti-device-floppy"></i>Save monthly check';}});
   modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
 }
-function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew!=='function')return;esgFuelNew();var input=document.getElementById('ff-vehicle');if(!input)return;var select=document.createElement('select');select.id='fleet-fuel-vehicle-select';select.setAttribute('aria-label','Registered vehicle');select.innerHTML='<option value="">Select registered vehicle...</option>'+(fleetVehicles||[]).filter(function(v){return String(v.company_id)===String(ccid());}).map(function(v){var ref=v.registration_number||v.ref_number||v.name||'';return '<option value="'+escH(ref)+'">'+escH(fleetLabel(v)+(v.name&&v.name!==fleetLabel(v)?' - '+v.name:''))+'</option>';}).join('');select.value=label||'';input.value=select.value;input.hidden=true;select.addEventListener('change',function(){input.value=select.value;});input.after(select);},180);}
+async function fleetFuelNew(label){await showPage('esg',null);await loadESG();esgFuelNew();await esgLoadFuelAssets(null);var match=esgFuelAssets.find(function(v){return label&&[v.registration_number,v.ref_number,v.name].includes(label);});if(match){document.getElementById('ff-equipment').value=match.id;esgFuelAssetChanged(true);}}
 
 function fleetOpenVehicleForm(id){
   var editContext=AurisFleetListWorkspace.session();fleetAssertEditor(editContext);
@@ -27641,7 +27644,9 @@ async function mapOpenExactSource(adapter,x){
       await cirLoad();
       if(mapHasSourceRow(conIncData,id)&&typeof cirEdit==='function'){await cirEdit(id);return true;}
     }
-    if(adapter.key==='esg'&&typeof esgSwitchTab==='function'){
+    if(adapter.key==='esg'){
+      await loadESG();
+      if(x.source_table&&typeof esgOpenExactRecord==='function')return esgOpenExactRecord(x.source_table,id);
       if(/^spl[-_]|\bspill\b/.test(ref)){
         esgSwitchTab('spills',document.getElementById('esg-tab-spills'));
         if(typeof esgLoadSpills==='function')await esgLoadSpills();
