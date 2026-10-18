@@ -141,3 +141,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_monthly
 run(process.execPath, ['scripts/verify-kpi-review-concurrency.cjs'], {label: 'competing monthly review sessions'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'environmental_followup.sql')], {label: 'environmental reminder scope and emissions assurance'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assurance.sql')], {label: 'noise approval, immutable evidence, revisions and reports'});
