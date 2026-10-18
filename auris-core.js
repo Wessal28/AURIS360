@@ -9839,7 +9839,7 @@ async function mtgLoadSeries(){
     var d=await api('/meeting_series?select=*'+cf()+'&order=meeting_type,title');
     if(requestCompany!==String(ccid()||'')||requestUser!==String(prof?.id||''))return;mtgSeriesData=d||[];
     try{
-      var mins=await api('/hse_meetings?select=id,company_id,series_id,meeting_date,status'+cf());
+      var mins=await api('/hse_meetings?select=id,company_id,series_id,meeting_date,meeting_timezone,status'+cf());
       if(requestCompany!==String(ccid()||'')||requestUser!==String(prof?.id||''))return;mtgMergeMinutes(mins||[],true);
     }catch(_){}
     if(!d||!d.length){
@@ -10588,7 +10588,7 @@ function mtgRenderRoadmap(){
     weeks.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
     (mtgMinutesData||[]).forEach(function(m){
       if(m.series_id===series.id&&m.meeting_date){
-        var md=new Date(m.meeting_date);
+        var md=new Date(AurisMeetingTime.wall(m.meeting_date,m.meeting_timezone).slice(0,10)+'T12:00:00');
         if(md.getFullYear()===mtgRoadmapYear){
           var mw=mtgGetWeekNumber(md);
           var isCompleted=m.status==='completed';
@@ -10651,7 +10651,7 @@ function mtgRenderRoadmap(){
 
 function mtgClickWeek(seriesId,week){
   var series=mtgSeriesData.find(function(item){return String(item.id)===String(seriesId);});
-  var matches=(mtgMinutesData||[]).filter(function(m){var linked=String(m.series_id||'')===String(seriesId)||(series&&!m.series_id&&String(m.title||'').trim().toLowerCase()===String(series.title||'').trim().toLowerCase());return linked&&m.meeting_date&&new Date(m.meeting_date).getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(new Date(m.meeting_date))===Number(week)&&String(m.status||'').toLowerCase()!=='cancelled';});
+  var matches=(mtgMinutesData||[]).filter(function(m){var linked=String(m.series_id||'')===String(seriesId)||(series&&!m.series_id&&String(m.title||'').trim().toLowerCase()===String(series.title||'').trim().toLowerCase());var day=new Date(AurisMeetingTime.wall(m.meeting_date,m.meeting_timezone).slice(0,10)+'T12:00:00');return linked&&m.meeting_date&&day.getFullYear()===mtgRoadmapYear&&mtgGetWeekNumber(day)===Number(week)&&String(m.status||'').toLowerCase()!=='cancelled';});
   var saved=matches.find(function(m){return String(m.status||'').toLowerCase()==='completed';})||matches[0];
   if(saved){if(String(saved.status||'').toLowerCase()==='completed'||!isMgr())mtgViewMomReadOnly(saved.id);else mtgOpenMom(saved.id);return;}
   if(!series)return;var occurrence=mtgGetWeeksForSeries(series,mtgRoadmapYear).find(function(x){return x.week===Number(week);});if(!occurrence)return;var d=occurrence.date;var exact=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');mtgScheduleMeeting(seriesId,exact);
@@ -10788,7 +10788,7 @@ async function mtgOpenMom(id){
       var tr=document.createElement('tr');tr.dataset.recommendationKey=r.key||crypto.randomUUID();
       tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">-</td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3rec-desc" value="'+escH2(r.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
-        +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3rec-resp" value="'+escH2(r.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3rec-resp" value="'+escH2(r.person_id||r.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="mom3rec-date" value="'+(r.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(r.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+((!r.prio||r.prio==='medium')?' selected':'')+'>Medium</option><option value="high"'+(r.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(r.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(r.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(r.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(r.status==='closed'?' selected':'')+'>Closed</option></select></td>'

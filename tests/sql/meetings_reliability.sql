@@ -1,5 +1,11 @@
 -- Disposable CI fixtures only; no meeting or communication is sent.
 begin;
+-- The schema-only baseline omits Supabase's existing table ACLs. Reproduce the
+-- caller grants here, retaining all real row policies; rollback removes them.
+grant usage on schema public,auth to authenticated;
+grant select on public.profiles,public.people to authenticated;
+grant select,insert,update on public.hse_meetings,public.action_tracker to authenticated;
+grant select,update on public.meeting_series to authenticated;
 insert into auth.users(id) values('c1800000-0000-4000-8000-000000000001');
 insert into public.companies(id,name) values('c1800000-0000-4000-8000-000000000010','Meetings test A'),('c1800000-0000-4000-8000-000000000020','Meetings test B');
 insert into public.profiles(id,company_id,full_name,role,status) values('c1800000-0000-4000-8000-000000000001','c1800000-0000-4000-8000-000000000010','Meeting test admin','admin','active');

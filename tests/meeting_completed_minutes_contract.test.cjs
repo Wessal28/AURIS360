@@ -12,7 +12,7 @@ test('agenda opens stored completed minutes and drafts instead of a blank form',
 });
 
 test('week 16 opens the stored draft for editing and keeps completed minutes read only',()=>{
-  const calls=[];const c={mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
+  const calls=[];const c={AurisMeetingTime:{wall:value=>value.slice(0,10)+'T09:00'},mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
   vm.createContext(c);const start=source.indexOf('function mtgClickWeek(seriesId,week){'),end=source.indexOf('\nfunction mtgWeekToDate',start);vm.runInContext(source.slice(start,end),c);
   c.mtgClickWeek('series-a',16);assert.deepEqual(calls,[['edit','week-16']]);
   c.mtgMinutesData[0].status='completed';c.mtgClickWeek('series-a',16);assert.deepEqual(calls[1],['view','week-16']);
