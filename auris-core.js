@@ -32670,6 +32670,7 @@ async function trainingSaveWithFallback(path,request,body,fallbackKeys){
     return await api(path,request);
   }catch(e){
     if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
+    if(['participant_ids','source_training_id','plan_id','attendance_status','record_kind'].some(function(k){return Object.prototype.hasOwnProperty.call(body||{},k);}))throw e;
     var slim=Object.assign({},body||{});
     (fallbackKeys||[]).forEach(function(k){delete slim[k];});
     var req=Object.assign({},request,{b:slim});
@@ -32697,6 +32698,7 @@ function trainingPreviewAttachment(url,name){
 
 // -- COMPETENCY MATRIX -------------------------------------------------------
 async function cmLoad(){
+  var loadContext=TrainingWorkflow.context();
   var el=document.getElementById('cm3table');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
@@ -32706,7 +32708,7 @@ async function cmLoad(){
       api('/people?select=id,first_name,last_name,job_title&status=eq.active'+cf()+'&order=last_name'),
       api('/competency_matrix?select=*'+cf())
     ]);
-    compAllData=comps||[];
+    TrainingWorkflow.assertContext(loadContext);compAllData=comps||[];
     cmAllData=cm||[];
     if(!compAllData.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
@@ -32766,7 +32768,9 @@ async function cmLoad(){
   }catch(e){if(el)el.innerHTML=registerErrorHtml('register',e.message);console.error(e);}
 }
 
-async function cmEditCell(personId, compId){
+async function cmEditCell(personId,compId){return TrainingWorkflow.competency(personId,compId);}
+async function cmUpdateCell(personId, compId, supportingId, assessmentNotes){
+  if(!isMgr())return;var assessmentContext=TrainingWorkflow.context();
   var entry=cmAllData.find(function(r){return r.person_id===personId&&r.competency_id===compId;});
   var comp=compAllData.find(function(c){return c.id===compId;});
   var person=(people||[]).find(function(p){return p.id===personId;});
@@ -32783,9 +32787,9 @@ async function cmEditCell(personId, compId){
   if(newCur===null)return;
   var newReq=await appPrompt({title:'Update competency',message:'Required level for this role',value:String(req),options:levelOptions});
   if(newReq===null)return;
-  try{
+  try{TrainingWorkflow.assertContext(assessmentContext);
     var body={company_id:ccid(),person_id:personId,competency_id:compId,
-      current_level:parseInt(newCur)||0,required_level:parseInt(newReq)||2,updated_at:new Date().toISOString()};
+      current_level:Number(newCur),required_level:Number(newReq),supporting_training_id:supportingId||null,notes:assessmentNotes||entry?.notes||null,updated_at:new Date().toISOString()};
     var savedEntry=null;
     if(entry){
       await api('/competency_matrix?id=eq.'+entry.id,{m:'PATCH',p:'return=minimal',b:body});
@@ -32901,13 +32905,14 @@ function trainPlanPrevYear(){trainYear--;var yl=document.getElementById('tp-year
 function trainPlanNextYear(){trainYear++;var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;tpLoad();}
 
 async function tpLoad(){
+  var loadContext=TrainingWorkflow.context();
   var el=document.getElementById('tp-table');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/training_plan?select=*'+cf()+'&year=eq.'+trainYear+'&order=month,planned_date');
-    var trainingRecords=await api('/training_followup?select=training_topic,training_date,person_name,certificate'+cf()+'&order=training_date.desc').catch(function(){return [];});
-    tpAllData=d||[];
+    var trainingRecords=await api('/training_followup?select=training_topic,training_date,person_name,certificate,company_id,plan_id'+cf()+'&order=training_date.desc').catch(function(){return [];});
+    TrainingWorkflow.assertContext(loadContext);tpAllData=d||[];
     var today=new Date();
     var planned=tpAllData.filter(function(x){return x.status==='planned'||x.status==='confirmed';}).length;
     var completed=tpAllData.filter(function(x){return x.status==='completed';}).length;
@@ -32919,7 +32924,7 @@ async function tpLoad(){
     setM('tp-m3planned',planned);setM('tp-m3completed',completed);
     setM('tp-m3progress',progress);setM('tp-m3overdue',overdue,'#E24B4A');
     if(window.AurisTrainingPlanListWorkspace){
-      try{return window.AurisTrainingPlanListWorkspace.mount(el,tpAllData||[],{records:trainingRecords||[],canEdit:isMgr(),openRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');return aurisReadOnlyRecordModal('Training plan details',selected.training_topic||'Training plan item',selected,aurisReadableRecordFields(selected));},editRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit the training plan.');return tpOpen(id);},onApplyFilters:function(){tpLoad();}});}
+      try{return window.AurisTrainingPlanListWorkspace.mount(el,tpAllData||[],{records:trainingRecords||[],canEdit:isMgr(),openRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');return TrainingWorkflow.viewPlan(id);},editRecord:function(id,current){var selected=(tpAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This training plan item is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit the training plan.');return tpOpen(id);},createAttendance:function(id){return TrainingWorkflow.attendance(id);},onApplyFilters:function(){tpLoad();}});}
       catch(error){el.innerHTML=registerErrorHtml('register',error.message);console.error(error);return;}
     }
     if(!tpAllData.length){
@@ -32947,7 +32952,7 @@ async function tpLoad(){
       var matches=(trainingRecords||[]).filter(function(r){
         var sameTopic=String(r.training_topic||'').trim().toLowerCase()===topic;
         var sameDate=!actual||String(r.training_date||'')===actual;
-        return topic&&sameTopic&&sameDate;
+        return r.plan_id?String(r.plan_id)===String(x.id):topic&&sameTopic&&sameDate;
       });
       if(matches.length)return '<span class="badge badge-green">'+matches.length+' record'+(matches.length>1?'s':'')+'</span>'+(matches.some(function(r){return r.certificate;})?'<div class="muted">Certificate evidence</div>':'');
       if(String(x.status||'').toLowerCase()==='completed')return '<span class="badge badge-amber">Evidence missing</span><div class="muted">Add attendance/training record</div>';
@@ -33002,7 +33007,7 @@ function tpBack(){
 
 function tpNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','plan')){toast('You do not have access to this section',false);return;}
 
-  tpEditingId=null;
+  tpEditingId=null;delete document.getElementById('tp-form').dataset.sourceTrainingId;TrainingWorkflow.participants();
   document.getElementById('tp-form3title').textContent='New Training';
   document.getElementById('tp-del-btn').style.display='none';
   ['tp-topic','tp-group','tp-trainer','tp-provider','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -33020,7 +33025,7 @@ function tpNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllow
 function tpOpen(id){
   var x=tpAllData.find(function(r){return r.id===id;});
   if(!x)return;
-  tpEditingId=id;
+  tpEditingId=id;document.getElementById('tp-form').dataset.sourceTrainingId=x.source_training_id||'';TrainingWorkflow.participants(x);
   document.getElementById('tp-form3title').textContent='Edit Training';
   document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective'};
@@ -33050,10 +33055,10 @@ async function tpSave(){
   if(status==='completed'&&!actual){toast('Completed training must have an actual date',false);return;}
   if(duration&&Number(duration)<0){toast('Duration cannot be negative',false);return;}
   if(budget&&Number(budget)<0){toast('Budget cannot be negative',false);return;}
-  if(!monthVal&&planned)monthVal=String(new Date(planned).getMonth()+1);
+  if(!monthVal&&planned)monthVal=String(Number(planned.slice(5,7)));
   var body={
     company_id:ccid(),year:trainYear,
-    training_topic:topic,target_group:g('tp-group'),
+    training_topic:topic,target_group:g('tp-group'),participant_ids:Array.from(document.getElementById('tp-participants')?.selectedOptions||[]).map(function(o){return o.value;}),source_training_id:document.getElementById('tp-form').dataset.sourceTrainingId||null,
     month:monthVal?parseInt(monthVal):null,
     training_type:tpNormalizeType(g('tp-type')),priority:g('tp-priority')||'medium',
     status:status,trainer:g('tp-trainer'),location:g('tp-location'),
@@ -33159,26 +33164,23 @@ function trainingAIApplyPlanItem(i){
 
 // -- TRAINING FOLLOW-UP ------------------------------------------------------
 async function tfLoad(){
+  var loadContext=TrainingWorkflow.context();
   var el=document.getElementById('tf-table');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/training_followup?select=*'+cf()+'&order=training_date.desc');
-    tfAllData=d||[];
+    TrainingWorkflow.assertContext(loadContext);tfAllData=d||[];
     // Populate person dropdowns
     var opts='<option value="">Select person...</option>';
     (people||[]).forEach(function(p){opts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:'')+'</option>';});
     ['tfr-person','authr-person'].forEach(function(id){var sel=document.getElementById(id);if(sel)sel.innerHTML=opts;});
-    tfRender(tfAllData);
+    tfFilter();
   }catch(e){if(el)el.innerHTML=registerErrorHtml('register',e.message);console.error(e);}
 }
 
 function tfFilter(){
-  var q=(document.getElementById('tf-search')?.value||'').toLowerCase();
-  var filtered=tfAllData.filter(function(x){
-    return !q||(x.person_name||'').toLowerCase().includes(q)||(x.training_topic||'').toLowerCase().includes(q);
-  });
-  tfRender(filtered);
+  tfRender(TrainingWorkflow.filter(tfAllData,document.getElementById('tf-search')?.value,document.getElementById('tf-filter-exp')?.value));
 }
 
 function tfRender(data){
@@ -33206,14 +33208,14 @@ function tfRender(data){
     var ref=x.refresher_due?new Date(x.refresher_due):'';
     var expStr=exp?exp.toLocaleDateString('en-GB'):'-';
     var refStr=ref?ref.toLocaleDateString('en-GB'):'-';
-    var expAlert=exp&&exp<today?'color:var(--red);font-weight:700':exp&&exp<soon?'color:var(--amber);font-weight:600':'';
+    var validity=TrainingWorkflow.expiry(x.expiry_date);var expAlert=validity.state==='expired'?'color:var(--red);font-weight:700':validity.state==='expiring'?'color:var(--amber);font-weight:600':'';if(!x.expiry_date)expStr='No expiry recorded';if(validity.state==='invalid')expStr='Expiry needs correction';
     var refAlert=ref&&ref<today?'color:var(--red);font-weight:700':ref&&ref<soon?'color:var(--amber);font-weight:600':'';
     var certUrl=x.certificate_url||x.evidence_url||'';
     var certCell=certUrl
       ? '<button class="btn btn-sm" title="Preview certificate" data-url="'+escH(certUrl)+'" data-name="'+escH(x.certificate||x.training_topic||'Training certificate')+'" data-auris-generated-onclick="g0318"><i class="ti ti-eye"></i> '+escH(x.certificate||'Certificate')+'</button>'
       : escH(x.certificate||'-');
     var archived=/\[Archived/i.test(String(x.notes||''));
-    var result=archived?'<span class="badge gray">Archived</span>':x.passed===true?'<span style="color:var(--green);font-weight:700">Pass</span>':x.passed===false?'<span style="color:var(--red)">Fail</span>':'-';
+    var result=archived?'<span class="badge gray">Archived</span>':x.passed===true?'<span style="color:var(--green);font-weight:700">Pass</span>':x.passed===false?'<span style="color:var(--red)">Fail</span>':'Pending assessment';
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
       +'<td style="padding:8px 10px;font-weight:600">'+escH(x.person_name||'-')+'</td>'
       +'<td style="padding:8px 10px">'+escH(x.training_topic||'-')+'</td>'
@@ -33223,13 +33225,14 @@ function tfRender(data){
       +'<td style="padding:8px 10px;'+refAlert+'">'+refStr+(refAlert.includes('red')?' ?':'')+'</td>'
       +'<td style="padding:8px 10px;text-align:center">'+result+'</td>'
       +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-      +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0319"><i class="ti ti-edit"></i></button>'
-      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0320"><i class="ti ti-trash"></i></button>':'')
+      +'<button class="btn btn-sm training-view-record" data-id="'+escH(x.id)+'" aria-label="View training record" title="View training record"><i class="ti ti-eye"></i></button>'
+      +'<button class="btn btn-sm" aria-label="Edit training record" title="Edit training record" data-id="'+x.id+'" data-auris-generated-onclick="g0319"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" aria-label="Archive training record" title="Archive training record" data-auris-generated-onclick="g0320"><i class="ti ti-trash"></i></button>':'')
       +'</div></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
-  el.innerHTML=h;
+  el.innerHTML=h;el.querySelectorAll('.training-view-record').forEach(function(b){b.addEventListener('click',function(){TrainingWorkflow.viewRecord(b.dataset.id);});});
 }
 
 function tfShowForm(){
@@ -33244,14 +33247,14 @@ function tfBack(){
 
 function tfNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','followup')){toast('You do not have access to this section',false);return;}
 
-  tfEditingId=null;
+  tfEditingId=null;TrainingWorkflow.initRecord();
   document.getElementById('tf-form3title').textContent='New Training Record';
   document.getElementById('tf-del-btn').style.display='none';
   ['tfr-name','tfr-course','tfr-trainer','tfr-cert','tfr-cert-url','tfr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('tfr-trainer');
   ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var sc=document.getElementById('tfr-score');if(sc)sc.value='';
-  var ps=document.getElementById('tfr-passed');if(ps)ps.value='true';
+  var ps=document.getElementById('tfr-passed');if(ps)ps.value='';
   var per=document.getElementById('tfr-person');if(per)per.value='';
   tfShowForm();
 }
@@ -33259,7 +33262,7 @@ function tfNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllow
 function tfOpen(id){
   var x=tfAllData.find(function(r){return r.id===id;});
   if(!x)return;
-  tfEditingId=id;
+  tfEditingId=id;TrainingWorkflow.initRecord(x);
   document.getElementById('tf-form3title').textContent='Edit Training Record';
   document.getElementById('tf-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tfr-name':'person_name','tfr-course':'training_topic','tfr-trainer':'trainer','tfr-cert':'certificate','tfr-cert-url':'certificate_url','tfr-notes':'notes'};
@@ -33271,8 +33274,8 @@ function tfOpen(id){
     var key={'tfr-date':'training_date','tfr-expiry':'expiry_date','tfr-refresher':'refresher_due'}[id];
     var el=document.getElementById(id);if(el)el.value=x[key]||'';
   });
-  var sc=document.getElementById('tfr-score');if(sc)sc.value=x.score||'';
-  var ps=document.getElementById('tfr-passed');if(ps)ps.value=String(x.passed!==false);
+  var sc=document.getElementById('tfr-score');if(sc)sc.value=x.score??'';
+  var ps=document.getElementById('tfr-passed');if(ps)ps.value=x.passed==null?'':String(x.passed);
   var per=document.getElementById('tfr-person');if(per)per.value=x.person_id||'';
   tfShowForm();
 }
@@ -33291,13 +33294,13 @@ async function tfSave(){
   if(refresher&&refresher<trainingDate){toast('Refresher due date cannot be before training date',false);return;}
   if(score&&(Number(score)<0||Number(score)>100)){toast('Score must be between 0 and 100',false);return;}
   var body={
-    company_id:ccid(),person_id:personId||null,
+    company_id:ccid(),person_id:personId||null,plan_id:g('tfr-plan'),attendance_status:g('tfr-attendance')||'pending',duration_hours:g('tfr-duration')?Number(g('tfr-duration')):null,
     person_name:name||null,training_topic:course,
     training_date:trainingDate,trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
     certificate_url:g('tfr-cert-url'),evidence_url:g('tfr-cert-url'),
     expiry_date:expiry,refresher_due:refresher,
     score:score?parseFloat(score):null,
-    passed:document.getElementById('tfr-passed')?.value!=='false',
+    passed:TrainingWorkflow.outcome(document.getElementById('tfr-passed')?.value),
     notes:g('tfr-notes'),updated_at:new Date().toISOString()
   };
   Object.assign(body,personIdentityPayload(personId||name));
@@ -33370,7 +33373,7 @@ async function tfDeleteFromList(id){
       var idx=tfAllData.findIndex(function(x){return x.id===id;});
       if(idx>=0)tfAllData[idx]=Object.assign({},tfAllData[idx],{notes:archivedNotes});
       toast('Training follow-up archived');
-      tfRender(tfAllData);
+      tfFilter();
     }catch(e){toastActionError('Archive training follow-up','Training & Competency',e);}
     return;
   }
@@ -33381,12 +33384,13 @@ async function tfDeleteFromList(id){
 
 // -- AUTHORISATIONS ----------------------------------------------------------
 async function authLoad(){
+  var loadContext=TrainingWorkflow.context();
   var el=document.getElementById('auth-table');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/authorisations?select=*'+cf()+'&order=expiry_date,person_name');
-    authAllData=d||[];
+    TrainingWorkflow.assertContext(loadContext);authAllData=d||[];
     var popts='<option value="">Select person...</option>';
     (people||[]).forEach(function(p){popts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>';});
     var psel=document.getElementById('authr-person');if(psel)psel.innerHTML=popts;
@@ -33439,7 +33443,7 @@ function authFilter(){
 function authRender(data){
   var el=document.getElementById('auth-table');if(!el)return;
   if(!data.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations found.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0321"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No certificate or work-authorisation records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0321"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
     return;
   }
   var today=new Date();var soon=new Date();soon.setDate(soon.getDate()+60);
@@ -33457,7 +33461,7 @@ function authRender(data){
   data.forEach(function(x){if(!byPerson[x.person_name])byPerson[x.person_name]=[];byPerson[x.person_name].push(x);});
   var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr>'
     +'<th>Person</th>'
-    +'<th>Authorisation type</th>'
+    +'<th>Certificate / permission type</th>'
     +'<th style="width:100px">Issue date</th>'
     +'<th style="width:100px">Expiry date</th>'
     +'<th style="width:130px">Reference</th>'
@@ -33477,14 +33481,14 @@ function authRender(data){
       var isExpiredOrWarn=x.expiry_date&&(new Date(x.expiry_date)<today||new Date(x.expiry_date)<=soon);
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
         +(ai===0?'<td rowspan="'+auths.length+'" style="padding:8px 12px;font-weight:700;border-right:1px solid #e5e7eb;vertical-align:top">'+escH(name)+'</td>':'')
-        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.authorisation_type||'-')+'</td>'
+        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.authorisation_type||'-')+'<div class="muted">'+escH(x.record_kind==='certificate'?'Certificate evidence — does not grant permission':x.record_kind==='work_authorisation'?'Work authorisation':'Unclassified legacy record')+'</div></td>'
         +'<td style="padding:8px 10px">'+iss+'</td>'
         +'<td style="padding:8px 10px'+(isExpiredOrWarn?';color:var(--red)':'')+'">'+exp+(isExpiredOrWarn?' ?':'')+'</td>'
         +'<td style="padding:8px 10px;font-size:11px">'+refCell+(x.scope||x.restrictions?'<div class="muted">'+escH(x.scope||x.restrictions)+'</div>':'')+'</td>'
         +'<td style="padding:8px 10px">'+statusBadge(x.status,x.expiry_date)+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0322"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0323"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" aria-label="Edit certificate or work authorisation" title="Edit certificate or work authorisation" data-auris-generated-onclick="g0322"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" aria-label="Archive certificate or work authorisation" title="Archive certificate or work authorisation" data-auris-generated-onclick="g0323"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
@@ -33513,8 +33517,8 @@ function authBack(){
 }
 
 function authNew(){
-  authEditingId=null;
-  document.getElementById('auth-form3title').textContent='New Authorisation';
+  authEditingId=null;document.getElementById('authr-kind').value='certificate';
+  document.getElementById('auth-form3title').textContent='New Certificate / Work Authorisation';
   document.getElementById('auth-del-btn').style.display='none';
   ['authr-name','authr-type','authr-ref','authr-cert-url','authr-scope','authr-issuer','authr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var popts='<option value="">Select person...</option>';
@@ -33532,8 +33536,8 @@ function authNew(){
 function authOpen(id){
   var x=authAllData.find(function(r){return r.id===id;});
   if(!x)return;
-  authEditingId=id;
-  document.getElementById('auth-form3title').textContent='Edit Authorisation';
+  authEditingId=id;document.getElementById('authr-kind').value=x.record_kind||'';
+  document.getElementById('auth-form3title').textContent='Edit Certificate / Work Authorisation';
   document.getElementById('auth-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'authr-name':'person_name','authr-type':'authorisation_type','authr-ref':'reference','authr-cert-url':'certificate_url','authr-scope':'scope','authr-issuer':'issuing_body','authr-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
@@ -33556,7 +33560,7 @@ function authOpen(id){
 async function authSave(){
   var type=obNormText(document.getElementById('authr-type')?.value);
   var name=obNormText(document.getElementById('authr-name')?.value);
-  if(!type||!name){toast('Please enter person name and authorisation type',false);return;}
+  if(!type||!name){toast('Please enter the person name and certificate / permission type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
   var issue=g('authr-issue'), expiry=g('authr-expiry'), status=g('authr-status')||'active';
   if(issue&&expiry&&expiry<issue){toast('Expiry date cannot be before issue date',false);return;}
@@ -33569,7 +33573,7 @@ async function authSave(){
   var body={
     company_id:ccid(),
     person_id:g('authr-person')||null,person_name:name,
-    authorisation_type:type,status:status,
+    authorisation_type:type,status:status,record_kind:g('authr-kind')||null,
     issue_date:issue,expiry_date:expiry,
     reference:g('authr-ref'),certificate_url:certificateUrl,evidence_url:certificateUrl,
     scope:g('authr-scope'),restrictions:g('authr-scope'),
@@ -38351,8 +38355,8 @@ function indApplyChecklistTopics(topics){
 }
 
 function indNew(){if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training','induction')){toast('You do not have access to this section',false);return;}
- window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form3title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));indApplyChecklistTopics([]);if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
-async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=indCollectChecklistTopics();var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};Object.assign(body,personIdentityPayload(person));body.inducted_by_person_id=personFromValue(body.inducted_by)?.id||null;try{if(window.indEditId){await apiWriteWithMissingColumnFallback('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body},'Induction record');trainingAudit('update','Induction record updated','induction_records',Object.assign({id:window.indEditId},body),{topics_count:topics.length});toast('Updated!');}else{body.created_by=prof?.id;var created=await apiWriteWithMissingColumnFallback('/induction_records',{m:'POST',p:'return=representation',b:body},'Induction record');trainingAudit('create','Induction record created','induction_records',(created&&created[0])||body,{topics_count:topics.length});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
+ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form3title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));indApplyChecklistTopics([]);TrainingWorkflow.initInduction();if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
+async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=indCollectChecklistTopics();try{TrainingWorkflow.validateInduction(topics,g('indf-status'));}catch(e){toast(e.message,false);return;}var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'in_progress',completed:g('indf-status')==='completed',passed:g('indf-status')==='completed'?true:g('indf-status')==='failed'?false:null,updated_at:new Date().toISOString()};Object.assign(body,personIdentityPayload(person));body.inducted_by_person_id=personFromValue(body.inducted_by)?.id||null;try{if(window.indEditId){await apiWriteWithMissingColumnFallback('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body},'Induction record');trainingAudit('update','Induction record updated','induction_records',Object.assign({id:window.indEditId},body),{topics_count:topics.length});toast('Updated!');}else{body.created_by=prof?.id;var created=await apiWriteWithMissingColumnFallback('/induction_records',{m:'POST',p:'return=representation',b:body},'Induction record');trainingAudit('create','Induction record created','induction_records',(created&&created[0])||body,{topics_count:topics.length});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
 async function indDelete(){ if(!window.indEditId)return;try{var rows=await api('/induction_records?id=eq.'+window.indEditId+'&select=*');var row=(rows&&rows[0])||{id:window.indEditId};var status=String(row.status||'').toLowerCase();if(!['cancelled','archived'].includes(status)){if(!(await appConfirmAction({title:'Cancel induction record',message:'Cancel this induction record instead of deleting it?',detail:'Induction records are evidence of training. The record will remain available for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel record',cancelText:'Back'})))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',completed:false,updated_at:new Date().toISOString()}});trainingAudit('cancel','Induction record cancelled','induction_records',Object.assign({},row,{status:'cancelled'}),{previous_status:row.status||null});toast('Induction record cancelled');indBack();return;}if(!(await appConfirmDelete('induction record','This record is already cancelled/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});trainingAudit('delete','Induction record permanently deleted','induction_records',row,{previous_status:row.status||null});toast('Deleted!');indBack();}catch(e){toast(actionErrorMessage('Delete induction','Training register',e.message),false);} }
 function elcFillRequiredPeople(selected){
   var s=document.getElementById('elcf-enrol-people');if(!s)return;
@@ -38829,7 +38833,7 @@ async function indLoad(){
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
 async function indEdit(id){
-  try{var rows=await api('/induction_records?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;indNew();window.indEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('indf-person',x.person_name);set('indf-emp-id',x.employee_id);set('indf-dept',x.department);set('indf-job-title',x.job_title);set('indf-type',x.induction_type);set('indf-ind-date',x.induction_date);set('indf-inducted-by',x.inducted_by);set('indf-notes',x.notes);set('indf-status',x.status);var topics=Array.isArray(x.topics_covered)?x.topics_covered:[];var extra=[];topics.forEach(function(v){v=String(v||'');if(v.indexOf('additional:')===0)extra.push(v.slice(11));});indApplyChecklistTopics(topics);set('indf-extra-topics',extra.join('\n'));var t=document.getElementById('ind-form3title');if(t)t.textContent='Edit Induction';var d=document.getElementById('ind-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open induction','Training register',e.message),false);}
+  try{var rows=await api('/induction_records?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;indNew();window.indEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('indf-person',x.person_name);set('indf-emp-id',x.employee_id);set('indf-dept',x.department);set('indf-job-title',x.job_title);set('indf-type',x.induction_type);set('indf-ind-date',x.induction_date);set('indf-inducted-by',x.inducted_by);set('indf-notes',x.notes);set('indf-status',x.status||'in_progress');document.querySelectorAll('[name="ind-st-r"]').forEach(function(r){r.checked=r.value===(x.status||'in_progress');});var topics=Array.isArray(x.topics_covered)?x.topics_covered:[];var extra=[];topics.forEach(function(v){v=String(v||'');if(v.indexOf('additional:')===0)extra.push(v.slice(11));});indApplyChecklistTopics(topics);set('indf-extra-topics',extra.join('\n'));var t=document.getElementById('ind-form3title');if(t)t.textContent='Edit Induction';var d=document.getElementById('ind-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open induction','Training register',e.message),false);}
 }
 function eleCertificateDisplay(x){
   if(String(x?.status||'').toLowerCase()!=='completed')return '-';

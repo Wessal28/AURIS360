@@ -115,7 +115,9 @@
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1"></script>
 <script src="meeting-reliability.js?v=20261018-1"></script>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1"></script>
+<script src="training-workflow.js?v=20261018-1"></script>
+<link rel="stylesheet" href="training-workflow.css?v=20261018-1">
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -7873,7 +7875,7 @@ Offline mode - changes will sync when connection is restored
 <div id="tp-year-label" class="auris-training-s-34451d06e2">2026</div>
 <button class="btn btn-sm" aria-label="Next training year" title="Next training year" data-auris-onclick="h0860"><i class="ti ti-chevron-right"></i></button>
 </div>
-<div class="auris-training-s-c9dc9b5648"><button class="btn auris-training-s-8e834ce5d5" id="train-ai-btn" data-auris-onclick="h0861"><i class="ti ti-robot"></i>AI training gaps</button><button class="btn btn-primary auris-training-s-6aa34d7432" id="tp-add-btn" data-auris-onclick="h0862"><i class="ti ti-plus"></i>Add training</button></div>
+<div class="auris-training-s-c9dc9b5648"><button class="btn auris-training-s-8e834ce5d5" id="train-ai-btn" data-auris-onclick="h0861"><i class="ti ti-robot"></i>AI training gaps</button><button class="btn btn-primary auris-training-s-6aa34d7432" id="tp-add-btn" data-auris-onclick="h0862"><i class="ti ti-plus"></i>New training session</button></div>
 </div>
 <div id="train-ai-gap-panel" class="auris-training-s-263c7c56cd"></div>
 <div class="card auris-training-s-16a254e663"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
@@ -7886,7 +7888,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-training-s-9c40389b4a">
 <input type="text" id="tf-search" class="auris-training-s-e205b0937c" placeholder="Search person, course..." data-auris-oninput="h0863"/>
 <select id="tf-filter-exp" class="auris-training-s-bd0e58d190" data-auris-onchange="h0864">
-<option value="">All</option><option value="expiring">Expiring &lt;90d</option><option value="expired">Expired</option>
+<option value="">All</option><option value="expiring">Expiring &lt;90d</option><option value="expired">Expired</option><option value="no_expiry">No expiry recorded</option><option value="current">Current (90+ days)</option><option value="invalid">Expiry needs correction</option>
 </select>
 <button class="btn btn-primary auris-training-s-6aa34d7432" id="tf-add-btn" data-auris-onclick="h0865"><i class="ti ti-plus"></i>Add record</button>
 </div>
@@ -7917,12 +7919,12 @@ Offline mode - changes will sync when connection is restored
 <!-- -- CERTIFICATES / LICENCES -- -->
 <div id="train-view-auth" class="auris-training-s-6aa34d7432">
 <div class="card auris-training-s-e2e1112055">
-<div><div class="card-title auris-training-s-ab79ea2b85">Licence &amp; Certificate Register</div>
+<div><div class="card-title auris-training-s-ab79ea2b85">Certificates &amp; Work Authorisations</div>
 <div class="auris-training-s-7299078644">Forklift - Crane - Scaffolding - First Aid - Fire Warden - Confined Space - Electrical - NEBOSH - IOSH</div></div>
 <div class="auris-training-s-9c40389b4a">
 <input type="text" id="auth-search" class="auris-training-s-900d8093ae" placeholder="Search name, type..." data-auris-oninput="h0868"/>
 <select id="auth-filter-type" class="auris-training-s-9051fde21b" data-auris-onchange="h0869"><option value="">All types</option></select>
-<button class="btn btn-primary auris-training-s-6aa34d7432" id="auth-add-btn" data-auris-onclick="h0870"><i class="ti ti-plus"></i>Add licence</button>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="auth-add-btn" data-auris-onclick="h0870"><i class="ti ti-plus"></i>Add certificate / permission</button>
 </div>
 </div>
 <div id="auth-alerts" class="auris-training-s-b922c89f16"></div>
@@ -7960,6 +7962,7 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-training-s-42a6ced8b6"><div class="card-title">Training Details</div>
 <div class="form3group"><label class="form3label">Training topic / title</label><input type="text" id="tp-topic"/></div>
+<div class="form3group"><label class="form3label" for="tp-participants">Planned participants</label><select id="tp-participants" multiple aria-describedby="tp-participants-help"></select><small id="tp-participants-help">Select people for this session. Create attendee records after saving the plan.</small></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff, Production team..."/></div>
 <div class="form3group"><label class="form3label">Type</label>
@@ -8012,6 +8015,8 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="tfr-dept"/></div>
 </div>
 <div class="form3row">
+<div class="form3group"><label class="form3label" for="tfr-plan">Planned session (optional)</label><select id="tfr-plan"><option value="">Standalone training record</option></select></div>
+<div class="form3group"><label class="form3label" for="tfr-attendance">Attendance</label><select id="tfr-attendance"><option value="pending">Pending confirmation</option><option value="attended">Attended</option><option value="absent">Absent</option></select></div>
 <div class="form3group"><label class="form3label">Training / course name</label><input type="text" id="tfr-course"/></div>
 <div class="form3group"><label class="form3label">Training date</label><input type="date" id="tfr-date"/></div>
 <div class="form3group"><label class="form3label">Trainer</label><select id="tfr-trainer"><option value="">Select person...</option></select></div>
@@ -8019,7 +8024,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Score (%)</label><input type="number" id="tfr-score" min="0" max="100"/></div>
-<div class="form3group"><label class="form3label">Result</label><select id="tfr-passed"><option value="true">Pass</option><option value="false">Fail</option></select></div>
+<div class="form3group"><label class="form3label">Result</label><select id="tfr-passed"><option value="">Pending assessment</option><option value="true">Pass</option><option value="false">Fail</option></select></div>
 <div class="form3group"><label class="form3label">Certificate no.</label><input type="text" id="tfr-cert" class="auris-training-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Certificate expiry</label><input type="date" id="tfr-expiry"/></div>
 </div>
@@ -8147,12 +8152,12 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="card auris-training-s-42a6ced8b6"><div class="card-title">Outcome</div>
 <div class="auris-training-s-67c6459975">
-<label class="auris-training-s-c5a78eb56a" data-auris-onclick="h0890"><input class="auris-training-s-283f12d7fe" type="radio" name="ind-st-r" value="completed" checked><span class="auris-training-s-fbe0d6125a">Completed</span></label>
-<label class="auris-training-s-00ff6b8c67" data-auris-onclick="h0891"><input class="auris-training-s-90cf399257" type="radio" name="ind-st-r" value="in_progress"><span class="auris-training-s-ccb6e2f8fe">In progress</span></label>
+<label class="auris-training-s-c5a78eb56a" data-auris-onclick="h0890"><input class="auris-training-s-283f12d7fe" type="radio" name="ind-st-r" value="completed"><span class="auris-training-s-fbe0d6125a">Completed</span></label>
+<label class="auris-training-s-00ff6b8c67" data-auris-onclick="h0891"><input class="auris-training-s-90cf399257" type="radio" name="ind-st-r" value="in_progress" checked><span class="auris-training-s-ccb6e2f8fe">In progress</span></label>
 <label class="auris-training-s-9a709e2a2d" data-auris-onclick="h0892"><input class="auris-training-s-af62d68b87" type="radio" name="ind-st-r" value="failed"><span class="auris-training-s-631cc7b8b8">Failed</span></label>
 <label class="auris-training-s-5b46469907" data-auris-onclick="h0893"><input class="auris-training-s-81e8367fe3" type="radio" name="ind-st-r" value="cancelled"><span class="auris-training-s-e41e11370b">Cancelled</span></label>
 </div>
-<input type="hidden" id="indf-status" value="completed"/>
+<input type="hidden" id="indf-status" value="in_progress"/>
 <div class="auris-training-s-5b0c811138">
 <label class="auris-training-s-aaa5678eb0"><input type="checkbox" id="indf-cert-issued" class="auris-training-s-283f12d7fe"/> Certificate issued</label>
 <label class="auris-training-s-aaa5678eb0"><input type="checkbox" id="indf-sig" class="auris-training-s-283f12d7fe"/> Signature obtained</label>
@@ -8170,7 +8175,7 @@ Offline mode - changes will sync when connection is restored
 <div id="auth-form" class="auris-training-s-6aa34d7432">
 <div class="card auris-training-s-54ec8874e7">
 <div class="auris-training-s-d25ed20ff9">
-<div id="auth-form3title" class="auris-training-s-75021e57ca">Licence / Certificate</div>
+<div id="auth-form3title" class="auris-training-s-75021e57ca">Certificate / Work Authorisation</div>
 <div class="auris-training-s-9c40389b4a">
 <button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0894"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="auth-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0895"><i class="ti ti-trash"></i></button>
@@ -8179,6 +8184,8 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div class="card">
+<p>Certificate evidence records learning or a qualification. Work authorisation records a separate permission decision and its scope.</p>
+<div class="form3group"><label class="form3label" for="authr-kind">Record purpose</label><select id="authr-kind"><option value="">Unclassified legacy record</option><option value="certificate">Certificate evidence</option><option value="work_authorisation">Work authorisation / permission</option></select></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Holder</label><select id="authr-person" data-auris-onchange="h0897"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Name on certificate</label><input type="text" id="authr-name" placeholder="Name if different from People record"/></div>
@@ -8186,7 +8193,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Job title</label><input type="text" id="authr-job-title"/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Licence / certificate type</label>
+<div class="form3group"><label class="form3label">Certificate / permission type</label>
 <select id="authr-type">
 <option value="Forklift Licence">Forklift Licence</option>
 <option value="Crane Operator Certificate">Crane Operator Certificate</option>

@@ -336,6 +336,11 @@
       "order": 67,
       "file": "20261018030000_meetings_reliability.sql",
       "sha256": "fd21f90a7da9f3efad60fbd77523e911a1603aa312bb5ec1dbcdbbe09be6bbd1"
+    },
+    {
+      "order": 68,
+      "file": "20261018040000_training_workflow.sql",
+      "sha256": "c3f0cba4adf7d11703c8c6cd6b2cf183ee208d521239a14efd6ce13e68f2034c"
     }
   ]
 }

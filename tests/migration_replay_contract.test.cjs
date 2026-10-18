@@ -8,8 +8,8 @@ const root = path.resolve(__dirname, '..');
 const replay = path.join(root, 'scripts', 'replay-migrations.cjs');
 const expectations = JSON.parse(fs.readFileSync(path.join(root, 'supabase', 'migrations', 'replay-expectations.json'), 'utf8'));
 
-test('reviewed migration replay inventory includes the HSE Meetings atomic save and scoped awareness policies', () => {
-  assert.deepEqual(expectations, { format_version: 1, tables: 280, policies: 1191, routines: 205 });
+test('reviewed migration replay inventory includes the Training attendance and evidence-review functions', () => {
+  assert.deepEqual(expectations, { format_version: 1, tables: 280, policies: 1191, routines: 208 });
 });
 
 function run(databaseUrl) {
