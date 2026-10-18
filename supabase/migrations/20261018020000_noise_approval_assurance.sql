@@ -29,6 +29,7 @@ begin
       or m.valid_duration_minutes is null or m.valid_duration_minutes<=0 or m.valid_duration_minutes::text in ('NaN','Infinity','-Infinity') then raise exception 'Each source needs a finite level and positive valid duration'; end if;
     if m.data_quality_status not in ('acceptable','accepted','limited') or m.data_quality_status is null
       or (m.data_quality_status='limited' and nullif(btrim(m.limitations),'') is null) then raise exception 'Confirm source quality and explain limited measurements'; end if;
+    if m.subject_type is not null and m.subject_type is distinct from p_subject_type then raise exception 'Source measurements must match the assessment subject type';end if;
     if p_subject_id is not null and p_subject_id<>'' then
       if m.subject_id is distinct from p_subject_id or m.subject_type is distinct from p_subject_type then raise exception 'Source measurements must match the selected subject'; end if;
     elsif lower(btrim(coalesce(m.subject_name,''))) is distinct from lower(btrim(coalesce(p_subject_name,''))) or nullif(btrim(p_subject_name),'') is null then raise exception 'Source measurements must match the assessment subject'; end if;
@@ -123,14 +124,14 @@ begin
         if target not in ('noise_mgmt_exposure_assessments','noise_mgmt_measurements','noise_mgmt_field_surveys','noise_mgmt_maps','noise_mgmt_control_plans','noise_mgmt_hearing_protectors','noise_mgmt_instruments') then raise exception 'Unsupported report source';end if;
         execute format('select to_jsonb(r) from public.%I r where id=$1 and company_id=$2 for share',target) into record_json using source->>'id',new.company_id;
         if record_json is null or record_json->>'version_no' is distinct from source->>'version_no' then raise exception 'Report source is unavailable or its version changed';end if;
-        if not case target
+        if not (case target
           when 'noise_mgmt_exposure_assessments' then record_json->>'status'='approved'
           when 'noise_mgmt_measurements' then record_json->>'status' in ('accepted','approved')
           when 'noise_mgmt_field_surveys' then record_json->>'status' in ('accepted','approved')
           when 'noise_mgmt_maps' then record_json->>'status'='published'
           when 'noise_mgmt_control_plans' then record_json->>'status' in ('approved','verified','closed')
           when 'noise_mgmt_hearing_protectors' then record_json->>'status'='approved'
-          when 'noise_mgmt_instruments' then record_json->>'status' in ('available','assigned') else false end then raise exception 'Reports require accepted or approved source records';end if;
+          when 'noise_mgmt_instruments' then record_json->>'status' in ('available','assigned') else false end) then raise exception 'Reports require accepted or approved source records';end if;
         if coalesce(record_json->>'assessment_date',record_json->>'measurement_date',record_json->>'survey_date','')<>''
           and left(coalesce(record_json->>'assessment_date',record_json->>'measurement_date',record_json->>'survey_date'),10)::date>new.data_as_of then raise exception 'A report source is after the data-as-of date';end if;
         if target='noise_mgmt_exposure_assessments' then
