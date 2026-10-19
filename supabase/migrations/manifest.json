@@ -351,6 +351,11 @@
       "order": 70,
       "file": "20261019010000_legal_assurance.sql",
       "sha256": "18f534c4820129f1e9976625924ff0d6184c2c1fea0fa7051e91ed2891816ad4"
+    },
+    {
+      "order": 71,
+      "file": "20261019020000_sop_workspace_drafts.sql",
+      "sha256": "f7997a02b165b7410536eb1c73078db052d53d0d9362fb6cc3af09c39cf2eec2"
     }
   ]
 }

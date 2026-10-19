@@ -10,7 +10,7 @@ function registryContext(){const c={globalThis:{}};vm.runInNewContext(read('auri
 
 test('all remaining extraction groups publish immutable service and asset contracts',()=>{
   const w=registryContext();
-  const expected=['inspection','training','contractor','people','chemical','tools','atex','emergency','fire','esg','legal','fleet','ohealth'];
+  const expected=['sop','inspection','training','contractor','people','chemical','tools','atex','emergency','fire','esg','legal','fleet','ohealth'];
   const actual=w.AurisModuleRegistry.list().filter(m=>m.extraction).map(m=>m.key);
   assert.deepEqual(Array.from(actual).sort(),expected.slice().sort());
   for(const key of expected){const x=w.AurisModuleRegistry.get(key).extraction;assert.equal(x.mode,'extracted');assert.ok(x.services.includes('api'));assert.ok(x.services.includes('rbac'));assert.equal(Object.isFrozen(x),true);}
