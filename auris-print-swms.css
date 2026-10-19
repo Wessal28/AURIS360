@@ -1,1 +1,3 @@
 @page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:8pt}th,td{padding:4px 5px}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}
+
+@media print{@page{margin:16mm 8mm 10mm}.swx-print-status{position:fixed;top:-10mm;left:0;right:0;font-size:9pt;font-weight:800;color:#922;border-bottom:2px solid #922;background:white;text-align:center;z-index:10}#swms-printable{padding-top:12mm}.rpt-section{break-inside:auto}tr{break-inside:avoid}thead{display:table-header-group}}
