@@ -34,3 +34,5 @@ test('media capability endpoint reports implemented availability without secrets
 });
 
 test('manual entry opens the existing step editor and adds its first authored step',()=>{const f=fixture();f.w.sovManualSteps();assert.equal(f.w.sopCurrentStep,3);assert.equal(f.w.sopFrames.length,1);assert.equal(f.w.sopFrames[0].source_type,'reviewer_added');});
+
+test('moving between wizard steps alone does not trigger an unsaved-content warning',async()=>{const f=fixture();let prompts=0;f.w.appConfirmAction=async()=>{prompts++;return false};await f.w.sopNew();f.w.sopCurrentStep=2;await f.w.sopNew();assert.equal(prompts,0);});
