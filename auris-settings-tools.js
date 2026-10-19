@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-var h,selected={},tickets=0;
+var h,selected={},tickets=0,availableGroups=[];
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function configure(options){h=options;return api;}
 function scope(){return h.context();}
@@ -24,9 +24,18 @@ function selectSub(group,key){var panel=document.getElementById('settings-sectio
  if(group==='support'&&(key==='delivery'||key==='configuration'))health(key);
 }
 function note(host,id,html){var el=document.getElementById(id);if(!el){el=document.createElement('div');el.id=id;el.className='settings-guidance';host.prepend(el);}el.innerHTML=html;return el;}
-function decorate(group){
+function mainNavigation(group,groups){
+ availableGroups=(groups||availableGroups).filter(g=>g[3]);var nav=document.getElementById('settings-navigation');if(!nav)return;
+ var destinations=[['Company & appearance',['company','personal']],['Workflows & approvals',['workflows']],['Notifications & escalations',['notifications']],['Custom fields',['modules']],['Health & administration',['support','data']]];
+ nav.replaceChildren();destinations.forEach(function(d){var targets=d[1].filter(key=>availableGroups.some(g=>g[0]===key));if(!targets.length)return;var button=document.createElement('button');button.type='button';button.className='btn';button.textContent=d[0];button.setAttribute('aria-pressed',String(targets.includes(group)));button.onclick=()=>h.open(targets.includes(group)?group:targets[0]);nav.appendChild(button);});
+}
+function relatedNavigation(group,choices){var panel=document.getElementById('settings-section-'+group),id='settings-related-'+group,nav=document.getElementById(id);if(!nav){nav=document.createElement('nav');nav.id=id;nav.className='settings-subnav';panel.prepend(nav);}nav.replaceChildren();choices.filter(d=>availableGroups.some(g=>g[0]===d[0])).forEach(function(d){var b=document.createElement('button');b.type='button';b.className='btn';b.textContent=d[1];b.setAttribute('aria-pressed',String(d[0]===group));b.onclick=()=>h.open(d[0]);nav.appendChild(b);});}
+function decorate(group,groups){
+ mainNavigation(group,groups);
  remember(group);var address=new URL(root.location.href),oldHash=new URLSearchParams(address.hash.replace(/^#/,'')),oldGroup=oldHash.get('settings')||address.searchParams.get('settings'),sub=oldGroup===group?(oldHash.get('section')||address.searchParams.get('section')):'';address.searchParams.delete('settings');address.searchParams.delete('section');address.hash=new URLSearchParams(Object.assign({settings:group},sub?{section:sub}:{})).toString();root.history.replaceState(null,'',address);var panel=document.getElementById('settings-section-'+group);if(!panel)return;
  var c=scope(),banner=note(panel,'settings-scope-'+group,'<strong>'+esc(c.name||'No company selected')+'</strong><p>'+(group==='personal'?'Personal preferences affect your signed-in account.':'Company settings affect the selected company. Changing company reloads this scope.')+'</p><a href="'+esc(permalink(group))+'">Direct link to this Settings section</a>');
+ if(group==='company'||group==='personal')relatedNavigation(group,[['company','Company appearance'],['personal','My profile & drafts']]);
+ if(group==='support'||group==='data')relatedNavigation(group,[['support','Health & applications'],['data','Data administration']]);
  if(group==='company')note(panel,'settings-identity-guidance','<strong>Company identity &amp; appearance</strong><p>Legal name, registration and company structure are managed in Companies. Branding changes the display name, colours and presentation of documents and screens.</p><button class="btn" type="button" data-settings-companies>Open Companies</button>').querySelector('button').onclick=()=>h.companies();
  if(group==='workflows')subviews(group,[['approvals','Approval stages',['settings-workflow-card']],['policies','Transition policies',['settings-workflow-studio-card']],['automation','Action automation',['settings-automation-centre-card']]]);
  if(group==='support'){
