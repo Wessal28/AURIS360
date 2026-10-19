@@ -107,6 +107,8 @@
 <script src="auris-tools-records.js?v=20261002-1"></script>
 <script src="auris-emergency-records.js?v=20260920-1"></script>
 <script src="auris-chemical-records.js?v=20261014-1"></script>
+<link rel="prefetch" href="auris-legal-assurance.js?v=20261019-1" as="script"/>
+<link rel="stylesheet" href="auris-legal-assurance.css?v=20261019-1"/>
 <link rel="prefetch" href="auris-fire-records.js?v=20261014-1" as="script"/>
 <link rel="prefetch" href="auris-fire-workflow.js?v=20261014-1" as="script"/>
 <link rel="stylesheet" href="auris-atex-records.css?v=20260920-1">
@@ -4189,7 +4191,7 @@ Offline mode - changes will sync when connection is restored
 <div id="lc-section-summary" class="auris-legal-s-4e9bd34377"></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Current wording in register</label><textarea id="lc-current-wording" class="auris-legal-s-a75d926385" readonly></textarea></div>
-<div class="form3group"><label class="form3label">New wording / replacement text</label><textarea id="lc-new-wording" class="auris-legal-s-a75d926385" placeholder="Paste or summarise the updated legal wording. When saved, this replaces the selected register section."></textarea></div>
+<div class="form3group"><label class="form3label">New wording / replacement text</label><textarea id="lc-new-wording" class="auris-legal-s-a75d926385" placeholder="Paste or summarise the updated legal wording. Save this as a proposal. Only Apply reviewed wording replaces the selected register section."></textarea></div>
 </div>
 </div>
 <div class="form3row">
@@ -4270,9 +4272,9 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card auris-legal-s-f8805c5d89"><div class="card-title auris-legal-s-f9faa54401">Approval</div>
 <div class="form3group"><label class="form3label">Status</label>
-<select id="lcaf-status"><option value="draft">Draft</option><option value="completed">Completed</option><option value="reviewed">Reviewed</option><option value="approved">Approved</option></select></div>
-<div class="form3group"><label class="form3label">Approved by</label><select id="lcaf-approved-by"><option value="">Select person...</option></select></div>
-<div class="form3group"><label class="form3label">Approval date</label><input type="date" id="lcaf-approved-date"/></div>
+<select id="lcaf-status"><option value="draft">Draft — provisional</option><option value="submitted">Submitted for approval</option><option value="approved" disabled>Approved — recorded decision</option></select></div>
+<div class="form3group"><label class="form3label">Approved by</label><select id="lcaf-approved-by" disabled><option value="">Select person...</option></select></div>
+<div class="form3group"><label class="form3label">Approval date</label><input type="date" id="lcaf-approved-date" disabled/></div>
 <div class="form3group"><label class="form3label">Linked audit ref</label><input type="text" id="lcaf-audit-ref" class="auris-legal-s-7b8c3df564"/></div>
 </div>
 </div>
