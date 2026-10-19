@@ -37,7 +37,7 @@ async function buildHealth(context, companyId, simulate) {
     readRows(context, '/notification_escalation_settings?select=enabled,due_soon_days,level_1_overdue_days,level_2_overdue_days,level_3_overdue_days&company_id=eq.' + enc(companyId) + '&limit=1', true),
     readRows(context, '/notification_escalation_recipients?select=escalation_level,profile_id,email_override,active&company_id=eq.' + enc(companyId) + '&active=eq.true&limit=500', true),
     readRows(context, '/profiles?select=id,role,email,real_email&company_id=eq.' + enc(companyId) + '&limit=5000'),
-    readRows(context, '/notification_user_preferences?select=id&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_user_preferences?select=profile_id&company_id=eq.' + enc(companyId) + '&limit=1', true),
     readRows(context, '/notification_acknowledgement_settings?select=enabled&company_id=eq.' + enc(companyId) + '&limit=1', true)
   ]);
 
@@ -199,4 +199,4 @@ function enc(value){return encodeURIComponent(String(value));}
 function httpError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 function safeError(error){return String(error&&error.message?error.message:error||'Unknown error').slice(0,500);}
 
-module.exports._test={channelHealth,conversionPercent,deliverableEmail,routingReadiness,buildReadiness,buildSimulation};
+module.exports._test={buildHealth,channelHealth,conversionPercent,deliverableEmail,routingReadiness,buildReadiness,buildSimulation};

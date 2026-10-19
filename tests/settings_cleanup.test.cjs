@@ -12,5 +12,5 @@ test('automation load failure hides editor and retry recovers without writes',as
  const ctx={console,Date,Promise};vm.runInNewContext(read('auris-automation-engine.js'),ctx);vm.runInNewContext(read('auris-automation-centre.js'),ctx);
  let retry,fail=true;const calls=[];const host={innerHTML:'',querySelector:()=>({addEventListener:(event,fn)=>{retry=fn;}}),querySelectorAll:()=>[]};
  await ctx.AurisAutomationCentre.mount(host,{role:'admin',companyId:'co-a',request:async(p,o)=>{calls.push([p,o]);if(fail)throw Error('unavailable');return [];}});
- assert.match(host.innerHTML,/Unable to load automation rules/);assert.doesNotMatch(host.innerHTML,/Save draft|New rule|No company automation rules/);fail=false;await retry();assert.match(host.innerHTML,/Save draft/);assert.equal(calls.length,2);assert.ok(calls.every(c=>!c[1]));
+ assert.match(host.innerHTML,/Unable to load automation rules/);assert.doesNotMatch(host.innerHTML,/Save draft|New rule|No company automation rules/);fail=false;await retry();assert.match(host.innerHTML,/Save draft/);assert.equal(calls.length,2);assert.ok(calls.every(c=>c[0]==='/rpc/list_company_automation_rules'&&c[1].b.p_company_id==='co-a'));assert.ok(calls.every(c=>!c[0].includes('save_automation')&&!c[0].includes('set_automation')));
 });
