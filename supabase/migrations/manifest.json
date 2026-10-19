@@ -346,6 +346,11 @@
       "order": 69,
       "file": "20261018050000_action_closure_reliability.sql",
       "sha256": "b99b4d2cab0d1b503727a843a4ff2f0a691c26a2a309be6760f85fe58c5b23e0"
+    },
+    {
+      "order": 70,
+      "file": "20261019010000_legal_assurance.sql",
+      "sha256": "18f534c4820129f1e9976625924ff0d6184c2c1fea0fa7051e91ed2891816ad4"
     }
   ]
 }

@@ -150,3 +150,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_wo
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'action_closure.sql')], {label: 'action closure integrity and bounded notification cleanup'});
 run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label: 'action closure timeout rollback and retry'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'legal_assurance.sql')], {label: 'legal source, provisional assessments, approval, remediation and evidence decisions'});

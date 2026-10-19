@@ -27213,6 +27213,7 @@ const MAP_PRIORITY_CFG={
 };
 
 const MAP_SOURCE_CFG={
+  legal:           {emoji:'*',label:'Legal Compliance',color:'#0F766E'},
   moc:             {emoji:'MOC',label:'Management of Change',color:'#0F6E56'},
   incident:        {emoji:'*',label:'Incident',          color:'#DC2626'},
   audit:           {emoji:'*',label:'Audit',             color:'#185FA5'},
@@ -30578,6 +30579,7 @@ function legalFilteredRequirements(){
   }).sort(function(a,b){return (a.legislation||'').localeCompare(b.legislation||'')||legalRefSortValue(a)-legalRefSortValue(b);});
 }
 function legalGapLabel(x){return (x&&(x.gap===true||x.gap==='true'||x.gap_identified===true||x.gap_identified==='true'))?'Yes':'No';}
+function legalRequirementTypeLabel(x){return {statutory:'Legislation / Act',regulatory:'Regulation',iso_standard:'ISO standard',client_standard:'Client standard',industry_code:'Industry code',internal_policy:'Internal policy',internal:'Internal policy',contractual:'Contract requirement',other:'Other requirement'}[x?.legislation_type]||String(x?.legislation_type||'Requirement').replace(/_/g,' ');}
 function legalIsStandardRequirement(x){
   var t=String(x?.legislation_type||'').toLowerCase();
   var leg=String(x?.legislation||'').toLowerCase();
@@ -30696,18 +30698,17 @@ function legalRenderAssessmentMatrix(){
   var h='<div class="card" style="margin-bottom:10px;background:#F8FBFF;border-color:#BFDBFE"><div style="display:grid;grid-template-columns:220px minmax(260px,1fr) auto;gap:10px;align-items:end">'
     +'<div><label class="form3label">Assessment scope</label><select id="lca-scope-mode" data-auris-generated-onchange="g0271"><option value="all">All legal register</option><option value="legislation">All legislation / acts</option><option value="standards">All standards</option><option value="one">One legislation or standard</option></select></div>'
     +'<div><label class="form3label">Select legislation / standard</label><select id="lca-scope-item" data-auris-generated-onchange="g0272">'+legalAssessmentScopeOptionsHtml(currentItem)+'</select></div>'
-    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0273">Mark all no gap</button>'
-    +'</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Saving updates the legal register, sends gaps to Gap Analysis, and creates related actions in the Master Action Plan.</div></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0273">Set selected results Compliant</button>'
+    +'</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Drafts and submitted worksheets are provisional. Only an authenticated approval publishes results, gaps and linked Master Actions together.</div></div>'
     +'<div class="table-scroll"><table class="data-table lca-worksheet" style="min-width:1120px"><thead><tr><th style="width:95px">Ref</th><th style="width:230px">Legislation / section</th><th style="width:340px">Requirement</th><th style="width:290px">Assessment result</th><th style="width:310px">Gap action</th></tr></thead><tbody>';
   rows.forEach(function(x){
-    var st=x.status||'compliant';
-    if(x.applicable===false)st='not_applicable';
+    var st=x.status||'not_assessed';
     if((x.gap||x.gap_identified)&&st==='compliant')st=(x.controls?'partial':'non_compliant');
     var hasGap=st==='partial'||st==='non_compliant'||!!(x.gap||x.gap_identified);
     h+='<tr class="lca-row" data-id="'+escH(x.id||'')+'"><td style="font-family:monospace;font-weight:800;color:#185FA5;vertical-align:top">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
-      +'<td style="vertical-align:top"><div style="font-size:13px;font-weight:900;color:#0F766E;line-height:1.25">'+escH(x.title||x.section||'Untitled section')+'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:700">'+escH(x.legislation||'-')+'</div><div style="font-size:10px;color:var(--text2);margin-top:5px">'+(legalIsStandardRequirement(x)?'Standard':'Legislation / Act')+(x.section?' - '+escH(x.section):'')+'</div></td>'
+      +'<td style="vertical-align:top"><div style="font-size:13px;font-weight:900;color:#0F766E;line-height:1.25">'+escH(x.title||x.section||'Untitled section')+'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:700">'+escH(x.legislation||'-')+'</div><div style="font-size:10px;color:var(--text2);margin-top:5px">'+escH(legalRequirementTypeLabel(x))+(x.section?' - '+escH(x.section):'')+'</div></td>'
       +'<td style="font-size:12px;vertical-align:top;line-height:1.35;white-space:pre-wrap">'+escH(x.requirement||'-')+'</td>'
-      +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" data-auris-generated-oninput="g0274" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select class="lca-status" data-auris-generated-onchange="g0275"><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" data-auris-generated-onchange="g0276" '+(hasGap?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
+      +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" data-auris-generated-oninput="g0274" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select aria-label="Assessment result" class="lca-status" data-auris-generated-onchange="g0275"><option value="not_assessed" '+(st==='not_assessed'?'selected':'')+'>Not assessed — choose a result</option><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" data-auris-generated-onchange="g0276" '+(hasGap?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
       +'<td style="vertical-align:top"><label class="form3label">Further controls / recommendations</label><textarea class="lca-reco" data-auris-generated-oninput="g0274" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea><div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px"><input class="lca-resp" data-auris-generated-oninput="g0274" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Action by"/><input type="date" class="lca-target" data-auris-generated-onchange="g0277" value="'+escH(x.target_date||'')+'"/></div></td></tr>';
   });
   box.innerHTML=h+'</tbody></table></div>';
@@ -30731,7 +30732,7 @@ function lcaUpdateGapFields(tr,clearValues){
 function lcaGapChanged(cb){
   var tr=cb.closest('.lca-row'),sel=tr?.querySelector('.lca-status');
   if(sel&&cb.checked&&sel.value==='compliant')sel.value='partial';
-  if(sel&&!cb.checked&&(sel.value==='partial'||sel.value==='non_compliant'))sel.value='compliant';
+  if(sel&&!cb.checked&&(sel.value==='partial'||sel.value==='non_compliant'))sel.value='not_assessed';
   lcaUpdateGapFields(tr,true);
   lcaUpdateLiveScore();
 }
@@ -30744,11 +30745,11 @@ function lcaStatusChanged(sel){
 function lcaUpdateLiveScore(){
   var counts={compliant:0,partial:0,non:0,na:0};
   document.querySelectorAll('#lca-matrix .lca-row').forEach(function(tr){
-    var st=tr.querySelector('.lca-status')?.value||'compliant';
+    var st=tr.querySelector('.lca-status')?.value||'not_assessed';
     if(st==='compliant')counts.compliant++;
     else if(st==='partial')counts.partial++;
     else if(st==='non_compliant')counts.non++;
-    else counts.na++;
+    else if(st==='not_applicable')counts.na++;
   });
   var set=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
   set('lcaf-compliant',counts.compliant);set('lcaf-partial',counts.partial);set('lcaf-noncompliant',counts.non);set('lcaf-na',counts.na);
@@ -30769,7 +30770,7 @@ async function lcaSyncAssessmentRows(assessmentRef){
     var tr=rows[i], id=tr.dataset.id;if(!id)continue;
     var req=(lrAllData||[]).find(function(x){return x.id===id;})||{};
     var controls=tr.querySelector('.lca-controls')?.value||null;
-    var rowStatus=tr.querySelector('.lca-status')?.value||'compliant';
+    var rowStatus=tr.querySelector('.lca-status')?.value||'not_assessed';
     var gap=rowStatus==='partial'||rowStatus==='non_compliant'||!!tr.querySelector('.lca-gap')?.checked;
     var reco=tr.querySelector('.lca-reco')?.value||null;
     var resp=tr.querySelector('.lca-resp')?.value||null;
@@ -30862,7 +30863,7 @@ async function legalLoadChanges(){
   var el=document.getElementById('lc-table');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/legal_changes?select=*'+cf()+'&order=date_received.desc');
+    var d=await api('/legal_changes?select=*&archived_at=is.null'+cf()+'&order=date_received.desc');
     lcAllData=d||[];
     legalRenderChanges();
   }catch(e){el.innerHTML=setupFriendlyMessage('Legal changes register',e.message);}
@@ -31048,7 +31049,7 @@ async function legalDeleteChgFromList(id){
 async function lcaLoad(){
   var el=document.getElementById('lca-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/compliance_assessments?select=*'+cf()+'&order=assessment_date.desc');lcaAllData=d||[];
+    var d=await api('/compliance_assessments?select=*&archived_at=is.null'+cf()+'&order=assessment_date.desc');lcaAllData=d||[];
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('lr-m3assessments',(d||[]).length);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0282"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
@@ -31079,14 +31080,15 @@ function lcaCalcScore(){
   var n=parseInt(document.getElementById('lcaf-noncompliant')?.value)||0;
   var na=parseInt(document.getElementById('lcaf-na')?.value)||0;
   var total=c+p+n;
-  var score=total>0?Math.round((c*100+p*50)/total):0;
+  var unanswered=Array.from(document.querySelectorAll('#lca-matrix .lca-status')).some(function(el){return !el.value||el.value==='not_assessed';});
+  var score=total>0&&!unanswered?Math.round((c*100+p*50)/total):null;
   var el=document.getElementById('lca-score-number');
   if(el){
-    var color=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';
-    el.textContent=score+'%';el.style.color=color;
+    var color=score==null?'#64748b':score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';
+    el.textContent=score==null?'Awaiting assessment':score+'%';el.style.color=color;
   }
   var prevEl=document.getElementById('lca-score-preview');
-  if(prevEl)prevEl.style.background=score>=80?'#f0fdf4':score>=60?'#FFFBEB':score>=40?'#FFF7ED':'#FEF2F2';
+  if(prevEl)prevEl.style.background=score==null?'#f8fafc':score>=80?'#f0fdf4':score>=60?'#FFFBEB':score>=40?'#FFF7ED':'#FEF2F2';
 }
 
 function lcaBack(){document.getElementById('lca-form').style.display='none';document.getElementById('legal-view-assessments').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-assessments')?.classList.add('active');lcaLoad();}
@@ -31302,17 +31304,17 @@ try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Compl
 async function legalRenderDashboard(){
   try{
     if(!lrAllData.length)await legalLoadRegister();
-    var d=lrAllData;
+    var d=lrAllData.filter(function(x){return !!x.approved_assessment_id;});
     var apps=d.filter(x=>x.status!=='not_applicable'&&x.applicable!==false);
     var comp=d.filter(x=>x.status==='compliant').length;
     var part=d.filter(x=>x.status==='partial').length;
     var nonC=d.filter(x=>x.status==='non_compliant').length;
     var total=apps.length||1;
-    var score=Math.round((comp*100+part*50)/total);
+    var score=apps.length?Math.round((comp*100+part*50)/total):null;
     var pctEl=document.getElementById('lr-compliance-pct');
-    if(pctEl){pctEl.textContent=score+'%';pctEl.style.color=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
+    if(pctEl){pctEl.textContent=score==null?'No approved results':score+'%';pctEl.style.color=score==null?'#64748b':score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
     var fillEl=document.getElementById('lr-score-fill');
-    if(fillEl){fillEl.style.width=score+'%';fillEl.style.background=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
+    if(fillEl){fillEl.style.width=(score||0)+'%';fillEl.style.background=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
     var bkEl=document.getElementById('lr-compliance-breakdown');
     if(bkEl)bkEl.innerHTML='<span style="background:#EAF3DE;color:#3B6D11;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+comp+' Compliant</span><span style="background:#FEF9EC;color:#854F0B;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+part+' Partial</span><span style="background:#FCEBEB;color:#A32D2D;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+nonC+' Non-compliant</span>';
     // Compliance by legislation / standard
@@ -31321,7 +31323,7 @@ async function legalRenderDashboard(){
       var byLeg={};
       d.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).forEach(function(x){
         var key=x.legislation||'Unspecified';
-        if(!byLeg[key])byLeg[key]={comp:0,part:0,nonC:0,total:0,isStandard:legalIsStandardRequirement(x)};
+        if(!byLeg[key])byLeg[key]={comp:0,part:0,nonC:0,total:0,typeLabel:legalRequirementTypeLabel(x)};
         byLeg[key].total++;
         if(x.status==='compliant')byLeg[key].comp++;
         else if(x.status==='partial')byLeg[key].part++;
@@ -31330,7 +31332,7 @@ async function legalRenderDashboard(){
       var legH='<div class="table-scroll"><table class="data-table" style="min-width:720px"><thead><tr><th>Legislation / standard</th><th style="width:95px">Type</th><th style="width:80px">Reqs</th><th style="width:90px">Gaps</th><th style="width:180px">Score</th></tr></thead><tbody>';
       Object.entries(byLeg).sort((a,b)=>{var sa=Math.round((a[1].comp*100+a[1].part*50)/(a[1].total||1));var sb=Math.round((b[1].comp*100+b[1].part*50)/(b[1].total||1));return sa-sb||a[0].localeCompare(b[0]);}).forEach(function(entry){
         var name=entry[0];var c=entry[1];var cs=Math.round((c.comp*100+c.part*50)/(c.total||1));var color=cs>=80?'#1D9E75':cs>=60?'#EF9F27':'#E24B4A';
-        legH+='<tr><td><b>'+escH(name)+'</b><div style="font-size:11px;color:var(--text2)">'+c.comp+' compliant - '+c.part+' partial - '+c.nonC+' non-compliant</div></td><td><span class="badge">'+(c.isStandard?'Standard':'Act/Reg')+'</span></td><td>'+c.total+'</td><td style="color:#DC2626;font-weight:800">'+(c.part+c.nonC)+'</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden"><div style="width:'+cs+'%;background:'+color+';height:100%"></div></div><b style="color:'+color+';min-width:42px;text-align:right">'+cs+'%</b></div></td></tr>';
+        legH+='<tr><td><b>'+escH(name)+'</b><div style="font-size:11px;color:var(--text2)">'+c.comp+' compliant - '+c.part+' partial - '+c.nonC+' non-compliant</div></td><td><span class="badge">'+escH(c.typeLabel)+'</span></td><td>'+c.total+'</td><td style="color:#DC2626;font-weight:800">'+(c.part+c.nonC)+'</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden"><div style="width:'+cs+'%;background:'+color+';height:100%"></div></div><b style="color:'+color+';min-width:42px;text-align:right">'+cs+'%</b></div></td></tr>';
       });
       legEl.innerHTML=legH+'</tbody></table></div>';
     }
@@ -31412,7 +31414,7 @@ function legalAIRenderAssessment(out){
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#854F0B">Actions required</div>'+legalAIList(out.actions)+'</div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
-    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0290"><i class="ti ti-check"></i>Apply status</button>'
+    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0290"><i class="ti ti-check"></i>Record result in assessment</button>'
     +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0291"><i class="ti ti-check"></i>Apply evidence</button>'
     +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0292"><i class="ti ti-alert-triangle"></i>Apply gap</button>'
     +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0293"><i class="ti ti-user-check"></i>Apply responsibility/date</button>'

@@ -56,7 +56,7 @@ var extractionMap={
   emergency:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]},
   fire:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   esg:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
-  legal:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['legal-compliance-upgrade.js']},
+  legal:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['legal-compliance-upgrade.js','auris-legal-assurance.js']},
   fleet:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   ohealth:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]}
 };
