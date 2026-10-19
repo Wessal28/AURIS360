@@ -3351,6 +3351,7 @@ function showPage(name,el){
   if(window.AurisCommandCentre)window.AurisCommandCentre.recordOpen(name);
 
 closeTransientOverlays();
+if(window.AurisApprovalReview)window.AurisApprovalReview.close();
 peopleCloseProfile();usersCloseModal();peopleFormVisible(false);
 if(typeof mobileFieldReleaseForm==='function')mobileFieldReleaseForm();
 var routeReady;
@@ -24520,8 +24521,8 @@ async function ppeLoadCatalogue(){
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
-async function nextCompanyRef(table, column, prefix){
-  var existing=await api('/'+table+'?select='+column+'&company_id=eq.'+ccid()+'&'+column+'=like.'+encodeURIComponent(prefix+'*')+'&order='+column+'.desc&limit=1').catch(function(){return[];});
+async function nextCompanyRef(table, column, prefix, companyId){
+  var existing=await api('/'+table+'?select='+column+'&company_id=eq.'+(companyId||ccid())+'&'+column+'=like.'+encodeURIComponent(prefix+'*')+'&order='+column+'.desc&limit=1').catch(function(){return[];});
   var seq=1;
   if(existing&&existing[0]&&existing[0][column]){
     var m=String(existing[0][column]).match(/(\d+)$/);
@@ -36745,33 +36746,26 @@ function adminPopulateDropdowns() {
   // Company selects
   ['adm3co-parent','adm3hier-filter-co','adm3sites-filter-co','oversight-co-sel'].forEach(function(id){
     var el = document.getElementById(id); if(!el) return;
-    var first = el.options[0];
+    var selected=el.value,first = el.options[0];
     el.innerHTML = '';
     el.appendChild(first);
     cos.forEach(function(c){
       var o=document.createElement('option'); o.value=c.id; o.textContent=c.name;
       el.appendChild(o);
     });
+    if(Array.from(el.options).some(o=>o.value===selected))el.value=selected;
   });
   // Site company select in site form
   var siteCo = document.getElementById('adm3site-company');
   if(siteCo){
+    var selectedSiteCompany=siteCo.value;
     siteCo.innerHTML='<option value="">Select company...</option>';
     cos.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;siteCo.appendChild(o);});
+    siteCo.value=selectedSiteCompany;siteCo.onchange=function(){adminRefreshSiteParentSelect(this.value);};
   }
   // Site parent select
   adminRefreshSiteParentSelect();
-  // Access modal site select
-  var accSite = document.getElementById('adm3acc-site');
-  if(accSite){
-    accSite.innerHTML='<option value="">Select site...</option>';
-    adminSitesData.forEach(function(s){
-      var o=document.createElement('option'); o.value=s.id;
-      var cfg=SITE_TYPE_CFG[s.site_type]||{emoji:'*'};
-      o.textContent=cfg.emoji+' '+s.name+(s.city?' ('+s.city+')':'');
-      accSite.appendChild(o);
-    });
-  }
+  adminRefreshAccessSites();
   // Site switcher in overview
   var switcher = document.getElementById('adm3site-switcher');
   if(switcher){
@@ -36797,18 +36791,30 @@ function adminPopulateDropdowns() {
   }
 }
 
-function adminRefreshSiteParentSelect(companyId) {
-  var el = document.getElementById('adm3site-parent'); if(!el) return;
-  el.innerHTML='<option value="">None (top-level)</option>';
-  var filter = companyId || document.getElementById('adm3site-company')?.value;
-  var sites = filter ? adminSitesData.filter(function(s){return s.company_id===filter;}) : adminSitesData;
-  sites.forEach(function(s){
-    var o=document.createElement('option'); o.value=s.id;
-    var cfg=SITE_TYPE_CFG[s.site_type]||{emoji:'*'};
-    o.textContent=cfg.emoji+' '+s.name;
-    if(adminEditSiteId && s.id===adminEditSiteId) return; // can't be own parent
-    el.appendChild(o);
-  });
+function adminSiteParentAllowed(site,companyId){
+if(!site||site.company_id!==companyId||site.id===adminEditSiteId)return false;
+var seen=new Set(),cursor=site;
+while(cursor){if(cursor.id===adminEditSiteId||seen.has(cursor.id))return false;seen.add(cursor.id);cursor=adminSitesData.find(s=>s.id===cursor.parent_site_id);}
+return true;
+}
+function adminRefreshSiteParentSelect(companyId){
+var el=document.getElementById('adm3site-parent');if(!el)return;
+var selected=el.value,companyId=companyId||document.getElementById('adm3site-company')?.value||'';
+el.innerHTML='<option value="">None (top-level)</option>';
+adminSitesData.filter(s=>adminSiteParentAllowed(s,companyId)).forEach(function(s){var option=document.createElement('option');option.value=s.id;option.textContent=s.name;el.appendChild(option);});
+el.value=Array.from(el.options).some(o=>o.value===selected)?selected:'';
+}
+function adminSiteAccessLabel(site){
+var company=adminCompaniesData.find(c=>c.id===site.company_id),parts=[site.name],cursor=site,seen=new Set([site.id]);
+while(cursor.parent_site_id){var parent=adminSitesData.find(s=>s.id===cursor.parent_site_id&&s.company_id===site.company_id);if(!parent||seen.has(parent.id))break;seen.add(parent.id);parts.unshift(parent.name);cursor=parent;}
+return [company?.name||'Company not available'].concat(parts).join(' → ');
+}
+function adminRefreshAccessSites(){
+var select=document.getElementById('adm3acc-site'),search=document.getElementById('adm3acc-search');if(!select)return;
+var previous=select.value,query=(search?.value||'').trim().toLowerCase();
+select.innerHTML='<option value="">Select company → site…</option>';
+adminSitesData.filter(s=>!query||adminSiteAccessLabel(s).toLowerCase().includes(query)).sort((a,b)=>adminSiteAccessLabel(a).localeCompare(adminSiteAccessLabel(b))).forEach(function(site){var option=document.createElement('option');option.value=site.id;option.textContent=adminSiteAccessLabel(site)+(site.status==='inactive'?' (Inactive)':'');select.appendChild(option);});
+select.value=Array.from(select.options).some(o=>o.value===previous)?previous:'';if(search)search.oninput=adminRefreshAccessSites;
 }
 
 // -- Overview -------------------------------------------------------------------
@@ -36817,7 +36823,7 @@ async function adminLoadOverview() {
   // Update context card
   var coName = document.getElementById('adm3ctx-company');
   var coRole = document.getElementById('adm3ctx-role');
-  if(coName) coName.textContent = prof?.company_name || adminCompaniesData.find(function(c){return c.id===prof?.company_id;})?.name || 'AURIS360';
+  if(coName)coName.textContent=isSA()&&!sephsCompanyContext?'All accessible companies':adminCompaniesData.find(c=>c.id===ccid())?.name||co?.name||'Selected company';
   if(coRole){ var rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof?.role]:null; coRole.textContent=(rc?rc.emoji+' '+rc.label:(prof?.role||'').replace(/_/g,' '))+' - '+(isSA()?'Platform Admin':'Company Access'); }
   // Render company cards
   adminRenderOverviewCards();
@@ -36866,7 +36872,7 @@ function adminRenderOverviewCards(data) {
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#185FA5">'+sites.length+'</div><div style="font-size:9px;color:var(--text2)">Sites</div></div>'
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#5B21B6">'+adminCompanyUserCount(co.id)+'</div><div style="font-size:9px;color:var(--text2)">Users</div></div>'
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#1D9E75">'+headcount+'</div><div style="font-size:9px;color:var(--text2)">Workers</div></div>'
-      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:'+(co.active!==false?'#1D9E75':'#6B7280')+'">'+(co.active!==false?'?':'?')+'</div><div style="font-size:9px;color:var(--text2)">Status</div></div>'
+      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:'+(co.active!==false?'#1D9E75':'#6B7280')+'">'+(co.active!==false?'Active':'Inactive')+'</div><div style="font-size:9px;color:var(--text2)">Status</div></div>'
       + '</div>'
       + '<div style="display:flex;gap:4px;margin-top:8px">'
       + '<span style="font-size:10px;color:var(--text2);background:#f3f4f6;padding:1px 6px;border-radius:3px">'+escH(typeCfg[co.company_type||'standalone']||co.company_type||'-')+'</span>'
@@ -36874,6 +36880,7 @@ function adminRenderOverviewCards(data) {
       + '</div>'
       + '</div></div>';
   }).join('');
+  el.querySelectorAll('[data-auris-runtime-onclick="r0111"]').forEach(function(card){card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','View company summary');card.onkeydown=function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();adminViewCompany(JSON.parse(decodeURIComponent(card.getAttribute('data-auris-runtime-args')))[0]);}};});
 }
 
 async function adminRenderAggKPIs() {
@@ -36976,6 +36983,15 @@ function adminNewCompany() {
   document.getElementById('adm3co-tier').value='professional';
   document.getElementById('adm3co-parent').value='';
   document.getElementById('adm3company-modal').style.display='flex';
+}
+
+function adminViewCompany(id){
+var company=adminCompaniesData.find(c=>c.id===id);if(!company)return toast('Company not available. Refresh the register.',false);
+var old=document.getElementById('company-summary-dialog');if(old)old.remove();
+var dialog=document.createElement('dialog');dialog.id='company-summary-dialog';dialog.className='company-summary-dialog';
+var sites=adminSitesData.filter(s=>s.company_id===id),details=[['Status',company.active===false?'Inactive':'Active'],['Industry',company.industry],['Country',company.country],['Registration',company.registration_no],['Address',company.address],['Contact',company.contact_name],['Email',company.contact_email],['Phone',company.phone],['Sites',sites.length],['Users',adminCompanyUserCount(id)]];
+dialog.innerHTML='<header><h2>'+escH(company.name)+'</h2><button type="button" class="btn" data-summary-close>Close</button></header><dl>'+details.map(pair=>'<div><dt>'+escH(pair[0])+'</dt><dd>'+escH(String(pair[1]??'—'))+'</dd></div>').join('')+'</dl><h3>Sites</h3><ul>'+sites.map(site=>'<li>'+escH(site.name)+' · '+escH(site.status||'active')+'</li>').join('')+'</ul><footer><button type="button" class="btn btn-primary" data-summary-edit>Edit company</button></footer>';
+dialog.querySelector('[data-summary-close]').onclick=function(){dialog.close();dialog.remove();};dialog.querySelector('[data-summary-edit]').onclick=function(){dialog.close();dialog.remove();adminEditCompany(id);};document.body.appendChild(dialog);dialog.showModal();
 }
 
 function adminEditCompany(id) {
@@ -37139,7 +37155,10 @@ async function adminLoadSites() {
   el.innerHTML=h+'</tbody></table></div>';
 }
 
-function adminNewSite(companyId) {
+async function adminNewSite(companyId) {
+  var context=String(ccid()||''),actor=prof?.id;
+  if(!adminCompaniesData.length||!adminSitesData.length)await adminLoadAll();
+  if(context!==String(ccid()||'')||actor!==prof?.id)return;
   adminEditSiteId = null;
   document.getElementById('adm3site-modal-title').textContent='New Site';
   document.getElementById('adm3site-del-btn').style.display='none';
@@ -37149,10 +37168,10 @@ function adminNewSite(companyId) {
   document.getElementById('adm3site-type').value='site';
   document.getElementById('adm3site-risk').value='medium';
   document.getElementById('adm3site-status').value='active';
-  if(companyId) document.getElementById('adm3site-company').value=companyId;
-  else document.getElementById('adm3site-company').value=prof?.company_id||'';
+  var selectedCompany=companyId||ccid()||'';
+  document.getElementById('adm3site-company').value=adminCompaniesData.some(c=>c.id===selectedCompany)?selectedCompany:'';
   document.getElementById('adm3site-parent').value='';
-  adminRefreshSiteParentSelect(companyId);
+  adminRefreshSiteParentSelect(document.getElementById('adm3site-company').value);
   document.getElementById('adm3site-modal').style.display='flex';
 }
 
@@ -37199,7 +37218,8 @@ async function adminSaveSite() {
   if(headcount&&Number(headcount)<0){toast('Site headcount cannot be negative',false);return;}
   if(lat&&(Number(lat)<-90||Number(lat)>90)){toast('Latitude must be between -90 and 90',false);return;}
   if(lng&&(Number(lng)<-180||Number(lng)>180)){toast('Longitude must be between -180 and 180',false);return;}
-  if(parentId===adminEditSiteId){toast('A site cannot be its own parent',false);return;}
+  if(parentId&&adminEditSiteId&&parentId===adminEditSiteId){toast('A site cannot be its own parent',false);return;}
+  if(parentId&&!adminSiteParentAllowed(adminSitesData.find(s=>s.id===parentId),coId)){toast('Select a parent in the same company without creating a hierarchy cycle.',false);return;}
   var duplicateName=(adminSitesData||[]).find(function(s){return s.id!==adminEditSiteId&&s.company_id===coId&&obNormText(s.name).toLowerCase()===name.toLowerCase();});
   if(duplicateName){toast('A site with this name already exists for the selected company',false);return;}
   if(code){
@@ -37214,7 +37234,7 @@ async function adminSaveSite() {
     risk_level:g('adm3site-risk')||'medium',status:g('adm3site-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(adminEditSiteId){await api('/sites?id=eq.'+adminEditSiteId,{m:'PATCH',p:'return=minimal',b:body});toast('Site updated!');}
-    else{body.created_by=prof?.id;var res=await api('/sites',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id&&!body.site_code){var ref=await nextCompanyRef('sites','site_code','SITE-');await api('/sites?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{site_code:ref}});}toast('Site added!');}
+    else{body.created_by=prof?.id;var res=await api('/sites',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id&&!body.site_code){var ref=await nextCompanyRef('sites','site_code','SITE-',coId);await api('/sites?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{site_code:ref}});}toast('Site added!');}
     adminCloseSiteModal(); await adminLoadAll(); adminLoadSites(); adminRenderHierarchy();
   }catch(e){toast(actionErrorMessage('Save site','Multi-site management',e.message),false);}
 }
@@ -37532,7 +37552,7 @@ async function adminLoadAccessList() {
       var rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[a.role_override]:null;
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
         +'<td style="padding:8px 14px;font-family:monospace;font-size:10px;color:var(--text2)">'+escH(a.user_id?.slice(0,16)+'-'||'-')+'</td>'
-        +'<td style="padding:8px;font-weight:600">'+tc.emoji+' '+escH(site?.name||a.site_id?.slice(0,8)||'-')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+tc.emoji+' '+escH(site?adminSiteAccessLabel(site):'Site not available')+'</td>'
         +'<td style="padding:8px">'+(rc?'<span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+rc.emoji+' '+rc.label+'</span>':'<span style="color:var(--text2);font-size:11px">Default</span>')+'</td>'
         +'<td style="padding:8px"><span style="font-size:11px;font-weight:600;color:'+(a.access_level==='read_only'?'#6B7280':'#185FA5')+'">'+escH(a.access_level||'read_write').replace('_',' ')+'</span></td>'
         +'<td style="padding:8px;font-size:11px;color:var(--text2)">'+(a.granted_at?new Date(a.granted_at).toLocaleDateString('en-GB'):'-')+'</td>'
@@ -37543,8 +37563,9 @@ async function adminLoadAccessList() {
   }catch(e){el.innerHTML=registerErrorHtml('Site access register',e.message);}
 }
 
-function adminGrantAccess(){
-  if(!adminSitesData.length)adminLoadAll();
+async function adminGrantAccess(){
+  if(!adminSitesData.length)await adminLoadAll();
+  var search=document.getElementById('adm3acc-search');if(search)search.value='';adminRefreshAccessSites();
   document.getElementById('adm3acc-email').value='';
   document.getElementById('adm3acc-site').value='';
   document.getElementById('adm3acc-role').value='';
@@ -37673,7 +37694,8 @@ async function adminSaveAccess(){
     var userId=users[0].id;
     var existing=await api('/user_site_access?select=id&user_id=eq.'+userId+'&site_id=eq.'+siteId+'&limit=1');
     if(existing&&existing.length){toast('This user already has access to the selected site',false);return;}
-    var body={user_id:userId,site_id:siteId,company_id:ccid(),role_override:document.getElementById('adm3acc-role')?.value||null,access_level:document.getElementById('adm3acc-level')?.value||'read_write',granted_by:prof?.id};
+    var selectedSite=adminSitesData.find(s=>s.id===siteId);if(!selectedSite)throw Error('Select a currently loaded site.');
+    var body={user_id:userId,site_id:siteId,company_id:selectedSite.company_id,role_override:document.getElementById('adm3acc-role')?.value||null,access_level:document.getElementById('adm3acc-level')?.value||'read_write',granted_by:prof?.id};
     await api('/user_site_access',{m:'POST',p:'return=minimal',b:body});
     toast('Access granted to '+escH(users[0].full_name||email));
     adminCloseAccessModal(); adminLoadAccessList();
@@ -40069,7 +40091,7 @@ async function sendTestEmail() {
 // APPROVAL CENTER
 // Central view for records waiting for review, approval or release.
 // ================================================================
-var approvalCenterRows = [];
+var approvalCenterRows = [],approvalLoadRequest=0;
 
 var APPROVAL_SOURCE_ADAPTERS = [
   {key:'permit',module:'Permit to Work',table:'permits',page:'permit',statuses:['pending_approval'],status:['status'],ref:['permit_number'],title:['work_description','work_location'],approver:['current_approver_name','approver_name'],due:['approval_due_date','valid_from'],confidentiality:['confidentiality'],stage:'Permit approval'},
@@ -40102,6 +40124,11 @@ var APPROVAL_SOURCE_ADAPTERS = [
   {key:'noise_report',module:'Occupational Noise Management',table:'noise_mgmt_reports',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','report_ref','reference'],title:['name','title'],approver:['approver_name','reviewer_name'],due:['review_due_date','issued_at'],confidentiality:['confidentiality','privacy_level'],stage:'Noise report approval',opener:'noise_record',entity:'reports'}
 ];
 if(window.AurisApprovalCentre)window.AurisApprovalCentre.registerAdapters(APPROVAL_SOURCE_ADAPTERS);
+if(window.AurisApprovalReview)window.AurisApprovalReview.configure({api:api,rows:()=>approvalCenterRows,adapters:()=>APPROVAL_SOURCE_ADAPTERS,tables:()=>DEEP_LINK_DEFAULT_TABLES,canReview:approvalsCanView,canOpen:canAccessPage,notice:toast,context:()=>({company:approvalsCompanyFilter(),actor:prof?.id,role:activeRole()}),openSource:approvalsOpenSource,refresh:loadApprovals,decide:async function(request,decision,comments){
+if(!window.AurisGovernancePersistence)throw Error('Approval decisions are unavailable. Reload and try again.');
+var mapped=window.AurisGovernancePersistence.mapApproval(request);mapped.status=decision;mapped.decisionReason=comments;return window.AurisGovernancePersistence.approvals.decide(mapped);
+}});
+
 
 function approvalsCanView(){
   return ['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) !== -1;
@@ -40160,6 +40187,7 @@ function approvalsAdapterRow(adapter,row){
 }
 
 async function loadApprovals(){
+  var request=++approvalLoadRequest,expectedCompany=approvalsCompanyFilter(),expectedActor=prof?.id;
   var el=document.getElementById('approvals-table-body');if(!el)return;
   if(!approvalsCanView()){
     el.innerHTML='<tr><td colspan="8" style="padding:18px;color:var(--red);text-align:center">Access denied</td></tr>';
@@ -40176,23 +40204,15 @@ async function loadApprovals(){
     tables.forEach(function(table){loads.push(approvalsSafe(api(approvalsCompanyPath('/'+table+'?select=*&limit=300'))));});
     var loaded=await Promise.all(loads),generic=loaded[0]||[],seen={},loadedByTable={};
     tables.forEach(function(table,index){loadedByTable[table]=loaded[index+1]||[];});
+    if(request!==approvalLoadRequest||expectedCompany!==approvalsCompanyFilter()||expectedActor!==prof?.id)return;
     approvalCenterRows=[];
-    APPROVAL_SOURCE_ADAPTERS.forEach(function(adapter){
-      (loadedByTable[adapter.table]||[]).forEach(function(sourceRow){var row=approvalsAdapterRow(adapter,sourceRow);if(row&&!seen[row.row_key]){seen[row.row_key]=true;approvalCenterRows.push(row);}});
+    (generic||[]).forEach(function(row){
+      if(!['pending','submitted','pending_review','under_review','pending_approval','review'].includes(String(row.status||'pending').toLowerCase()))return;
+      if(cid&&String(row.company_id)!==String(cid))return;
+      if(window.AurisApprovalReview){var projected=window.AurisApprovalReview.project(row,loadedByTable);approvalCenterRows.push(projected);seen[projected.table+':'+projected.record_id]=true;}
     });
-    (generic||[]).forEach(function(x){
-      var id=x.related_id||x.id,table=x.related_table||'approval_requests',key=table+':'+id;
-      if(!id||seen[key]||!['pending','submitted','pending_review','under_review','pending_approval','review'].includes(String(x.status||'pending').toLowerCase()))return;
-      seen[key]=true;approvalCenterRows.push({
-        row_key:'workflow:'+x.id,adapter_key:'workflow',source:'workflow',module:x.module_name||x.related_table||'Workflow',table:table,record_id:id,
-        ref:displayRecordRef(x,['request_ref','approval_ref','related_ref'],'WF-DRAFT'),
-        title:x.related_table||'Approval request',
-        status:x.status||'pending',
-        stage:x.current_step_no?('Approval level '+x.current_step_no):'Workflow review',step:x.current_step_no?('Approval level '+x.current_step_no):'Workflow review',
-        approver:x.approver_name||x.assigned_to_name||'Role-based queue',due_date:x.due_date||x.review_due_date||'',confidentiality:x.confidentiality||'Standard',
-        updated_at:x.updated_at||x.created_at,
-        id:id,page:x.module_name||'',open_id:id,open_table:table,company_id:x.company_id||cid
-      });
+    APPROVAL_SOURCE_ADAPTERS.forEach(function(adapter){
+      (loadedByTable[adapter.table]||[]).forEach(function(sourceRow){var row=approvalsAdapterRow(adapter,sourceRow);if(row&&(!cid||String(row.company_id)===String(cid))&&!seen[row.row_key]){seen[row.row_key]=true;approvalCenterRows.push(row);}});
     });
     approvalCenterRows.sort(function(a,b){var ad=approvalsDate(a.due_date)||new Date('2999-12-31'),bd=approvalsDate(b.due_date)||new Date('2999-12-31');return ad-bd||(approvalsDate(b.updated_at)||0)-(approvalsDate(a.updated_at)||0);});
     if(window.AurisApprovalCentre)approvalCenterRows=window.AurisApprovalCentre.ingest(approvalCenterRows);
@@ -40243,17 +40263,25 @@ function approvalsRender(){
     return '<tr style="border-bottom:1px solid var(--border)">'
       +'<td style="padding:10px 12px;font-weight:800">'+escH(x.ref||'-')+'<div style="font-size:11px;color:var(--text2);font-weight:400">'+escH(x.module||'-')+'</div></td>'
       +'<td style="padding:10px 12px;max-width:420px">'+escH(x.title||'-')+'</td>'
-      +'<td style="padding:10px 12px">'+approvalsStatusBadge(x.status)+'<div style="font-size:11px;color:var(--text2);margin-top:4px">'+escH(x.stage||'-')+'</div></td>'
+      +'<td style="padding:10px 12px">'+approvalsStatusBadge(x.status)+'<div style="font-size:11px;color:var(--text2);margin-top:4px">'+escH(x.stage||'-')+'</div>'+(x.source_status?'<small>Source lifecycle: '+escH(approvalsStatusLabel(x.source_status))+'</small>':'')+'</td>'
       +'<td style="padding:10px 12px">'+escH(x.approver||'Role-based queue')+'</td>'
       +'<td style="padding:10px 12px;white-space:nowrap;'+(approvalsDate(x.due_date)&&approvalsDate(x.due_date)<new Date()?'color:var(--red);font-weight:800':'color:var(--text2)')+'">'+escH(approvalsDateLabel(x.due_date,'Not set'))+'</td>'
       +'<td style="padding:10px 12px;color:var(--text2);font-size:11px">'+escH(x.confidentiality||'Standard')+'</td>'
       +'<td style="padding:10px 12px;color:var(--text2);white-space:nowrap">'+escH(approvalsDateLabel(x.updated_at,'-'))+'</td>'
-      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0128" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.row_key]))+'"><i class="ti ti-arrow-right"></i>Open record</button></td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0128" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.row_key]))+'"><i class="ti ti-eye"></i>Review record</button></td>'
       +'</tr>';
   }).join('');
 }
 
 async function approvalsOpen(rowKey){
+if(!window.AurisApprovalReview)return toast('The review screen is unavailable. Reload and retry.',false);
+return window.AurisApprovalReview.open(rowKey);
+}
+async function approvalsWorkflowSettings(){
+if(!canAccessPage('settings')||window.AurisUserAccess&&!window.AurisUserAccess.allowed(prof,'settings.workflows','view'))return toast('Workflow settings are not available for your role.',false);
+await showPage('settings',document.getElementById('nav-settings'));loadSettings('workflows');
+}
+async function approvalsOpenSource(rowKey){
   var x=(approvalCenterRows||[]).find(function(r){return r.row_key===rowKey;});if(!x)return toast('This approval is no longer in the current queue. Refresh and try again.',false);
   if(window.AurisApprovalCentre){try{window.AurisApprovalCentre.assertSource(x,{companyId:approvalsCompanyFilter()});}catch(error){return toast(error.message,false);}}
   if(x.page&&!canAccessPage(x.page))return toast('Your current role cannot open '+x.module+'.',false);

@@ -14,6 +14,7 @@ const testFiles = [
   'tests/deployment_environment_isolation_contract.test.cjs',
   'tests/offline_asset_manifest_contract.test.cjs',
   'tests/cross_module_integration_contract.test.cjs',
+  'tests/company_approval_navigation.test.cjs',
   'tests/controlled_rollout_contract.test.cjs',
   'tests/controlled_rollback_contract.test.cjs',
   'tests/live_gate_verification_contract.test.cjs',
