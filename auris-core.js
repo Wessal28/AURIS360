@@ -27240,7 +27240,11 @@ const MAP_TYPE_CFG={
 };
 
 // -- Entry ---------------------------------------------------------------------
+function mapStatusLabel(value){return String(value||'not recorded').replace(/_/g,' ').replace(/^\w/,function(c){return c.toUpperCase();});}
+function mapSourceKey(value){return {event:'incident',events:'incident',meetings:'meeting',noise:'noise_survey',occupational_health:'ohealth',environmental:'esg'}[value]||value||'manual';}
+function mapSourceChoices(){['map-filter-source','mf-source-type'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var selected=el.value;el.innerHTML=(id==='map-filter-source'?'<option value="">All sources</option>':'')+Object.keys(MAP_SOURCE_CFG).map(function(key){return '<option value="'+key+'">'+escH(MAP_SOURCE_CFG[key].label)+'</option>';}).join('');if(selected&&!MAP_SOURCE_CFG[selected]){var legacy=document.createElement('option');legacy.value=selected;legacy.textContent=mapStatusLabel(selected)+' (existing value)';el.appendChild(legacy);}el.value=selected;});}
 async function loadActions(){
+  mapSourceChoices();
   var btn=document.getElementById('map-new-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   var print=document.getElementById('map-print-btn');
@@ -27266,6 +27270,19 @@ function mapSetView(view, btn){
 }
 
 // -- Load & render list --------------------------------------------------------
+function mapRefreshMetrics(){
+    var now=new Date();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    var overdue=(mapAllData||[]).filter(x=>x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status)).length;
+    setM('map-m3overdue',overdue);
+    setM('map-m3open',(mapAllData||[]).filter(x=>x.status==='open').length);
+    setM('map-m3inprog',(mapAllData||[]).filter(x=>x.status==='in_progress').length);
+    setM('map-m3verify',(mapAllData||[]).filter(x=>x.status==='pending_verification').length);
+    setM('map-m3pclose',(mapAllData||[]).filter(x=>x.status==='pending_closure').length);
+    setM('map-m3closed',(mapAllData||[]).filter(x=>x.status==='closed').length);
+    setM('map-m3total',(mapAllData||[]).length);
+}
+
 async function mapLoadList(){
   var el=document.getElementById('actions-list');if(!el)return;
   var generation=++mapListLoadGeneration,companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
@@ -27278,17 +27295,7 @@ async function mapLoadList(){
     if(!Array.isArray(d))throw new Error('The action register returned an invalid response. Reload to retry.');
     d=d.filter(function(row){return row&&String(row.company_id||'')===companyId;});
     mapAllData=d||[];
-    // Metrics
-    var now=new Date();
-    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    var overdue=(d||[]).filter(x=>x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status)).length;
-    setM('map-m3overdue',overdue);
-    setM('map-m3open',(d||[]).filter(x=>x.status==='open').length);
-    setM('map-m3inprog',(d||[]).filter(x=>x.status==='in_progress').length);
-    setM('map-m3verify',(d||[]).filter(x=>x.status==='pending_verification').length);
-    setM('map-m3pclose',(d||[]).filter(x=>x.status==='pending_closure').length);
-    setM('map-m3closed',(d||[]).filter(x=>x.status==='closed').length);
-    setM('map-m3total',(d||[]).length);
+    mapRefreshMetrics();
     // Escalation banner
     var escalated=(d||[]).filter(x=>x.escalated);
     var escBanner=document.getElementById('map-escalation-banner');
@@ -27325,7 +27332,7 @@ function mapActionTypeCode(type){
 }
 
 function mapHasProfessionalRef(ref){
-  return /^MAP-[A-Z]{2}-\d{4}-\d{3,}$/i.test(String(ref||'').trim());
+  return /^MAP-[A-Z]{2}-\d{4}-(?:\d{3,}|[A-F0-9]{12})$/i.test(String(ref||'').trim());
 }
 
 function mapBuildGeneratedRef(x){
@@ -27644,8 +27651,8 @@ async function mapOpenSourceRecord(id,expected){
     await new Promise(function(resolve){setTimeout(resolve,250);});
     assertSourceSession();
     if(typeof imsSwitchTab==='function')imsSwitchTab('investigate',document.getElementById('ims-tab-investigate'));
-    mapApplySourceSearch('investigation',x.source_ref);
-    if(typeof toast==='function')toast('Opened '+x.source_ref+' in Investigations.');
+    var exact=await mapOpenExactSource(adapter,x);assertSourceSession();if(!exact)mapApplySourceSearch('investigation',x.source_ref);
+    if(typeof toast==='function')toast(exact?'Opened the linked investigation.':'Exact investigation unavailable. The register is filtered by source reference.',!!exact);
     return;
   }
   await new Promise(function(resolve){setTimeout(resolve,120);});
@@ -27653,7 +27660,7 @@ async function mapOpenSourceRecord(id,expected){
   var opened=await mapOpenExactSource(adapter,x);
   assertSourceSession();
   if(!opened)mapApplySourceSearch(pageKey,x.source_ref);
-  if(typeof toast==='function')toast(opened?'Opened the linked source record.':'Opened '+x.source_ref+' in the related module.');
+  if(typeof toast==='function')toast(opened?'Opened the linked source record.':'Exact source unavailable. The related register is filtered by source reference.');
 }
 
 function mapQueueRefBackfill(){
@@ -27797,7 +27804,7 @@ function mapRenderList(){
   }).filter(function(x){
     var displayRef=mapDisplayRef(x).toLowerCase();
     var mQ=!q||displayRef.includes(q)||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
-    var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
+    var mSrc=!fsrc||mapSourceKey(x.source_type||x.source_module)=== fsrc;
     var mPri=!fpri||x.priority===fpri;
     var mSt=!fst||x.status===fst;
     var mType=!ftype||(x.action_type||'corrective')===ftype;
@@ -27818,7 +27825,7 @@ function mapRenderList(){
     var isOverdue=x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
     var sc=MAP_STATUS_CFG[x.status]||MAP_STATUS_CFG.open;
     var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
-    var srcCfg=MAP_SOURCE_CFG[x.source_type||x.source_module||'manual']||MAP_SOURCE_CFG.manual;
+    var srcCfg=MAP_SOURCE_CFG[mapSourceKey(x.source_type||x.source_module)]||MAP_SOURCE_CFG.manual;
     var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
     var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
     var progress=parseInt(x.progress_pct)||0;
@@ -27872,7 +27879,7 @@ function mapRenderTableList(){
   if(window.AurisActionListWorkspace){
     try{
       return window.AurisActionListWorkspace.mount(el,mapAllData,{
-        reference:mapDisplayRef,sources:MAP_SOURCE_CFG,priorities:MAP_PRIORITY_CFG,statuses:MAP_STATUS_CFG,types:MAP_TYPE_CFG,
+        reference:mapDisplayRef,sourceKey:mapSourceKey,sources:MAP_SOURCE_CFG,priorities:MAP_PRIORITY_CFG,statuses:MAP_STATUS_CFG,types:MAP_TYPE_CFG,
         filters:{scope:mapCurrentView,search:document.getElementById('map-search')?.value||'',source:document.getElementById('map-filter-source')?.value||'',priority:document.getElementById('filter-priority')?.value||'',status:document.getElementById('filter-status')?.value||'',type:document.getElementById('map-filter-type')?.value||''},
         onApplyFilters:function(filters){
           [['map-search','search'],['map-filter-source','source'],['filter-priority','priority'],['filter-status','status'],['map-filter-type','type']].forEach(function(pair){
@@ -27902,7 +27909,7 @@ function mapRenderTableList(){
   }).filter(function(x){
     var displayRef=mapDisplayRef(x).toLowerCase();
     var mQ=!q||displayRef.includes(q)||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
-    var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
+    var mSrc=!fsrc||mapSourceKey(x.source_type||x.source_module)=== fsrc;
     var mPri=!fpri||x.priority===fpri;
     var mSt=!fst||x.status===fst;
     var mType=!ftype||(x.action_type||'corrective')===ftype;
@@ -27939,7 +27946,7 @@ function mapRenderTableList(){
     var isOverdue=x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
     var sc=MAP_STATUS_CFG[x.status]||MAP_STATUS_CFG.open;
     var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
-    var srcCfg=MAP_SOURCE_CFG[x.source_type||x.source_module||'manual']||MAP_SOURCE_CFG.manual;
+    var srcCfg=MAP_SOURCE_CFG[mapSourceKey(x.source_type||x.source_module)]||MAP_SOURCE_CFG.manual;
     var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
     var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
     var progress=parseInt(x.progress_pct)||0;
@@ -27995,6 +28002,7 @@ function mapRenderWorkflowBar(x){
 
 // -- New / Edit -----------------------------------------------------------------
 async function mapNew(){
+  try{await mapEnsureEditor();}catch(error){toast(error.message,false);return;}
   if(!(await mapEditorLeave()))return;
   var opening=++mapEditorOpening;
   try{await mapPopulatePeopleSelects();}catch(error){toastActionError('Open action editor','Master Action Plan',error);return;}
@@ -28060,6 +28068,7 @@ async function mapOpenDetail(id){
 }
 
 async function mapEdit(id,expected){
+  await mapEnsureEditor();
   if(!(await mapEditorLeave()))throw new Error('Your draft is still open. Save it before opening another action.');
   var opening=++mapEditorOpening;
   var editorCompany=String(ccid()),editorUser=String(prof?.id||''),editorRole=String(activeRole());
@@ -28177,7 +28186,7 @@ function mapFormTab(tab,btn){
 
 function mapUpdateSourceLabel(){
   var type=document.getElementById('mf-source-type')?.value||'manual';
-  var cfg=MAP_SOURCE_CFG[type]||MAP_SOURCE_CFG.manual;
+  var cfg=MAP_SOURCE_CFG[mapSourceKey(type)]||MAP_SOURCE_CFG.manual;
   var lbl=document.getElementById('mf-source-ref-label');
   if(lbl)lbl.textContent=cfg.label+' reference';
 }
@@ -28304,7 +28313,7 @@ async function mapLoadLog(id){
       h+='<div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;display:flex;gap:12px;background:'+bg+'">'
         +'<div style="font-size:11px;color:var(--text2);min-width:130px">'+new Date(a.performed_at).toLocaleString('en-GB')+'</div>'
         +'<div style="font-size:12px;font-weight:600;flex:1">'+escH(a.activity_type||'-')+'</div>'
-        +(a.old_value&&a.new_value?'<div style="font-size:11px;color:var(--text2)">'+escH(a.old_value)+' ? '+escH(a.new_value)+'</div>':'')
+        +(a.old_value&&a.new_value?'<div style="font-size:11px;color:var(--text2)">'+escH(mapStatusLabel(a.old_value))+' → '+escH(mapStatusLabel(a.new_value))+'</div>':'')
         +'<div style="font-size:11px;color:var(--text2)">'+escH(a.performed_by||'-')+'</div>'
         +'</div>';
     });

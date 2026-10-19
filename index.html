@@ -99,7 +99,8 @@
 <script src="auris-extracted-module-adapters.js?v=20260901-12"></script>
 <script src="auris-applications-admin.js?v=20260901-8"></script>
 <script src="auris-record-edit-session.js?v=20260913-1"></script>
-<script src="auris-action-editor.js?v=20260913-1"></script>
+<script src="auris-action-editor-loader.js?v=20261018-1"></script>
+<link rel="prefetch" href="auris-action-editor.js?v=20261018-1" as="script"/>
 <link rel="stylesheet" href="auris-ppe-records.css?v=20260917-1">
 <script src="auris-ppe-records.js?v=20261002-1"></script>
 <link rel="stylesheet" href="auris-tools-records.css?v=20260920-1">
@@ -5217,7 +5218,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div class="card auris-ptw-s-42a6ced8b6">
-<div class="card-title">Closure Checklist</div>
+<div class="card-title">Closure Checklist</div><p>Completion and evidence must be confirmed. Verification is mandatory when required. For other checks, confirm or select N/A and explain why.</p>
 <div id="ptw-closure-checklist"></div>
 <div class="form3group auris-ptw-s-0ee7f66ad9"><label class="form3label">Closure notes / observations</label><textarea id="ptw-closure-notes" class="auris-ptw-s-4d5979ac8f" placeholder="Confirm work is complete, area is clean, all isolations removed, equipment restored..."></textarea></div>
 <div class="form3group"><label class="form3label">Closed by</label><input type="text" id="ptw-close-by" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/></div>
@@ -8505,7 +8506,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div class="auris-action-edit-toolbar"><span id="map-editor-state" role="status" aria-live="polite"></span><button type="button" class="btn" id="map-editor-discard">Discard and reload</button></div>
-<div id="map-editor-feedback" class="auris-action-edit-feedback" role="status" aria-live="polite"></div>
+<p id="map-readiness" role="status"></p><div id="map-editor-feedback" class="auris-action-edit-feedback" role="status" aria-live="polite"></div>
 <!-- Workflow bar -->
 <div id="map-workflow-bar" class="auris-map-s-42926a8d3d"></div>
 </div>
@@ -8653,7 +8654,8 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-map-s-65ea43f8ee"><div id="mf-progress-bar" class="auris-map-s-26069ecfae"></div></div>
 </div>
 <div class="form3group"><label class="form3label">Progress notes / update</label><textarea id="mf-progress-notes" class="auris-map-s-770a4152c1" placeholder="Describe what has been done so far, any obstacles, current status..."></textarea></div>
-<div class="form3group"><label class="form3label">Evidence / supporting documents</label><textarea id="mf-evidence" class="auris-map-s-07bdff4587" placeholder="List evidence collected: photos, documents, records, test results..."></textarea></div>
+<div class="form3group"><label class="form3label" for="mf-evidence">Evidence description / controlled-record references (does not upload a file)</label><textarea id="mf-evidence" class="auris-map-s-07bdff4587" placeholder="List evidence collected: photos, documents, records, test results..."></textarea></div>
+<section id="map-evidence-panel" class="card"></section>
 <div class="form3group"><label class="form3label">Comments</label><textarea id="af-comments" class="auris-map-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
@@ -8729,7 +8731,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-map-s-5571af1e74">
 <div class="card">
 <div class="card-title auris-map-s-f9faa54401"><i class="ti ti-check"></i> Closure Approval</div>
-<div class="auris-map-s-5faab67eef">Formal closure approval confirms the action is complete, effective and no further follow-up is required.</div>
+<div class="auris-map-s-5faab67eef">Review completion, supporting evidence, verification and any remaining follow-up before approving closure.</div>
 <div class="auris-map-s-aa7c01383d"><input type="checkbox" id="mf-req-closure-approval" class="auris-map-s-283f12d7fe"/><label class="auris-map-s-22514dbec4" for="mf-req-closure-approval">Closure approval required (for high/critical priority)</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Closure approved by</label><select id="mf-closure-by"><option value="">Select approver...</option></select></div>
@@ -8740,14 +8742,14 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div>
 <div class="card auris-map-s-f8805c5d89">
-<div class="card-title auris-map-s-f9faa54401">Closure Checklist</div>
+<div class="card-title auris-map-s-f9faa54401">Closure Checklist</div><p>Completion and evidence must be confirmed. Verification is mandatory when required. For other checks, confirm or select N/A and explain why.</p>
 <div class="auris-map-s-f09da34d1d">
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-1" class="auris-map-s-51997edd5c"/> Action completed as described</label>
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-2" class="auris-map-s-51997edd5c"/> Evidence of completion available</label>
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-3" class="auris-map-s-51997edd5c"/> Verification completed (if required)</label>
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-4" class="auris-map-s-51997edd5c"/> Root cause addressed</label>
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-5" class="auris-map-s-51997edd5c"/> Similar areas / tasks reviewed</label>
-<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-6" class="auris-map-s-51997edd5c"/> No further risk identified</label>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-1" class="auris-map-s-51997edd5c"/> Action completed as described</label></div>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-2" class="auris-map-s-51997edd5c"/> Evidence of completion available</label></div>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-3" class="auris-map-s-51997edd5c"/> Verification completed (if required)</label><label for="mcc-na-3"><input type="checkbox" id="mcc-na-3"/> Not applicable</label><label for="mcc-reason-3">Reason if N/A</label><input id="mcc-reason-3" maxlength="1000" placeholder="Explain why this check does not apply"/></div>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-4" class="auris-map-s-51997edd5c"/> Root cause addressed</label><label for="mcc-na-4"><input type="checkbox" id="mcc-na-4"/> Not applicable</label><label for="mcc-reason-4">Reason if N/A</label><input id="mcc-reason-4" maxlength="1000" placeholder="Explain why this check does not apply"/></div>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-5" class="auris-map-s-51997edd5c"/> Similar areas / tasks reviewed</label><label for="mcc-na-5"><input type="checkbox" id="mcc-na-5"/> Not applicable</label><label for="mcc-reason-5">Reason if N/A</label><input id="mcc-reason-5" maxlength="1000" placeholder="Explain why this check does not apply"/></div>
+<div class="map-closure-item"><label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-6" class="auris-map-s-51997edd5c"/> Residual risk and follow-up reviewed</label><label for="mcc-na-6"><input type="checkbox" id="mcc-na-6"/> Not applicable</label><label for="mcc-reason-6">Reason if N/A</label><input id="mcc-reason-6" maxlength="1000" placeholder="Explain why this check does not apply"/></div>
 </div>
 <button class="btn btn-primary auris-map-s-2fd6bd9512" data-auris-onclick="h0955"><i class="ti ti-check"></i>Approve &amp; Close Action</button>
 <button class="btn auris-map-s-76feb07c8d" data-auris-onclick="h0956"><i class="ti ti-x"></i>Reject closure - reopen</button>

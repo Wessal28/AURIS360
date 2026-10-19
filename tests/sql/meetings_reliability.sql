@@ -23,6 +23,7 @@ do $$ declare payload jsonb; result jsonb; m uuid:='c1800000-0000-4000-8000-0000
  result:=public.save_hse_minutes(m,payload,first_updated);
  if (result->'actions'->0->>'id')::uuid<>a or jsonb_array_length(result->'actions')<>1 then raise exception 'repeated save duplicated actions';end if;
  if result->'actions'->0->>'assigned_to_name'<>'Fictional Owner' then raise exception 'owner identity was not verified';end if;
+ update public.action_tracker set status='pending_closure',progress_pct=100,evidence='Fictional controlled evidence',verification_status='passed',closure_notes='Fixture reviewed',closure_checklist=(select jsonb_object_agg(n::text,jsonb_build_object('confirmed',true)) from generate_series(1,6) n) where id=a;
  update public.action_tracker set status='closed' where id=a;
  result:=public.save_hse_minutes(m,payload,(result->'minutes'->>'updated_at')::timestamptz);
  if result->'actions'->0->>'status'<>'closed' then raise exception 'resaving minutes reopened a completed action';end if;
