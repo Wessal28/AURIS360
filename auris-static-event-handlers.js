@@ -3566,7 +3566,7 @@ aiChatSend()
 loadApprovals()
     },
     "h1184": function (event) {
-showPage('settings',document.getElementById('nav-settings'))
+approvalsWorkflowSettings()
     },
     "h1185": function (event) {
 approvalsRender()

@@ -140,3 +140,5 @@
 #oversight-compliance-chart.auris-administration-s-67c6459975{display:flex;flex-direction:column;gap:6px}
 #oversight-incidents-chart.auris-administration-s-67c6459975{display:flex;flex-direction:column;gap:6px}
 #oversight-matrix.auris-administration-s-e2c857d54b{overflow:auto}
+
+.company-summary-dialog{width:min(720px,95vw);max-height:90vh;border:1px solid var(--border);border-radius:16px;padding:24px;overflow:auto;margin:auto}.company-summary-dialog::backdrop{background:#10233488}.company-summary-dialog header,.company-summary-dialog footer{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}.company-summary-dialog dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.company-summary-dialog dd{overflow-wrap:anywhere;margin:4px 0 12px}.company-summary-dialog dt{font-size:12px;color:var(--text2)}.company-summary-dialog ul{padding:16px}.company-summary-dialog footer{justify-content:flex-end;margin-top:18px}
