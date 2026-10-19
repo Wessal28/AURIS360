@@ -28786,7 +28786,8 @@ async function dcRenderPdfPreview(body,url,generation){
   try{
     if(!window.pdfjsLib)throw new Error('PDF reader is unavailable. Reload the page or use Open / Download.');
     window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    var task=window.pdfjsLib.getDocument({url:url,isEvalSupported:false});dcPdfTask=task;
+    var input=typeof url==='string'?{url:url,isEvalSupported:false}:{data:url,isEvalSupported:false};
+    var task=window.pdfjsLib.getDocument(input);dcPdfTask=task;
     var pdf=await task.promise;if(!current())return;
     body.innerHTML='';
     var toolbar=document.createElement('div');toolbar.className='dc-pdf-toolbar';

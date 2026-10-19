@@ -1,0 +1,7 @@
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  .dcw-report table{width:100%;table-layout:fixed;border-collapse:collapse}
+  .dcw-report th,.dcw-report td{overflow-wrap:anywhere;white-space:normal;padding:6px;border:1px solid #c8d8d3;vertical-align:top;font-size:8pt}
+  .dcw-report thead{display:table-header-group}
+  .dcw-report tr{break-inside:avoid}
+}
