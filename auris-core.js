@@ -3351,6 +3351,7 @@ function showPage(name,el){
   if(window.AurisCommandCentre)window.AurisCommandCentre.recordOpen(name);
 
 closeTransientOverlays();
+peopleCloseProfile();usersCloseModal();peopleFormVisible(false);
 if(typeof mobileFieldReleaseForm==='function')mobileFieldReleaseForm();
 var routeReady;
 const activateRoutedPage=function(){
@@ -10792,6 +10793,7 @@ async function saveMtg(){mtgSaveMom();}
 
 
 let peAllData=[], peEditingId=null;
+var peopleProfileRequest=0,peopleLoadRequest=0;
 
 function peopleCanManage(){
 const role=activeRole();
@@ -10818,9 +10820,11 @@ const t=document.querySelector('#people-form .card-title');
 if(t)t.textContent=text;
 }
 function peopleFormVisible(show){
-const el=document.getElementById('people-form');
+const el=document.getElementById('people-form'),modal=document.getElementById('people-edit-modal');
 if(el)el.style.display=show?'block':'none';
+if(modal)modal.style.display=show?'flex':'none';
 }
+
 function peopleClearForm(){
 ['pef-first','pef-last','pef-id','pef-dob','pef-gender','pef-nationality','pef-jobtitle','pef-dept','pef-site','pef-empno','pef-start','pef-end','pef-coname','pef-cref','pef-cstart','pef-cend','pef-email','pef-phone','pef-emname','pef-emrel','pef-emphone','pef-induction','pef-medical'].forEach(function(id){
 const el=document.getElementById(id);if(el)el.value='';
@@ -10895,9 +10899,11 @@ toast(result.existing?'This person is already linked to a user account':channel=
 }
 
 function peopleCloseProfile(){
+peopleProfileRequest++;
 var modal=document.getElementById('user-profile-modal');
 if(modal)modal.style.display='none';
 }
+
 function peopleActivityNameSet(p){
 var full=peopleName(p).toLowerCase();
 var rev=[p?.last_name,p?.first_name].filter(Boolean).join(', ').toLowerCase();
@@ -10928,18 +10934,19 @@ return '<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
   +'</div>';
 }
 function peopleProfileDetails(p){
-return '<div style="display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:12px;margin-top:18px">'
-  +['Job title|'+(p.job_title||'-'),'Staff no.|'+(p.employee_number||'-'),'ID no.|'+(p.id_number||'-'),'Phone|'+(p.phone||'-'),'Start date|'+(p.start_date||'-'),'Medical fitness|'+(p.medical_fitness_date||'-'),'Induction|'+(p.induction_date||'-'),'Emergency contact|'+([p.emergency_name,p.emergency_phone].filter(Boolean).join(' - ')||'-')]
-    .map(function(pair){var a=pair.split('|');return '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff"><div style="font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700">'+escH(a[0])+'</div><div style="font-size:13px;font-weight:600;margin-top:3px">'+escH(a[1])+'</div></div>';}).join('')
-  +'</div>';
+var date=v=>v?new Date(v+'T00:00:00').toLocaleDateString('en-GB'):'—';
+var details=[['Job title',p.job_title],['Staff no.',p.employee_number],['ID no.',p.id_number],['Email',p.email],['Phone',p.phone],['Start date',date(p.start_date)],['End date',date(p.end_date)],['Contract type',auditLabel(p.contract_type||'')],['Contractor company',p.company_name],['Contract reference',p.contract_ref],['Medical fitness date',date(p.medical_fitness_date)],['Induction date',date(p.induction_date)],['Emergency contact',[p.emergency_name,p.emergency_phone].filter(Boolean).join(' · ')]];
+return '<div class="people-profile-details">'+details.map(function(pair){return '<div><strong>'+escH(pair[0])+'</strong><span>'+escH(pair[1]||'—')+'</span></div>';}).join('')+'</div>';
 }
 async function peopleOpenProfile(id){
 var p=peAllData.find(function(x){return x.id===id;});
 if(!p){toast('Person not found',false);return;}
+var request=++peopleProfileRequest,scope=String(ccid()||''),actor=prof?.id;
+function current(){return request===peopleProfileRequest&&scope===String(ccid()||'')&&actor===prof?.id&&document.getElementById('page-people')?.classList.contains('active')&&modal.style.display==='flex';}
 var modal=document.getElementById('user-profile-modal');
 var body=document.getElementById('upm3body');
 if(!modal||!body)return;
-body.innerHTML=peopleProfileShell(p)+'<div style="margin-top:18px">'+peopleProfileDetails(p)+'</div><div style="padding:28px;text-align:center;color:var(--text2)">Loading linked activity...</div>';
+body.innerHTML=peopleProfileShell(p)+'<div style="margin-top:18px">'+peopleProfileDetails(p)+'</div><div style="padding:28px;text-align:center;color:var(--text2)"><span role="status">Loading linked activity…</span></div>';
 modal.style.display='flex';
 try{
   var results=await Promise.all([
@@ -10950,6 +10957,7 @@ try{
     api('/safety_bulletins?select=*'+cf()+'&order=publication_date.desc').catch(function(){return[];}),
     api('/audit_events?select=*'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];})
   ]);
+  if(!current())return;
   var training=(results[0]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
   var inductions=(results[1]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
   var elearn=(results[2]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
@@ -10999,43 +11007,41 @@ try{
     ],'No recent audit activity linked to this person yet.');
   body.innerHTML=peopleProfileShell(p)+content;
 }catch(e){
+  if(!current())return;
   body.innerHTML=peopleProfileShell(p)+'<div style="margin-top:18px">'+peopleProfileDetails(p)+'</div><div style="padding:18px;color:var(--red)">Could not load linked activity: '+escH(e.message)+'</div>';
 }
 }
+function peopleFilteredRows(){
+const type=document.getElementById('filter-ptype')?.value||'',status=document.getElementById('filter-pstatus')?.value||'',query=(document.getElementById('people-search')?.value||'').trim().toLowerCase();
+return (peAllData||[]).filter(p=>(!type||p.person_type===type)&&(!status||p.status===status)&&(!query||[peopleName(p),p.employee_number,p.id_number,p.email,p.phone].join(' ').toLowerCase().includes(query)));
+}
 function peopleRender(){
 const el=document.getElementById('people-list');if(!el)return;
-const type=document.getElementById('filter-ptype')?.value||'';
-const status=document.getElementById('filter-pstatus')?.value||'';
-let rows=(peAllData||[]).filter(p=>(!type||p.person_type===type)&&(!status||p.status===status));
-if(!rows.length){el.innerHTML='<div class="empty">No people match the selected filters</div>';return;}
-const dateText=v=>v?new Date(v).toLocaleDateString('en-GB'):'--';
-el.innerHTML='<div style="overflow-x:auto"><table class="data-table" style="min-width:980px"><thead><tr><th>Name</th><th>Type</th><th>Department / Site</th><th>Contact</th><th>Employment</th><th>HSE</th><th>Status</th><th>Actions</th></tr></thead><tbody>'
-+rows.map(p=>{
-const typeBadge=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb':'ba';
-const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:700">Inducted</span>':'<span style="color:var(--amber);font-weight:700">Induction pending</span>')+'<br><span style="font-size:11px;color:var(--text2)">Medical: '+dateText(p.medical_fitness_date)+'</span>';
-const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
-const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
-const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':p.phone?'Create phone login':'Add contact details first';
-const profileBtn='<button class="btn btn-sm" data-auris-runtime-onclick="r0035" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-id"></i>Profile</button>';
-const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap">'+profileBtn+'<button class="btn btn-sm" data-auris-runtime-onclick="r0036" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" data-auris-runtime-onclick="r0038" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Reactivate</button>':'<button class="btn btn-sm danger" data-auris-runtime-onclick="r0039" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Deactivate</button>')+'</div>':profileBtn;
-return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
+const rows=peopleFilteredRows();
+if(!rows.length){el.innerHTML='<div class="empty">No people match the search and filters</div>';return;}
+el.innerHTML='<div class="table-scroll"><table class="data-table people-register-table"><thead><tr><th>Name / staff number</th><th>Type</th><th>Department / site</th><th>Job title</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+rows.map(p=>{
+const args=encodeURIComponent(JSON.stringify([p.id]));
+const profile='<button class="btn btn-sm" data-auris-runtime-onclick="r0035" data-auris-runtime-args="'+args+'"><i class="ti ti-id"></i>Profile</button>';
+const actions=profile+(peopleCanManage()?'<button class="btn btn-sm" data-auris-runtime-onclick="r0036" data-auris-runtime-args="'+args+'"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" data-auris-runtime-onclick="r0038" data-auris-runtime-args="'+args+'">Reactivate</button>':'<button class="btn btn-sm danger" data-auris-runtime-onclick="r0039" data-auris-runtime-args="'+args+'">Deactivate</button>'):'');
+return '<tr><td><strong>'+escH(peopleName(p))+'</strong><small class="people-register-secondary">Staff no. '+escH(p.employee_number||'Not recorded')+'</small></td><td>'+escH(auditLabel(p.person_type||'person'))+(p.company_name?'<small class="people-register-secondary">'+escH(p.company_name)+'</small>':'')+'</td><td>'+escH(p.department||'—')+'<small class="people-register-secondary">'+escH(p.site||'—')+'</small></td><td>'+escH(p.job_title||'—')+'</td><td>'+stat(p.status||'active')+'</td><td><div class="people-register-actions">'+actions+'</div></td></tr>';
 }).join('')+'</tbody></table></div>';
 }
+
 async function loadPeople(){
+const request=++peopleLoadRequest,scope=String(ccid()||''),actor=prof?.id;
+const search=document.getElementById('people-search');if(search)search.oninput=peopleRender;
 const btn=document.getElementById('people-add-btn');
 if(btn)btn.innerHTML=peopleCanManage()?'<button class="btn btn-primary" data-auris-generated-onclick="g0065"><i class="ti ti-plus"></i>Add person</button>':'';
-const el=document.getElementById('people-list');if(el)el.innerHTML='<div class="loading-msg">Loading...</div>';
+const el=document.getElementById('people-list');if(el)el.innerHTML='<div class="loading-msg" role="status">Loading people…</div>';
 try{
-let path='/people?select=*'+cf()+'&order=last_name';
-peAllData=await api(path)||[];
-const all=await api('/people?select=person_type,status'+cf())||[];
-document.getElementById('pe-total').textContent=all.filter(x=>x.status==='active').length;
-document.getElementById('pe-emp').textContent=all.filter(x=>x.person_type==='employee'&&x.status==='active').length;
-document.getElementById('pe-con').textContent=all.filter(x=>x.person_type==='contractor'&&x.status==='active').length;
-document.getElementById('pe-sub').textContent=all.filter(x=>x.person_type==='subcontractor'&&x.status==='active').length;
+const rows=await api('/people?select=*'+cf()+'&order=last_name')||[];
+if(request!==peopleLoadRequest||scope!==String(ccid()||'')||actor!==prof?.id)return;
+peAllData=rows;
+[['pe-total',p=>p.status==='active'],['pe-emp',p=>p.person_type==='employee'&&p.status==='active'],['pe-con',p=>p.person_type==='contractor'&&p.status==='active'],['pe-sub',p=>p.person_type==='subcontractor'&&p.status==='active']].forEach(([id,match])=>{const node=document.getElementById(id);if(node)node.textContent=rows.filter(match).length;});
 peopleRender();
-}catch(e){if(el)el.innerHTML=registerErrorHtml('People register',e.message);}
+}catch(e){if(request===peopleLoadRequest&&scope===String(ccid()||'')&&actor===prof?.id&&el)el.innerHTML=registerErrorHtml('People register',e.message);}
 }
+
 async function savePerson(){
 if(!peopleCanManage()){toast('Access denied',false);return;}
 const body=peopleBodyFromForm();
@@ -11055,7 +11061,9 @@ peopleCancel();await loadPeople();await loadPeopleCache();
 }
 async function peopleDeactivate(id){
 if(!peopleCanManage()){toast('Access denied',false);return;}
-if(!(await appConfirmDelete('person','This will set the person to inactive and keep linked records for traceability.')))return;
+const scope=String(ccid()||''),actor=prof?.id;
+if(!(await appConfirmAction({title:'Deactivate person',message:'Set this person to Inactive?',detail:'Linked training, incidents and other history are retained. You can reactivate the person later. This does not change their user-account login access.',confirmText:'Deactivate',cancelText:'Cancel'})))return;
+if(scope!==String(ccid()||'')||actor!==prof?.id||!peopleCanManage())return toast('Company or account changed. Reopen the person before continuing.',false);
 try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'inactive'}});toast('Person deactivated');await loadPeople();await loadPeopleCache();}catch(e){toastActionError('Deactivate person','People',e);}
 }
 async function peopleReactivate(id){
@@ -35130,6 +35138,7 @@ function psShowList_alt(){psShowList();}
 
 // -- Role definitions ------------------------------------------------
 const HSE_ROLES = {
+  sephs_admin:  {label:'SEPHS Admin',emoji:'SA',color:'#374151',bg:'#f9fafb',level:5,desc:'Platform administration across accessible companies'},
   executive:    {label:'Executive Management', emoji:'*', color:'#185FA5',  bg:'#EFF6FF',  level:5, desc:'Board & executive - read-only dashboards, executive reports, ESG'},
   admin:        {label:'Company Admin',         emoji:'*', color:'#374151',  bg:'#f9fafb',  level:5, desc:'Full platform access including system configuration'},
 
@@ -35146,39 +35155,7 @@ const HSE_ROLES = {
   inspector:    {label:'Inspector (legacy)',    emoji:'*', color:'#6B7280',  bg:'#f3f4f6',  level:2, desc:'Maps to Supervisor permissions'},
 };
 
-// Permission matrix: module ? min access level
-const ROLE_PERMISSIONS = {
-  //                          exec adm  hm   sm   aud  hr   sup  emp  con
-  'Dashboard':               [true,true,true,true,true,true,true,true,false],
-  'Executive Dashboard':     [true,true,true,false,false,false,false,false,false],
-  'Objectives & KPIs':       [true,true,true,true,true,false,false,false,false],
-  'Incident Management':     [true,true,true,true,true,false,true,true,true],
-  'Report incident':       [true,true,true,true,false,false,true,true,true],
-  'Investigate':           [false,true,true,true,true,false,false,false,false],
-  'BBS Observations':        [false,true,true,true,true,false,true,true,false],
-  'Audits & Inspections':    [false,true,true,true,true,false,true,false,false],
-  'Write inspection':      [false,true,true,true,true,false,true,false,false],
-  'Write audit':           [false,true,true,false,true,false,false,false,false],
-  'Risk Assessment':         [false,true,true,true,true,false,true,false,false],
-  'Permit to Work':          [false,true,true,true,false,false,true,false,true],
-  'Contractors':             [false,true,true,true,false,false,false,false,false],
-  'Emergency Management':    [false,true,true,true,false,false,true,false,false],
-  'Occupational Health':     [false,true,true,false,false,true,false,false,false],
-  'PPE':                     [false,true,true,true,false,false,true,false,false],
-  'ESG / Environmental':     [true,true,true,true,true,false,false,false,false],
-  'Occupational Noise Management': [false,true,true,true,false,false,true,false,false],
-  'Training & Competency':   [false,true,true,false,false,true,false,false,false],
-  'View own training':     [false,true,true,true,false,true,true,true,true],
-  'Meetings & Comms':        [false,true,true,true,false,false,true,false,false],
-  'Actions (MAP)':           [false,true,true,true,false,false,true,false,false],
-  'Legal Compliance':        [false,true,true,false,true,false,false,false,false],
-  'Documents':               [false,true,true,false,true,true,false,false,false],
-  'People':                  [false,true,true,false,false,true,false,false,false],
-  'Users & Roles':           [false,true,true,false,false,false,false,false,false],
-  'Settings':                [false,true,true,false,false,false,false,false,false],
-};
-
-const ROLE_KEYS = ['executive','admin','hse_manager','site_manager','auditor','hr','supervisor','employee','contractor'];
+const ROLE_KEYS = Object.keys(HSE_ROLES);
 
 // -- Role helper (extend existing RL) --------------------------------
 // Map new roles to numeric levels for isMgr()/isAdm() checks
@@ -35201,6 +35178,7 @@ function canAccess(minRole) {
 
 // -- Entry point -----------------------------------------------------
 let usersAllData = [];
+var usersLoadRequest=0,usersCompanyScope='',usersRoleSnapshot=null,usersRoleBusy=false;
 
 function usersCanEditUser(u){
 if(!u||!isMgr())return false;
@@ -35239,10 +35217,14 @@ async function loadUsers() {
   if(invBtn) invBtn.style.display = isMgr()?'inline-flex':'none';
   var invTab = document.getElementById('utab-invite');
   if(invTab) invTab.style.display = isAdm()?'flex':'none';
+  usersCompanyScope=isSA()?String(typeof sephsCompanyContext!=='undefined'?sephsCompanyContext||'':''):String(prof?.company_id||'');
+  usersSetupControls();
   uSwitchTab('users', document.getElementById('utab-users'));
 }
 
 function uSwitchTab(tab, btn) {
+  if(tab==='invite'&&!isAdm())return toast('Administrator access is required.',false);
+  var picker=document.getElementById('users-page-select');if(picker)picker.value=tab;
   document.querySelectorAll('[id^="utab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
   document.getElementById('uview-users').style.display   = tab==='users'  ?'block':'none';
@@ -35250,7 +35232,7 @@ function uSwitchTab(tab, btn) {
   document.getElementById('uview-invite').style.display  = tab==='invite' ?'block':'none';
   if(tab==='users')  usersLoad();
   else if(tab==='roles')  rolesRenderMatrix();
-  else if(tab==='invite') cuInit();
+  else if(tab==='invite'){cuInit();usersPopulateRoleSelector();}
 }
 
 // ---------------------------------------------------------------------------
@@ -35455,43 +35437,30 @@ document.addEventListener('input', function(e) {
 
 // -- Load users -------------------------------------------------------
 async function usersLoad() {
-  var el = document.getElementById('users-list'); if(!el) return;
-  el.innerHTML = '<div class="loading-msg">Loading users...</div>';
-  try {
-    var filter = prof?.company_id&&!isSA() ? '&company_id=eq.'+prof.company_id : '';
-    var d = await api('/profiles?select=*,companies(name)'+filter+'&order=full_name');
-    usersAllData = d||[];
-    // Metrics
-    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-    sm('um3total', usersAllData.length);
-    sm('um3active', usersAllData.filter(function(u){return u.status!=='inactive';}).length);
-    var mgrs = usersAllData.filter(function(u){return ['hse_manager','site_manager','manager','supervisor','admin','sephs_admin'].includes(u.role);});
-    sm('um3managers', mgrs.length);
-    sm('um3contractors', usersAllData.filter(function(u){return u.role==='contractor';}).length);
-    sm('um3pending', 0); // will update from invites if tracked
-    usersFilter();
-  } catch(e) {
-    el.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';
-  }
+  var el=document.getElementById('users-list');if(!el)return;
+  var request=++usersLoadRequest,actor=prof?.id,scope=String(ccid()||''),sa=isSA();
+  el.innerHTML='<div class="loading-msg" role="status">Loading users…</div>';
+  try{
+    var filter=prof?.company_id&&!sa?'&company_id=eq.'+encodeURIComponent(prof.company_id):'';
+    var rows=await api('/profiles?select=*,companies(name)'+filter+'&order=full_name')||[];
+    if(request!==usersLoadRequest||actor!==prof?.id||scope!==String(ccid()||'')||sa!==isSA())return;
+    usersAllData=rows;usersSetupControls();usersPopulateCompanyFilter();usersFilter();usersPopulateRoleSelector();if(document.getElementById('users-page-select')?.value==='roles')rolesRenderMatrix();
+  }catch(e){if(request===usersLoadRequest&&actor===prof?.id&&scope===String(ccid()||'')){usersAllData=[];el.innerHTML=registerErrorHtml('Users register',e.message);}}
 }
 
-function usersFilter() {
-  var el = document.getElementById('users-list'); if(!el) return;
-  var q  = (document.getElementById('users-search')?.value||'').toLowerCase();
-  var fr = document.getElementById('users-filter-role')?.value||'';
-  var fs = document.getElementById('users-filter-status')?.value||'';
-  var filt = usersAllData.filter(function(u) {
-    var mQ = !q || (u.full_name||'').toLowerCase().includes(q) ||
-              (u.email||'').toLowerCase().includes(q) ||
-              (u.department||'').toLowerCase().includes(q) ||
-              (u.companies?.name||'').toLowerCase().includes(q);
-    var mR = !fr || u.role===fr;
-    var mS = !fs || (fs==='active' ? u.status!=='inactive' : u.status==='inactive');
-    return mQ && mR && mS;
-  });
-  var countEl = document.getElementById('users-count-label');
-  if(countEl) countEl.textContent = filt.length+' user'+(filt.length!==1?'s':'');
-  usersRender(filt);
+function usersScopedRows(){
+return usersAllData.filter(function(u){return !isSA()?u.company_id===prof?.company_id:!usersCompanyScope||usersCompanyScope==='__none__'&&!u.company_id||u.company_id===usersCompanyScope;});
+}
+function usersFilteredRows(){
+var q=(document.getElementById('users-search')?.value||'').trim().toLowerCase(),role=document.getElementById('users-filter-role')?.value||'',status=document.getElementById('users-filter-status')?.value||'';
+return usersScopedRows().filter(function(u){return (!q||[u.full_name,u.email,u.department,u.companies?.name].join(' ').toLowerCase().includes(q))&&(!role||u.role===role)&&(!status||(u.status||'active')===status);});
+}
+function usersFilter(){
+var scope=usersScopedRows(),filtered=usersFilteredRows();
+[['um3total',scope.length],['um3active',scope.filter(u=>(u.status||'active')==='active').length],['um3managers',scope.filter(u=>['hse_manager','site_manager','manager','supervisor','admin','sephs_admin'].includes(u.role)).length],['um3contractors',scope.filter(u=>u.role==='contractor').length]].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.textContent=pair[1];});
+var count=document.getElementById('users-count-label');if(count)count.textContent=filtered.length+' of '+scope.length+' users in this company scope';
+var caption=document.getElementById('users-scope-label');if(caption)caption.textContent=isSA()&&!usersCompanyScope?'Scope: All accessible companies — independent of the company selected in the header.':'Scope: '+(document.getElementById('users-filter-company')?.selectedOptions[0]?.textContent||co?.name||'Your company')+'.';
+usersRender(filtered);
 }
 
 function usersFmtLastLogin(ts){
@@ -35643,11 +35612,11 @@ function usersRender(data) {
       + '<td style="padding:8px;font-size:11px;color:var(--text2)">'+usersFmtLastLogin(u.last_login)+'</td>'
       + (isMgr()
         ? '<td style="padding:8px"><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">'
-          + (canEdit?'<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" data-auris-generated-onclick="g0336"><i class="ti ti-edit"></i></button>':'<span style="font-size:11px;color:var(--text3)">Protected</span>')
+          + (canEdit?'<button class="btn btn-sm" aria-label="Edit user" title="Edit user" data-id="'+u.id+'" data-auris-generated-onclick="g0336"><i class="ti ti-edit"></i></button>':'<span style="font-size:11px;color:var(--text3)">Protected</span>')
           + (canAdmin&&!usersIsGeneratedLogin(u)?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" data-auris-generated-onclick="g0337"><i class="ti ti-key"></i></button>':'')
           + (usersCanResetPassword(u)?'<button class="btn btn-sm" title="'+(isSelf?'Change my password':'Set temporary password')+'" data-id="'+u.id+'" data-auris-generated-onclick="g0338"><i class="ti ti-lock-cog"></i></button>':'')
-          + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" data-auris-generated-onclick="g0339"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
-          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Deactivate user and preserve history" data-id="'+u.id+'" data-auris-generated-onclick="g0340"><i class="ti ti-user-off"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" data-auris-generated-onclick="g0339"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i> '+(isActive?'Block login':'Restore login')+'</button>':'')
+
           + '</div></td>'
         : '')
       + '</tr>';
@@ -35668,6 +35637,7 @@ function usersOpenProfile(id){
   if(modal)modal.style.display='flex';
 }
 function usersCloseProfile(){
+  peopleProfileRequest++;
   var modal=document.getElementById('user-profile-modal');
   if(modal)modal.style.display='none';
 }
@@ -35791,6 +35761,7 @@ function usersEdit(id) {
   document.getElementById('uem3title').textContent = u.full_name || 'Edit User';
   document.getElementById('uem3name').value = u.full_name||'';
   document.getElementById('uem3email').value = u.email||'';
+  usersEnsureCurrentRole(document.getElementById('uem3role'),u.role);
   document.getElementById('uem3role').value = u.role||'employee';
   document.getElementById('uem3job-title').value = u.job_title||'';
   document.getElementById('uem3dept').value = u.department||'';
@@ -35866,13 +35837,15 @@ async function usersSaveEdit() {
 async function usersToggleStatus(id, isActive) {
   var target = usersAllData.find(function(u){return u.id===id;});
   if(!usersCanAdminUser(target)){toast('Admin access required or user is protected.',false);return;}
-  var newStatus = isActive==='1' ? 'inactive' : 'active';
+  var scope=String(ccid()||''),actor=prof?.id;
+  var newStatus=target.status==='inactive'?'active':'inactive';
   var userName = target?.full_name||'this user';
   var msg = newStatus==='inactive'
     ? 'Deactivate '+userName+'?\n\nThey will no longer be able to log in. Their records (incidents, training, sign-offs) are kept. This is reversible.'
     : 'Reactivate '+userName+'? They will be able to log in again.';
   if(!(await appConfirmAction({title:newStatus==='inactive'?'Deactivate user':'Reactivate user',message:msg.replace(/\n\n/g,' '),detail:newStatus==='inactive'?'Their records are kept. This is reversible.':'The user will be able to log in again.',confirmText:newStatus==='inactive'?'Deactivate':'Reactivate',cancelText:'Cancel'}))) return;
   try {
+    if(scope!==String(ccid()||'')||actor!==prof?.id||!usersCanAdminUser(target))throw Error('Company or account changed. Reopen the user before continuing.');
     // Goes through the admin-users Edge Function so the LOGIN is actually
     // banned/unbanned server-side - not just the profile label.
     await adminFnCall(newStatus==='inactive'?'deactivate_user':'reactivate_user', {user_id:id});
@@ -35881,26 +35854,10 @@ async function usersToggleStatus(id, isActive) {
   } catch(e) { toastActionError('Change user status','Users & Roles',e); }
 }
 
-// Permanently delete a user account - guarded by a type-the-name confirmation.
-async function usersDelete(id) {
-  var u = usersAllData.find(function(x){return x.id===id;});
-  if(!u) return;
-  if(!usersCanAdminUser(u)){toast('Admin access required or user is protected.',false);return;}
-  var warn = 'DEACTIVATE '+(u.full_name||u.email)+'?\n\n'
-    + 'Their login will be blocked, but the profile stays linked to incidents, permits, training and audit history.\n\n'
-    + 'This is the recommended action when a person leaves the company or should no longer access AURIS360.\n\n'
-    + 'To confirm deactivation, type their full name exactly:';
-  var typed = await appPrompt({title:'Deactivate user',message:warn,placeholder:'Type the full name exactly',multiline:false,confirmText:'Deactivate user'});
-  if(typed===null) return;
-  if((typed||'').trim().toLowerCase() !== (u.full_name||'').trim().toLowerCase()){
-    toast('Name did not match - deletion cancelled', false); return;
-  }
-  try {
-    var updated=await api('/profiles?id=eq.'+id,{m:'PATCH',p:'return=representation',b:{status:'inactive',active:false,updated_at:new Date().toISOString()}});
-    if(Array.isArray(updated)&&!updated.length){throw new Error('User not found or permission denied');}
-    toast('User deactivated and history preserved: '+(u.full_name||u.email));
-    usersLoad();
-  } catch(e) { toastActionError('Deactivate user','Users & Roles',e); }
+// Compatibility entry point for reversible account deactivation.
+async function usersDelete(id){
+// Legacy links use the same reversible, server-enforced login action.
+return usersToggleStatus(id);
 }
 
 // Send a password-reset email (real-email accounts only)
@@ -36017,29 +35974,21 @@ async function usersTempPassword(id) {
 }
 
 // -- Update role (from invite tab) ------------------------------------
-async function updateRole() {
-  if(!isAdm()){toast('Admin access required',false);return;}
-  var email = document.getElementById('ur-email')?.value?.trim();
-  var role  = document.getElementById('ur-role')?.value;
-  var jt    = document.getElementById('ur-job-title')?.value?.trim();
-  var dept  = document.getElementById('ur-department')?.value?.trim();
-  if(!email){toast('Enter user email',false);return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){toast('Please enter a valid user email',false);return;}
-  try {
-    var filter = prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
-    var found = await api('/profiles?select=id,email,full_name'+filter+'&email=eq.'+encodeURIComponent(email));
-    if(!found||!found.length){toast('No user found with this email in the current company view',false);return;}
-    var target = usersAllData.find(function(x){return x.id===found[0].id;})||found[0];
-    if(!usersCanEditUser(target)||!usersRoleChangeAllowed(target,role)){toast('This role change is not allowed for the selected user.',false);return;}
-    var body = {role:role};
-    if(jt) body.job_title = jt;
-    if(dept) body.department = dept;
-    var updated = await api('/profiles?id=eq.'+found[0].id, {m:'PATCH', p:'return=representation', b:body});
-    if(!updated||!updated.length){toast('Role update was not saved. Please check permissions.',false);return;}
-    toast('Role updated for '+(found[0].full_name||email)+'!');
-    document.getElementById('ur-email').value = '';
-    usersLoad();
-  } catch(e) { toastActionError('Update user role','Users & Roles',e); }
+async function updateRole(){
+if(usersRoleBusy)return;
+var selected=document.getElementById('ur-user')?.value,target=usersAllData.find(u=>u.id===selected),snapshot=usersRoleSnapshot,newRole=document.getElementById('ur-role')?.value;
+if(!isAdm()||!target||!snapshot||snapshot.id!==target.id||snapshot.role!==target.role||snapshot.actor!==prof?.id||snapshot.scope!==String(ccid()||'')||!usersScopedRows().includes(target)||!usersCanEditUser(target)||!usersRoleChangeAllowed(target,newRole))return toast('Select an accessible account again before changing its role.',false);
+if(!Object.prototype.hasOwnProperty.call(HSE_ROLES,newRole))return toast('Choose a supported role.',false);
+usersRoleBusy=true;
+try{
+if(!(await appConfirmAction({title:'Update user role',message:'Change '+(target.full_name||target.email)+' from '+usersRoleLabel(target.role)+' to '+usersRoleLabel(newRole)+'?',detail:'Company: '+(target.companies?.name||'Not assigned')+'. Existing account restrictions remain in place.',confirmText:'Update role',cancelText:'Cancel',danger:false})))return;
+if(snapshot.actor!==prof?.id||snapshot.scope!==String(ccid()||'')||!usersCanEditUser(target))throw Error('Company or account changed. Select the user again.');
+await adminFnCall('update_user',{user_id:target.id,full_name:target.full_name,email:target.email,role:newRole,job_title:document.getElementById('ur-job-title')?.value||null,department:document.getElementById('ur-department')?.value||null,phone:target.phone||null,site:target.site||null,contractor_company:target.contractor_company||null,status:target.status||'active'});
+usersRoleSnapshot=null;await usersLoad();
+var fresh=usersAllData.find(u=>u.id===target.id);
+if(!fresh||fresh.role!==newRole)return toast('The save was submitted, but the updated role could not be verified. Reload the account before retrying.',false);
+toast('Role and details saved for '+(target.full_name||target.email));
+}catch(e){toastActionError('Update user role','Users & Roles',e);}finally{usersRoleBusy=false;}
 }
 
 // -- Invite helpers ----------------------------------------------------
@@ -36059,73 +36008,60 @@ function usersShareLink() {
   }
 }
 
-// -- Role permission matrix --------------------------------------------
-function rolesRenderMatrix() {
-  var thead = document.getElementById('roles-matrix-head');
-  var tbody = document.getElementById('roles-matrix-body');
-  if(!thead||!tbody) return;
-
-  // Column headers
-  var headerRow = '<tr style="background:#1a3a5c;color:#fff">'
-    + '<th style="padding:10px 14px;text-align:left;min-width:200px;position:sticky;left:0;background:#1a3a5c;z-index:2">Module / Feature</th>';
-  ROLE_KEYS.forEach(function(rk) {
-    var rc = HSE_ROLES[rk];
-    headerRow += '<th style="padding:8px 6px;text-align:center;min-width:80px;font-size:10px">'
-      + '<div style="font-size:16px;margin-bottom:2px">'+rc.emoji+'</div>'
-      + '<div style="font-size:9px;line-height:1.2;white-space:normal">'+rc.label+'</div>'
-      + '</th>';
-  });
-  headerRow += '</tr>';
-  thead.innerHTML = headerRow;
-
-  // Rows
-  var currentSection = '';
-  var h = '';
-  Object.entries(ROLE_PERMISSIONS).forEach(function(entry, i) {
-    var module = entry[0]; var perms = entry[1];
-    var isSubRow = module.startsWith('?');
-    var bg = i%2===0?'#fff':'#f9fafb';
-    if(isSubRow) bg = bg==='#fff'?'#f9f9ff':'#f3f3fa';
-    h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-      + '<td style="padding:'+(isSubRow?'6px 14px 6px 28px':'8px 14px')+';font-size:12px;font-weight:'+(isSubRow?'500':'700')+';position:sticky;left:0;background:'+bg+';z-index:1;color:'+(isSubRow?'var(--text2)':'inherit')+'">'
-      + (isSubRow?'<span style="color:var(--text2);margin-right:4px">+</span>':'')
-      + escH(module.replace('?','').trim())+'</td>';
-    ROLE_KEYS.forEach(function(rk, ri) {
-      var hasPerm = perms[ri] !== false && perms[ri] !== undefined ? perms[ri] : false;
-      // Map legacy roles: manager?hse_manager level, inspector?supervisor level
-      if(rk==='manager') hasPerm = perms[ROLE_KEYS.indexOf('hse_manager')];
-      if(rk==='inspector') hasPerm = perms[ROLE_KEYS.indexOf('supervisor')];
-      var rc = HSE_ROLES[rk];
-      h += '<td style="padding:6px;text-align:center">'
-        + '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:12px;background:'+(hasPerm?rc.bg:'transparent')+';">'
-        + (hasPerm?'<span style="color:'+rc.color+';font-weight:900">?</span>':'<span style="color:#e5e7eb">-</span>')
-        + '</span></td>';
-    });
-    h += '</tr>';
-  });
-  tbody.innerHTML = h;
-
-  // Role description cards below the table
-  var descDiv = document.getElementById('roles-matrix-table')?.closest('.card');
-  if(descDiv) {
-    var existing = document.getElementById('roles-desc-cards');
-    if(!existing) {
-      var descEl = document.createElement('div');
-      descEl.id = 'roles-desc-cards';
-      descEl.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:14px 0 0';
-      descEl.innerHTML = ROLE_KEYS.map(function(rk) {
-        var rc = HSE_ROLES[rk];
-        return '<div style="border:2px solid '+rc.bg+';border-radius:10px;padding:10px 12px;background:#fff">'
-          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
-          + '<span style="font-size:18px">'+rc.emoji+'</span>'
-          + '<span style="font-weight:700;font-size:12px;color:'+rc.color+'">'+rc.label+'</span>'
-          + '</div>'
-          + '<div style="font-size:11px;color:var(--text2);line-height:1.5">'+escH(rc.desc)+'</div>'
-          + '</div>';
-      }).join('');
-      descDiv.appendChild(descEl);
-    }
-  }
+function usersRoleLabel(role){return HSE_ROLES[role]?.label||auditLabel(role||'Not recorded');}
+function usersSetupControls(){
+var picker=document.getElementById('users-page-select');if(picker){var option=picker.querySelector('[value="invite"]');if(option)option.hidden=!isAdm();picker.onchange=function(){uSwitchTab(this.value,document.getElementById('utab-'+this.value));};}
+['users-filter-role','ur-role','cu-role','uem3role'].forEach(function(id){var select=document.getElementById(id);if(!select)return;var old=select.value,keys=ROLE_KEYS.filter(k=>k!=='sephs_admin'||id==='users-filter-role'&&isSA());select.innerHTML=(id==='users-filter-role'?'<option value="">All roles</option>':'')+keys.map(k=>'<option value="'+k+'">'+escH(usersRoleLabel(k))+'</option>').join('');select.value=keys.includes(old)?old:id==='users-filter-role'?'':'employee';});
+var company=document.getElementById('users-filter-company');if(company)company.onchange=function(){usersCompanyScope=this.value;usersRoleSnapshot=null;usersFilter();usersPopulateRoleSelector();if(document.getElementById('users-page-select')?.value==='roles')rolesRenderMatrix();};
+var search=document.getElementById('ur-search');if(search)search.oninput=usersPopulateRoleSelector;
+var select=document.getElementById('ur-user');if(select)select.onchange=usersSelectRoleUser;
+}
+function usersPopulateCompanyFilter(){
+var select=document.getElementById('users-filter-company');if(!select)return;
+var companies=new Map();usersAllData.forEach(function(u){if(u.company_id)companies.set(u.company_id,u.companies?.name||'Company '+u.company_id);});
+select.innerHTML=(isSA()?'<option value="">All accessible companies</option>':'')+Array.from(companies).sort((a,b)=>a[1].localeCompare(b[1])).map(c=>'<option value="'+escH(c[0])+'">'+escH(c[1])+'</option>').join('')+(isSA()&&usersAllData.some(u=>!u.company_id)?'<option value="__none__">No company assigned</option>':'');
+if(usersCompanyScope&&!companies.has(usersCompanyScope)&&usersCompanyScope!=='__none__'){var o=document.createElement('option');o.value=usersCompanyScope;o.textContent='Selected company (no loaded accounts)';select.appendChild(o);}
+select.value=usersCompanyScope;select.disabled=!isSA();
+}
+function usersPopulateRoleSelector(){
+var select=document.getElementById('ur-user');if(!select)return;
+var selected=select.value,q=(document.getElementById('ur-search')?.value||'').trim().toLowerCase();
+var rows=usersScopedRows().filter(u=>usersCanEditUser(u)&&(!q||[u.full_name,u.email,u.companies?.name].join(' ').toLowerCase().includes(q)));
+select.innerHTML='<option value="">Select an existing user</option>'+rows.map(u=>'<option value="'+escH(u.id)+'">'+escH([u.full_name,u.email,u.companies?.name].filter(Boolean).join(' · '))+'</option>').join('');
+select.value=rows.some(u=>u.id===selected)?selected:'';usersSelectRoleUser();
+}
+function usersEnsureCurrentRole(select,role){
+if(select&&role&&HSE_ROLES[role]&&!Array.from(select.options).some(o=>o.value===role)){var option=document.createElement('option');option.value=role;option.textContent=usersRoleLabel(role);select.appendChild(option);}
+}
+function usersSelectRoleUser(){
+var u=usersAllData.find(u=>u.id===document.getElementById('ur-user')?.value),current=document.getElementById('ur-current-role');usersRoleSnapshot=null;
+if(current)current.textContent=u?'Current role: '+usersRoleLabel(u.role)+' · '+(u.companies?.name||'No company assigned'):'Select an account to see its current role.';
+if(!u)return;
+usersRoleSnapshot={id:u.id,role:u.role,actor:prof?.id,scope:String(ccid()||'')};
+usersEnsureCurrentRole(document.getElementById('ur-role'),u.role);
+[['ur-role',u.role],['ur-job-title',u.job_title],['ur-department',u.department]].forEach(function(pair){var input=document.getElementById(pair[0]);if(input)input.value=pair[1]||'';});
+}
+function usersRoleModuleVisible(role,key){
+var profile={role:role},allowed=ROLE_ALLOWED[role];
+return (allowed===null||Array.isArray(allowed)&&allowed.includes(key))&&(!window.AurisUserAccess||window.AurisUserAccess.pageAllowed(profile,key));
+}
+function usersRestrictionLabel(user,key,action){
+if(!usersRoleModuleVisible(user.role,key))return 'No module access';
+if(window.AurisUserAccess&&!window.AurisUserAccess.allowed(user,key,action))return 'Restricted';
+return action==='view'?'View':'Role / record rules';
+}
+function rolesRenderMatrix(){
+var head=document.getElementById('roles-matrix-head'),body=document.getElementById('roles-matrix-body');if(!head||!body)return;
+var modules=window.AurisModuleRegistry.list().filter(m=>!m.hidden),keys=ROLE_KEYS;
+head.innerHTML='<tr><th scope="col">Module</th>'+keys.map(k=>'<th scope="col">'+escH(usersRoleLabel(k))+'</th>').join('')+'</tr>';
+body.innerHTML=modules.map(m=>'<tr><th scope="row">'+escH(m.name)+'</th>'+keys.map(k=>'<td><span class="users-access-'+(usersRoleModuleVisible(k,m.key)?'view':'none')+'">'+(usersRoleModuleVisible(k,m.key)?'View':'No access')+'</span></td>').join('')+'</tr>').join('');
+var legend=document.getElementById('roles-access-legend');if(legend)legend.textContent='View = role can open the module before company, rollout and individual restrictions. No access = module hidden for that role. Create, Edit and Delete still require record permissions. Approve requires the assigned workflow role and readiness checks; View never implies approval authority.';
+var select=document.getElementById('roles-account-select');if(select){var current=select.value;select.innerHTML='<option value="">Select an account to inspect restrictions</option>'+usersScopedRows().map(u=>'<option value="'+escH(u.id)+'">'+escH([u.full_name,u.email,usersRoleLabel(u.role)].join(' · '))+'</option>').join('');select.value=current;select.onchange=usersRenderAccessSummary;usersRenderAccessSummary();}
+}
+function usersRenderAccessSummary(){
+var user=usersScopedRows().find(u=>u.id===document.getElementById('roles-account-select')?.value),host=document.getElementById('roles-account-access');if(!host)return;
+if(!user){host.textContent='Choose an account to inspect its saved restrictions. This view does not change access.';return;}
+host.innerHTML='<div class="table-scroll"><table class="data-table"><thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th><th>Approve</th></tr></thead><tbody>'+window.AurisModuleRegistry.list().filter(m=>!m.hidden).map(m=>'<tr><th>'+escH(m.name)+'</th>'+['view','create','edit','delete'].map(a=>'<td>'+usersRestrictionLabel(user,m.key,a)+'</td>').join('')+'<td>'+(usersRestrictionLabel(user,m.key,'edit')==='Restricted'||!usersRoleModuleVisible(user.role,m.key)?'Unavailable':'Workflow checks')+'</td></tr>').join('')+'</tbody></table></div><p>Role / record rules means no additional restriction is saved for this action; it is not a grant. Company access, ownership and workflow checks remain authoritative.</p>';
 }
 
 // -- Apply roles to UI (enhanced) ------------------------------------
