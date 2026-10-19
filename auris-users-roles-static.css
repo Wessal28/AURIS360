@@ -114,3 +114,17 @@
 #utab-users.auris-users-roles-s-eb99a4c193{white-space:nowrap}
 #uview-invite.auris-users-roles-s-6aa34d7432{display:none}
 #uview-roles.auris-users-roles-s-6aa34d7432{display:none}
+
+#page-users .users-legacy-nav{display:none}
+.users-page-picker{margin-left:auto;width:min(100%,400px)}
+.users-company-filter{display:flex;align-items:center;gap:12px;margin-top:12px;font-weight:700}
+.users-company-filter select{max-width:420px}
+#users-scope-label,#roles-access-legend{font-size:13px;line-height:1.55;color:var(--text2)}
+#roles-matrix-table th,#roles-matrix-table td{padding:10px 12px;white-space:normal;min-width:105px;border-bottom:1px solid var(--border)}
+#roles-matrix-table th{background:#f0f7f5;text-align:left}
+#roles-matrix-table th:first-child{position:sticky;left:0;min-width:190px;z-index:1}
+.users-access-view{color:#06634f;font-weight:700}.users-access-none{color:#687884}
+.users-access-summary{margin-top:16px}.users-access-summary select{max-width:100%;margin-bottom:16px}
+#user-edit-modal .auris-users-roles-s-8bbde118f8{width:min(860px,100%);max-height:90vh;border-radius:16px}
+#users-list td:last-child .btn{white-space:nowrap}
+@media print{.users-page-picker,.users-company-filter{display:none}#roles-matrix-table th:first-child{position:static}}
