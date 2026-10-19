@@ -26,3 +26,7 @@
 @media(max-width:720px){.dcx-page-toolbar{align-items:stretch;flex-direction:column}.dcx-preview-open .dcx-drawer{width:100vw}}
 
 .dcx-generated-rendition{overflow:auto;background:white;padding:16px}.dcx-generated-rendition table{width:100%;border-collapse:collapse}.dcx-generated-rendition .rpt-grid,.dcx-generated-rendition .rpt-grid-3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#dcx-decision-binding{overflow-wrap:anywhere;font-size:12px;padding:12px;background:#edf7f3}
+
+.dcw-hash{overflow-wrap:anywhere}#dcx-dist-users{min-height:150px}#dcx-report-preview{margin-top:18px}#dcx-upload-info{display:block;margin-top:8px;color:#526d74}#dcx-upload-progress{margin-top:12px}.dcx-badge.approved_awaiting_release{background:#fff2ce;color:#704e00}.dcx-badge.draft_not_authorised{background:#e9efff;color:#334d80}
+
+.dcx-ack-declaration{display:flex;gap:12px;align-items:flex-start;padding:18px;margin-top:18px;border:1px solid #c3d6d1;border-radius:10px}.dcx-ack-declaration input{margin-top:3px}

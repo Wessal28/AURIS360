@@ -361,6 +361,11 @@
       "order": 72,
       "file": "20261019030000_swms_controlled_release.sql",
       "sha256": "9caf009b40d06ddc3887e17a952aed5d67b3edbe607657838d3cd0c585d56bf1"
+    },
+    {
+      "order": 73,
+      "file": "20261019040000_document_control_workflows.sql",
+      "sha256": "2161d830ae2eff8642b4904a8e7dfdf592e3e19227551a6fe22fbb2092ad7752"
     }
   ]
 }
