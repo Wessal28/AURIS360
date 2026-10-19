@@ -154,3 +154,4 @@ run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label:
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'legal_assurance.sql')], {label: 'legal source, provisional assessments, approval, remediation and evidence decisions'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'sop_workspace_drafts.sql')], {label: 'incomplete SOP drafts, metadata, consent and atomic evidence recovery'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'swms_controlled_release.sql')], {label: 'SWMS atomic rendition, independent approval, controlled release and exact work-pack revision'});

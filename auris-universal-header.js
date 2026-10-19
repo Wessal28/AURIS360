@@ -31,7 +31,7 @@
       mirror.dataset.sourcePage=page.id;
       if(wrap.hidden)wrap.hidden=false;
     }else{if(!wrap.hidden)wrap.hidden=true;mirror.dataset.sourcePage='';}
-    var section=source&&source.selectedOptions[0]?clean(source.selectedOptions[0].textContent):'';
+    var section=page.dataset.swmsEditorLabel||(source&&source.selectedOptions[0]?clean(source.selectedOptions[0].textContent):'');
     var path=name==='Home'?'':' / '+name+(section?' / '+section:'');if(crumb.textContent!==path)crumb.textContent=path;
     var company=document.getElementById('auris-global-company'),sidebarCompany=document.getElementById('sb-company');
     if(company&&sidebarCompany){var companyName=clean(sidebarCompany.textContent);if(company.textContent!==companyName)company.textContent=companyName;var hideCompany=visible(document.getElementById('sa-company-switcher'))||!companyName;if(company.hidden!==hideCompany)company.hidden=hideCompany;}

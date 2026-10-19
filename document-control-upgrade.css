@@ -24,3 +24,5 @@
 .dcx-badge.current_authorised{background:#dbf4e5;color:#17633b}
 .dcx-badge.obsolete_not_authorised{background:#fff0e8;color:#9b3b1c}
 @media(max-width:720px){.dcx-page-toolbar{align-items:stretch;flex-direction:column}.dcx-preview-open .dcx-drawer{width:100vw}}
+
+.dcx-generated-rendition{overflow:auto;background:white;padding:16px}.dcx-generated-rendition table{width:100%;border-collapse:collapse}.dcx-generated-rendition .rpt-grid,.dcx-generated-rendition .rpt-grid-3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#dcx-decision-binding{overflow-wrap:anywhere;font-size:12px;padding:12px;background:#edf7f3}

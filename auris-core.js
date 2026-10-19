@@ -9549,10 +9549,10 @@ function swmsOpen(id){
   swmsEditingId=id;
   var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form3view');
   if(list)list.style.display='none';if(form)form.style.display='block';
-  var p=swmsDecodePayload(x)||{};
+  var p=x._swmsRevision?.content_json?.swms_payload||swmsDecodePayload(x)||{};
   document.getElementById('swms-ref').textContent=x.doc_ref||x.reference_no||'SWMS-AUTO';
   swmsSetVal('swms-title',p.title||x.title||'');
-  swmsSetVal('swms-version',p.version||x.version||x.doc_version||'Rev 00');
+  swmsSetVal('swms-version',x._swmsRevision?.revision_code||x.version||x.doc_version||p.version||'Rev 00');
   swmsSetVal('swms-location',p.location||x.location||'');
   swmsSetVal('swms-dept',p.department||x.department||x.dept||'');
   swmsSetVal('swms-contractor',p.contractor||'');
@@ -9649,13 +9649,13 @@ function swmsBuildHtml(){
     var c=RL_CFG[v]||['#f3f4f6','#374151'];
     return '<span style="display:inline-block;background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:7.5pt;font-weight:800">'+escH(v||'-')+'</span>';
   };
-  var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:4%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'-')+'</td><td style="'+td+'">'+escH(r.hazard||'-')+'</td><td style="'+td+'">'+escH(r.risk||'-')+'</td><td style="'+td+';text-align:center">'+riskPill(r.initial_risk||'')+'</td><td style="'+td+'">'+escH(r.controls||'-')+'</td><td style="'+td+';text-align:center">'+riskPill(r.residual_risk||'')+'</td><td style="'+td+'">'+escH(r.responsible||'-')+'</td></tr>';}).join('');
+  var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:4%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'-')+'</td><td style="'+td+'">'+escH(r.hazard||'-')+'</td><td style="'+td+'">'+escH(r.risk||'-')+'</td><td style="'+td+';text-align:center">'+riskPill(r.initial_risk||'')+'</td><td style="'+td+'">'+escH(r.controls||'-')+(r.hold_point?'<p><b>Hold point:</b> '+escH(r.hold_point.replace(/_/g,' '))+'</p>':'')+(r.verification?'<p><b>Verification:</b> '+escH(r.verification)+'</p>':'')+'</td><td style="'+td+';text-align:center">'+riskPill(r.residual_risk||'')+'</td><td style="'+td+'">'+escH(r.responsible||'-')+'</td></tr>';}).join('');
   return '<link rel="stylesheet" href="/auris-print-swms.css">'
     +'<div id="swms-printable" class="report-page">'
     +aurisHeader('Safe Work Method Statement', title, ref)
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div><div class="rpt-grid-3">'
     +fld('Reference', ref)+fld('Version', g('swms-version')||'Rev 00')+fld('Date', g('swms-date'))
-    +fld('Review Date', g('swms-review-date'))+fld('Prepared By', g('swms-prepared-by'))+fld('Approved By', g('swms-approved-by'))
+    +fld('Review Date', g('swms-review-date'))+fld('Prepared By', g('swms-prepared-by'))+fld('Nominated Approver', g('swms-approved-by'))
     +'</div></div>'
     +'<div class="rpt-section"><div class="rpt-section-title">Work Details</div><div class="rpt-grid">'
     +fld('Activity / SWMS Title', title, true)
@@ -9685,8 +9685,8 @@ function swmsBuildHtml(){
     +'</tbody></table></div>'
     +'<div class="rpt-signatures">'
     +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-prepared-by')||'')+'</div><label>Prepared by</label></div>'
-    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-reviewed-by')||'')+'</div><label>Reviewed by</label></div>'
-    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-approved-by')||'')+'</div><label>Approved by</label></div>'
+    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-reviewed-by')||'')+'</div><label>Nominated reviewer</label></div>'
+    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-approved-by')||'')+'</div><label>Nominated approver — decisions in Document Control</label></div>'
     +'</div>'
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment</div><div style="font-size:8pt;color:#374151;line-height:1.35">Prepared in line with professional RAMS good practice: task planning, hazard identification, inherent risk, hierarchy of controls, residual risk acceptance, SWMS, approval, communication/sign-on, implementation monitoring, and review when scope, method, equipment, substances, personnel, legislation or site conditions change.</div></div>'
     +aurisFooter('Safe Work Method Statement')
@@ -9708,52 +9708,13 @@ async function swmsSaveToDocuments(){
   var swmsRa=verifiedReferenceSelection('swms-ra-ref'),swmsPermit=verifiedReferenceSelection('swms-ptw-ref');
   var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:saveRef,reference_no:saveRef,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,linked_risk_assessment_id:swmsRa.id,linked_ra_ref:swmsRa.ref,linked_permit_id:swmsPermit.id,linked_permit_ref:swmsPermit.ref,approval_status:existing?(existing.approval_status||existing.status||'draft'):'draft',status:existing?(existing.status||existing.approval_status||'draft'):'draft',revision_summary:swmsEncodePayload(payload),updated_at:new Date().toISOString()};
   try{
-    var savedDocId=swmsEditingId||null;
-    if(swmsEditingId){await apiWriteWithMissingColumnFallback('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body},'SWMS');}
-    else{
-      body.created_by=prof?.id;
-      var created=await apiWriteWithMissingColumnFallback('/documents',{m:'POST',p:'return=representation',b:body},'SWMS');
-      savedDocId=created&&created[0]?created[0].id:null;
-      if(savedDocId)swmsEditingId=savedDocId;
-    }
-    var auditDoc=Object.assign({id:savedDocId},existing||{},body);
-    swmsAudit(wasEditing?'update':'create',wasEditing?'SWMS updated in Document Control':'SWMS saved to Document Control',auditDoc,{step_count:(payload.steps||[]).length});
     document.getElementById('swms-ref').textContent=saveRef;
-    var linkedRA=document.getElementById('swms-ra-ref')?.value||'';
-    if(linkedRA){
-      var raPatch={rams_document_name:saveRef,rams_document_url:null,updated_at:new Date().toISOString()};
-      try{await api('/risk_assessments?'+(swmsRa.id?'id=eq.'+encodeURIComponent(swmsRa.id):'ra_ref=eq.'+encodeURIComponent(linkedRA)),{m:'PATCH',p:'return=minimal',b:raPatch});}
-      catch(_){try{await api('/risk_assessments?id=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}catch(__){}}
-      swmsAudit('link','SWMS linked to risk assessment',auditDoc,{risk_assessment_ref:linkedRA,swms_ref:saveRef});
-    }
-    toast('SWMS '+(wasEditing?'updated':'saved')+' in Document Control: '+saveRef+(linkedRA?' and linked to RA':''));
-    swmsShowList();
-  }catch(e){
-    var msg=String(e&&e.message?e.message:e||'');
-    var looksLikeSwmsTypeConstraint=/document_type|doc_type|check constraint|violates/i.test(msg);
-    if(looksLikeSwmsTypeConstraint){
-      try{
-        body.document_type='procedure';
-        body.doc_type='procedure';
-        body.category='Safe Work Method Statement';
-        body.tags=['SWMS','Method Statement','Procedure'];
-        var fallbackDocId=swmsEditingId||null;
-        if(swmsEditingId){await apiWriteWithMissingColumnFallback('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body},'SWMS');}
-        else{
-          body.created_by=prof?.id;
-          var fallbackCreated=await apiWriteWithMissingColumnFallback('/documents',{m:'POST',p:'return=representation',b:body},'SWMS');
-          fallbackDocId=fallbackCreated&&fallbackCreated[0]?fallbackCreated[0].id:null;
-          if(fallbackDocId)swmsEditingId=fallbackDocId;
-        }
-        swmsAudit(wasEditing?'update':'create','SWMS saved as compatible procedure pending database type upgrade',Object.assign({id:fallbackDocId},existing||{},body),{step_count:(payload.steps||[]).length,swms_type_fallback:true});
-        document.getElementById('swms-ref').textContent=saveRef;
-        toast('SWMS saved as a controlled procedure. Run swms_document_type_fix.sql once to convert it to the SWMS type.');
-        swmsShowList();
-        return;
-      }catch(e2){toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e2),false);return;}
-    }
-    toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e),false);
-  }
+    var saved=await api('/rpc/save_swms_revision',{m:'POST',b:{p_id:swmsEditingId||crypto.randomUUID(),p_expected:existing?.updated_at||null,p_body:body,p_payload:payload,p_html:swmsBuildHtml()}});
+    swmsEditingId=saved.id;document.getElementById('swms-ref').textContent=saved.doc_ref||saveRef;
+    var i=swmsAllData.findIndex(function(d){return d.id===saved.id;});if(i<0)swmsAllData.unshift(saved);else swmsAllData[i]=saved;
+    toast('SWMS draft and previewable rendition saved: '+(saved.doc_ref||saveRef));
+    return saved;
+  }catch(e){toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e),false);return null;}
 }
 
 // -- LEGAL REGISTER ----------------------------------------------------------

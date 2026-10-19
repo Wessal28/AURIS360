@@ -46,6 +46,7 @@ var modules = [
 ];
 
 var extractionMap={
+  swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
   inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js']},

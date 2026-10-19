@@ -356,6 +356,11 @@
       "order": 71,
       "file": "20261019020000_sop_workspace_drafts.sql",
       "sha256": "f7997a02b165b7410536eb1c73078db052d53d0d9362fb6cc3af09c39cf2eec2"
+    },
+    {
+      "order": 72,
+      "file": "20261019030000_swms_controlled_release.sql",
+      "sha256": "9caf009b40d06ddc3887e17a952aed5d67b3edbe607657838d3cd0c585d56bf1"
     }
   ]
 }

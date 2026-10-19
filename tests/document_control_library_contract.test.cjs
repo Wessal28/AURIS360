@@ -6,7 +6,7 @@ const path = require('node:path');
 
 function library(role = 'employee') {
   const source = fs.readFileSync(path.join(__dirname, '..', 'document-control-upgrade.js'), 'utf8')
-    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, previewFile, renderDraftsAndReviews, documentTypeOptions, nav };})();');
+    .replace(/\}\)\(\);\s*$/, 'window.__library = { D, authorisedRevision, filteredDocs, currentFile, previewFile, generatedRendition, renderDraftsAndReviews, documentTypeOptions, nav };})();');
   const context = {
     window: {},
     document: { readyState: 'loading', addEventListener() {} },
@@ -93,4 +93,18 @@ test('shared header picker offers document sections and routes changes', () => {
   source.value = 'doc:content';
   source.onchange();
   assert.equal(routed, 'content');
+});
+
+test('controllers can review an exact generated draft while employees retain the released rendition',()=>{
+  const controller=library('document_controller'),employee=library();
+  for(const s of [controller,employee]){
+    s.D.data.documents=[{id:'doc',current_revision_id:'draft',status:'under_revision'}];
+    s.D.data.revisions=[{id:'draft',document_id:'doc',status:'draft',revision_code:'3.0',content_json:{rendition_html:'<p>New draft method</p>'}},{id:'released',document_id:'doc',status:'effective',revision_code:'2.0',content_json:{rendition_html:'<p>Released method</p>'}}];
+    s.D.data.files=[{document_id:'doc',revision_id:'draft',file_role:'generated_rendition',status:'draft'},{document_id:'doc',revision_id:'released',file_role:'generated_rendition',status:'published'}];
+  }
+  assert.equal(controller.generatedRendition('doc','draft').revision.revision_code,'3.0');
+  assert.equal(controller.generatedRendition('doc','draft').authorised,false);
+  assert.equal(controller.generatedRendition('doc').revision.revision_code,'2.0');
+  assert.equal(employee.generatedRendition('doc','draft').revision.revision_code,'2.0');
+  assert.equal(employee.generatedRendition('doc','draft').authorised,true);
 });
