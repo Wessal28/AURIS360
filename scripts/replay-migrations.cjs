@@ -152,3 +152,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'action_clos
 run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label: 'action closure timeout rollback and retry'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'legal_assurance.sql')], {label: 'legal source, provisional assessments, approval, remediation and evidence decisions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'sop_workspace_drafts.sql')], {label: 'incomplete SOP drafts, metadata, consent and atomic evidence recovery'});

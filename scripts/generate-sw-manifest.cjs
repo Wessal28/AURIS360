@@ -64,6 +64,7 @@ const dynamicPrintAssets = [
 ];
 for (const asset of dynamicPrintAssets) assetSet.add(asset);
 const lazyModuleAssets = [
+  'sop-video-upgrade.js',
   'learning-competency-upgrade.js', 'elearning-course-path.js',
   'contractor-management-upgrade.js', 'chemical-control-upgrade.js',
   'tools-equipment-upgrade.js', 'legal-compliance-upgrade.js',
