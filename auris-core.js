@@ -1802,11 +1802,7 @@ async function obsAskAI(question) {
 
 ;
 ;
-// ===================================================================
-// SUPABASE AUTH - Production implementation
-// Session persistence - Password reset - Token refresh
-// Password strength - Show/hide password - Auto-restore session
-// ===================================================================
+// Session persistence, refresh and sign-in panels.
 
 // -- Auth state ----------------------------------------------------------------
 var _authSession = null;  // { access_token, refresh_token, expires_at, user }
@@ -1862,12 +1858,14 @@ function authShowLoading(msg) {
   var el=document.getElementById('auth-loading');
   var msgEl=document.getElementById('auth-loading-msg');
   aurisSetDisplay(el,'flex');
+  var panels=document.getElementById('login-panels');if(panels)panels.inert=true;
   if(msgEl) msgEl.textContent=msg||'Please wait...';
 }
 
 function authHideLoading() {
   var el=document.getElementById('auth-loading');
   aurisSetDisplay(el,'none');
+  var panels=document.getElementById('login-panels');if(panels)panels.inert=false;
 }
 
 // -- Show/hide password toggle --------------------------------------------------

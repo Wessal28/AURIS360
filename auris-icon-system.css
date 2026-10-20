@@ -104,13 +104,6 @@
   background-size:108px 86px!important;background-position:-27px -1px!important;
   background-color:#fff!important;border-color:#dbe7f3!important;
 }
-img.login-logo[src*="auris360-logo"],img.login-logo[src*="auris-icon-system-final"]{
-  width:244px!important;height:195px!important;max-width:92%!important;
-  object-fit:none!important;object-position:9999px 9999px!important;
-  background-image:var(--auris-brand-logo)!important;background-repeat:no-repeat!important;
-  background-size:contain!important;background-position:center!important;
-  background-color:#fff!important;border-radius:9px!important;
-}
 
 /* Module artwork shared by sidebar, dropdown and mobile navigation. */
 i.auris-module-icon,
