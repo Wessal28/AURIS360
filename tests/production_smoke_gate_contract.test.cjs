@@ -18,13 +18,21 @@ function fixture(overrides = {}) {
   const runtime = {
     environment: 'production', releaseSha,
     supabaseUrl: 'https://iarfxjhahzbhncsaohbg.supabase.co',
-    supabaseAnonKey: 'do-not-retain-runtime-key',
+    supabaseAnonKey: 'sb_publishable_do-not-retain-runtime-key',
     ...overrides.runtime
   };
   return {
     requests,
     fetchImpl: async (input, options) => {
       const url = new URL(input);
+      if (url.origin === 'https://iarfxjhahzbhncsaohbg.supabase.co') {
+        assert.equal(url.pathname, '/rest/v1/rpc/save_hse_minutes');
+        assert.equal(options.method, 'POST');
+        assert.deepEqual(JSON.parse(options.body), { p_id: 'invalid-uuid-readiness-probe', p_minutes: {}, p_expected_updated_at: null });
+        assert.equal(options.redirect, 'error');
+        requests.push(url.pathname);
+        return new Response(JSON.stringify(overrides.rpc || { code: '42501', message: 'permission denied for function save_hse_minutes' }), { status: overrides.rpcStatus || 403 });
+      }
       assert.equal(url.origin, 'https://auris360.app');
       assert.equal(options.method || 'GET', 'GET');
       requests.push(url.pathname);
@@ -70,6 +78,8 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
   assert.equal(result.assets.length, 69);
+  assert.deepEqual(result.minutes_rpc, { installed: true, no_write_probe: true, result: 'execution_permission_rejected' });
+  assert.ok(response.requests.includes('/rest/v1/rpc/save_hse_minutes'));
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
@@ -112,6 +122,7 @@ test('real smoke failures remain blocking and retain stage-specific evidence', a
     { name: 'wrong database', overrides: { runtime: { supabaseUrl: 'https://beoutmqttgfyyzndcdxu.supabase.co' } }, stage: 'runtime', message: /approved Supabase project/ },
     { name: 'invalid runtime JSON', overrides: { runtimeText: 'Object.freeze({invalid});' }, stage: 'runtime', message: /invalid JSON/ },
     { name: 'old live commit', overrides: { runtime: { releaseSha: 'b6db71ef9f856392569f79b1e37afec552cd9409' } }, stage: 'release_identity', message: /Canonical production is serving/ },
+    { name: 'missing atomic minutes RPC', overrides: { rpc: { code: 'PGRST202', message: 'Could not find save_hse_minutes' }, rpcStatus: 404 }, stage: 'minutes_rpc', message: /20261020020000_meetings_rpc_installation_repair\.sql/ },
     { name: 'broken critical asset', overrides: { assets: { 'incident-management-upgrade.js': 'invalid'.repeat(30) } }, stage: 'critical_assets', message: /incident-management-upgrade.js is missing/ },
     { name: 'request failure', overrides: { networkError: true }, stage: 'shell', message: /simulated connection failure/ }
   ];
@@ -177,6 +188,7 @@ test('production smoke is read-only and restricted to canonical production', () 
   assert.match(source, /method|fetch/);
   assert.doesNotMatch(source, /method:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
   assert.doesNotMatch(source, /SUPABASE_(ANON|SERVICE)_KEY/);
+  assert.match(source, /verifyMeetingsRpc/);
 });
 
 test('production smoke verifies release identity, runtime boundary, headers and critical assets', () => {

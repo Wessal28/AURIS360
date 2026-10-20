@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { verifyMeetingsRpc } = require('./verify-meetings-rpc.cjs');
 
 const root = path.resolve(__dirname, '..');
 const APPROVED_STAGING_REF = 'beoutmqttgfyyzndcdxu';
@@ -354,6 +355,11 @@ async function main() {
   if (projectRef(runtime.supabaseUrl) !== APPROVED_STAGING_REF) fail('Preview is not connected to the approved staging project.');
   if (runtime.supabaseUrl.replace(/\/$/, '') !== configuredSupabase.href.replace(/\/$/, '')) fail('Preview and acceptance secret reference different staging URLs.');
 
+  const minutesRpc = await verifyMeetingsRpc({
+    supabaseUrl: runtime.supabaseUrl, publicKey: anonKey,
+    expectedProjectRef: APPROVED_STAGING_REF
+  }).catch((error) => fail(error.message));
+
   const base = configuredSupabase.href.replace(/\/$/, '');
   const auth = await retryJsonRequest(`${base}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -402,7 +408,7 @@ async function main() {
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
-  const checks = [];
+  const checks = [{ label: 'Atomic HSE minutes save RPC', accessible: true, ...minutesRpc }];
   const sourceRows = new Map();
   for (const [label, resource] of sources) {
     const rows = await rest(resource).catch((error) => fail(`${label} data source is unavailable (${error.message}).`));

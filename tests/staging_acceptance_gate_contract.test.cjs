@@ -23,6 +23,15 @@ test('staging acceptance authenticates without exposing credentials and verifies
   assert.doesNotMatch(source, /console\.log\([^\n]*(password|access_token|anonKey)/i);
 });
 
+test('staging acceptance verifies atomic minutes RPC installation before attempting persistence checks', () => {
+  const source=read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source,/const \{ verifyMeetingsRpc \} = require\('\.\/verify-meetings-rpc\.cjs'\)/);
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')>source.indexOf("projectRef(runtime.supabaseUrl) !== APPROVED_STAGING_REF"));
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')<source.indexOf('const auth = await retryJsonRequest'));
+  assert.match(source,/expectedProjectRef: APPROVED_STAGING_REF/);
+  assert.match(source,/Atomic HSE minutes save RPC/);
+});
+
 test('staging authentication tolerates transient cold starts without masking credential failures', () => {
   const script = read('scripts/verify-staging-acceptance.cjs');
   assert.match(script, /retryableRequestError/);

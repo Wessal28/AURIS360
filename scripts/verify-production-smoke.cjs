@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { verifyMeetingsRpc } = require('./verify-meetings-rpc.cjs');
 
 const root = path.resolve(__dirname, '..');
 const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
@@ -135,6 +136,12 @@ async function verifyProduction(options, evidence) {
   if (!expectedReleaseMatches(runtime.releaseSha, expectedSha)) {
     fail(`Canonical production is serving ${runtime.releaseSha || 'an unidentified release'}, expected ${expectedSha}.`);
   }
+
+  evidence.stage = 'minutes_rpc';
+  evidence.minutes_rpc = await verifyMeetingsRpc({
+    supabaseUrl: runtime.supabaseUrl, publicKey: runtime.supabaseAnonKey,
+    expectedProjectRef: PRODUCTION_REF, fetchImpl: options.fetchImpl
+  });
 
   const assetChecks = evidence.assets;
   const assets = [

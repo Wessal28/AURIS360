@@ -6,7 +6,9 @@ function fixture(){
   const styles=[...index.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map(match=>match[0]).filter(tag=>!tag.includes('https:'));
   const start=core.indexOf('async function mtgViewMomReadOnly(id){'),end=core.indexOf('async function mtgOpenMom(id){',start);
   if(start<0||end<0)throw Error('The actual minutes reader was not found.');
-  return read('tests/fixtures/legal-meetings-report-previews.html').replace('<!-- APP_STYLES -->',styles.join('\n')).replace('/* MINUTES_READER */',core.slice(start,end));
+  const assessmentStart=core.indexOf('async function lcaLoad(){'),assessmentEnd=core.indexOf('function lcaCalcScore()',assessmentStart);
+  if(assessmentStart<0||assessmentEnd<0)throw Error('The actual assessment loader was not found.');
+  return read('tests/fixtures/legal-meetings-report-previews.html').replace('<!-- APP_STYLES -->',styles.join('\n')).replace('/* MINUTES_READER */',core.slice(start,end)).replace('/* ASSESSMENTS_LOADER */',core.slice(assessmentStart,assessmentEnd));
 }
 http.createServer((request,response)=>{
   response.setHeader('Cache-Control','no-store');

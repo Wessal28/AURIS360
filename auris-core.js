@@ -10397,7 +10397,7 @@ async function mtgSaveMom(){
     var actions=result.actions||[];if(typeof mapAllData!=='undefined'){var byId=new Map((mapAllData||[]).filter(function(x){return String(x.company_id)===String(body.company_id);}).map(function(x){return [x.id,x];}));actions.forEach(function(x){byId.set(x.id,x);});mapAllData=Array.from(byId.values());}
     toast('Minutes saved. '+actions.length+' linked action(s) available in the Master Action Plan.');mtgMomBack();
     if(typeof mapLoadList==='function'&&typeof canAccessPage==='function'&&canAccessPage('actions'))Promise.resolve(mapLoadList()).catch(function(){toast('Minutes and actions saved. Refresh the Master Action Plan to reload its view.',false);});
-  }catch(e){if(form.dataset.editVersion===version&&form.dataset.editCompany===String(ccid()||'')&&form.dataset.editUser===String(prof?.id||'')){mtgSaveError(e.message||'Minutes could not be saved.');toastActionError('Save meeting minutes','HSE Meetings',e);}}
+  }catch(e){if(form.dataset.editVersion===version&&form.dataset.editCompany===String(ccid()||'')&&form.dataset.editUser===String(prof?.id||'')){mtgSaveFailure(e);}}
   finally{mtgSavingMom=false;buttons.forEach(function(b){b.disabled=false;});}
 }
 
@@ -30985,10 +30985,10 @@ async function legalDeleteChgFromList(id){
 // -- COMPLIANCE ASSESSMENTS ----------------------------------------------------
 async function lcaLoad(){
   var el=document.getElementById('lca-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
-  var scope=cf(),actor=prof?.id;
+  var scope=cf(),actor=prof?.id,seq=el._lcaLoadSeq=(el._lcaLoadSeq||0)+1;
   try{
     var d=await apiAllRows('/compliance_assessments?select=*'+scope+'&order=assessment_date.desc,id');
-    if(scope!==cf()||actor!==prof?.id)return;
+    if(seq!==el._lcaLoadSeq||scope!==cf()||actor!==prof?.id)return;
     d=d.filter(function(x){return !x.archived_at&&x.status!=='archived'&&!ohIsArchivedText(x.findings);});lcaAllData=d;
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('lr-m3assessments',(d||[]).length);
@@ -31011,7 +31011,7 @@ async function lcaLoad(){
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
-  }catch(e){if(scope===cf()&&actor===prof?.id)el.innerHTML=setupFriendlyMessage('Compliance assessments',e.message);}
+  }catch(e){if(seq===el._lcaLoadSeq&&scope===cf()&&actor===prof?.id)el.innerHTML=setupFriendlyMessage('Compliance assessments',e.message);return {error:e};}
 }
 
 function lcaCalcScore(){
