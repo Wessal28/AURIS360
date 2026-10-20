@@ -72,7 +72,7 @@ assert.match(core, /AURIS_RUNTIME_CONFIG_READY/);
 assert.match(core, /AURIS_IS_APPROVED_PRODUCTION_RUNTIME/);
 assert.match(core, /aurisRequireRuntimeConfiguration\(\)/);
 assert.match(core, /environment:function\(\)\{return String\(AURIS_RUNTIME_CONFIG\.environment\|\|'unconfigured'\);\}/, 'the governed Integrations display must reflect the active environment without exposing an API key');
-assert.strictEqual(vercel.buildCommand, 'npm run vercel-build', 'Vercel must enforce the deployment boundary before publishing a build');
+assert.strictEqual(vercel.buildCommand, 'pnpm run vercel-build', 'Vercel must use its detected pnpm package manager and enforce the deployment boundary before publishing a build');
 assert.strictEqual(vercel.outputDirectory, 'public', 'Vercel must publish only the generated allowlisted static bundle');
 const packageJson = JSON.parse(require('fs').readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.match(packageJson.scripts['vercel-build'], /prepare-vercel-output\.cjs/, 'Vercel build must prepare the allowlisted public bundle');
