@@ -11,7 +11,7 @@
 
 begin;
 -- Report missing minutes prerequisites together before changing the schema.
--- Permission helpers are required; this repair never substitutes weaker rules.
+-- Missing permission functions are installed below from their reviewed definitions.
 do $minutes_preflight$
 declare missing text[]:='{}'; item record; field text; signature text;
 begin
@@ -32,7 +32,7 @@ begin
       end loop;
     end if;
   end loop;
-  foreach signature in array array['auth.uid()','public.user_access_allowed(text,text)','public.guard_module_user_access()'] loop
+  foreach signature in array array['auth.uid()'] loop
     if to_regprocedure(signature) is null then missing:=array_append(missing,'function '||signature);end if;
   end loop;
   for item in select * from (values
@@ -43,10 +43,83 @@ begin
       missing:=array_append(missing,'expected '||item.column_type::text||' type for public.'||item.table_name||'.'||item.column_name);
     end if;
   end loop;
+  for item in select * from (values
+    ('public.user_access_allowed(text,text)','boolean'::regtype),
+    ('public.guard_module_user_access()','trigger'::regtype)
+  ) as expected(signature,return_type) loop
+    if exists(select 1 from pg_proc where oid=to_regprocedure(item.signature) and (prorettype<>item.return_type or prokind<>'f' or proretset)) then
+      missing:=array_append(missing,'expected scalar '||item.return_type::text||' function '||item.signature);
+    end if;
+  end loop;
   if cardinality(missing)>0 then
-    raise exception using message='Minutes repair prerequisites are incomplete',detail=array_to_string(missing,'; '),hint='Apply the listed core schema prerequisites first. Permission helpers are provided by the reviewed People/user-access migrations; do not disable access checks.';
+    raise exception using message='Minutes repair prerequisites are incomplete',detail=array_to_string(missing,'; '),hint='Restore the listed core schema first. This repair installs missing permission functions; existing access rules must not be disabled.';
   end if;
 end $minutes_preflight$;
+
+-- Install only missing prerequisites. Existing reviewed or customized functions,
+-- ownership and grants are preserved. No unrelated feature tables are required.
+do $minutes_access_install$
+begin
+  if to_regprocedure('public.user_access_allowed(text,text)') is null then
+    execute $minutes_user_access_definition$
+create function public.user_access_allowed(module_key text, access_action text default 'view') returns boolean
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare actor public.profiles; rules jsonb; rule jsonb;
+begin
+  select * into actor from public.profiles where id=auth.uid();
+  if not found or actor.status is distinct from 'active' then return false; end if;
+  if actor.role='sephs_admin' then return true; end if;
+  rules:=actor.permissions->'access_v1';
+  if rules is null then return true; end if;
+  if position('.' in module_key)>0 and (rules->split_part(module_key,'.',1)->>'view'='false' or rules->split_part(module_key,'.',1)->>access_action='false') then return false; end if;
+  rule:=rules->module_key;
+  return coalesce(rule->>'view','true')<>'false' and coalesce(rule->>access_action,'true')<>'false';
+end $$;
+$minutes_user_access_definition$;
+    execute 'revoke all on function public.user_access_allowed(text,text) from public,anon';
+    execute 'grant execute on function public.user_access_allowed(text,text) to authenticated';
+  end if;
+  if to_regprocedure('public.guard_module_user_access()') is null then
+    execute $minutes_guard_definition$
+create function public.guard_module_user_access() returns trigger
+language plpgsql security definer set search_path=pg_catalog,public as $$
+declare action_key text;
+begin
+  if auth.uid() is not null then
+    action_key:=case tg_op when 'INSERT' then 'create' when 'UPDATE' then 'edit' else 'delete' end;
+    if not public.user_access_allowed(tg_argv[0],action_key) then
+      raise exception 'User access does not permit % in %',action_key,tg_argv[0] using errcode='42501';
+    end if;
+  end if;
+  if tg_op='DELETE' then return old; else return new; end if;
+end $$;
+$minutes_guard_definition$;
+    execute 'revoke all on function public.guard_module_user_access() from public,anon';
+    execute 'grant execute on function public.guard_module_user_access() to authenticated';
+  end if;
+end $minutes_access_install$;
+
+-- Restore only missing Action Tracker access controls needed by linked actions.
+-- These restrictive policies supplement existing company and role policies.
+alter table public.action_tracker enable row level security;
+do $minutes_actions_access$
+begin
+  if not exists(select 1 from pg_policy where polrelid='public.action_tracker'::regclass and polname='user_module_view') then
+    execute $minutes_policy$create policy user_module_view on public.action_tracker as restrictive for select to authenticated using (public.user_access_allowed('actions','view'))$minutes_policy$;
+  end if;
+  if not exists(select 1 from pg_policy where polrelid='public.action_tracker'::regclass and polname='user_module_create') then
+    execute $minutes_policy$create policy user_module_create on public.action_tracker as restrictive for insert to authenticated with check (public.user_access_allowed('actions','create'))$minutes_policy$;
+  end if;
+  if not exists(select 1 from pg_policy where polrelid='public.action_tracker'::regclass and polname='user_module_edit') then
+    execute $minutes_policy$create policy user_module_edit on public.action_tracker as restrictive for update to authenticated using (public.user_access_allowed('actions','edit')) with check (public.user_access_allowed('actions','edit'))$minutes_policy$;
+  end if;
+  if not exists(select 1 from pg_policy where polrelid='public.action_tracker'::regclass and polname='user_module_delete') then
+    execute $minutes_policy$create policy user_module_delete on public.action_tracker as restrictive for delete to authenticated using (public.user_access_allowed('actions','delete'))$minutes_policy$;
+  end if;
+  if not exists(select 1 from pg_trigger where tgrelid='public.action_tracker'::regclass and tgname='module_user_access_guard' and not tgisinternal) then
+    execute $minutes_guard$create trigger module_user_access_guard before insert or update or delete on public.action_tracker for each row execute function public.guard_module_user_access('actions')$minutes_guard$;
+  end if;
+end $minutes_actions_access$;
 
 -- Do not reinterpret old timestamps: new saves record the explicit IANA timezone.
 alter table public.hse_meetings add column if not exists meeting_timezone text;
@@ -103,28 +176,40 @@ begin
   for rec in select * from jsonb_array_elements(coalesce(p_minutes->'recommendations','[]')) loop
     if rec->>'_kind'='mom_meta' then payload:=payload||jsonb_build_array(rec);continue;end if;
     if nullif(btrim(rec->>'desc'),'') is null then continue;end if;
+    if not public.user_access_allowed('actions','view') then raise exception 'Access to linked Master Actions is required' using errcode='42501';end if;
     key:=coalesce(nullif(rec->>'key','')::uuid,gen_random_uuid());owner:=nullif(rec->>'person_id','')::uuid;owner_name:=nullif(rec->>'resp','');
     if owner is not null then
       select concat_ws(' ',first_name,last_name) into owner_name from public.people where id=owner and company_id=c;
       if not found then raise exception 'Action owner must be a person in this company';end if;
     end if;
     select * into action_row from public.action_tracker where company_id=c and source_module='meeting' and source_id=p_id
-      and source_type='meeting' and meeting_recommendation_key=key for update;
+      and source_type='meeting' and meeting_recommendation_key=key;
     if not found then
       select * into action_row from public.action_tracker where company_id=c and source_module='meeting' and source_id=p_id
         and (source_type is null or source_type='meeting') and meeting_recommendation_key is null
-        and description=rec->>'desc' order by created_at limit 1 for update;
+        and description=rec->>'desc' order by created_at limit 1;
+    end if;
+    -- Identify under SELECT policy first: FOR UPDATE can hide an existing row
+    -- when UPDATE access is denied and must never turn it into a new action.
+    if action_row.id is not null then
+      if not public.user_access_allowed('actions','edit') then raise exception 'Editing linked Master Actions is not permitted' using errcode='42501';end if;
+      select * into action_row from public.action_tracker where id=action_row.id and company_id=c for update;
+      if not found or action_row.id is null then raise exception 'The linked Master Action could not be locked. No minutes were saved' using errcode='42501';end if;
     end if;
     select x into old_rec from jsonb_array_elements(old_recommendations) x
       where x->>'key'=key::text or (x->>'key' is null and x->>'desc'=rec->>'desc') limit 1;
     action_status:=coalesce(rec->>'status','open');
     if action_row.id is not null and action_status is not distinct from coalesce(old_rec->>'status','open') then action_status:=action_row.status;end if;
     if action_row.id is null then
+      if not public.user_access_allowed('actions','create') then raise exception 'Creating linked Master Actions is not permitted' using errcode='42501';end if;
       insert into public.action_tracker(company_id,source_module,source_type,source_id,source_ref,meeting_recommendation_key,title,description,responsible,assigned_to_id,assigned_to_name,target_date,priority,status,created_by)
       values(c,'meeting','meeting',p_id,p_minutes->>'title',key,rec->>'desc',rec->>'desc',owner_name,owner,owner_name,nullif(rec->>'date','')::date,coalesce(rec->>'prio','medium'),action_status,auth.uid()) returning * into action_row;
+      if not found or action_row.id is null then raise exception 'The linked Master Action could not be created. No minutes were saved' using errcode='42501';end if;
     else
+      if not public.user_access_allowed('actions','edit') then raise exception 'Editing linked Master Actions is not permitted' using errcode='42501';end if;
       update public.action_tracker set meeting_recommendation_key=key,source_type='meeting',source_ref=p_minutes->>'title',title=rec->>'desc',description=rec->>'desc',responsible=owner_name,assigned_to_id=owner,assigned_to_name=owner_name,
         target_date=nullif(rec->>'date','')::date,priority=coalesce(rec->>'prio','medium'),status=action_status,updated_at=now() where id=action_row.id and company_id=c returning * into action_row;
+      if not found or action_row.id is null then raise exception 'The linked Master Action could not be updated. No minutes were saved' using errcode='42501';end if;
     end if;
     payload:=payload||jsonb_build_array(rec||jsonb_build_object('key',key,'action_id',action_row.id,'resp',owner_name,'status',action_status));
   end loop;
@@ -138,7 +223,9 @@ begin
   if m.series_id is not null and m.next_meeting_date is not null and m.status='completed' then
     update public.meeting_series set next_date=m.next_meeting_date,updated_at=now() where id=m.series_id and company_id=c and (next_date is null or next_date<=(m.meeting_date at time zone m.meeting_timezone)::date or next_date=old_m.next_meeting_date);
   end if;
-  select coalesce(jsonb_agg(to_jsonb(a)),'[]') into actions_json from public.action_tracker a where company_id=c and source_module='meeting' and source_id=p_id and (source_type='meeting' or source_type is null);
+  if public.user_access_allowed('actions','view') then
+    select coalesce(jsonb_agg(to_jsonb(a)),'[]') into actions_json from public.action_tracker a where company_id=c and source_module='meeting' and source_id=p_id and (source_type='meeting' or source_type is null);
+  else actions_json:='[]'::jsonb;end if;
   return jsonb_build_object('minutes',to_jsonb(m),'actions',actions_json);
 end $$;
 revoke all on function public.save_hse_minutes(uuid,jsonb,timestamptz) from public,anon;
