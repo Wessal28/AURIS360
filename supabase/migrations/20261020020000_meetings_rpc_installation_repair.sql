@@ -5,8 +5,49 @@
 -- Frontend JSON argument names must match the public routine below exactly.
 -- Run against the intended Supabase project with its normal migration role;
 -- successful web deployment alone does not install database routines.
+-- This repair is intentionally limited to minutes and linked actions.
+-- Safety Awareness, Toolbox Talks, Alerts and Bulletins are separate features
+-- and do not need to be installed for this repair to succeed.
 
 begin;
+-- Report missing minutes prerequisites together before changing the schema.
+-- Permission helpers are required; this repair never substitutes weaker rules.
+do $minutes_preflight$
+declare missing text[]:='{}'; item record; field text; signature text;
+begin
+  for item in select * from (values
+    ('profiles',array['id','company_id','status','role','permissions']),
+    ('people',array['id','company_id','first_name','last_name']),
+    ('hse_meetings',array['id','company_id','title','created_by','updated_at','recommendations','series_id','meeting_type','meeting_date','location','chaired_by','attendees','apologies','minutes','next_meeting_date','agenda_items','status','chair_person_id','attendee_person_ids']),
+    ('action_tracker',array['id','company_id','source_module','source_type','source_id','description','created_at','status','source_ref','title','responsible','assigned_to_id','assigned_to_name','target_date','priority','created_by','updated_at']),
+    ('meeting_series',array['id','company_id','next_date','updated_at'])
+  ) as required(table_name,column_names) loop
+    if to_regclass('public.'||item.table_name) is null then
+      missing:=array_append(missing,'table public.'||item.table_name);
+    else
+      foreach field in array item.column_names loop
+        if not exists(select 1 from pg_attribute where attrelid=to_regclass('public.'||item.table_name) and attname=field and attnum>0 and not attisdropped) then
+          missing:=array_append(missing,'column public.'||item.table_name||'.'||field);
+        end if;
+      end loop;
+    end if;
+  end loop;
+  foreach signature in array array['auth.uid()','public.user_access_allowed(text,text)','public.guard_module_user_access()'] loop
+    if to_regprocedure(signature) is null then missing:=array_append(missing,'function '||signature);end if;
+  end loop;
+  for item in select * from (values
+    ('hse_meetings','meeting_timezone','text'::regtype),
+    ('action_tracker','meeting_recommendation_key','uuid'::regtype)
+  ) as expected(table_name,column_name,column_type) loop
+    if exists(select 1 from pg_attribute where attrelid=to_regclass('public.'||item.table_name) and attname=item.column_name and attnum>0 and not attisdropped and atttypid<>item.column_type) then
+      missing:=array_append(missing,'expected '||item.column_type::text||' type for public.'||item.table_name||'.'||item.column_name);
+    end if;
+  end loop;
+  if cardinality(missing)>0 then
+    raise exception using message='Minutes repair prerequisites are incomplete',detail=array_to_string(missing,'; '),hint='Apply the listed core schema prerequisites first. Permission helpers are provided by the reviewed People/user-access migrations; do not disable access checks.';
+  end if;
+end $minutes_preflight$;
+
 -- Do not reinterpret old timestamps: new saves record the explicit IANA timezone.
 alter table public.hse_meetings add column if not exists meeting_timezone text;
 alter table public.action_tracker add column if not exists meeting_recommendation_key uuid;
@@ -14,11 +55,6 @@ create unique index if not exists meeting_action_identity on public.action_track
   where source_module='meeting' and source_type='meeting' and meeting_recommendation_key is not null;
 alter table public.hse_meetings drop constraint if exists hse_meetings_meeting_type_check;
 alter table public.hse_meetings add constraint hse_meetings_meeting_type_check check(meeting_type in ('toolbox_talk','safety_committee','hse_committee','management_review','emergency_drill','other'));
-alter table public.toolbox_talks alter column status set default 'draft';
-alter table public.toolbox_talks drop constraint if exists toolbox_talks_status_check;
-alter table public.toolbox_talks add constraint toolbox_talks_status_check check(status in ('draft','planned','completed','cancelled','archived'));
-alter table public.safety_alerts alter column status set default 'draft';
-alter table public.safety_bulletins alter column status set default 'draft';
 
 -- Minutes use the Minutes permission; schedules use the Schedule permission.
 drop policy if exists user_section_access on public.hse_meetings;
@@ -34,26 +70,6 @@ drop trigger if exists module_user_access_guard on public.meeting_series;
 create trigger module_user_access_guard before insert or update or delete on public.meeting_series for each row execute function public.guard_module_user_access('meetings');
 drop trigger if exists section_user_access_guard on public.meeting_series;
 create trigger section_user_access_guard before insert or update or delete on public.meeting_series for each row execute function public.guard_module_user_access('meetings.schedule');
-
--- Repair grants/policies without granting another company's records or bypassing
--- module restrictions. The original ordered migration creates this table.
-grant select,insert,update,delete on public.safety_awareness_topics to authenticated;
-drop policy if exists safety_awareness_read on public.safety_awareness_topics;
-drop policy if exists safety_awareness_insert on public.safety_awareness_topics;
-drop policy if exists safety_awareness_update on public.safety_awareness_topics;
-drop policy if exists safety_awareness_delete on public.safety_awareness_topics;
-create policy safety_awareness_read on public.safety_awareness_topics for select to authenticated using
- ((company_id=public.auth_company_id() or public.is_sephs_admin()) and public.user_access_allowed('meetings','view') and public.user_access_allowed('meetings.awareness','view'));
-create policy safety_awareness_insert on public.safety_awareness_topics for insert to authenticated with check
- ((company_id=public.auth_company_id() or public.is_sephs_admin()) and public.user_access_allowed('meetings','create') and public.user_access_allowed('meetings.awareness','create')
-  and (public.is_sephs_admin() or public.current_user_role() in ('admin','company_admin','hse_manager','hse_officer','manager','site_manager')));
-create policy safety_awareness_update on public.safety_awareness_topics for update to authenticated using
- ((company_id=public.auth_company_id() or public.is_sephs_admin()) and public.user_access_allowed('meetings','edit') and public.user_access_allowed('meetings.awareness','edit')
-  and (public.is_sephs_admin() or public.current_user_role() in ('admin','company_admin','hse_manager','hse_officer','manager','site_manager')))
- with check ((company_id=public.auth_company_id() or public.is_sephs_admin()) and public.user_access_allowed('meetings','edit') and public.user_access_allowed('meetings.awareness','edit'));
-create policy safety_awareness_delete on public.safety_awareness_topics for delete to authenticated using
- ((company_id=public.auth_company_id() or public.is_sephs_admin()) and public.user_access_allowed('meetings','delete') and public.user_access_allowed('meetings.awareness','delete')
-  and (public.is_sephs_admin() or public.current_user_role() in ('admin','company_admin','hse_manager','hse_officer','manager','site_manager')));
 
 create or replace function public.save_hse_minutes(p_id uuid,p_minutes jsonb,p_expected_updated_at timestamptz default null) returns jsonb
 language plpgsql set search_path=public,pg_temp as $$

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { buildMeetingsRpcIsolationFixture } = require('./meetings-rpc-isolation-fixture.cjs');
 
 const root = path.resolve(__dirname, '..');
 const migrationDir = path.join(root, 'supabase', 'migrations');
@@ -34,6 +35,7 @@ function run(command, commandArgs, options = {}) {
     cwd: root,
     encoding: 'utf8',
     stdio: 'pipe',
+    input: options.input,
     maxBuffer: 32 * 1024 * 1024,
     env: process.env
   });
@@ -112,6 +114,19 @@ for (const entry of manifest.migrations) {
 // without duplicate policies, routines or constraints, and without data writes.
 run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql')], {
   label: 'idempotent HSE minutes RPC installation repair', quiet: true
+});
+
+// Reproduce a partial deployment without optional communication features. The
+// single rollback-only connection restores renamed tables, RPC, data and ACLs
+// before inventory and all remaining behavior checks run.
+run(psql, [...commonArgs, '--file', '-'], {
+  label: 'HSE minutes repair without optional communication tables',
+  quiet: true,
+  input: buildMeetingsRpcIsolationFixture({
+    repair: fs.readFileSync(path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql'), 'utf8'),
+    installationAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql'), 'utf8'),
+    behaviorAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_optional_modules.sql'), 'utf8')
+  })
 });
 
 const inventorySql = [

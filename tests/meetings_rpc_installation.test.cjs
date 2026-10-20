@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const {OPTIONAL_TABLES,transactionBody,buildMeetingsRpcIsolationFixture}=require('../scripts/meetings-rpc-isolation-fixture.cjs');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const canonical=read('supabase/migrations/20261018030000_meetings_reliability.sql');
@@ -23,10 +24,65 @@ test('repair is transactional, rerunnable and requests a committed PostgREST sch
   assert.match(repair,/add column if not exists meeting_recommendation_key uuid/i);
   assert.match(repair,/create unique index if not exists meeting_action_identity/i);
   assert.doesNotMatch(repair,/^drop (?:policy|trigger) (?!if exists)/im);
-  for(const table of ['hse_meetings','toolbox_talks'])assert.match(repair,new RegExp('alter table public\\.'+table+' drop constraint if exists','i'));
+  assert.match(repair,/alter table public\.hse_meetings drop constraint if exists/i);
   const functionIndex=repair.indexOf('create or replace function public.save_hse_minutes');
   const notifyIndex=repair.indexOf("notify pgrst,'reload schema'");
   assert.ok(notifyIndex>functionIndex&&notifyIndex<repair.lastIndexOf('commit;'));
+});
+
+test('minutes repair never alters or depends on optional communication tables',()=>{
+  for(const table of OPTIONAL_TABLES)assert.doesNotMatch(repair,new RegExp('\\bpublic\\.'+table+'\\b','i'));
+  assert.doesNotMatch(repair,/safety_awareness_topics_access|plan_year|planned_month|safety_awareness_topics_status/i);
+});
+
+test('metadata preflight reports missing core schema and permissions before changing the schema',()=>{
+  const start=repair.indexOf('do $minutes_preflight$'),end=repair.indexOf('end $minutes_preflight$;',start);
+  assert.ok(start>=0&&end>start&&end<repair.indexOf('alter table public.hse_meetings'));
+  const preflight=repair.slice(start,end);
+  for(const table of ['profiles','people','hse_meetings','action_tracker','meeting_series'])assert.match(preflight,new RegExp("\\('"+table+"',array\\["));
+  for(const signature of ['auth.uid()','public.user_access_allowed(text,text)','public.guard_module_user_access()'])assert.ok(preflight.includes(signature));
+  assert.match(preflight,/to_regclass\('public\.'\|\|item\.table_name\)/);
+  assert.match(preflight,/not attisdropped/);
+  assert.match(preflight,/atttypid<>item\.column_type/);
+  assert.match(preflight,/Minutes repair prerequisites are incomplete/);
+  assert.match(preflight,/detail=array_to_string\(missing,'; '\)/);
+  assert.doesNotMatch(preflight,/\b(?:create|alter|drop|insert|update|delete|grant|revoke)\s+(?:table|function|policy|trigger|into|from|on)\b/i);
+});
+
+test('disposable replay proves a missing RPC can be restored twice with optional tables absent',()=>{
+  const fixture=buildMeetingsRpcIsolationFixture({repair,installationAssertions:read('tests/sql/meetings_rpc_installation.sql'),behaviorAssertions:read('tests/sql/meetings_rpc_optional_modules.sql')});
+  assert.equal((fixture.match(/^begin;$/gm)||[]).length,1);
+  assert.equal((fixture.match(/^rollback;$/gm)||[]).length,1);
+  assert.doesNotMatch(fixture,/^commit;/im);
+  assert.doesNotMatch(fixture,/\bcascade\b/i);
+  for(const table of OPTIONAL_TABLES){
+    assert.match(fixture,new RegExp('alter table public\\.'+table+' rename to __fixture_missing_'+table+';'));
+    assert.ok(fixture.indexOf('alter table public.'+table)<fixture.indexOf('create or replace function public.save_hse_minutes'));
+  }
+  assert.equal((fixture.match(/create or replace function public\.save_hse_minutes/g)||[]).length,2);
+  assert.match(fixture,/drop function public\.save_hse_minutes\(uuid,jsonb,timestamptz\);/);
+  assert.match(fixture,/alter function public\.user_access_allowed\(text,text\) rename to __fixture_missing_user_access_allowed;/);
+  assert.match(fixture,/Minutes preflight accepted a missing permission helper/);
+  assert.match(fixture,/get stacked diagnostics failure_detail=pg_exception_detail/);
+  assert.match(fixture,/alter function public\.__fixture_missing_user_access_allowed\(text,text\) rename to user_access_allowed;/);
+  assert.match(fixture,/routine\.proargnames is distinct from array\['p_id','p_minutes','p_expected_updated_at'\]/);
+  assert.match(fixture,/result:=public\.save_hse_minutes\(minutes_id,payload,null\)/);
+  assert.match(fixture,/Isolated minutes update duplicated its linked action/);
+  assert.match(fixture,/Isolated minutes repair accepted a stale save/);
+  assert.match(fixture,/Isolated completed minutes did not advance their schedule/);
+  const replay=read('scripts/replay-migrations.cjs');
+  assert.match(replay,/input: options\.input/);
+  assert.match(replay,/run\(psql, \[\.\.\.commonArgs, '--file', '-'\]/);
+  assert.ok(replay.indexOf('buildMeetingsRpcIsolationFixture({')<replay.indexOf('const inventorySql'));
+  assert.ok(replay.indexOf('const allowedHosts')<replay.indexOf('buildMeetingsRpcIsolationFixture({'));
+});
+
+test('rollback fixture rejects nested commits and psql escape commands before any SQL execution',()=>{
+  assert.equal(transactionBody('-- Header\nbegin;\nselect 1;\ncommit;\n','commit','Fixture'),'select 1;');
+  for(const source of ['begin;\nselect 1;\ncommit;\ncommit;','begin;\n\\i other.sql\ncommit;','select 1;\nbegin;\nselect 2;\ncommit;']){
+    assert.throws(()=>transactionBody(source,'commit','Fixture'),/transaction|psql commands/);
+  }
+  assert.throws(()=>transactionBody('begin;\nselect 1;\ncommit;','rollback','Fixture'),/BEGIN\/ROLLBACK/);
 });
 
 test('installed RPC grants preserve authenticated company and section checks',()=>{
