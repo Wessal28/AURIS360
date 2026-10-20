@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="training-workflow.css?v=20261018-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -153,7 +153,8 @@
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260822-2">
 <link rel="stylesheet" href="contractor-management-upgrade.css?v=20260821-4">
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260821-4">
-<link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
+<link rel="stylesheet" href="auris-login-shell.css?v=20261020-1">
+<script src="auris-login-shell.js?v=20261020-1" defer></script>
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1&launcher-icons-20260916-1">
 <link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
@@ -215,11 +216,14 @@
 <div class="login-box auris-login-s-42d633be89">
 <!-- Logo -->
 <div class="auris-login-s-ca4419337c">
-<img class="login-logo auris-login-s-3182de3ceb" src="/assets/brand/auris360-logo.png" alt="AURIS 360 — Safety. Compliance. Excellence."/>
+<img class="login-logo auris-login-s-3182de3ceb" src="/assets/auris360-logo-final.png" alt="AURIS 360"/>
+<div id="login-brand-fallback" hidden>AURIS 360</div>
 <div class="auris-login-s-6fba8910dd">Powered by SEPHS Consulting</div>
 </div>
 
 <!-- Error / success message -->
+<div class="login-content" id="login-content">
+<div id="login-panels">
 <div class="login-err" id="login-err"></div>
 <div class="auris-login-s-c8e4289458" id="login-success"></div>
 
@@ -340,11 +344,13 @@
 </button>
 </div>
 
-<!-- Loading overlay -->
-<div class="auris-login-s-97c1ecc0fb" id="auth-loading">
-<div class="auris-login-s-62c6f45b79"></div>
+ </div><!-- end login-panels -->
+<!-- Loading status covers only the form area, below the brand. -->
+<div class="auris-login-s-97c1ecc0fb" id="auth-loading" role="status" aria-live="polite" aria-atomic="true">
+<div class="auris-login-s-62c6f45b79" aria-hidden="true"></div>
 <div class="auris-login-s-7299078644" id="auth-loading-msg">Signing in...</div>
 </div>
+ </div><!-- end login-content -->
 
 </div><!-- end login-box -->
 </div><!-- end login-screen -->
@@ -11844,7 +11850,7 @@ I can help you:<br>
 <script src="safety-awareness.js?v=20261018-1"></script>
 
 <link rel="stylesheet" href="auris-premium-3d-sidebar.css?v=20260818-1"/>
-<link rel="stylesheet" href="auris-icon-system.css?v=20260824-1">
+<link rel="stylesheet" href="auris-icon-system.css?v=20260824-1&login-layout-20261020-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20261008-pdf-icons-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
 <link rel="stylesheet" href="auris-universal-header.css?v=20261004-4">
