@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "public",
   "headers": [
     {
