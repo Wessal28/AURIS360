@@ -46,6 +46,7 @@ var modules = [
 ];
 
 var extractionMap={
+  meetings:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js']},
   swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
   inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
@@ -58,7 +59,7 @@ var extractionMap={
   emergency:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]},
   fire:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   esg:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
-  legal:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['legal-compliance-upgrade.js','auris-legal-assurance.js']},
+  legal:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['legal-compliance-upgrade.js','auris-legal-assurance.js','module-report-preview.js','legal-assessment-viewer.js']},
   fleet:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   ohealth:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]}
 };
