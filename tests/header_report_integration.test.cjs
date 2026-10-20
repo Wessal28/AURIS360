@@ -49,6 +49,7 @@ test('the remounted MAP button opens the real chooser and prints full or freshly
 });
 test('header observer updates and section mirroring preserve current MAP and Legal search filters',()=>{
  const h=runtime(),map=h.doc.getElementById('map-search'),legal=h.doc.getElementById('lr-search');let writes=0;map.addEventListener('input',()=>writes++);legal.addEventListener('input',()=>writes++);h.refresh();assert.equal(map.value,'Retained search');assert.equal(legal.value,'Retained legal search');assert.equal(writes,0);
+ const css=read('auris-universal-header.css');assert.doesNotMatch(css,/#map-search|#lr-search|#page-legal \.legx-filter-field\.search/);
  h.doc.getElementById('page-actions').classList.remove('active');h.doc.getElementById('page-legal').classList.add('active');h.refresh();assert.equal(legal.value,'Retained legal search');assert.equal(h.doc.getElementById('auris-module-name').textContent,'Legal Compliance');assert.equal(h.doc.getElementById('auris-module-section').options.length,2);
 });
 test('the generated Legal header uses the report chooser label rather than a current-view print claim',()=>{
