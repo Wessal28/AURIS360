@@ -366,6 +366,11 @@
       "order": 73,
       "file": "20261019040000_document_control_workflows.sql",
       "sha256": "2161d830ae2eff8642b4904a8e7dfdf592e3e19227551a6fe22fbb2092ad7752"
+    },
+    {
+      "order": 74,
+      "file": "20261020010000_settings_reliability.sql",
+      "sha256": "f7774a420e33475801d47fa24101294dfd92419cd267ab0917ec379fa9323390"
     }
   ]
 }

@@ -11124,7 +11124,9 @@ async function rolloutRecordHealthEvent(eventType,payload){
 }
 window.addEventListener('error',function(event){try{var active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'app',message=String(event.message||'Unexpected module error').slice(0,300);rolloutRecordHealthEvent('module_error',{module_key:moduleKey,severity:'error',fingerprint:['module-error',moduleKey,message].join(':'),detail:{message:message}});}catch(_){}});
 
-var settingsLoadedGroups={};
+var settingsLoadedGroups={},settingsLoadedScope="";
+function settingsCompanyId(){return isSA()?(sephsCompanyContext||null):(ccid()||null);}
+function settingsCompanyName(){var id=settingsCompanyId(),row=(typeof saCompanyList!=="undefined"?saCompanyList:[]).concat(typeof adminCompaniesData!=="undefined"?adminCompaniesData:[]).find(c=>String(c.id)===String(id));return row?.name||(String(co?.id)===String(id)?co?.name:null)||id||"No company selected";}
 function myProfileRenderAvatar(){
   var sidebar=document.getElementById('sb-user');if(!sidebar)return;
   var old=sidebar.querySelector('.sb-user-avatar');if(old)old.remove();
@@ -11176,16 +11178,20 @@ async function myProfilePhotoRemove(){
   try{await api('/profiles?id=eq.'+prof.id,{m:'PATCH',p:'return=minimal',b:{avatar_url:null}});prof.avatar_url=null;myProfileRender();toast('Profile picture removed');}
   catch(e){toast('Profile picture could not be removed: '+(e.message||e),false);}
 }
-function settingsGroups(){return [["company","Company",["branding-studio"],isAdm()],["workflows","Workflows & approvals",["settings-workflow-studio-card","settings-automation-centre-card","settings-workflow-card"],isAdm()||activeRole()==='hse_manager'],["notifications","Notifications",["settings-notif-card"],isAdm()],["modules","Module configuration",["settings-custom3fields-card"],isAdm()||activeRole()==='hse_manager'],["data","Data administration",["settings-relationship-repair-card","settings-person-identity-card"],systemHealthCanView()],["personal","My profile & offline drafts",["settings-profile-card","settings-offline-drafts-card"],true],["support","Support",["settings-resilience-simulation-card","settings-rollout-control-card","settings-rollback-rehearsal-card","settings-system3health-card","settings-client-demo-card","settings-application-lifecycle-card","settings-security-readiness-card","settings-offline-sync-diagnostic-card"],systemHealthCanView()]];}
+function settingsGroups(){return [["company","Company & appearance",["branding-studio"],isAdm()],["workflows","Workflows & approvals",["settings-workflow-studio-card","settings-automation-centre-card","settings-workflow-card"],isAdm()||activeRole()==='hse_manager'],["notifications","Notifications & escalations",["settings-notif-card"],isAdm()],["modules","Custom fields",["settings-custom3fields-card"],isAdm()||activeRole()==='hse_manager'],["data","Data administration",["settings-relationship-repair-card","settings-person-identity-card"],systemHealthCanView()],["personal","My profile & offline drafts",["settings-profile-card","settings-offline-drafts-card"],true],["support","Health & administration",["settings-resilience-simulation-card","settings-rollout-control-card","settings-rollback-rehearsal-card","settings-system3health-card","settings-client-demo-card","settings-application-lifecycle-card","settings-security-readiness-card","settings-offline-sync-diagnostic-card"],systemHealthCanView()]];}
 function settingsSelectGroup(requested){
+if(window.AurisSettingsTools){window.AurisSettingsTools.configure({open:loadSettings,context:()=>({company:settingsCompanyId(),name:settingsCompanyName(),actor:prof?.id,role:activeRole()}),companies:()=>{if(canAccessPage('admin'))showPage('admin');else toast('Companies access is not available for your role.',false);},workflows:()=>{if(!window.AurisUserAccess||window.AurisUserAccess.allowed(prof,'settings.workflows','view'))loadSettings('workflows');else toast('Workflow settings are not available for your role.',false);},canApplications:()=>isAdm()&&(!window.AurisUserAccess||window.AurisUserAccess.allowed(prof,'admin','view')),applications:(host)=>adminLoadModuleAccess(host),health:loadNotificationDeliveryHealth,renderDelivery:renderNotificationDeliveryHealth,renderConfiguration:renderNotificationReadiness});requested=requested||window.AurisSettingsTools.requested();}
 var page=document.getElementById('page-settings'),nav=document.getElementById('settings-navigation');
 if(!nav){nav=document.createElement('nav');nav.id='settings-navigation';nav.className='settings-navigation';nav.setAttribute('aria-label','Settings sections');page.insertBefore(nav,page.children[1]);}
 var groups=settingsGroups().map(function(g){g[3]=g[3]&&(!window.AurisUserAccess||window.AurisUserAccess.allowed(prof,'settings.'+g[0],'view'));return g;}),selected=groups.find(function(g){return g[0]===requested&&g[3];})||groups.find(function(g){return g[3];});nav.replaceChildren();
 if(!selected){groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(panel)panel.hidden=true;});nav.textContent='No Settings sections are available for your account.';return null;}
-groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(!panel){panel=document.createElement('section');panel.id='settings-section-'+g[0];panel.className='settings-section';panel.setAttribute('aria-label',g[1]);page.appendChild(panel);g[2].forEach(function(id){var card=document.getElementById(id);if(card)panel.appendChild(card);});}panel.hidden=!g[3]||g[0]!==selected[0];if(!g[3])return;var button=document.createElement('button');button.type='button';button.className='btn';button.textContent=g[1];button.setAttribute('aria-pressed',String(g[0]===selected[0]));button.setAttribute('aria-controls',panel.id);button.addEventListener('click',function(){loadSettings(g[0]);});nav.appendChild(button);});return selected[0];
+groups.forEach(function(g){var panel=document.getElementById('settings-section-'+g[0]);if(!panel){panel=document.createElement('section');panel.id='settings-section-'+g[0];panel.className='settings-section';panel.setAttribute('aria-label',g[1]);page.appendChild(panel);g[2].forEach(function(id){var card=document.getElementById(id);if(card)panel.appendChild(card);});}panel.hidden=!g[3]||g[0]!==selected[0];if(!g[3])return;var button=document.createElement('button');button.type='button';button.className='btn';button.textContent=g[1];button.setAttribute('aria-pressed',String(g[0]===selected[0]));button.setAttribute('aria-controls',panel.id);button.addEventListener('click',function(){loadSettings(g[0]);});nav.appendChild(button);});if(window.AurisSettingsTools)window.AurisSettingsTools.decorate(selected[0],groups);return selected[0];
 }
-function loadSettings(requestedGroup){
-if(!requestedGroup)settingsLoadedGroups={};
+var settingsAssetsPromise=null;
+async function settingsLoadAssets(){if(window.AurisSettingsTools&&window.AurisWorkflowStudio&&window.AurisAutomationCentre)return;if(!settingsAssetsPromise)settingsAssetsPromise=Promise.all(['auris-settings-tools.js?v=20261020-1&settings-20261020-1','auris-workflow-studio.js?v=20260901-10&settings-20261020-1','auris-automation-centre.js?v=20260901-19&settings-20261020-1'].map(url=>new Promise((resolve,reject)=>{var script=document.createElement('script');script.src=url;script.onload=resolve;script.onerror=()=>reject(Error('Settings could not load. Reload and retry.'));document.head.appendChild(script);}))).catch(e=>{settingsAssetsPromise=null;throw e;});return settingsAssetsPromise;}
+async function loadSettings(requestedGroup){
+var expectedActor=prof?.id,expectedCompany=settingsCompanyId();try{await settingsLoadAssets();}catch(e){toast(e.message,false);return;}if(expectedActor!==prof?.id||expectedCompany!==settingsCompanyId())return;
+var scope=String(prof?.id)+':'+String(settingsCompanyId())+':'+activeRole();if(!requestedGroup||scope!==settingsLoadedScope){settingsLoadedGroups={};settingsLoadedScope=scope;}
 var group=settingsSelectGroup(requestedGroup);if(!group)return;
 if(settingsLoadedGroups[group])return;
 settingsLoadedGroups[group]=true;
@@ -11197,7 +11203,7 @@ try{ if(group==='support')loadSystemHealth(); }catch(e){ console.error('loadSyst
 try{ if(group==='data')loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
 try{ if(group==='data')loadPersonIdentityReconciliation(false); }catch(e){ console.error('loadPersonIdentityReconciliation:',e); }
 try{ if(group==='support')loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
-if(group==='support')try{var lifecycleCard=document.getElementById('settings-application-lifecycle-card'),lifecycleHost=document.getElementById('application-lifecycle-body'),lifecycleAllowed=isSA()||isAdm()||activeRole()==='hse_manager';if(lifecycleCard)lifecycleCard.style.display=lifecycleAllowed?'block':'none';if(lifecycleAllowed&&lifecycleHost&&window.AurisApplicationLifecycle)window.AurisApplicationLifecycle.renderOperations(lifecycleHost,ccid()).catch(function(){});}catch(e){console.error('applicationLifecycle:',e);}
+if(group==='support')try{var lifecycleCard=document.getElementById('settings-application-lifecycle-card'),lifecycleHost=document.getElementById('application-lifecycle-body'),lifecycleAllowed=isSA()||isAdm()||activeRole()==='hse_manager';if(lifecycleCard)lifecycleCard.style.display=lifecycleAllowed?'block':'none';if(lifecycleAllowed&&lifecycleHost&&window.AurisApplicationLifecycle)window.AurisApplicationLifecycle.renderOperations(lifecycleHost,settingsCompanyId()).catch(function(){});}catch(e){console.error('applicationLifecycle:',e);}
 try{ if(group==='modules')loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ if(group==='personal')offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ if(group==='support')renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
@@ -11212,11 +11218,11 @@ var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
 var studioCard=document.getElementById('settings-workflow-studio-card'),studioHost=document.getElementById('workflow-studio-body'),studioAllowed=isAdm()||activeRole()==='hse_manager';
 if(studioCard)studioCard.classList.toggle('auris-workflow-studio-card-visible',studioAllowed);
-if(group==='workflows'&&studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return ccid();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
+if(group==='workflows'&&studioAllowed&&studioHost&&window.AurisWorkflowStudio)window.AurisWorkflowStudio.mount(studioHost,{companyId:function(){return settingsCompanyId();},role:function(){return activeRole();},notify:function(message,ok){toast(message,ok);},confirm:function(message){return appConfirm({title:'Confirm workflow change',message:message,confirmText:'Continue',cancelText:'Cancel'});}}).catch(function(e){studioHost.innerHTML=registerErrorHtml('Workflow Studio',e.message);});
 var automationCard=document.getElementById('settings-automation-centre-card'),automationHost=document.getElementById('automation-centre-body'),automationAllowed=isAdm()||activeRole()==='hse_manager';
 if(automationCard)automationCard.style.display=automationAllowed?'block':'none';
-if(group==='workflows'&&automationAllowed&&automationHost&&window.AurisAutomationCentre)window.AurisAutomationCentre.mount(automationHost,{companyId:function(){return ccid();},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(e){automationHost.innerHTML=registerErrorHtml('Automation Centre',e.message);});
-if(group==='workflows'&&(isAdm()||activeRole()==='hse_manager')) loadPeopleCache().then(function(){loadApprovalWorkflows();});
+if(group==='workflows'&&automationAllowed&&automationHost&&window.AurisAutomationCentre)window.AurisAutomationCentre.mount(automationHost,{companyId:function(){return settingsCompanyId();},role:function(){return activeRole();},request:function(path,options){return api(path,options);},notify:function(message,ok){toast(message,ok);}}).catch(function(e){automationHost.innerHTML=registerErrorHtml('Automation Centre',e.message);});
+if(group==='workflows'&&(isAdm()||activeRole()==='hse_manager')) loadPeopleCache().then(function(){loadApprovalWorkflows();}).catch(function(e){var host=document.getElementById('workflow-settings-body');if(host)host.innerHTML=registerErrorHtml('Approval stages',e.message);});
 if(group==='notifications'&&isAdm()) loadNotifSettings();
 }
 
@@ -11273,9 +11279,10 @@ if(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.ind
 if(msg.indexOf('permission denied')!==-1||msg.indexOf('row-level security')!==-1)return 'Permission/RLS review needed: '+msg;
 return msg;
 }
-async function systemHealthCheckTable(label,table,select){
+async function systemHealthCheckTable(label,table,select,companyId){
 try{
-await api('/'+table+'?select='+(select||'id')+'&limit=1');
+if(!companyId)return {label:label,status:'warning',detail:'Select a company before checking connectivity'};
+await api('/'+table+'?select='+(select||'id')+'&'+(table==='companies'?'id':'company_id')+'=eq.'+encodeURIComponent(companyId)+'&limit=1');
 return {label:label,status:'ok',detail:'Reachable and readable'};
 }catch(e){
 var msg=e.message||'';
@@ -11298,7 +11305,7 @@ checks.forEach(function(c){
 html+='<div style="display:grid;grid-template-columns:minmax(180px,280px) 135px 1fr;gap:12px;align-items:start;padding:11px 12px;border-bottom:1px solid var(--border)">'
 +'<div style="font-size:13px;font-weight:850;color:var(--text)">'+escH(c.label)+'</div>'
 +'<div>'+systemHealthBadge(c.status)+'</div>'
-+'<div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(c.detail)+'</div>'
++'<div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(c.detail)+(c.scopeName?'<small class="settings-diagnostic-scope">Scope: '+escH(c.scopeName)+'</small>':'')+'</div>'
 +'</div>';
 });
 html+='</div>';
@@ -11312,9 +11319,10 @@ if(!systemHealthCanView())return;
 var el=document.getElementById('system3health-body');
 if(!el)return;
 el.innerHTML='<div class="loading">Checking system health...</div>';
+var companyId=settingsCompanyId(),actor=prof?.id,scopeName=settingsCompanyName();
 var checks=[
 {label:'Signed-in session',status:(tok&&prof)?'ok':'warning',detail:(tok&&prof)?'Current user session is active':'No active profile/session detected'},
-{label:'Company context',status:ccid()?'ok':'warning',detail:ccid()?('Company scope: '+(co?.name||prof?.company_name||ccid())):'No company selected or assigned'},
+{label:'Company context',status:companyId?'ok':'warning',detail:companyId?('Company scope: '+scopeName):'No company selected or assigned'},
 {label:'AURIS AI',status:'info',detail:'Configured through server environment variables. Not called here to avoid API cost.'}
 ];
 var tables=[
@@ -11332,7 +11340,7 @@ var tables=[
 ['Risk assessments','risk_assessments'],
 ['Approval workflows','approval_workflows']
 ];
-var tableChecks=await Promise.all(tables.map(function(t){return systemHealthCheckTable(t[0],t[1]);}));
+var tableChecks=await Promise.all(tables.map(function(t){return systemHealthCheckTable(t[0],t[1],null,companyId);}));
 checks=checks.concat(tableChecks);
 try{
 var pending=(typeof offlineQueueRead==='function')?offlineQueueRead().length:0;
@@ -11340,7 +11348,7 @@ checks.push({label:'Offline drafts',status:pending?'warning':'ok',detail:pending
 }catch(e){
 checks.push({label:'Offline drafts',status:'warning',detail:e.message||'Unable to read local offline queue'});
 }
-renderSystemHealth(checks);
+if(companyId!==settingsCompanyId()||actor!==prof?.id)return;checks.forEach(c=>c.scopeName=scopeName);renderSystemHealth(checks);
 }
 
 var relationshipRepairRows=[];
@@ -11598,7 +11606,7 @@ function customFieldsCanManage(){
   return isAdm()||activeRole()==='hse_manager';
 }
 function customFieldsCompanyId(){
-  return (isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id;
+  return settingsCompanyId();
 }
 function customFieldMakeKey(label){
   return String(label||'field').toLowerCase().trim()
@@ -12081,43 +12089,34 @@ async function ptwQueueStatusNotice(permit,event,details){
     }
   }catch(e){/* notification must never block permit workflow */}
 }
-/* -------------------------------------------------------------------
-   BRANDING STUDIO CONTROLLER
-   - Populates editor with current brand
-   - Renders preset chips
-   - Handles file ? base64 upload (with size guard)
-   - Live preview applies brand via Brand.apply without saving
-   - Save persists to companies table and re-applies
-------------------------------------------------------------------- */
-// Generic approval workflow settings. These reusable rules will drive PTW,
-// documents, risk assessments, incident investigations and other approvals.
+// Company-scoped approval route editor.
 var approvalWorkflowRows=[];
 var approvalWorkflowSteps={};
-var approvalEditingId=null;
+var approvalEditingId=null,approvalEditingCompany=null,approvalSaving=false;
 
-function approvalCompanyId(){
-  if(isSA()&&sephsCompanyContext)return sephsCompanyContext;
-  return prof?.company_id||null;
-}
+function approvalCompanyId(){return settingsCompanyId();}
 function approvalCanManage(){return isAdm()||activeRole()==='hse_manager';}
 function approvalPersonLabel(p){
   if(!p)return '';
   return ([p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||p.id)+(p.job_title?' - '+p.job_title:'');
 }
-function approvalPersonOptions(selected){
-  var opts='<option value="">Select person...</option>';
-  (people||[]).forEach(function(p){
-    opts+='<option value="'+escH(p.id)+'" '+(selected===p.id?'selected':'')+'>'+escH(approvalPersonLabel(p))+'</option>';
-  });
+function approvalModuleKey(value){var key=String(value||'').toLowerCase().replace(/[\s/&-]+/g,'_');return ({document:'documents',document_control:'documents',risk_assessment:'risk',risk_assessments:'risk',permit_to_work:'permit',ptw:'permit',incident:'events',incident_management:'events',incident_investigation:'investigation',legal_compliance:'legal',chemical_control:'chemical',master_action_plan:'actions'})[key]||key;}
+function approvalPersonOptions(selected,snapshot){
+  var opts='<option value="">Select person...</option>',found=false;
+  (people||[]).filter(p=>!p.company_id||String(p.company_id)===String(approvalCompanyId())).forEach(function(p){found=found||String(selected)===String(p.id);opts+='<option value="'+escH(p.id)+'" '+(String(selected)===String(p.id)?'selected':'')+'>'+escH(approvalPersonLabel(p))+'</option>';});
+  if(selected&&!found)opts+='<option value="'+escH(selected)+'" selected>'+escH(snapshot?.approver_name||snapshot?.approver_email||'Saved approver')+' (retained; unavailable in People)</option>';
   return opts;
 }
 function approvalRoleOptions(selected){
   var roles=[['','Specific person only'],['supervisor','Supervisor'],['site_manager','Site Manager'],['hse_officer','HSE Officer'],['hse_manager','HSE Manager'],['admin','Company Admin'],['sephs_admin','SEPHS Admin']];
-  return roles.map(function(r){return '<option value="'+r[0]+'" '+(selected===r[0]?'selected':'')+'>'+r[1]+'</option>';}).join('');
+  if(selected&&!roles.some(r=>r[0]===selected))roles.push([selected,String(selected).replace(/_/g,' ')+' (saved role)']);
+  return roles.map(function(r){return '<option value="'+escH(r[0])+'" '+(selected===r[0]?'selected':'')+'>'+escH(r[1])+'</option>';}).join('');
 }
 function approvalModuleOptions(selected){
-  var modules=[['permit','Permit to Work'],['documents','Document Control'],['risk','Risk Assessment'],['events','Incident Management'],['investigation','Incident Investigation'],['legal','Legal Compliance'],['chemical','Chemical Control'],['actions','Master Action Plan']];
-  return modules.map(function(m){return '<option value="'+m[0]+'" '+(selected===m[0]?'selected':'')+'>'+m[1]+'</option>';}).join('');
+  var modules=[['permit','Permit to Work'],['documents','Document Control'],['risk','Risk Assessment'],['events','Incident Management'],['investigation','Incident Investigation'],['legal','Legal Compliance'],['chemical','Chemical Control'],['actions','Master Action Plan']],key=approvalModuleKey(selected);
+  var options=modules.map(function(m){return '<option value="'+escH(key===m[0]?selected:m[0])+'" '+(key===m[0]?'selected':'')+'>'+m[1]+'</option>';}).join('');
+  if(selected&&!modules.some(m=>m[0]===key))options+='<option value="'+escH(selected)+'" selected>'+escH(selected)+' (saved module)</option>';
+  return options;
 }
 
 async function loadApprovalWorkflows(){
@@ -12127,13 +12126,13 @@ async function loadApprovalWorkflows(){
   if(!companyId){el.innerHTML='<div style="color:var(--text2);padding:12px">Select a company first to configure approval workflows.</div>';return;}
   el.innerHTML='<div class="loading">Loading workflows...</div>';
   try{
-    approvalWorkflowRows=await api('/approval_workflows?company_id=eq.'+companyId+'&order=module_name.asc,workflow_name.asc')||[];
+    var actor=prof?.id,loaded=await api('/approval_workflows?company_id=eq.'+companyId+'&order=module_name.asc,workflow_name.asc')||[];if(companyId!==approvalCompanyId()||actor!==prof?.id)return;approvalWorkflowRows=loaded.filter(w=>String(w.company_id)===String(companyId));
     approvalWorkflowSteps={};
     for(var i=0;i<approvalWorkflowRows.length;i++){
       var w=approvalWorkflowRows[i];
       approvalWorkflowSteps[w.id]=await api('/approval_workflow_steps?workflow_id=eq.'+w.id+'&order=step_no.asc')||[];
     }
-    approvalRenderWorkflows();
+    if(companyId!==approvalCompanyId()||actor!==prof?.id)return;approvalRenderWorkflows();
   }catch(e){
     el.innerHTML='<div style="color:var(--red);padding:12px">Error loading approval workflows: '+escH(e.message)+'</div>';
   }
@@ -12146,13 +12145,13 @@ function approvalRenderWorkflows(){
     var steps=approvalWorkflowSteps[w.id]||[];
     var stepText=steps.length?steps.map(function(s){return 'L'+s.step_no+': '+escH(s.approver_name||s.approver_role||'Not assigned');}).join(' | '):'No steps configured';
     return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center">'
-      +'<div><div style="font-size:13px;font-weight:800">'+escH(w.workflow_name||'Workflow')+' <span class="badge bg">'+escH(auditLabel(w.module_name||''))+'</span></div>'
+      +'<div><div style="font-size:13px;font-weight:800">'+escH(w.workflow_name||'Workflow')+' <span class="badge bg">'+escH((window.AurisModuleRegistry?.get(approvalModuleKey(w.module_name))?.name)||auditLabel(w.module_name||''))+'</span></div>'
       +'<div style="font-size:11px;color:var(--text2);margin-top:5px">'+stepText+'</div></div>'
       +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm" data-auris-runtime-onclick="r0048" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w.id]))+'"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm danger" data-auris-runtime-onclick="r0049" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w.id]))+'"><i class="ti ti-trash"></i></button></div>'
       +'</div>';
   }).join(''):'<div style="padding:18px;text-align:center;color:var(--text2);border:1px dashed var(--border);border-radius:10px">No approval workflows yet. Add one for PTW, documents, risk assessments, or incidents.</div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
-    +'<div style="font-size:12px;color:var(--text2)">Define who approves controlled records before they become final. These rules are reusable across modules.</div>'
+    +'<div style="font-size:12px;color:var(--text2)">Approval stages for native record workflows. Each module applies its own release checks; transition policies below are a separate gate, not a replacement for named approvers.</div>'
     +'<button class="btn btn-primary" data-auris-generated-onclick="g0080"><i class="ti ti-plus"></i>Add workflow</button>'
     +'</div><div style="display:flex;flex-direction:column;gap:8px">'+cards+'</div><div id="workflow-form3host" style="margin-top:14px"></div>';
 }
@@ -12163,59 +12162,53 @@ function approvalNewWorkflow(){
 }
 function approvalEditWorkflow(id){
   approvalEditingId=id;
-  var w=(approvalWorkflowRows||[]).find(function(x){return x.id===id;})||{};
+  var w=(approvalWorkflowRows||[]).find(function(x){return x.id===id;});if(!w||String(w.company_id)!==String(approvalCompanyId()))return toast('Reload approval stages for the selected company.',false);
   approvalRenderWorkflowForm(w,approvalWorkflowSteps[id]||[]);
 }
 function approvalRenderWorkflowForm(w,steps){
   var host=document.getElementById('workflow-form3host');if(!host)return;
-  steps=steps||[];
+  steps=steps||[];approvalEditingCompany=approvalCompanyId();
+  var count=Math.max(3,...steps.map(x=>Number(x.step_no)||0));
   function step(n){
     var s=steps.find(function(x){return parseInt(x.step_no)===n;})||{};
     return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#f9fafb">'
       +'<div style="font-size:12px;font-weight:800;margin-bottom:8px">Level '+n+'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
       +'<div class="form3group" style="margin:0"><label class="form3label">Approver role</label><select id="aw-step-role-'+n+'">'+approvalRoleOptions(s.approver_role||'')+'</select></div>'
-      +'<div class="form3group" style="margin:0"><label class="form3label">Specific approver</label><select id="aw-step-person-'+n+'">'+approvalPersonOptions(s.approver_person_id||'')+'</select></div>'
+      +'<div class="form3group" style="margin:0"><label class="form3label">Specific approver</label><select id="aw-step-person-'+n+'">'+approvalPersonOptions(s.approver_person_id||'',s)+'</select></div>'
       +'</div><label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px"><input type="checkbox" id="aw-step-required-'+n+'" '+(s.required!==false?'checked':'')+'/> Required step</label></div>';
   }
-  host.innerHTML='<div style="border:2px solid #bfdbfe;border-radius:12px;padding:14px;background:#fff">'
+  host.innerHTML='<div data-approval-stage-count="'+count+'" style="border:2px solid #bfdbfe;border-radius:12px;padding:14px;background:#fff">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:14px;font-weight:800">'+(approvalEditingId?'Edit workflow':'New workflow')+'</div><button class="btn btn-sm" data-auris-generated-onclick="g0081"><i class="ti ti-x"></i>Close</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div class="form3group" style="margin:0"><label class="form3label">Module</label><select id="aw-module">'+approvalModuleOptions(w.module_name||'permit')+'</select></div>'
     +'<div class="form3group" style="margin:0"><label class="form3label">Workflow name</label><input id="aw-name" value="'+escH(w.workflow_name||'')+'" placeholder="e.g. Hot Work Permit Approval"/></div>'
     +'<div class="form3group" style="margin:0"><label class="form3label">Applies to</label><input id="aw-applies" value="'+escH(w.applies_to||'')+'" placeholder="e.g. hot work, all permits"/></div></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'+step(1)+step(2)+step(3)+'</div>'
-    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="aw-active" '+(w.is_active!==false?'checked':'')+'/> Active workflow</label><button class="btn btn-primary" data-auris-generated-onclick="g0082"><i class="ti ti-device-floppy"></i>Save workflow</button></div></div>';
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'+Array.from({length:count},(_,i)=>step(i+1)).join('')+'</div>'
+    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="aw-active" '+(w.is_active!==false?'checked':'')+'/> Active workflow</label><button class="btn btn-primary" data-auris-generated-onclick="g0082"><i class="ti ti-device-floppy"></i>Save workflow</button></div><p id="aw-feedback" role="status">'+(w.updated_at?'Last saved '+escH(new Date(w.updated_at).toLocaleString()):'Not saved')+' · Applies to this company only.</p></div>';
 }
 
 async function approvalSaveWorkflow(){
+  if(approvalSaving||!approvalCanManage())return;
+  var feedback=document.getElementById('aw-feedback'),companyId=approvalCompanyId(),actor=prof?.id;
   try{
-    var companyId=approvalCompanyId();
-    if(!companyId){toast('Select a company first',false);return;}
-    var name=document.getElementById('aw-name')?.value?.trim();
-    if(!name){toast('Enter a workflow name',false);return;}
-    var body={company_id:companyId,module_name:document.getElementById('aw-module')?.value||'permit',workflow_name:name,applies_to:document.getElementById('aw-applies')?.value||null,is_active:document.getElementById('aw-active')?.checked!==false,updated_at:new Date().toISOString()};
-    var workflowId=approvalEditingId;
-    if(workflowId){
-      await api('/approval_workflows?id=eq.'+workflowId,{m:'PATCH',p:'return=minimal',b:body});
-      await api('/approval_workflow_steps?workflow_id=eq.'+workflowId,{m:'DELETE'});
-    }else{
-      body.created_by=prof?.id||null;
-      var res=await api('/approval_workflows',{m:'POST',p:'return=representation',b:body});
-      workflowId=res&&res[0]?res[0].id:null;
+    if(!companyId||companyId!==approvalEditingCompany)throw Error('Company changed. Reopen the route before saving.');
+    var original=(approvalWorkflowRows||[]).find(w=>w.id===approvalEditingId),name=document.getElementById('aw-name')?.value?.trim(),module=document.getElementById('aw-module')?.value;
+    if(!name||!module)throw Error('Enter a workflow name and select a module.');
+    var steps=[],count=Number(document.querySelector('[data-approval-stage-count]')?.getAttribute('data-approval-stage-count')||3);
+    for(var n=1;n<=count;n++){
+      var old=(approvalWorkflowSteps[approvalEditingId]||[]).find(x=>Number(x.step_no)===n)||{},personId=document.getElementById('aw-step-person-'+n)?.value||null,role=document.getElementById('aw-step-role-'+n)?.value||null;
+      if(!personId&&!role){if(old.id&&old.required!==false)throw Error('Level '+n+' requires its saved approver or a deliberate replacement.');continue;}
+      var person=(people||[]).find(p=>String(p.id)===String(personId));
+      steps.push(Object.assign({},old,{step_no:n,approver_role:role,approver_person_id:personId,approver_name:person?approvalPersonLabel(person):personId===old.approver_person_id?old.approver_name:role,approver_email:person?person.email||null:personId===old.approver_person_id?old.approver_email:null,required:document.getElementById('aw-step-required-'+n)?.checked!==false,notify_channels:old.notify_channels||['email','in_app']}));
     }
-    if(!workflowId)throw new Error('Workflow was not saved');
-    for(var n=1;n<=3;n++){
-      var personId=document.getElementById('aw-step-person-'+n)?.value||null;
-      var role=document.getElementById('aw-step-role-'+n)?.value||null;
-      if(!personId&&!role)continue;
-      var p=personId?(people||[]).find(function(x){return x.id===personId;}):null;
-      await api('/approval_workflow_steps',{m:'POST',p:'return=minimal',b:{workflow_id:workflowId,step_no:n,approver_role:role,approver_person_id:personId,approver_name:p?approvalPersonLabel(p):(role||''),approver_email:p?(p.email||null):null,required:document.getElementById('aw-step-required-'+n)?.checked!==false,notify_channels:['email','in_app']}});
-    }
-    toast('Approval workflow saved');
-    approvalEditingId=null;
-    await loadApprovalWorkflows();
-  }catch(e){toast(actionErrorMessage('Save approval workflow','Approval workflows',e),false);}
+    if(!steps.length)throw Error('Configure at least one approval stage.');
+    approvalSaving=true;if(feedback)feedback.textContent='Saving approval stages…';
+    await api('/rpc/save_company_approval_route',{m:'POST',p:'return=representation',b:{p_company_id:companyId,p_workflow_id:approvalEditingId,p_expected_updated_at:original?.updated_at||null,p_module_name:module,p_name:name,p_applies_to:document.getElementById('aw-applies')?.value||null,p_active:document.getElementById('aw-active')?.checked!==false,p_steps:steps}});
+    if(companyId!==approvalCompanyId()||actor!==prof?.id)return;
+    toast('Approval stages saved');approvalEditingId=null;await loadApprovalWorkflows();
+  }catch(e){if(feedback)feedback.textContent='Not saved: '+e.message+' Your entries are retained.';toast(actionErrorMessage('Save approval workflow','Approval workflows',e.message),false);}
+  finally{approvalSaving=false;}
 }
 
 async function approvalDeleteWorkflow(id){
@@ -12493,7 +12486,7 @@ async function brandSave(){
     // Re-fetch company so Brand has the canonical row, then re-apply
     var rows = await api('/companies?id=eq.'+companyId+'&select=*');
     if(rows && rows[0]){ brandEditingCompany=rows[0];if(String(co?.id)===String(companyId))co=rows[0];Brand.loadFromCompany(rows[0]);brandBackgroundFile=null;brandBackgroundRefresh(); }
-    toast('Branding saved - applied across the platform');
+    var savedInfo=document.getElementById('settings-brand-saved');if(!savedInfo){savedInfo=document.createElement('p');savedInfo.id='settings-brand-saved';savedInfo.setAttribute('role','status');document.getElementById('branding-studio').appendChild(savedInfo);}savedInfo.textContent='Appearance saved for '+settingsCompanyName()+' at '+new Date().toLocaleString();toast('Branding saved - applied across the platform');
   }catch(e){
     // If the new columns don't exist yet, give a useful migration hint
     if(/column .* does not exist|400/i.test(e.message||'')){
@@ -36236,7 +36229,7 @@ function saCompanyMenuBuild() {
 async function saCompanyPick(companyId) {
   saCompanyMenuClose();
   saCompanySetContext(companyId);
-  settingsLoadedGroups.company=false;
+  settingsLoadedGroups={};
   if(!companyId)Brand.reset();
   else try{var appearanceRows=await api('/companies?id=eq.'+companyId+'&select=*');if(appearanceRows&&appearanceRows[0])Brand.loadFromCompany(appearanceRows[0]);}catch(e){console.warn('Could not apply selected company appearance',e);}
   await loadRolloutRuntimeConfig();
@@ -36244,12 +36237,8 @@ async function saCompanyPick(companyId) {
   await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
   applyRoles();
 
-  // Reload the current page's data with the new filter context.
-  // We re-invoke showPage() for the active page, which reuses the canonical
-  // loader map defined inside showPage itself - no risk of name drift.
   var activePage = document.querySelector('.page.active');
   var activeId = activePage ? activePage.id.replace('page-','') : 'dashboard';
-  // Re-show the page (will trigger its loader from showPage's L map)
   if(typeof showPage === 'function') {
     await showPage(activeId, null);
   }
@@ -36692,12 +36681,12 @@ const RISK_CFG = {
   low:      {color:'#3B6D11', bg:'#EAF3DE'},
 };
 
-// -- Entry point ----------------------------------------------------------------
 async function loadAdmin() {
   adminTab('overview', document.getElementById('adm3tab-overview'));
 }
 
 function adminTab(tab, btn) {
+  if(tab==='modules'&&canAccessPage('settings')&&(!window.AurisUserAccess||window.AurisUserAccess.allowed(prof,'settings.support','view')))return Promise.resolve(showPage('settings')).then(()=>loadSettings('support')).then(()=>window.AurisSettingsTools.selectSub('support','applications'));
   document.querySelectorAll('[id^="adm3tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
   ['overview','companies','sites','hierarchy','oversight','access','modules'].forEach(function(t){
@@ -37454,14 +37443,14 @@ function moduleSanitizeAccess(mods,opts){
   return out;
 }
 
-async function adminLoadModuleAccess() {
-  var el = document.getElementById('adm3modules-list'); if(!el) return;
+async function adminLoadModuleAccess(targetHost) {
+  var el = targetHost&&targetHost.nodeType===1?targetHost:document.getElementById('adm3modules-list'); if(!el) return;
   el.innerHTML = '<div class="loading-msg">Loading...</div>';
   if(!adminCompaniesData || !adminCompaniesData.length) await adminLoadAll();
-  var cos = (adminCompaniesData||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var cos = (adminCompaniesData||[]).filter(c=>!targetHost||!targetHost.nodeType||String(c.id)===String(settingsCompanyId())).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
   if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No companies yet</div>'; return; }
   if(window.AurisApplicationsAdmin){
-    window.AurisApplicationsAdmin.renderPortfolio(el,cos,{companyId:ccid(),launchedKeys:moduleLiveKeys(),onRefresh:adminLoadModuleAccess,onConfigure:function(companyId){openModuleAccess(companyId);},onBlocked:function(impact){toast('Application change is blocked: '+impact.blocked.join(', '),false);},onApply:async function(company,impact){var ok=await adminModSave(company.id,impact.next);if(ok){company.module_access=impact.next.slice();toast((impact.action==='enable'?'Installed ':'Uninstalled ')+auditLabel(impact.moduleKey)+(impact.remove.length>1?' with '+(impact.remove.length-1)+' dependent application(s)':''));adminLoadModuleAccess();}}});
+    window.AurisApplicationsAdmin.renderPortfolio(el,cos,{companyId:ccid(),launchedKeys:moduleLiveKeys(),onRefresh:()=>adminLoadModuleAccess(targetHost),onConfigure:function(companyId){openModuleAccess(companyId);},onBlocked:function(impact){toast('Application change is blocked: '+impact.blocked.join(', '),false);},onApply:async function(company,impact){var ok=await adminModSave(company.id,impact.next);if(ok){company.module_access=impact.next.slice();toast((impact.action==='enable'?'Installed ':'Uninstalled ')+auditLabel(impact.moduleKey)+(impact.remove.length>1?' with '+(impact.remove.length-1)+' dependent application(s)':''));adminLoadModuleAccess(targetHost);}}});
     return;
   }
   var h='';
@@ -39790,14 +39779,15 @@ async function loadNotifSettings() {
   try {
     var companyId=notifCompanyId();
     if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected for notification settings.</div>';return;}
-    var healthPromise=loadNotificationDeliveryHealth(companyId);
+    var notificationActor=prof?.id,healthPromise=loadNotificationDeliveryHealth(companyId);
     var rows = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var s = rows && rows[0] ? rows[0] : {};
     var whatsappSettings={};
     try{var waRows=await api('/whatsapp_channel_settings?company_id=eq.'+encodeURIComponent(companyId)+'&limit=1');whatsappSettings=waRows&&waRows[0]?waRows[0]:{};}catch(waError){whatsappSettings={schema_missing:true};}
     var queue = await api('/notification_queue?company_id=eq.' + encodeURIComponent(companyId) + '&order=created_at.desc&limit=25');
-    notificationQueueRows=queue||[];
     var health=await healthPromise;
+    if(companyId!==notifCompanyId()||notificationActor!==prof?.id)return;
+    notificationQueueRows=queue||[];
     el.innerHTML = renderNotificationDeliveryHealth(health)+renderNotifSettings(s, notificationQueueRows, whatsappSettings);
     if(typeof loadNotificationEscalationSettings==='function')loadNotificationEscalationSettings(companyId);
     if(typeof loadNotificationAcknowledgementSettings==='function')loadNotificationAcknowledgementSettings(companyId);
@@ -39811,7 +39801,7 @@ async function loadNotificationDeliveryHealth(companyId){
     var response=await fetch('/api/notification-health?company_id='+encodeURIComponent(companyId),{headers:{Authorization:'Bearer '+tok},cache:'no-store'});
     var body=await response.json().catch(function(){return{};});
     if(!response.ok)throw new Error(body.error||'Health endpoint returned '+response.status);
-    return body;
+    if(String(body.companyId)!==String(companyId))throw Error('Health result belongs to another company. Reload before continuing.');return body;
   }catch(error){return {error:error.message||String(error)};}
 }
 async function runNotificationRoutingSimulation(){
@@ -39832,7 +39822,7 @@ function renderNotificationReadiness(health){
   var items=(readiness.items||[]).map(function(item){return '<div style="border:1px solid var(--border);border-radius:9px;background:#fff;padding:11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><strong style="font-size:11px">'+escH(item.label)+'</strong>'+notificationReadinessBadge(item.status)+'</div><div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:6px">'+escH(item.detail||'')+'</div>'+(item.remediation?'<div style="font-size:10px;color:#92400E;line-height:1.45;margin-top:5px"><strong>Required:</strong> '+escH(item.remediation)+'</div>':'')+'</div>';}).join('');
   var simulation=health.simulation,scenarioHtml='';
   if(simulation){scenarioHtml='<div style="border-top:1px solid #BFDBFE;margin-top:12px;padding-top:12px"><div style="font-size:11px;font-weight:850;color:#1E3A8A">Routing simulation</div><div style="font-size:10px;color:#475569;margin:4px 0 8px">'+escH(simulation.message)+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:7px">'+(simulation.scenarios||[]).map(function(x){return '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="display:flex;justify-content:space-between;gap:6px"><strong style="font-size:10px">'+escH(x.label)+'</strong>'+notificationReadinessBadge(x.deliverable?'ready':'blocked')+'</div><div style="font-size:9px;color:var(--text2);margin-top:5px">Channels: '+escH((x.channels||[]).join(', ')||'none configured')+(x.level?' Â· Level '+Number(x.level):'')+'</div></div>';}).join('')+'</div></div>';}
-  return '<div id="notification-readiness-matrix" style="border:1px solid #BFDBFE;background:#EFF6FF;border-radius:12px;padding:14px;margin:0 0 16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:11px"><div><div style="font-size:14px;font-weight:900;color:#1E3A8A">Operational readiness matrix</div><div style="font-size:11px;color:#475569;margin-top:3px">'+Number(readiness.ready||0)+' of '+Number(readiness.total||0)+' controls ready. Checks are company-scoped and do not expose secrets or personal recipient details.</div></div><div style="display:flex;gap:8px;align-items:center">'+notificationReadinessBadge(readiness.status)+'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0365"><i class="ti ti-route"></i>Run read-only simulation</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+items+'</div>'+scenarioHtml+'</div>';
+  return '<div id="notification-readiness-matrix" style="border:1px solid #BFDBFE;background:#EFF6FF;border-radius:12px;padding:14px;margin:0 0 16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:11px"><div><div style="font-size:14px;font-weight:900;color:#1E3A8A">Operational readiness matrix</div><div style="font-size:11px;color:#475569;margin-top:3px">'+Number(readiness.ready||0)+' of '+Number(readiness.total||0)+' controls ready. Scope: '+escH(settingsCompanyName())+'. Configuration checks do not certify live delivery.</div></div><div style="display:flex;gap:8px;align-items:center">'+notificationReadinessBadge(readiness.status)+'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0365"><i class="ti ti-route"></i>Run read-only simulation</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+items+'</div>'+scenarioHtml+'</div>';
 }
 function notificationHealthBadge(status){var map={operational:['Operational','#065F46','#DCFCE7','ti-circle-check'],review:['Review','#92400E','#FEF3C7','ti-alert-triangle'],setup:['Setup required','#991B1B','#FEE2E2','ti-plug-connected-x']};var m=map[status]||map.setup;return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;background:'+m[2]+';color:'+m[1]+';font-size:11px;font-weight:800"><i class="ti '+m[3]+'"></i>'+m[0]+'</span>';}
 function notificationHealthCount(c){c=c||{};var parts=Object.keys(c).filter(function(k){return Number(c[k])>0;}).map(function(k){return escH(k.replace(/_/g,' '))+': <strong>'+Number(c[k])+'</strong>';});return parts.length?parts.join(' · '):'No delivery activity in the last 7 days';}
@@ -39842,7 +39832,7 @@ function renderNotificationDeliveryHealth(health){
   var cards=Object.keys(labels).map(function(key){var x=channels[key]||{},meta=[];if(key==='email')meta.push(x.provider?'Provider: '+x.provider.toUpperCase():'Provider missing',x.deliveryWebhookConfigured?'Delivery webhook configured':'Delivery webhook not confirmed');if(key==='push')meta.push((x.activeSubscriptions||0)+' active device subscription(s)',x.schemaInstalled?'Push schema installed':'Push schema missing');if(key==='whatsapp')meta.push((x.activeConsents||0)+' active consent(s)',x.tenantEnabled?'Tenant channel enabled':'Tenant channel disabled',x.template?'Template: '+x.template:'Template missing');if(key==='inApp'&&x.note)meta.push(x.note);return '<div style="border:1px solid var(--border);border-radius:11px;background:#fff;padding:13px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;font-weight:850"><i class="ti '+labels[key][0]+'" style="color:var(--green);font-size:18px"></i>'+labels[key][1]+'</div>'+notificationHealthBadge(x.status)+'</div><div style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.5">'+notificationHealthCount(x.counts)+'</div><div style="font-size:10px;color:var(--text3);margin-top:7px">'+meta.map(escH).join(' · ')+'</div></div>';}).join('');
   var emailEvidence=channels.email||{},evidenceSummary='<div style="font-size:10px;color:#475569;margin-top:10px"><i class="ti ti-link"></i> '+(emailEvidence.signedRecordLinksConfigured?'Signed record links enabled':'Direct record links; evidence tracking disabled')+' · '+Number(emailEvidence.uniqueRecordOpens||0)+' unique record open(s) · '+(emailEvidence.deliveredToOpenPercent==null?'Conversion awaiting delivered email':'Delivered-to-opened: '+emailEvidence.deliveredToOpenPercent+'%')+'</div>';
   var warnings=(health.schemaWarnings||[]).length?'<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;color:#991B1B;font-size:11px;margin-top:10px"><strong>Missing database components:</strong> '+health.schemaWarnings.map(escH).join(', ')+'</div>':'';
-  return '<div style="border:1px solid #BAE6D3;background:#F0FDF9;border-radius:12px;padding:14px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px"><div><div style="font-size:14px;font-weight:900;color:#065F46">Notification delivery health</div><div style="font-size:11px;color:#047857;margin-top:3px">Configuration and company activity for the last '+Number(health.periodDays||7)+' days. Secret values are never displayed.</div></div><div style="font-size:10px;color:var(--text2)">Checked '+escH(new Date(health.checkedAt).toLocaleString())+'</div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px">'+cards+'</div>'+evidenceSummary+warnings+'<div style="font-size:10px;color:#92400E;margin-top:10px"><i class="ti ti-clock"></i> '+escH(health.schedules?.warning||'Confirm production schedules before relying on urgent delivery.')+'</div></div>'+renderNotificationReadiness(health);
+  return '<div style="border:1px solid #BAE6D3;background:#F0FDF9;border-radius:12px;padding:14px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px"><div><div style="font-size:14px;font-weight:900;color:#065F46">Notification delivery health</div><div style="font-size:11px;color:#047857;margin-top:3px">Scope: '+escH(settingsCompanyName())+' - Configuration and company activity for the last '+Number(health.periodDays||7)+' days. Secret values are never displayed.</div></div><div style="font-size:10px;color:var(--text2)">Checked '+escH(new Date(health.checkedAt).toLocaleString())+'</div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px">'+cards+'</div>'+evidenceSummary+warnings+'<div style="font-size:10px;color:#92400E;margin-top:10px"><i class="ti ti-clock"></i> '+escH(health.schedules?.warning||'Confirm production schedules before relying on urgent delivery.')+'</div></div>'+renderNotificationReadiness(health);
 }
 
 function renderNotifSettings(s, queue, whatsappSettings) {

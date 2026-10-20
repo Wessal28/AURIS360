@@ -178,3 +178,5 @@
 #settings-workflow-card.auris-settings-s-6aa34d7432{display:none}
 
 .settings-navigation{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.settings-navigation [aria-pressed="true"]{background:var(--primary,#087f70);color:white}.settings-section[hidden]{display:none}
+
+.settings-section[hidden],.settings-section [data-settings-pane][hidden],.settings-subnav button[hidden]{display:none}.settings-subnav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.settings-subnav [aria-pressed="true"]{background:#e0f3ed;border-color:#108269;font-weight:800}.settings-guidance{border:1px solid var(--border);border-radius:12px;background:var(--card);padding:16px;margin-bottom:16px}.settings-guidance p{line-height:1.6;margin:8px 0}.settings-guidance table{width:100%;border-collapse:collapse}.settings-guidance th,.settings-guidance td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.settings-diagnostic-scope{display:block;margin-top:6px;color:var(--text2)}

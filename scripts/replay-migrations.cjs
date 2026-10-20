@@ -156,3 +156,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'legal_assur
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'sop_workspace_drafts.sql')], {label: 'incomplete SOP drafts, metadata, consent and atomic evidence recovery'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'swms_controlled_release.sql')], {label: 'SWMS atomic rendition, independent approval, controlled release and exact work-pack revision'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_control_workflows.sql')], {label: 'PDF uploads, review decisions, revision history, distribution and recipient acknowledgement'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'settings_reliability.sql')], {label: 'atomic approval routes, tenant boundaries and personal notification preferences'});
