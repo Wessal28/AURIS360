@@ -43,14 +43,14 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260910-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-module-registry.js?v=20260903-29"></script>
+<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1"></script>
 <script src="auris-platform-services.js?v=20260831-3"></script>
 <script src="auris-module-runtime.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle.js?v=20260901-13&settings-20261020-1"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
 <script src="auris-view-engine.js?v=20261002-3"></script>
-<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1"></script>
+<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
 <script src="auris-approval-centre.js?v=20260901-10"></script>
@@ -107,7 +107,7 @@
 <script src="auris-tools-records.js?v=20261002-1"></script>
 <script src="auris-emergency-records.js?v=20260920-1"></script>
 <script src="auris-chemical-records.js?v=20261014-1"></script>
-<link rel="prefetch" href="auris-legal-assurance.js?v=20261019-1" as="script"/>
+<link rel="prefetch" href="auris-legal-assurance.js?v=20260901-12&report-preview-20261020-1" as="script"/>
 <link rel="stylesheet" href="auris-legal-assurance.css?v=20261019-1"/>
 <link rel="prefetch" href="auris-fire-records.js?v=20261014-1" as="script"/>
 <link rel="prefetch" href="auris-fire-workflow.js?v=20261014-1" as="script"/>
@@ -117,12 +117,12 @@
 <script src="auris-fleet-records.js?v=20261002-3"></script>
 <link rel="stylesheet" href="auris-user-access.css?v=20260927-1">
 <script src="auris-user-access.js?v=20260927-1&settings-20261020-1&idle-20261020-1"></script>
-<script src="meeting-reliability.js?v=20261018-1&action-links-20261020-1"></script>
+<script src="meeting-reliability.js?v=20261018-1&action-links-20261020-1&report-preview-20261020-1"></script>
 <script src="training-workflow.js?v=20261018-1"></script>
 <link rel="stylesheet" href="training-workflow.css?v=20261018-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -3830,7 +3830,7 @@ Offline mode - changes will sync when connection is restored
 <div id="legal-subtitle" class="auris-legal-s-7299078644">Legal register - Compliance assessments - Gap analysis - Compliance calendar</div>
 </div>
 <div id="legal-header-btns" class="auris-legal-s-9c40389b4a">
-<button class="btn" id="legal-print-btn" data-auris-onclick="h0426"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" id="legal-print-btn" data-auris-onclick="h0426"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary auris-legal-s-6aa34d7432" id="legal-new-btn" data-auris-onclick="h0427"><i class="ti ti-plus"></i>Add new</button>
 </div>
 </div>
@@ -7254,7 +7254,7 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div><div class="page-title">Meeting &amp; Communication Management</div><div id="mtg-subtitle" class="auris-meetings-s-7299078644">Safety meetings - Minutes - Toolbox talks - Alerts - Bulletins</div></div>
 <div class="auris-meetings-s-9c40389b4a">
-<button class="btn" data-auris-onclick="h0797"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" data-auris-onclick="h0797"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary" id="mtg-new-series-btn" data-auris-onclick="h0798"><i class="ti ti-settings"></i>New meeting schedule</button>
 </div>
 </div>
@@ -11868,6 +11868,10 @@ I can help you:<br>
 <link rel="prefetch" href="kpi-print-reports.css?v=20261020-1" as="style">
 <link rel="prefetch" href="training-print-reports.js?v=20261020-1" as="script">
 <link rel="prefetch" href="training-print-reports.css?v=20261020-1" as="style">
+<link rel="prefetch" href="module-report-preview.js?v=20260901-12&report-preview-20261020-1" as="script">
+<link rel="prefetch" href="module-report-preview.css?v=20261020-1" as="style">
+<link rel="prefetch" href="legal-assessment-viewer.js?v=20260901-12&report-preview-20261020-1" as="script">
+<link rel="prefetch" href="legal-assessment-viewer.css?v=20261020-1" as="style">
 <script src="kpi-workflow.js?v=20260904-locked-monthly-1"></script>
 <link rel="stylesheet" href="kpi-monthly-review.css?v=20260914-3">
 <script src="kpi-monthly-review.js?v=20260914-3"></script>
@@ -11887,7 +11891,7 @@ I can help you:<br>
 <script src="auris-section-picker.js?v=20261009-1&idle-20261020-1"></script>
 <script src="auris-universal-header.js?v=20261004-4"></script>
 <script src="auris-sidebar-navigation.js?v=20261002-1"></script>
-<script src="requirements-5.js?v=20260824-1"></script>
+<script src="requirements-5.js?v=20260824-1&report-preview-20261020-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="offline-sync-diagnostic.js?v=20260814-1"></script>
 <script src="rollback-rehearsal.js?v=20260814-1"></script>
