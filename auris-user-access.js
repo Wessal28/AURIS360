@@ -61,7 +61,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=policy;
 root.AurisUserAccess=policy;
 if(!root.document)return;
 policy.activateSections=function(key){policy.applySections();var candidates=sections[key]||[];var active=candidates.find(function(section){var b=document.getElementById(section.button);return b&&b.classList.contains('active');});if(active&&sectionAllowed(currentProfile(),key,active.id))return;var first=firstSection(currentProfile(),key);var button=first&&document.getElementById(first.button);if(button&&!button.hidden)button.click();};
-policy.applySections=function(){if(!currentProfile())return;Object.keys(sections).forEach(function(key){sections[key].forEach(function(section){var button=document.getElementById(section.button);if(button)button.hidden=!sectionAllowed(currentProfile(),key,section.id);});});};
+policy.applySections=function(){if(!currentProfile())return;Object.keys(sections).forEach(function(key){sections[key].forEach(function(section){var button=document.getElementById(section.button);if(button){var hidden=!sectionAllowed(currentProfile(),key,section.id);if(button.hidden!==hidden)button.hidden=hidden;}});});};
 if(typeof MutationObserver!=='undefined'){var pending=false;new MutationObserver(function(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;policy.applySections();});}).observe(document.documentElement,{childList:true,subtree:true});}
 
 policy.chooseContact=function(person){return new Promise(function(resolve){

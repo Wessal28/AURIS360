@@ -25,7 +25,9 @@
         if(target)target.click();
       });
     }
-    bar.classList.add('auris-section-tabs-hidden');
+    // This class is observed below. Even adding an existing class emits a
+    // mutation in browsers, so an unconditional write keeps every page updating.
+    if(!bar.classList.contains('auris-section-tabs-hidden'))bar.classList.add('auris-section-tabs-hidden');
     if(!bar.hasAttribute('data-auris-section-nav'))bar.setAttribute('data-auris-section-nav','');
     var select=picker.querySelector('select');
     var names=buttons.map(label);
