@@ -67,7 +67,7 @@ function mount(host,rows,options){
   var projected=project(rows,current,options),currentFilters=filters(options.filters);
   return root.AurisViewEngine.mount(host,projected,{moduleKey:'master-action-plan',label:'Master Action Plan',context:function(){return assertSession(current);},
     definition:definition(),filters:currentFilters,
-    actions:[{key:'open',label:'Open action'},{key:'source',label:'Open source',when:function(row){return !!row.source_ref;}}],
+    actions:[{key:'open',label:'Open action',icon:'ti-eye'},{key:'source',label:'Open source',icon:'ti-link',when:function(row){return !!row.source_ref;}}],
     onApplyFilters:function(value){assertSession(current);if(typeof options.onApplyFilters==='function')options.onApplyFilters(filters(value));},
     onAction:async function(key,row){
       assertSession(current);

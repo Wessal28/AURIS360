@@ -30,6 +30,7 @@
 .ave-table-wrap .ave-actions{display:flex;flex-wrap:nowrap;align-items:center;gap:5px;white-space:nowrap}
 .ave-actions .ave-icon-action{display:inline-grid;place-items:center;flex:none;width:34px;min-width:34px;min-height:34px;height:34px;padding:0!important;border:1px solid var(--border,#d9e0ea);border-radius:8px;background:var(--card,#fff);color:var(--text,#17213a);text-decoration:none;cursor:pointer}
 .ave-actions .ave-icon-action i{font-size:17px}
+#actions-list .ave-table-wrap td:has(> .ave-actions),#chem3table .ave-table-wrap td:has(> .ave-actions){position:sticky;right:0;z-index:1;min-width:96px;width:1%;background:var(--card,#fff);box-shadow:-3px 0 5px #17213a0d}#actions-list .ave-table-wrap th:last-child,#chem3table .ave-table-wrap th:last-child{right:0;z-index:3}
 .ave-table-wrap td:has(> .ave-actions){min-width:125px;max-width:none}
 .ave-table-wrap .ave-actions .ave-icon-action{flex:none}
 #page-fleet .ave-table-wrap td:has(> .ave-actions){min-width:125px;width:125px}
