@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Training print reports — synthetic verification</title>
+<!-- APP_STYLES -->
+<style>
+#app{display:block!important}#page-training{display:block!important}body{font-family:Arial,sans-serif;background:#f4f6fa}.fixture-banner{padding:14px 20px;background:#fff3d9;display:flex;align-items:center;justify-content:space-between;gap:12px}.fixture-main{padding:20px;max-width:1540px;margin:auto}.fixture-feedback{margin:0;padding:0 20px;color:#155e4a}.fixture-banner button{padding:8px 12px;border:1px solid #bbc5d4;border-radius:7px;background:white;cursor:pointer}.fixture-scope{background:#193950;color:white;padding:14px 20px}.fixture-scope strong{margin-right:12px}
+</style></head><body>
+<div class="fixture-banner"><span>Local Training verification · Synthetic records only · No tenant data or notifications</span><button type="button" id="fixture-open-print">Print reports</button></div>
+<div class="fixture-scope"><strong>Synthetic Engineering Ltd</strong>Selected client company · Signed in as a SEPHS administrator</div><p id="fixture-feedback" class="fixture-feedback" role="status"></p>
+<div id="app" class="fixture-main"><!-- TRAINING_PAGE --></div>
+<script>
+window.prof={id:'synthetic-admin',full_name:'Synthetic Administrator',company_id:'sephs-company',role:'sephs_admin'};
+window.co={id:'sephs-company',name:'SEPHS Consulting',logo_url:'/assets/brand/auris360-icon-192.png'};
+window.sephsCompanyContext='synthetic-company';
+window.saCompanyList=[{id:'synthetic-company',name:'Synthetic Engineering Ltd',logo_url:'/assets/auris360-logo-final.png',address:'Synthetic Industrial Estate'}];
+window.ccid=()=>sephsCompanyContext;window.cf=()=> '&company_id=eq.'+encodeURIComponent(ccid());window.isSA=()=>true;window.isMgr=()=>true;window.trainYear=2026;
+window.escH=value=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+window.toast=message=>{document.getElementById('fixture-feedback').textContent=message;};window.toastActionError=(action,module,error)=>toast(action+': '+error.message);
+window.registerErrorHtml=(name,error)=>'<div role="alert">'+escH(error)+'</div>';
+window.people=Array.from({length:12},(_,i)=>({id:'person-'+i,company_id:ccid(),first_name:['Asha','Ben','Clara','David','Esha','Farid'][i%6],last_name:['Shah','Stone'][i%2],job_title:['Supervisor','Technician','Operator'][i%3],department:i%2?'Maintenance':'Operations',status:'active'}));
+window.personFullName=person=>[person.first_name,person.last_name].join(' ');
+window.compAllData=Array.from({length:9},(_,i)=>({id:'competency-'+i,company_id:ccid(),name:['Permit to work','First aid','Fire safety','Working at height','Confined space','Manual handling','Electrical safety','Chemical handling','Environmental awareness'][i],sort_order:i}));
+window.compCatalogData=compAllData;
+window.cmAllData=people.flatMap((person,p)=>compAllData.map((competency,c)=>({id:'matrix-'+p+'-'+c,company_id:ccid(),person_id:person.id,competency_id:competency.id,current_level:(p+c)%5,required_level:2,assessed_date:'2026-10-01',expiry_date:'2027-10-01'})));
+window.tpAllData=Array.from({length:9},(_,i)=>({id:'plan-'+i,company_id:ccid(),training_ref:'TRAIN-2026-'+String(i+1).padStart(3,'0'),year:2026,training_topic:compAllData[i].name,month:i+3,training_type:i%2?'external':'internal',target_group:i%2?'Maintenance team':'Operations and supervisors',priority:i%3?'medium':'high',planned_date:'2026-'+String(i+3).padStart(2,'0')+'-15',actual_date:i<5?'2026-'+String(i+3).padStart(2,'0')+'-15':null,status:i<5?'completed':i===5?'in_progress':'planned',trainer:i%2?'Synthetic Training Provider':'Asha Shah',provider:i%2?'Synthetic Training Provider':'Internal HSE team',location:i%2?'Training Centre':'Main site',duration_hours:i%2?8:2,objective:'Review safe working practices and demonstrate understanding.',created_at:'2026-01-05T09:00:00Z',updated_at:'2026-10-19T09:00:00Z'}));
+window.tfAllData=people.map((person,i)=>({id:'record-'+i,company_id:ccid(),plan_id:'plan-'+(i%9),person_id:person.id,person_name:personFullName(person),training_topic:compAllData[i%9].name,training_date:'2026-07-15',certificate:'CERT-2026-'+String(i+1).padStart(3,'0'),expiry_date:i%3?'2027-07-15':'2026-10-01',refresher_due:'2027-06-15',passed:i!==2,attendance_status:'attended',evidence_review_status:'reviewed',record_kind:'certificate',duration_hours:4,trainer:'Synthetic Trainer'}));
+window.authAllData=people.map((person,i)=>({id:'certificate-'+i,company_id:ccid(),person_id:person.id,person_name:personFullName(person),authorisation_type:compAllData[i%9].name+' certificate',reference:'CERT-2026-'+String(i+1).padStart(3,'0'),issue_date:'2026-04-15',expiry_date:i%4?'2027-04-15':'2026-10-01',status:'active',record_kind:'certificate',scope:'Training evidence only'}));
+window.tnAllData=[{id:'need-1',company_id:ccid(),person_name:personFullName(people[2]),training_topic:'Electrical safety refresher',priority:'high',status:'open',due_date:'2026-11-01'}];
+window.elcAllData=[{id:'course-1',company_id:ccid(),title:'Safety induction',status:'published',duration_minutes:30}];
+window.indAllData=[{id:'induction-1',company_id:ccid(),person_id:people[0].id,person_name:personFullName(people[0]),induction_type:'new_employee',induction_date:'2026-10-15',status:'completed',refresher_due:'2027-10-15'}];
+window.LEVEL_COLORS=['#f3f4f6','#E6F1FB','#FEF9EC','#EAF3DE','#1D9E75'];window.LEVEL_TEXT=['#6B7280','#185FA5','#854F0B','#3B6D11','#fff'];
+const syntheticTables={people:people,competencies:compAllData,competency_matrix:cmAllData,training_plan:tpAllData,training_followup:tfAllData,authorisations:authAllData,training_needs:tnAllData,induction_records:indAllData,elearning_courses:elcAllData,elearning_enrolments:[],learning_course_governance:[],learning_practical_assessments:[],learning_external_providers:[],learning_source_relationships:[],companies:saCompanyList};
+window.api=async function(url,options){
+  if(options&&options.m&&options.m!=='GET')throw Error('Writes are disabled in this synthetic fixture.');
+  const table=String(url).split(/[/?]/)[1],rows=syntheticTables[table]||[];
+  const query=new URL(String(url),'http://127.0.0.1').searchParams,filter=query.get('company_id');
+  if(filter&&filter!=='eq.'+ccid())throw Error('Fixture received an unexpected company scope.');
+  return JSON.parse(JSON.stringify(rows));
+};window.apiAllRows=(url,options)=>api(url,options);
+window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>({company:saCompanyList[0],profile:prof,role:prof.role})},rbac:{requireAccess:module=>{if(module!=='training')throw Error('Only Training is available in the fixture.');}}};
+window.TrainingWorkflow={context:()=>({company:ccid(),user:prof.id}),assertContext:c=>{if(c.company!==ccid()||c.user!==prof.id)throw Error('Fixture scope changed.');},viewRecord:id=>toast('Synthetic learner record: '+id),expiry:value=>({state:!value?'no_expiry':value<'2026-10-20'?'expired':value<'2027-01-18'?'expiring':'current'})};
+window.tpTypeLabel=value=>({internal:'Classroom / internal',external:'External course',online:'Online / e-learning'})[value]||value;
+window.tpProviderFromRecord=row=>row.provider||row.training_provider||'';
+window.trainingPrintCurrentView=()=>window.AurisTrainingPrint.open();window.elcNew=window.elcBack=()=>toast('Editing is disabled in the synthetic print fixture.');
+window.loadTraining=async()=>{await cmLoad();tfRender(tfAllData);authRender(authAllData);};
+window.trainSwitchTab=function(tab,button){
+  document.querySelectorAll('#page-training [id^="train-view-"]').forEach(view=>{view.style.display=view.id==='train-view-'+tab?'block':'none';});
+  document.querySelectorAll('#page-training [id^="train-tab-"]').forEach(item=>item.classList.toggle('active',item===button));
+  if(tab==='matrix')cmLoad();if(tab==='plan')fixturePlan();if(tab==='followup')tfRender(tfAllData);if(tab==='auth')authRender(authAllData);
+};
+window.fixturePlan=function(){
+  AurisTrainingPlanListWorkspace.mount(document.getElementById('tp-table'),tpAllData,{records:tfAllData,canEdit:true,openRecord:id=>toast('Synthetic plan: '+id),editRecord:id=>toast('Editing disabled in this print fixture: '+id),createAttendance:id=>toast('Attendance creation disabled in this print fixture: '+id)});
+};
+// Display generated popup markup in a same-origin frame for browser QA.
+window.open=function(){
+  const frame=document.createElement('iframe');frame.id='fixture-report-preview';frame.title='Generated Training print preview';frame.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:100000;border:0;background:white';document.body.appendChild(frame);
+  const back=document.createElement('button');back.textContent='Back to test module';back.style.cssText='position:fixed;right:15px;top:12px;z-index:100001;padding:10px';document.body.appendChild(back);
+  const popup=frame.contentWindow;popup.close=()=>{frame.remove();back.remove();};back.onclick=popup.close;return popup;
+};
+/* TRAINING_RENDERERS */
+</script>
+<script src="/auris-view-engine.js"></script><script src="/auris-training-plan-list-workspace.js"></script><script src="/auris-module-event-handlers-batch-4.js"></script><script src="/learning-competency-upgrade.js"></script><script src="/training-print-reports.js"></script>
+<script>
+document.getElementById('fixture-open-print').addEventListener('click',()=>AurisTrainingPrint.open());
+loadTraining().then(()=>{document.getElementById('tp-year-label').textContent=trainYear;lcuSwitch('sessions');document.getElementById('fixture-feedback').textContent='Synthetic Training data loaded. Print previews must show Synthetic Engineering Ltd.';}).catch(error=>toast(error.message));
+</script></body></html>
