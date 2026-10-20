@@ -737,7 +737,8 @@ window.AurisKpiReportSource={
    if(String(ccid())!==company||kpiXSelectedYear()!==year)throw Error('The company or year changed. Reopen print options.');
    if(kpiXHistory.error)throw Error(kpiXHistory.error);
   }
-  if(kpiKPIs.some(function(k){return k.company_id&&String(k.company_id)!==company||k.year&&Number(k.year)!==year;}))throw Error('KPI data is still changing. Wait for the selected company and year to finish loading.');
+  var globalScope=!company&&typeof isSA==='function'&&isSA();
+  if(kpiKPIs.some(function(k){return !globalScope&&k.company_id&&String(k.company_id)!==company||k.year&&Number(k.year)!==year;}))throw Error('KPI data is still changing. Wait for the selected company and year to finish loading.');
   kpiXCompute();var rows=all?kpiKPIs.slice():kpiXFilteredKpis(),html;
   if(kind==='scorecard')html=kpiXRenderScorecard({all:all});
   else if(kind==='monthly')html=kpiXRenderMonthly({all:all});

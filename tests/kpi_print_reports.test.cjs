@@ -40,3 +40,6 @@ test('a comparison with no matching history prints its honest no-data explanatio
  const h=runtime();h.c.document.createElement=()=>({set innerHTML(value){this.value=value;},content:{textContent:'No matching history',querySelector:s=>s==='.kpi-x-comparison-note'?{textContent:'No matching <recorded> results. Missing is not zero.'}:null}});
  assert.equal(h.c.AurisKpiPrint.cleanTable('<section>Missing</section>','comparison'),'<section class="kpr-empty">No matching &lt;recorded&gt; results. Missing is not zero.</section>');
 });
+test('SEPHS all-company scorecards retain the existing global scope without borrowing a company logo',async()=>{
+ const h=runtime();h.company('');h.c.isSA=()=>true;h.c.kpiKPIs[1].company_id='b';const snapshot=await h.c.AurisKpiReportSource.capture('scorecard',true);assert.equal(snapshot.kpis.length,2);assert.equal(h.c.AurisKpiPrint.company().name,'All companies');assert.equal(h.c.AurisKpiPrint.company().logo,'');
+});
