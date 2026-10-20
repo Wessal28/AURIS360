@@ -2,3 +2,5 @@
 #mrp-options{position:fixed;inset:0;margin:auto;overflow:auto;transform:none}.mrp-content .legal-assessment-report{font-size:11pt;line-height:1.55;font-weight:400}.mrp-content .legal-assessment-report h3{font-size:12pt;font-weight:600;margin:20px 0 9px}.mrp-content .legal-assessment-report p{font-size:11pt;font-weight:400;margin:8px 0}.mrp-content .lav-summary,.mrp-content .lav-worksheet-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}.mrp-content .lav-requirement{border:1px solid #cadbd0;border-radius:7px;padding:14px 16px;margin:16px 0;break-inside:avoid}.mrp-content .lav-requirement h3{margin-top:0}.mrp-content .lav-note{padding:12px 14px;border-left:3px solid #94bea6;background:#eff7f2}.mrp-content .lav-result{font-weight:600}.mrp-content .lav-status{display:inline-block;padding:3px 8px;border-radius:12px;background:#edf3ef}.mrp-content .lav-reference{color:#526d5f;font-size:10pt}.mrp-content .lav-totals th,.mrp-content .lav-totals td{font-size:10pt}
 
 .mrp-content .lav-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+.mrp-content .mrp-nowrap{white-space:nowrap;overflow-wrap:normal}

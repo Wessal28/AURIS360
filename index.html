@@ -43,20 +43,20 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260910-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1"></script>
+<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1&action-chemical-reports-20261020-1"></script>
 <script src="auris-platform-services.js?v=20260831-3"></script>
 <script src="auris-module-runtime.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle.js?v=20260901-13&settings-20261020-1"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
 <script src="auris-view-engine.js?v=20261002-3"></script>
-<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1"></script>
+<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1&action-chemical-reports-20261020-1"></script>
 <script src="auris-module-layout.js?v=20260831-4"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
 <script src="auris-approval-centre.js?v=20260901-10"></script>
 <script src="auris-record-workspace.js?v=20260908-1&work-record-20260923-1&people-access-20260927-1"></script>
 <script src="auris-action-record-workspace.js?v=20260908-1"></script>
-<script src="auris-action-list-workspace.js?v=20260908-1"></script>
+<script src="auris-action-list-workspace.js?v=20260908-1&action-chemical-reports-20261020-1"></script>
 <script src="auris-moc-list-workspace.js?v=20260908-1"></script>
 <script src="auris-moc-record-workspace.js?v=20260908-1"></script>
 <script src="auris-permit-list-workspace.js?v=20260908-1"></script>
@@ -71,7 +71,7 @@
 <script src="auris-fleet-list-workspace.js?v=20261002-3"></script>
 <script src="auris-atex-list-workspace.js?v=20260920-1"></script>
 <script src="auris-fire-list-workspace.js?v=20260920-1"></script>
-<script src="auris-chemical-list-workspace.js?v=20261014-1"></script>
+<script src="auris-chemical-list-workspace.js?v=20261014-1&action-chemical-reports-20261020-1"></script>
 <script src="auris-legal-list-workspace.js?v=20261009-icon-actions-1"></script>
 <script src="auris-ppe-list-workspace.js?v=20260916-1"></script>
 <script src="auris-ohealth-list-workspace.js?v=20260916-1"></script>
@@ -106,7 +106,7 @@
 <link rel="stylesheet" href="auris-tools-records.css?v=20260920-1">
 <script src="auris-tools-records.js?v=20261002-1"></script>
 <script src="auris-emergency-records.js?v=20260920-1"></script>
-<script src="auris-chemical-records.js?v=20261014-1"></script>
+<script src="auris-chemical-records.js?v=20261014-1&action-chemical-reports-20261020-1"></script>
 <link rel="prefetch" href="auris-legal-assurance.js?v=20260901-12&report-preview-20261020-1" as="script"/>
 <link rel="stylesheet" href="auris-legal-assurance.css?v=20261019-1"/>
 <link rel="prefetch" href="auris-fire-records.js?v=20261014-1" as="script"/>
@@ -158,7 +158,7 @@
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-app-launcher.css?v=20260831-1&launcher-icons-20260916-1">
 <link rel="stylesheet" href="auris-command-centre.css?v=20260901-14">
-<link rel="stylesheet" href="auris-view-engine.css?v=20261002-3">
+<link rel="stylesheet" href="auris-view-engine.css?v=20261002-3&action-chemical-reports-20261020-1">
 <link rel="stylesheet" href="auris-record-workspace.css?v=20260908-1&work-record-20260923-1&people-access-20260927-1">
 <link rel="stylesheet" href="auris-reporting-engine.css?v=20260901-17">
 <link rel="stylesheet" href="auris-dashboard-designer.css?v=20260901-18">
@@ -8434,7 +8434,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-map-s-7299078644">CAPA - Corrective &amp; Preventive Actions - Assignment - Verification - Closure</div>
 </div>
 <div class="auris-map-s-9c40389b4a">
-<button class="btn" id="map-print-btn" data-auris-onclick="h0925"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" id="map-print-btn" data-auris-onclick="h0925"><i class="ti ti-printer"></i>Print reports</button>
 <button class="btn btn-primary auris-map-s-6aa34d7432" id="map-new-btn" data-auris-onclick="h0926"><i class="ti ti-plus"></i>New action</button>
 </div>
 </div>
@@ -11868,8 +11868,10 @@ I can help you:<br>
 <link rel="prefetch" href="kpi-print-reports.css?v=20261020-1" as="style">
 <link rel="prefetch" href="training-print-reports.js?v=20261020-1" as="script">
 <link rel="prefetch" href="training-print-reports.css?v=20261020-1" as="style">
-<link rel="prefetch" href="module-report-preview.js?v=20260901-12&report-preview-20261020-1" as="script">
-<link rel="prefetch" href="module-report-preview.css?v=20261020-1" as="style">
+<link rel="prefetch" href="module-report-preview.js?v=20260901-12&report-preview-20261020-1&action-chemical-reports-20261020-1" as="script">
+<link rel="prefetch" href="module-report-preview.css?v=20261020-1&action-chemical-reports-1" as="style">
+<link rel="prefetch" href="action-print-reports.js?v=20260901-12&action-chemical-reports-20261020-1" as="script">
+<link rel="prefetch" href="chemical-print-reports.js?v=20260901-12&action-chemical-reports-20261020-1" as="script">
 <link rel="prefetch" href="legal-assessment-viewer.js?v=20260901-12&report-preview-20261020-1" as="script">
 <link rel="prefetch" href="legal-assessment-viewer.css?v=20261020-1" as="style">
 <script src="kpi-workflow.js?v=20260904-locked-monthly-1"></script>

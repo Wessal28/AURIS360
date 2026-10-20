@@ -46,6 +46,7 @@ var modules = [
 ];
 
 var extractionMap={
+  actions:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js','action-print-reports.js']},
   meetings:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js']},
   swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
@@ -53,7 +54,7 @@ var extractionMap={
   training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js']},
   contractor:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['contractor-management-upgrade.js']},
   people:{group:'people',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
-  chemical:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['chemical-control-upgrade.js']},
+  chemical:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['chemical-control-upgrade.js','module-report-preview.js','chemical-print-reports.js']},
   tools:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['tools-equipment-upgrade.js']},
   atex:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   emergency:{group:'emergency',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]},

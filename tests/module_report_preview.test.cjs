@@ -97,6 +97,10 @@ test('failed logo loading leaves printing disabled with an explicit retry route'
  const h=runtime(),original=h.c.open;h.c.open=()=>{const w=original();w.document.querySelectorAll=()=>[{tagName:'IMG',complete:true,naturalWidth:0}];return w;};await h.api.preview({moduleKey:'meetings',section:'minutes',title:'Saved minutes',html:'saved',context:h.api.context('meetings')});
  const w=h.windows[0];assert.equal(h.prints(),0);assert.equal(w.nodes['mrp-print'].disabled,true);assert.equal(w.nodes['mrp-retry'].hidden,false);assert.match(w.nodes['mrp-status'].textContent,/could not load/);
 });
+test('Chemical history sections are all rechecked when a prepared report is printed',async()=>{
+ const h=runtime(),c=h.api.context('chemical');await h.api.preview({moduleKey:'chemical',section:['register','approvals','inventory'],title:'Chemical report',html:'Saved product and histories',context:c});
+ const w=h.windows[0];assert.match(w.markup,/Chemical Control/);assert.equal(w.nodes['mrp-print'].disabled,false);h.deny('inventory');w.nodes['mrp-print'].events.click();assert.equal(h.prints(),0);assert.equal(w.nodes['mrp-print'].disabled,true);assert.match(w.nodes['mrp-status'].textContent,/cannot view this report section/);
+});
 test('an exact minutes preview rejects a mismatched record response and supports chosen paper',async()=>{
  const h=runtime();await h.api.minutes('minutes',null,'A3');assert.match(h.requests[0],/id=eq.minutes/);assert.match(h.windows[0].markup,/mrp-a3/);assert.equal(h.prints(),0);
  const x=runtime();x.tables.hse_meetings[0].id='different';await assert.rejects(x.api.minutes('minutes'),/unavailable/);assert.equal(x.windows[0].closed,true);
