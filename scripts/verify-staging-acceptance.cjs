@@ -408,7 +408,7 @@ async function main() {
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
-  const checks = [{ label: 'Atomic HSE minutes save RPC', accessible: true, ...minutesRpc }];
+  const checks = [{ label: 'Atomic HSE minutes save RPC installation', ...minutesRpc }];
   const sourceRows = new Map();
   for (const [label, resource] of sources) {
     const rows = await rest(resource).catch((error) => fail(`${label} data source is unavailable (${error.message}).`));
