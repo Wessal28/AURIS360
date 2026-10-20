@@ -1809,6 +1809,7 @@ var _authSession = null;  // { access_token, refresh_token, expires_at, user }
 var _authRefreshTimer = null;
 var _authRefreshPromise = null;
 var _authSessionGeneration = 0;
+var _authLoginBusy = false;
 
 var AURIS_DISPLAY_CLASSES=['auris-display-none','auris-display-block','auris-display-flex','auris-display-inline-flex'];
 function aurisSetDisplay(target, mode) {
@@ -1967,10 +1968,12 @@ function enhanceIconOnlyButtons(root) {
 
 // -- doLogin --------------------------------------------------------------------
 async function doLogin() {
+  if(_authLoginBusy)return;
   var em=document.getElementById('login-email')?.value?.trim();
   var pw=document.getElementById('login-pw')?.value;
   var btn=document.getElementById('login-btn');
   if(!em||!pw){authShowErr('Please enter your email or phone number and password.');return;}
+  _authLoginBusy=true;
   authShowErr(''); authShowLoading('Signing in...');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i>Signing in...';}
   try {
@@ -1984,6 +1987,7 @@ async function doLogin() {
     else if(msg.toLowerCase().includes('email not confirmed')) msg='Please confirm your email address first. Check your inbox.';
     authShowErr(msg);
   } finally {
+    _authLoginBusy=false;
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i>Sign in';}
   }
 }
@@ -2266,7 +2270,7 @@ async function authOnSignIn(authData) {
   aurisSetDisplay(aiPanel,'block');
   document.getElementById('page-dashboard').classList.add('active');
   dashRouteView();
-  if(!isPersonalDashRole()) dashRenderControlCentre({});
+  if(!isPersonalDashRole()) dashRenderControlCentre({loading:true});
   applyRoles();
   sidebarApplyState(sidebarGetState());
   devModeUpdateUI();
@@ -2362,34 +2366,6 @@ async function authInitSession() {
       aurisSetDisplay('login-screen','flex');
       authShowPanel('signin');
       authShowErr('Could not verify the reset link. Please request a new one.');
-      return;
-    }
-  }
-  var qpTokenHash = qp.get('token_hash');
-  var qpType = qp.get('type');
-  if(qpTokenHash && (qpType==='recovery'||qpType==='invite'||qpType==='signup') && !pkceCode) {
-    authShowLoading('Verifying reset link...');
-    try {
-      var vr = await fetch(SB+'/auth/v1/verify',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify({token_hash:qpTokenHash,type:qpType})});
-      var vd = await vr.json();
-      if(vr.ok && vd.access_token) {
-        tok = vd.access_token;
-        try{localStorage.setItem('auris360_session',JSON.stringify({access_token:vd.access_token,refresh_token:vd.refresh_token,expires_at:Math.floor(Date.now()/1000)+(vd.expires_in||3600),user:null}));}catch(_){}
-        history.replaceState(null,'',window.location.pathname);
-        aurisSetDisplay('login-screen','flex');
-        authShowPanel(qpType==='recovery'?'update-pw':'signin');
-        return;
-      } else {
-        history.replaceState(null,'',window.location.pathname);
-        aurisSetDisplay('login-screen','flex');
-        authShowPanel('signin');
-        authShowErr('This reset link has expired or was already used. Please request a new one.');
-        return;
-      }
-    } catch(ex) {
-      aurisSetDisplay('login-screen','flex');
-      authShowPanel('signin');
-      authShowErr('Could not verify the reset link. Please try again.');
       return;
     }
   }
@@ -2536,7 +2512,7 @@ async function authInitSession() {
     aurisSetDisplay(aiPanel,'block');
     document.getElementById('page-dashboard').classList.add('active');
     dashRouteView();
-    if(!isPersonalDashRole()) dashRenderControlCentre({});
+    if(!isPersonalDashRole()) dashRenderControlCentre({loading:true});
     applyRoles();
     sidebarApplyState(sidebarGetState());
     devModeUpdateUI();
@@ -3433,24 +3409,25 @@ function dashOpenMyActions(){
 
 // --- REAL-TIME DASHBOARD ------------------------------------------
 var _dashLoadGeneration=0;
-var _dashInitialRetryTimer=null;
+var _dashRenderedScope='';
 var _dashCommandData=null;
 var _dashSourceFailures={};
+function dashLoadScope(){return JSON.stringify([prof?.id,prof?.role,ccid(),cf(),_authSessionGeneration]);}
 async function loadDash(options) {
   options=options||{};
   var loadGeneration=++_dashLoadGeneration;
-  var hadApiFailure=false;
+  var loadScope=dashLoadScope();
   var refreshIcon = document.getElementById('dash-refresh-icon');
   if (refreshIcon) refreshIcon.classList.add('auris-runtime-spinner');
-  // Mount the organisation dashboard immediately so a fresh login never
-  // appears blank while the live API requests are still loading.
-  if(!isPersonalDashRole()) {
+  // Keep current figures visible during a deliberate refresh. A changed
+  // account/company gets a loading state before its own data is shown.
+  if(!isPersonalDashRole()&&_dashRenderedScope!==loadScope) {
     dashRouteView();
     dashRenderControlCentre({loading:true});
   }
   try {
     var sourceFailures={};
-    var safe = async function(p,key) { try { return await p; } catch(e) { hadApiFailure=true;sourceFailures[key]=true;console.warn('Dash API:', e.message); return []; } };
+    var safe = async function(p,key) { try { return await p; } catch(e) { sourceFailures[key]=true;console.warn('Dash API:', e.message); return []; } };
     var optional = async function(p) { try { return await p; } catch(e) { console.warn('Optional dashboard source:', e.message); return null; } };
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
@@ -3477,7 +3454,7 @@ async function loadDash(options) {
     var [events, actions, people, exposure, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals, contractors, equipment, changes, approvals] = results;
     // A newer dashboard request owns the screen. Never let a slower, older
     // response overwrite data loaded for a changed company or manual refresh.
-    if(loadGeneration!==_dashLoadGeneration)return;
+    if(loadGeneration!==_dashLoadGeneration||loadScope!==dashLoadScope())return;
     _dashSourceFailures=sourceFailures;
     events = events||[]; actions = actions||[]; people = people||[];
     permits = permits||[]; certs = certs||[]; insps = insps||[];
@@ -3588,6 +3565,7 @@ async function loadDash(options) {
         dashRenderPersonal(events, actions, people, permits, training).catch(function(e){console.warn('Personal dashboard render error:',e);}),
         dashLoadMyElearning().catch(function(e){console.warn('My e-learning render error:',e);})
       ]);
+      if(loadGeneration!==_dashLoadGeneration||loadScope!==dashLoadScope())return;
     }
     dashRenderDeptHeatmap(events, people);
     dashRenderHighRisk(permits, events);
@@ -3614,18 +3592,11 @@ async function loadDash(options) {
     sm('dash-label', 'Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
     var dashboardPage=document.getElementById('page-dashboard');
     if(dashboardPage)dashboardPage.dataset.dashboardReady='true';
+    _dashRenderedScope=loadScope;
   } catch(e) { console.error('Dashboard error:', e); }
   finally {
     if(loadGeneration===_dashLoadGeneration&&refreshIcon)refreshIcon.classList.remove('auris-runtime-spinner');
-    // A short-lived network/schema-cache failure during login should repair
-    // itself. Retry at most twice and never compete with a newer dashboard load.
-    if(loadGeneration===_dashLoadGeneration&&options.initial&&hadApiFailure&&(options.attempt||0)<2){
-      if(_dashInitialRetryTimer)clearTimeout(_dashInitialRetryTimer);
-      _dashInitialRetryTimer=setTimeout(function(){
-        _dashInitialRetryTimer=null;
-        if(loadGeneration===_dashLoadGeneration)loadDash({initial:true,attempt:(options.attempt||0)+1});
-      },1500);
-    }
+    // Source failures remain visible; the Refresh action retries on demand.
   }
 }
 
@@ -3869,7 +3840,8 @@ function dashRenderControlCentre(data){
   }
   aurisSetDisplay(panel,'block');
   data=data||{};
-  if(data.loading){panel.innerHTML='<div class="hse-cc-panel" role="status" aria-live="polite"><div class="hse-cc-panel-title">Loading company performance</div><p>Retrieving incidents, actions, training, permits and risk assessments…</p></div>';return;}
+  if(data.loading){if(panel.dataset.dashboardLoading==='true')return;panel.dataset.dashboardLoading='true';panel.innerHTML='<div class="hse-cc-panel" role="status" aria-live="polite"><div class="hse-cc-panel-title">Loading company performance</div><p>Retrieving incidents, actions, training, permits and risk assessments…</p></div>';return;}
+  panel.dataset.dashboardLoading='false';
   var now=new Date();
   var events=data.events||[];
   var actions=data.actions||[];
@@ -30824,11 +30796,14 @@ function legalRenderChanges(){
 async function legalLoadChanges(){
   var el=document.getElementById('lc-table');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var scope=cf(),actor=prof?.id;
   try{
-    var d=await api('/legal_changes?select=*&archived_at=is.null'+cf()+'&order=date_received.desc');
+    var d=await apiAllRows('/legal_changes?select=*'+scope+'&order=date_received.desc,id');
+    if(scope!==cf()||actor!==prof?.id)return;
+    d=d.filter(function(x){return !x.archived_at&&!ohIsArchivedText(x.comments);});
     lcAllData=d||[];
     legalRenderChanges();
-  }catch(e){el.innerHTML=setupFriendlyMessage('Legal changes register',e.message);}
+  }catch(e){if(scope===cf()&&actor===prof?.id)el.innerHTML=setupFriendlyMessage('Legal changes register',e.message);}
 }
 
 function legalChgBack(){document.getElementById('legal-chg-form').style.display='none';document.getElementById('legal-view-changes').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-changes')?.classList.add('active');legalLoadChanges();}
@@ -31010,8 +30985,11 @@ async function legalDeleteChgFromList(id){
 // -- COMPLIANCE ASSESSMENTS ----------------------------------------------------
 async function lcaLoad(){
   var el=document.getElementById('lca-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var scope=cf(),actor=prof?.id;
   try{
-    var d=await api('/compliance_assessments?select=*&archived_at=is.null'+cf()+'&order=assessment_date.desc');lcaAllData=d||[];
+    var d=await apiAllRows('/compliance_assessments?select=*'+scope+'&order=assessment_date.desc,id');
+    if(scope!==cf()||actor!==prof?.id)return;
+    d=d.filter(function(x){return !x.archived_at&&x.status!=='archived'&&!ohIsArchivedText(x.findings);});lcaAllData=d;
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('lr-m3assessments',(d||[]).length);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0282"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
@@ -31033,7 +31011,7 @@ async function lcaLoad(){
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
-  }catch(e){el.innerHTML=setupFriendlyMessage('Compliance assessments',e.message);}
+  }catch(e){if(scope===cf()&&actor===prof?.id)el.innerHTML=setupFriendlyMessage('Compliance assessments',e.message);}
 }
 
 function lcaCalcScore(){
