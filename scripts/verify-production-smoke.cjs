@@ -1,6 +1,5 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { verifyMeetingsRpc } = require('./verify-meetings-rpc.cjs');
 
 const root = path.resolve(__dirname, '..');
 const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
@@ -137,11 +136,11 @@ async function verifyProduction(options, evidence) {
     fail(`Canonical production is serving ${runtime.releaseSha || 'an unidentified release'}, expected ${expectedSha}.`);
   }
 
-  evidence.stage = 'minutes_rpc';
-  evidence.minutes_rpc = await verifyMeetingsRpc({
-    supabaseUrl: runtime.supabaseUrl, publicKey: runtime.supabaseAnonKey,
-    expectedProjectRef: PRODUCTION_REF, fetchImpl: options.fetchImpl
-  });
+  // A public smoke check has no authenticated tenant identity. An anonymous
+  // request may be rejected by the API guard and cannot verify authenticated
+  // database readiness or execution grants.
+  evidence.verification_scope = 'public_deployment_smoke';
+  evidence.minutes_rpc = { installed: null, verified: false, result: 'database_not_verified', required_check: 'authenticated_staging_check_required' };
 
   const assetChecks = evidence.assets;
   const assets = [
@@ -255,7 +254,7 @@ async function main(options = {}) {
   const evidence = { generated_at: new Date().toISOString(), status: 'failed', stage: 'configuration', assets: [] };
   try {
     await verifyProduction(options, evidence);
-    logger.log(`Production smoke passed: ${evidence.deployed_release_sha.slice(0, 12)} is live on ${evidence.production_host}; ${evidence.assets.length} critical assets verified.`);
+    logger.log(`Public production smoke passed: ${evidence.deployed_release_sha.slice(0, 12)} is live on ${evidence.production_host}; ${evidence.assets.length} critical assets verified. Database RPC readiness is not verified; the authenticated staging check is required.`);
     return evidence;
   } catch (error) {
     evidence.error = error && error.message ? error.message : 'unexpected verification failure.';

@@ -25,14 +25,6 @@ function fixture(overrides = {}) {
     requests,
     fetchImpl: async (input, options) => {
       const url = new URL(input);
-      if (url.origin === 'https://iarfxjhahzbhncsaohbg.supabase.co') {
-        assert.equal(url.pathname, '/rest/v1/rpc/save_hse_minutes');
-        assert.equal(options.method, 'POST');
-        assert.deepEqual(JSON.parse(options.body), { p_id: 'invalid-uuid-readiness-probe', p_minutes: {}, p_expected_updated_at: null });
-        assert.equal(options.redirect, 'error');
-        requests.push(url.pathname);
-        return new Response(JSON.stringify(overrides.rpc || { code: '42501', message: 'permission denied for function save_hse_minutes' }), { status: overrides.rpcStatus || 403 });
-      }
       assert.equal(url.origin, 'https://auris360.app');
       assert.equal(options.method || 'GET', 'GET');
       requests.push(url.pathname);
@@ -78,8 +70,9 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
   assert.equal(result.assets.length, 69);
-  assert.deepEqual(result.minutes_rpc, { installed: true, no_write_probe: true, result: 'execution_permission_rejected' });
-  assert.ok(response.requests.includes('/rest/v1/rpc/save_hse_minutes'));
+  assert.equal(result.verification_scope, 'public_deployment_smoke');
+  assert.deepEqual(result.minutes_rpc, { installed: null, verified: false, result: 'database_not_verified', required_check: 'authenticated_staging_check_required' });
+  assert.ok(!response.requests.some(url=>url.includes('/rest/v1/')));
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
@@ -114,6 +107,16 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.doesNotMatch(fs.readFileSync(report, 'utf8'), /do-not-retain-runtime-key/);
 });
 
+test('public smoke never treats an anonymous guard response as installed or invokes the protected database',async()=>{
+  const response=fixture(),logs=[];
+  const result=await main({env:productionEnv,fetchImpl:response.fetchImpl,logger:{log:value=>logs.push(value)},args:[]});
+  assert.equal(result.minutes_rpc.installed,null);assert.equal(result.minutes_rpc.verified,false);
+  assert.match(result.minutes_rpc.required_check,/authenticated_staging_check_required/);
+  assert.match(logs.join('\n'),/Database RPC readiness is not verified/);
+  assert.doesNotMatch(logs.join('\n'),/do-not-retain-runtime-key/);
+  assert.ok(response.requests.every(url=>!url.startsWith('/rest/')&&!url.startsWith('/auth/')));
+});
+
 test('real smoke failures remain blocking and retain stage-specific evidence', async (t) => {
   const cases = [
     { name: 'missing Incident page', overrides: { html: read('index.html').replace('id="page-events"', 'id="page-removed"') }, stage: 'shell', message: /page-events/ },
@@ -122,7 +125,6 @@ test('real smoke failures remain blocking and retain stage-specific evidence', a
     { name: 'wrong database', overrides: { runtime: { supabaseUrl: 'https://beoutmqttgfyyzndcdxu.supabase.co' } }, stage: 'runtime', message: /approved Supabase project/ },
     { name: 'invalid runtime JSON', overrides: { runtimeText: 'Object.freeze({invalid});' }, stage: 'runtime', message: /invalid JSON/ },
     { name: 'old live commit', overrides: { runtime: { releaseSha: 'b6db71ef9f856392569f79b1e37afec552cd9409' } }, stage: 'release_identity', message: /Canonical production is serving/ },
-    { name: 'missing atomic minutes RPC', overrides: { rpc: { code: 'PGRST202', message: 'Could not find save_hse_minutes' }, rpcStatus: 404 }, stage: 'minutes_rpc', message: /20261020020000_meetings_rpc_installation_repair\.sql/ },
     { name: 'broken critical asset', overrides: { assets: { 'incident-management-upgrade.js': 'invalid'.repeat(30) } }, stage: 'critical_assets', message: /incident-management-upgrade.js is missing/ },
     { name: 'request failure', overrides: { networkError: true }, stage: 'shell', message: /simulated connection failure/ }
   ];
@@ -188,7 +190,9 @@ test('production smoke is read-only and restricted to canonical production', () 
   assert.match(source, /method|fetch/);
   assert.doesNotMatch(source, /method:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
   assert.doesNotMatch(source, /SUPABASE_(ANON|SERVICE)_KEY/);
-  assert.match(source, /verifyMeetingsRpc/);
+  assert.doesNotMatch(source, /verifyMeetingsRpc|rest\/v1\/rpc/);
+  assert.match(source, /database_not_verified/);
+  assert.match(source, /authenticated_staging_check_required/);
 });
 
 test('production smoke verifies release identity, runtime boundary, headers and critical assets', () => {
