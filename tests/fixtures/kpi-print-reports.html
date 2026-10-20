@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPI print reports — synthetic verification</title>
+<!-- APP_STYLES -->
+<style>#app{display:block!important}#page-kpi{display:block!important}body{font-family:Arial,sans-serif;background:#f4f6fa}.fixture-banner{padding:18px;background:#fff3d9}.fixture-main{padding:20px;max-width:1450px;margin:auto}</style></head><body><div class="fixture-banner">Local print verification · Synthetic records only · No tenant data or notification APIs</div><div id="app" class="fixture-main">
+<!-- KPI_PAGE -->
+</div><script>
+window.prof={id:'test-user',company_id:'test-company'};window.co={id:'test-company',name:'Synthetic Engineering Ltd',logo_url:'/assets/auris360-logo-final.png'};window.ccid=()=>co.id;window.isSA=()=>false;
+window.kpiObjectives=[{id:'o1',code:'1',name:'Strengthen safety culture and prevent occupational injuries'},{id:'o2',code:'2',name:'Protect the environment and develop workforce competency'}];
+window.kpiKPIs=Array.from({length:14},(_,i)=>({id:'k'+i,code:(i<7?'1.':'2.')+(i%7+1),objective_id:i<7?'o1':'o2',year:2025,company_id:co.id,name:['Perform regular safety toolbox talks','Report and investigate near misses','Complete work-at-height rescue drills','Review chemical handling controls','Verify lifting equipment certificates','Complete environmental inspections','Record worker competency assessments'][i%7],owner:i%2?'Operations Manager':'HSE Team',frequency:i===2?'quarterly':'monthly'}));
+window.kpiIndicators=kpiKPIs.map((k,i)=>({id:'i'+i,kpi_id:k.id,name:i%2?'Number of completed activities against the planned schedule':'Percentage of actions completed on time',unit:i%2?'count':'%',target_operator:'gte',target_value:i%2?4:95,ytd_method:i%2?'sum':'average'}));
+window.kpiMonthlyData=Object.fromEntries(kpiIndicators.map((ind,i)=>[ind.id,Object.fromEntries(Array.from({length:12},(_,m)=>[m+1,{month:m+1,actual:i===3&&m===0?0:i%2?(m%3)+2:80+(m%4)*5,ytd:i%2?(m+1)*3:88}]).filter((_,m)=>!(i===4&&m>7)))]));
+window.kpiConfigPublished={targets:{critical_override:true},cycles:{current_period_excluded:true}};window.isMgr=()=>false;window.kpiCanEdit=()=>false;window.kpiUpdateMetrics=()=>{};window.toast=m=>alert(m);
+window.api=async url=>url.startsWith('/kpis_v2')?kpiKPIs.map(k=>({...k,id:'old-'+k.id,year:2024})):url.startsWith('/kpi_indicators')?kpiIndicators.map(i=>({...i,id:'old-'+i.id,kpi_id:'old-'+i.kpi_id})):kpiIndicators.map(i=>({indicator_id:'old-'+i.id,kpi_id:'old-'+i.kpi_id,year:2024,month:12,actual:i.unit==='%'?75:24}));
+document.getElementById('year-sel').value='2025';
+// Expose the generated window in a same-origin frame for browser QA tools that
+// cannot enumerate window.open popups. The production report code is unchanged.
+window.open=function(){
+ const frame=document.createElement('iframe');frame.id='fixture-report-preview';frame.title='Generated KPI print preview';frame.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:100000;border:0;background:white';document.body.appendChild(frame);
+ const back=document.createElement('button');back.textContent='Back to test module';back.style.cssText='position:fixed;right:15px;top:12px;z-index:100001;padding:10px';document.body.appendChild(back);
+ const w=frame.contentWindow;w.close=()=>{frame.remove();back.remove();};back.onclick=w.close;return w;
+};
+</script><script src="/auris-module-event-handlers-batch-3.js"></script><script src="/kpi-year-comparison.js"></script><script src="/kpi-module-upgrade.js"></script></body></html>
