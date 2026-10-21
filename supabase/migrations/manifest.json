@@ -371,6 +371,11 @@
       "order": 74,
       "file": "20261020010000_settings_reliability.sql",
       "sha256": "f7774a420e33475801d47fa24101294dfd92419cd267ab0917ec379fa9323390"
+    },
+    {
+      "order": 75,
+      "file": "20261020020000_meetings_rpc_installation_repair.sql",
+      "sha256": "58000e24ee0f67ebac515a6116bd05ca6d2b94bcd7e520a6bfda7d658525ec8c"
     }
   ]
 }

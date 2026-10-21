@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: staging
+    # Every deployment uses the same isolated tenant and synthetic fixture IDs.
+    concurrency:
+      group: staging-acceptance-beoutmqttgfyyzndcdxu-tenant-persistence
+      cancel-in-progress: false
     env:
       STAGING_APP_URL: ${{ inputs.preview_url || github.event.deployment_status.target_url }}
       STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}

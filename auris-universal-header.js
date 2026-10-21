@@ -1,14 +1,12 @@
 (function(){
   'use strict';
   var pending=false;
-  var redundantRegisterSearch=['map-search','fire-cert-search','ptw-search','atex-search','fleet-search','tools-search','ra-search','lr-search','swms-search','ws-search','moc-search','kpi-x-search'];
   function visible(element){return !!element&&getComputedStyle(element).display!=='none'&&getComputedStyle(element).visibility!=='hidden';}
   function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
   function update(){
     pending=false;
     var page=document.querySelector('#app .page.active'),title=document.getElementById('auris-module-name'),crumb=document.getElementById('auris-module-crumb');
     if(!page||!title||!crumb)return;
-    redundantRegisterSearch.forEach(function(id){var input=page.querySelector('#'+id);if(input&&input.value){input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));}});
     var key=page.id.replace(/^page-/,''),heading=page.querySelector('.page-title'),module=typeof MODULES_DIR!=='undefined'&&MODULES_DIR.find(function(item){return item.k===key;}),name=key==='dashboard'?'Home':key==='kpi'?'Objectives & KPIs':clean(module&&module.l)||clean(heading&&heading.textContent)||clean(document.getElementById('mobile-page-title')?.textContent)||'Dashboard';
     var quick=document.getElementById('auris-module-quick-actions');
     if(quick){

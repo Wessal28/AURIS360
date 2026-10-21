@@ -2,8 +2,8 @@
 .auris-section-picker.auris-section-mirrored{display:none!important}
 #app .page .page-title.auris-title-mirrored,#page-kpi .kpi-x-title.auris-title-mirrored{display:none!important}
 #auris-sidebar-logo{display:block!important;object-fit:contain!important;object-position:center!important;background-image:none!important;background-size:auto!important}
-.page :is(#map-search,#fire-cert-search,#ptw-search,#atex-search,#fleet-search,#tools-search,#ra-search,#lr-search,#swms-search,#ws-search,#moc-search,#kpi-x-search){display:none!important}
-#page-kpi .kpi-x-field:has(#kpi-x-search),#page-legal .legx-filter-field.search{display:none!important}
+.page :is(#fire-cert-search,#ptw-search,#atex-search,#fleet-search,#tools-search,#ra-search,#swms-search,#ws-search,#moc-search,#kpi-x-search){display:none!important}
+#page-kpi .kpi-x-field:has(#kpi-x-search){display:none!important}
 #page-moc>.page-header>div:first-child,#page-actions>.page-header>div:first-child,#page-chemical>.page-header>div:first-child,#page-legal>.page-header>div:first-child,#page-sop>.page-header>div:first-child,#page-tools>.page-header>div:first-child{display:none!important}
 #page-moc>.page-header,#page-actions>.page-header,#page-chemical>.page-header,#page-legal>.page-header,#page-sop>.page-header,#page-tools>.page-header{justify-content:flex-end;min-height:0;padding:8px 0;margin:0}
 #page-fire .auris-fire-certificates-s-73f315dd9f{display:grid;grid-template-columns:minmax(150px,1fr) repeat(3,minmax(145px,1fr));align-items:center;gap:10px}

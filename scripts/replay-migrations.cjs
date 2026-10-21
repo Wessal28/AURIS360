@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { buildMeetingsRpcIsolationFixture } = require('./meetings-rpc-isolation-fixture.cjs');
 
 const root = path.resolve(__dirname, '..');
 const migrationDir = path.join(root, 'supabase', 'migrations');
@@ -34,6 +35,7 @@ function run(command, commandArgs, options = {}) {
     cwd: root,
     encoding: 'utf8',
     stdio: 'pipe',
+    input: options.input,
     maxBuffer: 32 * 1024 * 1024,
     env: process.env
   });
@@ -108,6 +110,25 @@ for (const entry of manifest.migrations) {
   console.log(`Applied ${entry.file}`);
 }
 
+// Reapply the repair against a fully upgraded schema: it must restore the RPC
+// without duplicate policies, routines or constraints, and without data writes.
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql')], {
+  label: 'idempotent HSE minutes RPC installation repair', quiet: true
+});
+
+// Reproduce a partial deployment without optional communication features. The
+// single rollback-only connection restores renamed tables, RPC, data and ACLs
+// before inventory and all remaining behavior checks run.
+run(psql, [...commonArgs, '--file', '-'], {
+  label: 'HSE minutes repair without optional communication tables',
+  quiet: true,
+  input: buildMeetingsRpcIsolationFixture({
+    repair: fs.readFileSync(path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql'), 'utf8'),
+    installationAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql'), 'utf8'),
+    behaviorAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_optional_modules.sql'), 'utf8')
+  })
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -145,6 +166,7 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'environment
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assurance.sql')], {label: 'noise approval, immutable evidence, revisions and reports'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_reliability.sql')], {label: 'meeting timezone, stable action identity, atomic saves and awareness access'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql')], {label: 'HSE minutes RPC named arguments, invoker policy and execution grants'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_workflow.sql')], {label: 'linked training attendance, evidence review and explicit competency decisions'});
 

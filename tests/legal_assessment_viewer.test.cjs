@@ -18,11 +18,14 @@ class Node{
   querySelectorAll(selector){if(selector==='tbody tr')return this.all().filter(node=>node.tagName==='TR'&&node.parentNode.tagName==='TBODY');return this.all().filter(node=>selector.split(',').some(part=>node.matches(part.trim())));}
   querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
 }
-function runtime(record={}){
+function runtime(record={},options={}){
   let company='company-a',role='admin',access=true,section=true,editable=true;const requests=[],previews=[],windows=[],edits=[],messages=[],doc={handlers:{},createElement:tag=>new Node(tag,doc),addEventListener:(type,handler)=>doc.handlers[type]=handler,removeEventListener:type=>delete doc.handlers[type],getElementById:id=>[...doc.head.all(),...doc.body.all()].find(node=>node.id===id)||null};doc.body=new Node('body',doc);doc.head=new Node('head',doc);doc.activeElement=doc.body;
   const saved={id:'assessment-a',company_id:'company-a',assessment_ref:'CA-2026-014',title:'Quarterly compliance review',status:'draft',assessment_date:'2026-10-20',assessment_type:'periodic',assessor:'Asha Shah',scope:'Operations and maintenance',total_requirements:76,compliant_count:35,partial_count:3,non_compliant_count:0,na_count:38,overall_score:96,compliance_score:0,methodology:'Evidence and interview review',findings:'Three partial findings',recommendations:'Complete recorded actions',revision:2,...record};
-  const scope={document:doc,prof:{id:'user-a',role:'admin'},ccid:()=>company,activeRole:()=>role,canAccessPage:()=>access,AurisUserAccess:{sectionAllowed:()=>section,allowed:()=>editable},api:async(path,options)=>{requests.push({path,options});return [structuredClone(saved)];},lcaAllData:[{...saved,title:'STALE cached title'}],lcaEdit:async id=>edits.push(id),AurisModuleReports:{reserve:()=>{const window={closed:false,close(){this.closed=true;}};windows.push(window);return window;},preview:async options=>{previews.push(options);return true;}},toast:message=>messages.push(message)};scope.window=scope;vm.createContext(scope);vm.runInContext(source,scope);
-  return {scope,api:scope.AurisLegalAssessmentViewer,record:saved,doc,requests,previews,windows,edits,messages,setCompany:value=>company=value,setRole:value=>role=value,deny:()=>access=false,denySection:()=>section=false,denyEdit:()=>editable=false,modal:()=>doc.getElementById('legal-assessment-viewer'),buttons:()=>doc.getElementById('legal-assessment-viewer')?.querySelectorAll('button')||[],button:label=>doc.getElementById('legal-assessment-viewer')?.querySelectorAll('button').find(node=>node.textContent===label)};
+  const profile={id:'user-a',role:'admin'},scope={document:doc,setTimeout,clearTimeout,prof:profile,ccid:()=>company,activeRole:()=>role,canAccessPage:()=>access,AurisUserAccess:{sectionAllowed:()=>section,allowed:()=>editable},api:async(path,options)=>{requests.push({path,options});return [structuredClone(saved)];},lcaAllData:[{...saved,title:'STALE cached title'}],lcaEdit:async id=>edits.push(id),AurisModuleReports:{reserve:()=>{const window={closed:false,close(){this.closed=true;}};windows.push(window);return window;},preview:async options=>{previews.push(options);return true;}},toast:message=>messages.push(message)};scope.window=scope;vm.createContext(scope);
+  if(options.lexicalProfile){scope.fixtureProfile=profile;delete scope.prof;vm.runInContext('let prof=fixtureProfile;',scope);delete scope.fixtureProfile;}
+  if(options.coreLoader){const host=doc.createElement('div');host.id='lca-list';host.innerHTML='Loading...';doc.body.appendChild(host);const core=fs.readFileSync('auris-core.js','utf8'),start=core.indexOf('async function lcaLoad(){');Object.assign(scope,{cf:()=> '&company_id=eq.'+company,isMgr:()=>false,escH:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),ohIsArchivedText:v=>String(v||'').startsWith('[Archived'),setupFriendlyMessage:(label,message)=>label+': '+message,apiAllRows:async path=>{requests.push({path});return [structuredClone(saved)];}});vm.runInContext(core.slice(start,core.indexOf('function lcaCalcScore()',start)),scope);}
+  vm.runInContext(source,scope);
+  return {scope,profile,api:scope.AurisLegalAssessmentViewer,record:saved,doc,requests,previews,windows,edits,messages,setCompany:value=>company=value,setRole:value=>role=value,deny:()=>access=false,denySection:()=>section=false,denyEdit:()=>editable=false,modal:()=>doc.getElementById('legal-assessment-viewer'),buttons:()=>doc.getElementById('legal-assessment-viewer')?.querySelectorAll('button')||[],button:label=>doc.getElementById('legal-assessment-viewer')?.querySelectorAll('button').find(node=>node.textContent===label)};
 }
 
 test('the dedicated report preserves saved reported values, human labels and narratives without UUID metadata',()=>{
@@ -54,20 +57,20 @@ test('company, role, user or read-permission changes during fetch reject stale r
 });
 
 test('read-only view opens the fresh assessment and refreshes exact saved HTML before manual print preview',async()=>{
-  const r=runtime();assert.equal(await r.api.open('assessment-a'),true);assert.equal(r.doc.getElementById('lav-title').textContent,'Quarterly compliance review');assert.ok(r.button('Edit assessment'));r.record.findings='Newly saved findings for printing';await r.button('Print preview').handlers.click();assert.equal(r.requests.length,2);assert.equal(r.previews.length,1);assert.equal(r.previews[0].moduleKey,'legal');assert.equal(r.previews[0].section,'assessments');assert.equal(r.previews[0].sourceLabel,'Saved assessment CA-2026-014');assert.equal(r.previews[0].html,r.api.build(r.record).html);assert.match(r.previews[0].html,/Newly saved findings for printing/);assert.equal(r.previews[0].context.company,'company-a');assert.equal(r.previews[0].preparedWindow,r.windows[0]);assert.match(r.modal().textContent,/Print preview opened/);assert.equal(r.edits.length,0);
+  const r=runtime();assert.equal(await r.api.open('assessment-a'),true);assert.equal(r.doc.getElementById('lav-title').textContent,'Quarterly compliance review');assert.ok(r.button('Edit assessment'));r.record.findings='Newly saved findings for printing';await r.button('Print assessment').handlers.click();assert.equal(r.requests.length,2);assert.equal(r.previews.length,1);assert.equal(r.previews[0].moduleKey,'legal');assert.equal(r.previews[0].section,'assessments');assert.equal(r.previews[0].sourceLabel,'Saved assessment CA-2026-014');assert.equal(r.previews[0].html,r.api.build(r.record).html);assert.match(r.previews[0].html,/Newly saved findings for printing/);assert.equal(r.previews[0].context.company,'company-a');assert.equal(r.previews[0].preparedWindow,r.windows[0]);assert.match(r.modal().textContent,/Print preview opened/);assert.equal(r.edits.length,0);
   await r.button('Edit assessment').handlers.click();assert.deepEqual(r.edits,['assessment-a']);assert.equal(r.modal(),null);
 });
 
 test('print refresh reserves its window before awaiting and closes it on failure, context change or viewer close',async()=>{
   for(const invalidate of [r=>r.setCompany('company-b'),r=>r.api.close()]){
-    const r=runtime();await r.api.open('assessment-a');let resolve;const pending=new Promise(done=>resolve=done);r.scope.api=()=>pending;const printing=r.button('Print preview').handlers.click();assert.equal(r.windows.length,1,'The preview is reserved synchronously in the click handler');invalidate(r);resolve([r.record]);await printing;assert.equal(r.previews.length,0);assert.equal(r.windows[0].closed,true);
+    const r=runtime();await r.api.open('assessment-a');let resolve;const pending=new Promise(done=>resolve=done);r.scope.api=()=>pending;const printing=r.button('Print assessment').handlers.click();assert.equal(r.windows.length,1,'The preview is reserved synchronously in the click handler');invalidate(r);resolve([r.record]);await printing;assert.equal(r.previews.length,0);assert.equal(r.windows[0].closed,true);
   }
-  const failed=runtime();await failed.api.open('assessment-a');failed.scope.api=async()=>{throw Error('Save service unavailable');};await failed.button('Print preview').handlers.click();assert.equal(failed.windows[0].closed,true);assert.equal(failed.previews.length,0);assert.match(failed.modal().textContent,/Save service unavailable/);
+  const failed=runtime();await failed.api.open('assessment-a');failed.scope.api=async()=>{throw Error('Save service unavailable');};await failed.button('Print assessment').handlers.click();assert.equal(failed.windows[0].closed,true);assert.equal(failed.previews.length,0);assert.match(failed.modal().textContent,/Save service unavailable/);
 });
 
 test('approved or read-only access hides Edit, and changed context blocks both printing and editing',async()=>{
-  for(const setup of [r=>r.record.status='approved',r=>r.denyEdit()]){const r=runtime();setup(r);await r.api.open('assessment-a');assert.equal(r.button('Edit assessment'),undefined);assert.ok(r.button('Print preview'));}
-  const r=runtime();await r.api.open('assessment-a');const edit=r.button('Edit assessment'),print=r.button('Print preview');r.setCompany('company-b');await print.handlers.click();await edit.handlers.click();assert.equal(r.previews.length,0);assert.equal(r.edits.length,0);assert.match(r.modal().textContent,/changed/);
+  for(const setup of [r=>r.record.status='approved',r=>r.denyEdit()]){const r=runtime();setup(r);await r.api.open('assessment-a');assert.equal(r.button('Edit assessment'),undefined);assert.ok(r.button('Print assessment'));}
+  const r=runtime();await r.api.open('assessment-a');const edit=r.button('Edit assessment'),print=r.button('Print assessment');r.setCompany('company-b');await print.handlers.click();await edit.handlers.click();assert.equal(r.previews.length,0);assert.equal(r.edits.length,0);assert.match(r.modal().textContent,/changed/);
 });
 
 test('a failed opening is recoverable and a closed or superseded request never restores stale content',async()=>{
@@ -81,7 +84,39 @@ test('the register receives a keyboard-accessible View assessment action without
 });
 
 test('the viewer owns its lazy stylesheet and follows the real access policy edit signature',async()=>{
-  const r=runtime(),style=r.doc.getElementById('legal-assessment-viewer-style');assert.equal(style.tagName,'LINK');assert.equal(style.rel,'stylesheet');assert.equal(style.href,'/legal-assessment-viewer.css?v=20261020-1');assert.equal(r.doc.head.children.length,1);
+  const r=runtime(),style=r.doc.getElementById('legal-assessment-viewer-style');assert.equal(style.tagName,'LINK');assert.equal(style.rel,'stylesheet');assert.equal(style.href,'/legal-assessment-viewer.css?v=20261020-1&legal-meetings-fix-1');assert.equal(r.doc.head.children.length,1);
   const policy=require('../auris-user-access.js');r.scope.AurisUserAccess=policy;r.scope.prof.permissions={access_v1:{legal:{view:true,edit:true},'legal.assessments':{view:true,edit:false}}};await r.api.open('assessment-a');assert.equal(r.button('Edit assessment'),undefined,'A module-level edit grant cannot override assessment-specific denial');
   r.scope.prof.permissions.access_v1['legal.assessments'].edit=true;await r.api.open('assessment-a');assert.ok(r.button('Edit assessment'));r.scope.prof.permissions.access_v1.legal.edit=false;await r.button('Edit assessment').handlers.click();assert.equal(r.edits.length,0);assert.match(r.modal().textContent,/access to edit.*changed/);assert.equal(r.doc.head.children.length,1);
+});
+
+test('the actual core assessment loader works with the application lexical profile and exact assessment printing',async()=>{
+  const r=runtime({worksheet:[{status:'partial',controls:'Saved original controls',requirement_snapshot:{reference:'LEG-014',requirement:'Saved original requirement'}}]},{lexicalProfile:true,coreLoader:true});
+  assert.equal(r.scope.prof,undefined,'A global let profile is not a window property');assert.equal(r.api.context().user,'user-a');await r.scope.lcaLoad();
+  const host=r.doc.getElementById('lca-list');assert.match(host.innerHTML,/Quarterly compliance review/);assert.doesNotMatch(host.innerHTML,/Loading/);assert.equal(host.attributes['aria-busy'],'false');assert.match(r.requests[0].path,/^\/compliance_assessments\?select=\*&company_id=eq.company-a/);
+  r.scope.AurisUserAccess.allowed=(profile,module,action)=>{assert.equal(profile,r.profile);assert.equal(action,'edit');return ['legal','legal.assessments'].includes(module);};await r.api.open('assessment-a');assert.ok(r.button('Edit assessment'));r.record.worksheet[0].controls='Freshly saved exact assessment controls';await r.button('Print assessment').handlers.click();
+  assert.match(r.previews[0].html,/Freshly saved exact assessment controls/);assert.match(r.previews[0].html,/Saved original requirement/);assert.equal(r.previews[0].context.user,'user-a');assert.equal(r.previews[0].preparedWindow.closed,false);
+});
+
+function manualTimers(r){const timers=[];r.scope.setTimeout=(callback,delay)=>{const timer={callback,delay};timers.push(timer);return timer;};r.scope.clearTimeout=timer=>{if(timer)timer.cleared=true;};return timers;}
+test('an unresponsive core assessment load becomes a recoverable error and late data cannot overwrite a retry',async()=>{
+  const r=runtime({},{lexicalProfile:true,coreLoader:true}),timers=manualTimers(r),host=r.doc.getElementById('lca-list');let resolve;
+  r.scope.apiAllRows=()=>new Promise(done=>resolve=done);const first=r.scope.lcaLoad();assert.equal(host.attributes['aria-busy'],'true');assert.equal(timers[0].delay,15000);timers[0].callback();await first;
+  assert.equal(host.attributes['aria-busy'],'false');assert.match(host.textContent,/did not respond within 15 seconds/);const retry=host.querySelectorAll('button').find(x=>x.textContent==='Retry assessments');assert.ok(retry);
+  r.scope.apiAllRows=async()=>[{...r.record,title:'Recovered assessment'}];await retry.handlers.click();assert.match(host.innerHTML,/Recovered assessment/);
+  resolve([{...r.record,title:'OLD delayed response'}]);await new Promise(done=>setImmediate(done));assert.match(host.innerHTML,/Recovered assessment/);assert.doesNotMatch(host.innerHTML,/OLD delayed response/);assert.equal(r.scope.lcaAllData[0].title,'Recovered assessment');
+});
+
+test('core assessment read failures preserve a useful retry without a misleading setup-only message',async()=>{
+  const r=runtime({},{coreLoader:true}),host=r.doc.getElementById('lca-list');r.scope.apiAllRows=async()=>{throw Error('Connection interrupted during assessment loading');};await r.scope.lcaLoad();
+  assert.match(host.textContent,/Unable to load compliance assessments/);assert.match(host.textContent,/Connection interrupted/);assert.equal(host.attributes['aria-busy'],'false');assert.ok(host.querySelectorAll('button').some(x=>x.textContent==='Retry assessments'));
+});
+
+test('denied assessment access is explicit and concurrent same-company loads retain only the latest result',async()=>{
+  const denied=runtime({},{coreLoader:true});denied.denySection();await denied.scope.lcaLoad();assert.equal(denied.requests.length,0);assert.match(denied.doc.getElementById('lca-list').textContent,/access to Compliance Assessments/);
+  const r=runtime({},{coreLoader:true});let resolve;r.scope.apiAllRows=()=>new Promise(done=>resolve=done);const old=r.scope.lcaLoad();r.scope.apiAllRows=async()=>[{...r.record,title:'Latest requested record'}];await r.scope.lcaLoad();resolve([{...r.record,title:'Obsolete response'}]);await old;assert.match(r.doc.getElementById('lca-list').innerHTML,/Latest requested record/);assert.doesNotMatch(r.doc.getElementById('lca-list').innerHTML,/Obsolete response/);
+});
+
+test('unresponsive exact assessment loading and print refresh stop loading with a retryable message',async()=>{
+  const r=runtime(),timers=manualTimers(r);r.scope.api=()=>new Promise(()=>{});const loading=r.api.open('assessment-a');timers[0].callback();await loading;assert.ok(r.button('Retry'));assert.match(r.modal().textContent,/did not respond within 15 seconds/);
+  r.scope.api=async()=>[r.record];await r.api.open('assessment-a');r.scope.api=()=>new Promise(()=>{});const printing=r.button('Print assessment').handlers.click(),timer=timers.at(-1);timer.callback();await printing;assert.equal(r.windows[0].closed,true);assert.equal(r.button('Print assessment').disabled,false);assert.match(r.modal().textContent,/did not respond within 15 seconds/);assert.equal(r.previews.length,0);
 });

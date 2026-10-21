@@ -5,10 +5,12 @@ function fixture(){
   const index=read('index.html'),core=read('auris-core.js');
   function slice(text,start,end){const a=text.indexOf(start),b=text.indexOf(end,a);if(a<0||b<0)throw Error('Fixture source boundary missing: '+start);return text.slice(a,b);}
   const styles=[...index.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map(match=>match[0]);
+  for(const asset of ['auris-module-layout.css','auris-universal-header.css'])if(!styles.some(link=>link.includes(asset)))throw Error('Actual header stylesheet missing: '+asset);
+  const moduleBar=slice(index,'<div class="auris-module-bar"','<!-- ------------------------------------------------------ -->');
   const actionPage=slice(index,'<div id="page-actions"','<!-- -- DETAIL / FORM VIEW -- -->')+'</div>';
   const chemicalPage=slice(index,'<div id="page-chemical"','<div id="page-legal"');
   const actual=[slice(core,'const MAP_STATUS_CFG=','// -- Entry'),slice(core,'function chemRenderMetrics(){','function chemClearAIReview(){'),slice(core,"const CHEM_EXPOSURE_BACKUP_PREFIX=",'async function loadChemical(')].join('\n');
-  return read('tests/fixtures/action-chemical-print-reports.html').replace('<!-- APP_STYLES -->',styles.join('\n')).replace('<!-- ACTION_PAGE -->',actionPage).replace('<!-- CHEMICAL_PAGE -->',chemicalPage).replace('/* ACTUAL_RENDERERS */',actual);
+  return read('tests/fixtures/action-chemical-print-reports.html').replace('<!-- APP_STYLES -->',styles.join('\n')).replace('<!-- MODULE_BAR -->',moduleBar).replace('<!-- ACTION_PAGE -->',actionPage).replace('<!-- CHEMICAL_PAGE -->',chemicalPage).replace('/* ACTUAL_RENDERERS */',actual);
 }
 http.createServer((request,response)=>{
   response.setHeader('Cache-Control','no-store');if(request.method!=='GET'){response.writeHead(405).end();return;}
