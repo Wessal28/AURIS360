@@ -7,6 +7,12 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
+test('permit reminder deployment requires readable tenant-scoped approval snapshots',()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source,/20261013100000_permit_reference_approval_snapshot\.sql if missing/);
+  assert.match(source,/permits\?select=id,company_id,linked_reference_snapshot&\$\{companyFilter\}&limit=1/);
+});
+
 test('administrator preview diagnostics distinguish setup prerequisites without logging response details', async()=>{
   const source=read('scripts/verify-staging-acceptance.cjs'),start=source.indexOf('async function responseText('),end=source.indexOf('async function jsonRequest(',start);
   for(const code of ['linking_setup_required','administration_setup_required','private-token-secret']){

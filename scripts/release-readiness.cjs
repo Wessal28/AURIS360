@@ -22,6 +22,7 @@ const testFiles = [
   'tests/meeting_print_preview.test.cjs',
   'tests/meetings_rpc_readiness.test.cjs',
   'tests/meetings_rpc_installation.test.cjs',
+  'tests/permit_followups.test.cjs',
   'tests/people_user_access.test.cjs',
   'tests/people_user_linking_api.test.cjs',
   'tests/people_user_linking_contract.test.cjs',

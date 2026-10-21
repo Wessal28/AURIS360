@@ -152,6 +152,7 @@ if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
 
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'inspection_follow_up.sql')], {label: 'recurring inspection and finding verification'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'permit_reference_snapshot.sql')], {label: 'approval-bound permit snapshots and same-company revision protection'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_access.sql')], {label: 'People onboarding and user access protection'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_linking.sql')], {label: 'atomic account/People linking, ambiguity, history and company protection'});
 run(process.execPath, ['scripts/verify-people-user-link-concurrency.cjs'], {label: 'competing account/People identity links'});
