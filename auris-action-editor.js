@@ -16,17 +16,17 @@ function mapEditorContext(){return {companyId:String(ccid()||''),userId:String(p
 function mapEditorApprover(role){return ['manager','hse_officer','hse_manager','site_manager','admin','sephs_admin'].includes(role);}
 function mapEditorManager(role){return ['manager','hse_manager','admin','sephs_admin'].includes(role);}
 function mapEditorForm(){
-  var data={};document.querySelectorAll('#map-form3view input[id],#map-form3view select[id],#map-form3view textarea[id]').forEach(function(el){data[el.id]=el.type==='checkbox'?el.checked:el.value;});return data;
+  var data={};Object.keys(MAP_EDITOR_FIELDS).concat(['mf-assigned-to','mf-escalated-to']).concat(mapClosureControlIds()).forEach(function(id){var el=document.getElementById(id);if(el)data[id]=el.type==='checkbox'?!!el.checked:String(el.value==null?'':el.value);});return data;
 }
-function mapEditorDirty(){return !!mapEditorInitial&&JSON.stringify(mapEditorForm())!==JSON.stringify(mapEditorInitial);}
+function mapEditorDirty(){return !!mapEditorInitial&&(JSON.stringify(mapEditorForm())!==JSON.stringify(mapEditorInitial)||mapEvidenceDraft());}
 function mapEditorMessage(message,error){var el=document.getElementById('map-editor-feedback');if(el){el.textContent=message;el.classList.toggle('is-error',!!error);el.setAttribute('role',error?'alert':'status');}}
 function mapEditorRefresh(){
   if(!mapEditorSession)return;
   var record=mapEditorSession.record(),status=record.status||'open',review=['pending_verification','pending_closure'].includes(status),terminal=['closed','cancelled'].includes(status),context=mapEditorContext();
   var contextValid=true;try{mapEditorSession.assertCurrent();}catch(_){contextValid=false;}
   document.querySelectorAll('#map-form3view input,#map-form3view select,#map-form3view textarea').forEach(function(el){
-    var reviewField=status==='pending_verification'?['mf-verif-method','mf-verif-notes'].includes(el.id):['mf-closure-notes','mf-closure-rejected','mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].includes(el.id);
-    el.disabled=mapEditorBusy||!contextValid||terminal||(review&&(!reviewField||!mapEditorApprover(context.role)));
+    var reviewField=status==='pending_verification'?['mf-verif-method','mf-verif-notes'].includes(el.id):['mf-closure-notes','mf-closure-rejected'].concat(mapClosureControlIds()).includes(el.id);
+    el.disabled=mapEditorBusy||mapEvidenceBusy||!contextValid||terminal||(review&&(!reviewField||!mapEditorApprover(context.role)));
   });
   ['af-status','mf-verified-by','mf-verified-date','mf-verif-status','mf-closure-by','mf-closure-date','mf-completed-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.disabled=true;});
   if(record.source_id||record.related_id){['mf-source-type','mf-source-ref'].forEach(function(id){document.getElementById(id).disabled=true;});}
@@ -34,8 +34,8 @@ function mapEditorRefresh(){
   document.querySelectorAll('#map-form3view button').forEach(function(el){
     if(el.id?.startsWith('map-ftab-'))return;
     var handler=el.getAttribute('data-auris-onclick'),action=el.getAttribute('data-auris-named-action');
-    el.disabled=mapEditorBusy;
-    if(handler==='h0937'||handler==='h0936')el.disabled=mapEditorBusy||!contextValid||terminal||(review&&!mapEditorApprover(context.role));
+    el.disabled=mapEditorBusy||mapEvidenceBusy;
+    if(handler==='h0937'||handler==='h0936')el.disabled=mapEditorBusy||mapEvidenceBusy||!contextValid||terminal||(review&&!mapEditorApprover(context.role));
     if(['h0953','h0954','h0955','h0956'].includes(handler))el.disabled=mapEditorBusy||!contextValid||!mapEditorApprover(context.role)||(Number(handler.slice(1))<955?status!=='pending_verification':status!=='pending_closure');
     if(el.closest('#map-effectiveness-stars'))el.disabled=mapEditorBusy||!contextValid||terminal||review;
     if(handler==='h0946')el.disabled=mapEditorBusy||!contextValid||!['open','in_progress'].includes(status);
@@ -43,24 +43,25 @@ function mapEditorRefresh(){
   });
   var discard=document.getElementById('map-editor-discard');if(discard)discard.disabled=mapEditorBusy;
   var state=document.getElementById('map-editor-state');if(state)state.textContent=mapEditorBusy?'Saving…':!contextValid?'Session changed — reopen action':terminal?'Read only — '+status.replace(/_/g,' '):mapEditorDirty()?'Unsaved changes':record.id?'All changes saved':'New action — not saved';
+  mapReadinessRender(record);
   var save=document.querySelector('#map-form3view [data-auris-onclick="h0937"]');if(save)save.setAttribute('aria-label','Save action');
 }
 function mapEditorBegin(record){
   mapEditorSession=AurisRecordEditSession.create({table:'action_tracker',record:record||{},context:mapEditorContext,request:api,online:function(){return navigator.onLine!==false;},uuid:function(){return crypto.randomUUID();},now:function(){return new Date().toISOString();}});
   mapEditorReference=record?.action_ref||null;
-  mapEditorInitial=mapEditorForm();mapEditorBusy=false;
+  mapClosureHydrate(record||{});mapEditorInitial=mapEditorForm();mapEditorBusy=false;
   var form=document.getElementById('map-form3view');
   if(!form.dataset.editorBound){
     form.dataset.editorBound='true';form.addEventListener('input',mapEditorRefresh);form.addEventListener('change',mapEditorRefresh);
     form.addEventListener('keydown',function(event){if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();mapSave();}});
     document.getElementById('map-editor-discard').addEventListener('click',mapEditorDiscard);
-    window.addEventListener('beforeunload',function(event){if(mapEditorDirty()||mapEditorBusy){event.preventDefault();event.returnValue='';}});
+    window.addEventListener('beforeunload',function(event){if(mapEditorDirty()||mapEditorBusy||mapEvidenceBusy){event.preventDefault();event.returnValue='';}});
     form.querySelectorAll('.form3group').forEach(function(group){var label=group.querySelector('label'),input=group.querySelector('input,select,textarea');if(label&&input?.id&&!label.htmlFor)label.htmlFor=input.id;});
   }
-  mapEditorMessage('Use Save for your changes. Workflow buttons save the current tab before moving the action.');mapEditorRefresh();
+  mapEvidenceMount(record||{});mapEditorMessage('Use Save for your changes. Workflow buttons save the current tab before moving the action.');mapEditorRefresh();
 }
 async function mapEditorLeave(){
-  if(mapEditorBusy){toast('Wait for the action save to finish.',false);return false;}
+  if(mapEditorBusy||mapEvidenceBusy){toast('Wait for the action or evidence save to finish.',false);return false;}
   if(!mapEditorDirty())return true;
   var session=mapEditorSession;
   var discard=await appConfirmAction({title:'Unsaved action changes',message:'Discard your changes and leave this action?',detail:'Choose Keep editing to return to the draft and save it.',confirmText:'Discard changes',cancelText:'Keep editing'});
@@ -108,8 +109,9 @@ function mapEditorRead(command){
   var issuer=mapEditorPeople.find(function(p){return p.id===body.assigned_by;});if(issuer)body.assigned_by=issuer.last_name+', '+issuer.first_name;
   if(!record.id)body.source_module={incident:'event',audit:'inspection'}[body.source_type]||(['inspection','event','risk_assessment','investigation','meeting','permit','noise_survey','kpi'].includes(body.source_type)?body.source_type:'manual');
   if(!record.id||form['mf-location']!==mapEditorInitial['mf-location'])Object.assign(body,locationIdentityPayload(body.location,null));
+  body.closure_checklist=mapClosureRead();
   body.status=record.status||'open';
-  if(!record.id){body.verification_status=body.requires_verification?'pending':'not_required';mapEditorReference=mapEditorReference||('MAP-'+mapActionTypeCode(body.action_type)+'-'+new Date().getFullYear()+'-'+Date.now()+String(Math.floor(Math.random()*10000)).padStart(4,'0'));body.action_ref=mapEditorReference;}
+  if(!record.id){body.verification_status=body.requires_verification?'pending':'not_required';mapEditorReference=mapEditorReference||('MAP-'+mapActionTypeCode(body.action_type)+'-'+new Date().getFullYear()+'-'+crypto.randomUUID().replace(/-/g,'').slice(0,12).toUpperCase());body.action_ref=mapEditorReference;}
   return body;
 }
 function mapEditorWorkflow(record,body,command,reason){
@@ -130,7 +132,7 @@ function mapEditorWorkflow(record,body,command,reason){
   if(command==='fail_verification')Object.assign(body,{verification_status:'failed',verification_notes:(body.verification_notes||'')+'\nFAILED: '+reason,verified_by:actor,verified_date:today});
   if(command==='close'){
     if(record.requires_verification!==false&&record.verification_status!=='passed')throw new Error('Complete the required verification before closing this action.');
-    if(['mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].filter(function(id){return document.getElementById(id)?.checked;}).length<3)mapEditorFieldError('mcc-1','Confirm at least three closure checklist items.');
+    var missing=mapClosureIssues(Object.assign({},record,body));if(missing.length)mapEditorFieldError('mcc-'+missing[0].index,missing.map(function(item){return item.message;}).join(' '));
     if(!body.closure_notes)mapEditorFieldError('mf-closure-notes','Add a closure summary before approving.');
     Object.assign(body,{closure_approved_by:actor,closure_approved_date:today,completed_date:today,progress_pct:100});
   }
@@ -160,7 +162,7 @@ async function mapEditorLoadWorkflow(session,command){
   if(session!==mapEditorSession)throw new Error('The action editor changed. Reopen the action.');
 }
 async function mapEditorCommit(command){
-  if(!mapEditorSession||mapEditorBusy)return false;
+  if(!mapEditorSession||mapEditorBusy||mapEvidenceBusy)return false;
   var session=mapEditorSession,before=session.record(),reason='';
   try{
     session.assertCurrent();if(!workflowCanMutate('actions','actions'))return false;
@@ -189,7 +191,8 @@ async function mapEditorCommit(command){
     [['af-status',saved.status],['mf-verif-status',saved.verification_status],['mf-verified-date',saved.verified_date],['mf-closure-date',saved.closure_approved_date],['mf-completed-date',saved.completed_date],['mf-progress',saved.progress_pct],['mf-verif-notes',saved.verification_notes],['mf-closure-rejected',saved.closure_rejected_reason]].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.value=pair[1]??'';});
     document.getElementById('mf-escalated').checked=!!saved.escalated;
     mapEditorSetPersonValue('mf-verified-by',saved.verified_by);mapEditorSetPersonValue('mf-closure-by',saved.closure_approved_by);
-    mapUpdateProgress(saved.progress_pct);mapEditorInitial=mapEditorForm();
+    mapUpdateProgress(saved.progress_pct);mapClosureHydrate(saved);mapEditorInitial=mapEditorForm();
+    mapRefreshMetrics();mapRenderList();mapEvidenceRecord=saved;
     document.getElementById('map-form3title').textContent=saved.title||saved.description;
     document.getElementById('map-form3ref').textContent=mapDisplayRef(saved);
     mapRenderWorkflowBar(saved);mapRenderActionButtons(saved);
@@ -197,8 +200,7 @@ async function mapEditorCommit(command){
     if(result.created||result.recovered){try{connectedRecordsMount('map-connected-records',relationshipEndpoint('action','action_tracker',saved.id,mapDisplayRef(saved)),{allowCreate:true});}catch(_){warnings.push('Reopen the action to load connected records.');}}
     if(!result.unchanged){
       var logNotes=reason||null;
-      if(command==='close')logNotes='Closure confirmations: '+['Action completed','Evidence available','Verification completed','Root cause addressed','Similar areas reviewed','No further risk'].filter(function(_,i){return document.getElementById('mcc-'+(i+1))?.checked;}).join('; ')+'. '+(saved.closure_notes||'');
-      try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:saved.company_id,action_id:saved.id,activity_type:result.created?'Action created':'Action '+command.replace(/_/g,' '),performed_by:prof?.full_name||prof?.id,old_value:before.status||null,new_value:saved.status,notes:logNotes}});}catch(error){warnings.push('Activity history could not be updated.');}
+      try{if(command!=='close')await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:saved.company_id,action_id:saved.id,activity_type:result.created?'Action created':'Action '+command.replace(/_/g,' '),performed_by:prof?.full_name||prof?.id,old_value:before.status||null,new_value:saved.status,notes:logNotes}});}catch(error){warnings.push('Activity history could not be updated.');}
       session.assertCurrent();
       try{await mapAudit(command==='close'?'complete':'update','Action '+command.replace(/_/g,' ')+': '+mapDisplayRef(saved),saved,{changed_fields:mapChangedFields(before,body),old_status:before.status,new_status:saved.status});}catch(error){warnings.push('Audit confirmation is unavailable.');}
       session.assertCurrent();
@@ -207,6 +209,69 @@ async function mapEditorCommit(command){
     session.assertCurrent();mapEditorMessage((result.recovered?'Previous save confirmed. ':result.unchanged?'No changes to save. ':'Action saved. ')+warnings.join(' '),warnings.length>0);
     if(command==='verify')mapFormTab('closure',document.getElementById('map-ftab-closure'));
     mapLoadLog(saved.id);return true;
-  }catch(error){mapEditorMessage(error.message||'The action could not be saved. Your draft remains in the editor.',true);return false;}
+  }catch(error){
+    var message=error.message||'The action could not be saved.';
+    if(/timeout|timed out|network|fetch|connection|502|503|504/i.test(message)){
+      try{session.assertCurrent();var persisted=before.id?await api('/action_tracker?select=id,status,progress_pct,verification_status&company_id=eq.'+encodeURIComponent(mapEditorContext().companyId)+'&id=eq.'+encodeURIComponent(before.id)+'&limit=1'):[];session.assertCurrent();if(session!==mapEditorSession)return false;var last=persisted&&persisted[0];message=last?'Save confirmation failed. Last recorded state: '+mapStatusLabel(last.status)+', '+Number(last.progress_pct||0)+'% complete, verification '+mapStatusLabel(last.verification_status)+'. Reopen the record to confirm before retrying.':'Save could not be confirmed. Reconnect and use Save to confirm the previous attempt before retrying a workflow decision.';}catch(_){message='Save could not be confirmed. Reconnect and reopen the action to check its recorded state before retrying.';}
+    }
+    mapEditorMessage(message+' Your entered changes remain in this editor.',true);return false;}
   finally{if(session===mapEditorSession){mapEditorBusy=false;mapEditorRefresh();}}
+}
+
+// Closure evidence is a persisted decision, never an inferred count of boxes.
+var MAP_CLOSURE_ITEMS=['Action completed as described','Evidence reviewed and available','Required verification completed','Root cause addressed','Similar areas / tasks reviewed','Residual risk and follow-up reviewed'];
+function mapClosureControlIds(){return MAP_CLOSURE_ITEMS.flatMap(function(_,i){return ['mcc-'+(i+1),'mcc-na-'+(i+1),'mcc-reason-'+(i+1)];});}
+function mapClosureRead(){var result={};MAP_CLOSURE_ITEMS.forEach(function(_,i){var n=i+1;result[n]={confirmed:!!document.getElementById('mcc-'+n)?.checked,not_applicable:!!document.getElementById('mcc-na-'+n)?.checked,reason:String(document.getElementById('mcc-reason-'+n)?.value||'').trim()};});return result;}
+function mapClosureHydrate(record){var checks=record.closure_checklist||{};MAP_CLOSURE_ITEMS.forEach(function(_,i){var n=i+1,item=checks[n]||{},yes=document.getElementById('mcc-'+n),na=document.getElementById('mcc-na-'+n),reason=document.getElementById('mcc-reason-'+n);if(yes)yes.checked=item.confirmed===true;if(na)na.checked=item.not_applicable===true;if(reason)reason.value=item.reason||'';});}
+function mapClosureIssues(record){var issues=[],checks=record.closure_checklist||{};MAP_CLOSURE_ITEMS.forEach(function(label,i){var n=i+1,item=checks[n]||{},required=n<=2||(n===3&&record.requires_verification!==false),confirmed=item.confirmed===true,na=item.not_applicable===true;if(confirmed&&na||required&&!confirmed||!required&&!confirmed&&(!na||!String(item.reason||'').trim())||required&&na)issues.push({index:n,message:label+': '+(required?'confirmation is required.':'confirm or mark N/A with a reason.')});});return issues;}
+function mapStatusLabel(value){return String(value||'not recorded').replace(/_/g,' ').replace(/^\w/,function(c){return c.toUpperCase();});}
+function mapReadinessRender(record){
+ var el=document.getElementById('map-readiness');if(!el)return;var form=mapEditorForm(),items=[],status=record.status||'open',heading='Submission readiness';
+ if(['closed','cancelled'].includes(status)){el.textContent=mapStatusLabel(status)+' — retained for history.';return;}
+ if(status==='open'){heading='Start readiness';items.push([!!String(form['mf-title']||'').trim(),'Action described']);items.push([!!form['mf-target-date'],'Target date entered']);}
+ else{
+  items.push([Number(form['mf-progress'])===100,'Progress is 100%']);items.push([!!String(form['mf-evidence']||'').trim(),'Completion evidence described / referenced']);
+  if(status==='pending_verification'){heading='Verification readiness';items.push([!!String(form['mf-verif-notes']||'').trim(),'Verification notes entered']);}
+  if(status==='pending_closure'){heading='Closure readiness';if(record.requires_verification!==false)items.push([record.verification_status==='passed','Verification passed']);var missing=mapClosureIssues(Object.assign({},record,{closure_checklist:mapClosureRead()}));items.push([!missing.length,'All applicable closure confirmations answered']);items.push([!!String(form['mf-closure-notes']||'').trim(),'Closure summary entered']);}
+ }
+ el.textContent=heading+': '+items.map(function(item){return (item[0]?'✓ ':'○ ')+item[1];}).join(' · ');
+}
+
+// The same exact-record work activity is displayed here and in Attached evidence.
+var mapEvidenceRecord=null,mapEvidencePending=null,mapEvidenceBusy=false,mapEvidenceGeneration=0;
+function mapEvidenceDraft(){return !!(document.getElementById('map-evidence-file')?.files?.length||document.getElementById('map-evidence-url')?.value||document.getElementById('map-evidence-caption')?.value||mapEvidencePending);}
+function mapEvidenceMount(record){
+  mapEvidenceRecord=record;mapEvidencePending=null;mapEvidenceBusy=false;
+  var host=document.getElementById('map-evidence-panel');if(!host)return;
+  host.innerHTML='<h3>Attached evidence</h3><p>Descriptions above do not upload files. Attach a PDF or image, or link a supporting document. Saved evidence is shared with the record viewer.</p><div id="map-evidence-list" aria-live="polite"></div><div id="map-evidence-compose"><label for="map-evidence-file">PDF or image (up to 12 MB)</label><input id="map-evidence-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp"/><label for="map-evidence-url">Or document URL (HTTPS)</label><input id="map-evidence-url" type="url"/><label for="map-evidence-caption">Evidence caption</label><input id="map-evidence-caption" maxlength="1000"/><button type="button" id="map-evidence-add" class="btn">Save evidence</button></div><p id="map-evidence-feedback" role="status"></p>';
+  document.getElementById('map-evidence-add').addEventListener('click',mapEvidenceSave);
+  var terminal=['closed','cancelled'].includes(record.status);document.getElementById('map-evidence-compose').hidden=terminal;
+  mapEvidenceLoad();
+}
+async function mapEvidenceLoad(){
+  var record=mapEvidenceRecord,session=mapEditorSession,generation=++mapEvidenceGeneration,host=document.getElementById('map-evidence-list');if(!host)return;if(!record?.id){host.textContent='Save this action before attaching evidence.';return;}
+  host.textContent='Loading attached evidence…';
+  try{var rows=await api('/work_activities?select=*&company_id=eq.'+encodeURIComponent(record.company_id)+'&source_module=eq.actions&source_table=eq.action_tracker&source_record_id=eq.'+encodeURIComponent(record.id)+'&activity_type=eq.evidence&order=created_at.desc&limit=100');session.assertCurrent();if(session!==mapEditorSession||generation!==mapEvidenceGeneration)return;
+    host.replaceChildren();var count=0;(rows||[]).filter(function(row){return row.company_id===record.company_id&&row.source_record_id===record.id&&row.source_table==='action_tracker'&&row.source_module==='actions';}).forEach(function(row){(Array.isArray(row.evidence)?row.evidence:[]).forEach(function(item){var paragraph=document.createElement('p'),button=document.createElement('button');paragraph.textContent=(item.label||row.body||'Supporting evidence')+' ';button.type='button';button.className='btn btn-sm';button.textContent='Preview evidence';button.addEventListener('click',function(){mapEvidencePreview(item,record,session);});paragraph.appendChild(button);host.appendChild(paragraph);count++;});});if(!count)host.textContent='No files or document links attached. Controlled-record references may be described above.';
+  }catch(_){if(generation===mapEvidenceGeneration&&session===mapEditorSession)host.textContent='Evidence could not be loaded. Reopen this action to retry; this does not mean no evidence exists.';}
+}
+async function mapEvidencePreview(item,record,session){
+  var popup=window.open('about:blank','_blank');if(popup)popup.opener=null;
+  try{session.assertCurrent();if(session!==mapEditorSession)throw new Error('Reopen the action.');var url;
+    if(item.bucket==='evidence'&&typeof item.path==='string'&&item.path.startsWith(record.company_id+'/actions/'+record.id+'/')){var response=await fetch(SB+'/storage/v1/object/sign/evidence/'+item.path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:300})});if(!response.ok)throw new Error('Evidence preview is unavailable.');var signed=await response.json();if(typeof signed.signedURL!=='string'||!signed.signedURL.startsWith('/object/sign/evidence/'))throw new Error('Evidence preview could not be authorised.');url=new URL(SB+'/storage/v1'+signed.signedURL);if(url.origin!==new URL(SB).origin)throw new Error('Invalid evidence location.');}
+    else{url=new URL(item.url);if(url.protocol!=='https:'||url.username||url.password)throw new Error('Evidence requires a valid HTTPS document URL.');}
+    session.assertCurrent();if(session!==mapEditorSession)throw new Error('Reopen the action.');if(!popup)throw new Error('Allow a new tab to preview evidence.');popup.location.replace(url.href);
+  }catch(error){if(popup)popup.close();mapEditorMessage(error.message,true);}
+}
+async function mapEvidenceSave(){
+  if(mapEvidenceBusy||mapEditorBusy)return;var session=mapEditorSession,record=mapEvidenceRecord,feedback=document.getElementById('map-evidence-feedback');
+  try{session.assertCurrent();if(!record?.id)throw new Error('Save this action first.');if(['closed','cancelled'].includes(record.status))throw new Error('Closed actions are read only.');if(!workflowCanMutate('actions','actions'))return;
+    var file=document.getElementById('map-evidence-file').files[0],raw=document.getElementById('map-evidence-url').value.trim(),caption=document.getElementById('map-evidence-caption').value.trim();if(!caption||(!file&&!raw)||file&&raw)throw new Error('Enter a caption and choose either a file or a document URL.');
+    mapEvidenceBusy=true;mapEditorRefresh();document.getElementById('map-evidence-add').disabled=true;feedback.textContent='Saving evidence…';
+    if(!mapEvidencePending){var item={label:caption};if(file){if(file.size>12*1024*1024||!['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Choose a PDF or image up to 12 MB.');item.bucket='evidence';item.path=record.company_id+'/actions/'+record.id+'/'+crypto.randomUUID()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');var upload=await fetch(SB+'/storage/v1/object/evidence/'+item.path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:KEY,'x-upsert':'false','Content-Type':file.type},body:file});if(!upload.ok)throw new Error('File upload failed. Your selection remains available.');}else{var link=new URL(raw);if(link.protocol!=='https:'||link.username||link.password)throw new Error('Enter a valid HTTPS document URL.');item.url=link.href;}session.assertCurrent();if(session!==mapEditorSession)throw new Error('The editor changed. Reopen the action.');mapEvidencePending={key:crypto.randomUUID(),item:item,caption:caption};}
+    session.assertCurrent();if(session!==mapEditorSession)throw new Error('The editor changed. Reopen the action.');var pending=mapEvidencePending;
+    await api('/rpc/add_work_activity',{m:'POST',b:{p_company_id:record.company_id,p_source_module:'actions',p_source_table:'action_tracker',p_source_record_id:record.id,p_source_ref:mapDisplayRef(record),p_activity_type:'evidence',p_body:pending.caption,p_evidence:[pending.item],p_idempotency_key:pending.key}});
+    session.assertCurrent();if(session!==mapEditorSession)return;mapEvidencePending=null;['map-evidence-file','map-evidence-url','map-evidence-caption'].forEach(function(id){document.getElementById(id).value='';});feedback.textContent='Evidence saved separately. Use Save for any other action changes.';await mapEvidenceLoad();
+  }catch(error){if(session===mapEditorSession)feedback.textContent=error.message+' Your evidence selection is retained; retry Save evidence to confirm the same attachment.';}
+  finally{if(session===mapEditorSession){mapEvidenceBusy=false;}if(session===mapEditorSession){document.getElementById('map-evidence-add').disabled=false;mapEditorRefresh();}}
 }

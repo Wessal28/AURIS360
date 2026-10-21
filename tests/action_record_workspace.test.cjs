@@ -100,8 +100,8 @@ test('explicit-only adapter offers honest actions and preserves editor failure f
   const r = runtime(); let handoff;
   await r.api.open('action-1', { reference: 'MAP-001', openEditor: async (...args) => { handoff = args; } });
   assert.equal(r.adapter.explicitOnly, true); assert.equal(r.options.adapterKey, 'master-action-record');
-  assert.equal(r.options.availableActions.join(','), 'copy,edit,open'); assert.equal(r.options.source.ref, 'MAP-001');
-  for (const [action, status, tab] of [['edit', 'open', 'details'], ['open', 'open', 'progress'], ['open', 'pending_verification', 'verification'], ['open', 'pending_closure', 'closure']]) {
+  assert.equal(r.options.availableActions.join(','), 'copy,edit,open,evidence'); assert.equal(r.options.source.ref, 'MAP-001');
+  for (const [action, status, tab] of [['evidence', 'pending_closure', 'progress'],['edit', 'open', 'details'], ['open', 'open', 'progress'], ['open', 'pending_verification', 'verification'], ['open', 'pending_closure', 'closure']]) {
     const result = await r.options.onAction(action, source, { ...record, status });
     assert.equal(handoff[0].id, 'action-1'); assert.equal(handoff[1], tab); assert.equal(handoff[2].companyId, 'co-a'); assert.equal(result.close, true);
   }
@@ -126,7 +126,7 @@ test('legacy editor rechecks company after loading people and before filling or 
   const core = read('auris-core.js');
   const edit = core.slice(core.indexOf('async function mapEdit('), core.indexOf('async function mapPopulatePeopleSelects('));
   let release, writes = 0, company = 'co-a';
-  const context = { mapEditorLeave:async()=>true,mapEditorOpening:0,api:async()=>[record],mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
+  const context = { mapEditorLeave:async()=>true,mapEnsureEditor:async()=>{},mapEditorOpening:0,api:async()=>[record],mapAllData: [record], ccid: () => company, prof: { id: 'user-a' }, activeRole: () => 'hse_manager', canAccessPage: () => true,
     mapPopulatePeopleSelects: () => new Promise(resolve => { release = resolve; }), document: { getElementById: () => { writes++; return {}; } } };
   vm.runInNewContext(edit, context);
   const opening = context.mapEdit('action-1', current); await new Promise(resolve=>setImmediate(resolve));company = 'co-b'; release();
@@ -150,7 +150,7 @@ test('editor hydration displays zero costs and preserves the saved department wi
   const fields={};const get=id=>fields[id]||(fields[id]={value:'',style:{},options:[],checked:false});
   const saved={...record,estimated_cost:0,actual_cost:0,department:'Saved department',priority:'medium'};
   const noop=()=>{};
-  const context={mapEditorLeave:async()=>true,mapEditorOpening:0,api:async()=>[saved],mapAllData:[],ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,
+  const context={mapEditorLeave:async()=>true,mapEnsureEditor:async()=>{},mapEditorOpening:0,api:async()=>[saved],mapAllData:[],ccid:()=>current.companyId,prof:{id:current.userId},activeRole:()=>current.role,canAccessPage:()=>true,
     mapPopulatePeopleSelects:async()=>{},document:{getElementById:get},MAP_PRIORITY_CFG:{medium:{color:'#123456'}},MAP_TYPE_CFG:{corrective:{emoji:'',label:'Corrective'}},mapDisplayRef:()=> 'MAP-001',isMgr:()=>true,
     mapUpdateProgress:noop,mapUpdateEffectivenessStars:noop,mapEditorSetPersonValue:noop,mapRenderWorkflowBar:noop,mapRenderActionButtons:noop,connectedRecordsMount:noop,relationshipEndpoint:noop,mapFormTab:noop,mapEditorBegin:noop,mapLoadLog:noop};
   vm.runInNewContext(edit,context);await context.mapEdit(saved.id,current);

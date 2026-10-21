@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { buildMeetingsRpcIsolationFixture } = require('./meetings-rpc-isolation-fixture.cjs');
 
 const root = path.resolve(__dirname, '..');
 const migrationDir = path.join(root, 'supabase', 'migrations');
@@ -34,6 +35,7 @@ function run(command, commandArgs, options = {}) {
     cwd: root,
     encoding: 'utf8',
     stdio: 'pipe',
+    input: options.input,
     maxBuffer: 32 * 1024 * 1024,
     env: process.env
   });
@@ -108,6 +110,29 @@ for (const entry of manifest.migrations) {
   console.log(`Applied ${entry.file}`);
 }
 
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261021010000_people_user_linking.sql')], {
+  label: 'idempotent People/account linking installation', quiet: true
+});
+
+// Reapply the repair against a fully upgraded schema: it must restore the RPC
+// without duplicate policies, routines or constraints, and without data writes.
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql')], {
+  label: 'idempotent HSE minutes RPC installation repair', quiet: true
+});
+
+// Reproduce a partial deployment without optional communication features. The
+// single rollback-only connection restores renamed tables, RPC, data and ACLs
+// before inventory and all remaining behavior checks run.
+run(psql, [...commonArgs, '--file', '-'], {
+  label: 'HSE minutes repair without optional communication tables',
+  quiet: true,
+  input: buildMeetingsRpcIsolationFixture({
+    repair: fs.readFileSync(path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql'), 'utf8'),
+    installationAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql'), 'utf8'),
+    behaviorAssertions: fs.readFileSync(path.join(root, 'tests', 'sql', 'meetings_rpc_optional_modules.sql'), 'utf8')
+  })
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -127,7 +152,10 @@ if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
 
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'inspection_follow_up.sql')], {label: 'recurring inspection and finding verification'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'permit_reference_snapshot.sql')], {label: 'approval-bound permit snapshots and same-company revision protection'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_access.sql')], {label: 'People onboarding and user access protection'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_linking.sql')], {label: 'atomic account/People linking, ambiguity, history and company protection'});
+run(process.execPath, ['scripts/verify-people-user-link-concurrency.cjs'], {label: 'competing account/People identity links'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_definition.sql')], {
   label: 'atomic KPI transaction behavior'
 });
@@ -139,3 +167,23 @@ run(process.execPath, ['scripts/verify-kpi-monthly-concurrency.cjs'], {label: 'c
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_monthly_review.sql')], {label: 'monthly review workflow and protection'});
 run(process.execPath, ['scripts/verify-kpi-review-concurrency.cjs'], {label: 'competing monthly review sessions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'environmental_followup.sql')], {label: 'environmental reminder scope and emissions assurance'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assurance.sql')], {label: 'noise approval, immutable evidence, revisions and reports'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_reliability.sql')], {label: 'meeting timezone, stable action identity, atomic saves and awareness access'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql')], {label: 'HSE minutes RPC named arguments, invoker policy and execution grants'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_workflow.sql')], {label: 'linked training attendance, evidence review and explicit competency decisions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'action_closure.sql')], {label: 'action closure integrity and bounded notification cleanup'});
+run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label: 'action closure timeout rollback and retry'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'legal_assurance.sql')], {label: 'legal source, provisional assessments, approval, remediation and evidence decisions'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'sop_workspace_drafts.sql')], {label: 'incomplete SOP drafts, metadata, consent and atomic evidence recovery'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'swms_controlled_release.sql')], {label: 'SWMS atomic rendition, independent approval, controlled release and exact work-pack revision'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_control_workflows.sql')], {label: 'PDF uploads, review decisions, revision history, distribution and recipient acknowledgement'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'settings_reliability.sql')], {label: 'atomic approval routes, tenant boundaries and personal notification preferences'});

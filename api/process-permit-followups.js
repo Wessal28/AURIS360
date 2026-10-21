@@ -95,8 +95,9 @@ function approvalStage(permit) {
 function documentIssue(permit, references) {
   const snapshot = permit.linked_reference_snapshot || {};
   const approvedAt = Math.max(Date.parse(snapshot.approved_at || '') || 0, ...[1, 2, 3].map(level => Date.parse(permit['approval_l' + level + '_at'] || '') || 0));
-  if (snapshot.risk_assessment_id && snapshot.risk_assessment_id !== permit.risk_assessment_id) return 'Linked Risk Assessment changed after permit approval';
-  if (snapshot.method_statement_id && snapshot.method_statement_id !== permit.method_statement_id) return 'Linked method statement changed after permit approval';
+  const completeSnapshot = Boolean(snapshot.approved_at);
+  if ((completeSnapshot || snapshot.risk_assessment_id) && (snapshot.risk_assessment_id || null) !== (permit.risk_assessment_id || null)) return 'Linked Risk Assessment changed after permit approval';
+  if ((completeSnapshot || snapshot.method_statement_id) && (snapshot.method_statement_id || null) !== (permit.method_statement_id || null)) return 'Linked method statement changed after permit approval';
   const ra = permit.risk_assessment_id && references.risks.get(permit.risk_assessment_id);
   if (permit.risk_assessment_id && !ra) return 'Linked Risk Assessment is unavailable';
   if (ra && !['approved', 'active', 'current', 'completed'].includes(String(ra.status || '').toLowerCase())) return 'Linked Risk Assessment is no longer approved/current';

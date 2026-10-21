@@ -28,7 +28,7 @@ function evidenceFor(row,records){
     if(!record)return false;
     var sameTopic=String(record.training_topic||'').trim().toLowerCase()===topic;
     var sameDate=!actual||String(record.training_date||'').slice(0,10)===actual;
-    return sameTopic&&sameDate&&String(record.company_id||row.company_id||'')===String(row.company_id||'');
+    return (record.plan_id?String(record.plan_id)===String(row.id):sameTopic&&sameDate)&&String(record.company_id||row.company_id||'')===String(row.company_id||'');
   });
   return {count:matches.length,certificate:matches.some(function(record){return !!(record.certificate||record.certificate_url||record.evidence_url);})};
 }
@@ -53,8 +53,8 @@ function definition(){return {rowKey:'id',views:['list','card','board','calendar
 ]};}
 function mount(host,rows,options){
   options=options||{};var current=session();if(!root.AurisViewEngine)throw new Error('The shared training plan register is unavailable. Reload the application.');var projected=project(rows,current,options);
-  return root.AurisViewEngine.mount(host,projected,{moduleKey:'training-plan',label:'Training Plan Register',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),actions:[{key:'open',label:'Open training plan'},{key:'edit',label:'Edit training plan',when:function(){return options.canEdit===true;}}],onApplyFilters:function(value){assertSession(current);if(typeof options.onApplyFilters==='function')options.onApplyFilters(filters(value));},onAction:async function(key,row){
-    assertSession(current);var selected=projected.find(function(item){return item.id===row.id&&item.company_id===row.company_id&&item.source_table===row.source_table;});if(!selected)throw new Error('This training plan item is outside the current register. Reload to retry.');if(root.navigator&&root.navigator.onLine===false)throw new Error('Reconnect before opening the training plan.');var callback=key==='open'?options.openRecord:key==='edit'&&options.canEdit===true?options.editRecord:null;if(typeof callback!=='function')throw new Error('This training plan action is unavailable. Reload the register.');await callback(selected.id,current);
+  return root.AurisViewEngine.mount(host,projected,{moduleKey:'training-plan',label:'Training Plan Register',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),actions:[{key:'open',label:'Open training plan',icon:'ti-eye'},{key:'edit',label:'Edit training plan',icon:'ti-pencil',when:function(){return options.canEdit===true;}}].concat(typeof options.createAttendance==='function'?[{key:'attendance',label:'Create attendee records',icon:'ti-users-plus',when:function(){return options.canEdit===true;}}]:[]),onApplyFilters:function(value){assertSession(current);if(typeof options.onApplyFilters==='function')options.onApplyFilters(filters(value));},onAction:async function(key,row){
+    assertSession(current);var selected=projected.find(function(item){return item.id===row.id&&item.company_id===row.company_id&&item.source_table===row.source_table;});if(!selected)throw new Error('This training plan item is outside the current register. Reload to retry.');if(root.navigator&&root.navigator.onLine===false)throw new Error('Reconnect before opening the training plan.');var callback=key==='open'?options.openRecord:key==='edit'&&options.canEdit===true?options.editRecord:key==='attendance'&&options.canEdit===true?options.createAttendance:null;if(typeof callback!=='function')throw new Error('This training plan action is unavailable. Reload the register.');await callback(selected.id,current);
   }});
 }
 root.AurisTrainingPlanListWorkspace=Object.freeze({version:'1.0.0',mount:mount,project:project,definition:definition,filters:filters,dateState:dateState,evidenceFor:evidenceFor});

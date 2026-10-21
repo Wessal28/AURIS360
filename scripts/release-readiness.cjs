@@ -14,6 +14,28 @@ const testFiles = [
   'tests/deployment_environment_isolation_contract.test.cjs',
   'tests/offline_asset_manifest_contract.test.cjs',
   'tests/cross_module_integration_contract.test.cjs',
+  'tests/company_approval_navigation.test.cjs',
+  'tests/settings_reliability.test.cjs',
+  'tests/auth_session_stability_contract.test.cjs',
+  'tests/dashboard_startup_stability_contract.test.cjs',
+  'tests/meeting_action_links.test.cjs',
+  'tests/meeting_print_preview.test.cjs',
+  'tests/meetings_rpc_readiness.test.cjs',
+  'tests/meetings_rpc_installation.test.cjs',
+  'tests/permit_followups.test.cjs',
+  'tests/people_user_access.test.cjs',
+  'tests/people_user_linking_api.test.cjs',
+  'tests/people_user_linking_contract.test.cjs',
+  'tests/people_user_linking_ui.test.cjs',
+  'tests/meeting_save_recovery.test.cjs',
+  'tests/header_report_integration.test.cjs',
+  'tests/action_print_reports.test.cjs',
+  'tests/chemical_print_reports.test.cjs',
+  'tests/chemical_row_controls.test.cjs',
+  'tests/legal_assessment_viewer.test.cjs',
+  'tests/module_report_preview.test.cjs',
+  'tests/legal_assurance.test.cjs',
+  'tests/legal_register_schema_compatibility.test.cjs',
   'tests/controlled_rollout_contract.test.cjs',
   'tests/controlled_rollback_contract.test.cjs',
   'tests/live_gate_verification_contract.test.cjs',
@@ -84,6 +106,7 @@ const testFiles = [
   ,'tests/noise_list_workspace.test.cjs'
   ,'tests/meetings_list_workspace.test.cjs'
   ,'tests/training_plan_list_workspace.test.cjs'
+  ,'tests/training_print_reports.test.cjs'
   ,'tests/app_launcher_icon_contract.test.cjs'
   ,'tests/moc_list_workspace.test.cjs'
   ,'tests/moc_record_workspace.test.cjs'

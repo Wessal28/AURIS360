@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { verifyMeetingsRpc } = require('./verify-meetings-rpc.cjs');
 
 const root = path.resolve(__dirname, '..');
 const APPROVED_STAGING_REF = 'beoutmqttgfyyzndcdxu';
@@ -47,7 +48,13 @@ async function responseText(url, options = {}) {
       throw new Error('Preview deployment protection rejected the automation bypass secret');
     }
     if (!response.ok) {
-      const error = new Error(`${response.status} ${response.statusText}`);
+      // Retain only these public setup codes, never raw response bodies or
+      // credentials, so database setup and server configuration are distinct.
+      let setupCode = '';
+      if (new URL(url).pathname === '/api/user-administration') {
+        try { const code = JSON.parse(text).code; if (['linking_setup_required', 'administration_setup_required'].includes(code)) setupCode = ` [${code}]`; } catch (_) {}
+      }
+      const error = new Error(`${response.status} ${response.statusText}${setupCode}`);
       error.status = response.status;
       throw error;
     }
@@ -382,8 +389,14 @@ async function main() {
     fail('Authenticated profile is not assigned to the dedicated staging tenant.');
   }
 
+  const minutesRpc = await verifyMeetingsRpc({
+    supabaseUrl: runtime.supabaseUrl, publicKey: anonKey, accessToken: auth.access_token,
+    expectedProjectRef: APPROVED_STAGING_REF
+  }).catch((error) => fail(error.message));
+
   const companyFilter = `company_id=eq.${encodeURIComponent(profile.company_id)}`;
   const sources = [
+    ['Permit approval document snapshots (apply 20261013100000_permit_reference_approval_snapshot.sql if missing)', `permits?select=id,company_id,linked_reference_snapshot&${companyFilter}&limit=1`],
     ['Equipment inspection lifecycle (apply 20260911030000_tool_inspection_record_lifecycle.sql if missing)', `tool_inspections?select=id,tool_id,inspection_date,overall_result,status,archived_at,archived_by,archived_by_name,archive_reason,updated_at&status=eq.active&${companyFilter}&order=inspection_date.desc&limit=1`],
     ['Pre-start inspection forms (apply 20260909180000_inspection_prestart_form_fields.sql if missing)', `inspections?select=id,items,activity,location,inspection_time,duration_hours,supervisor,team_members,ra_ref,ptw_ref,tbt_done,tbt_topics,stop_work_briefed,decision,decision_notes,hazards,controls,ppe_required,ppe_extra,prestart_signed_at&${companyFilter}&limit=1`],
     ['Executive Dashboard', `events?select=id&${companyFilter}&limit=1`],
@@ -402,7 +415,43 @@ async function main() {
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
-  const checks = [];
+  const checks = [{ label: 'Atomic HSE minutes save RPC installation', ...minutesRpc }];
+  // Preview only: exercise the deployed administrator endpoint and its service
+  // RPC without creating a login, sending an invitation or applying a link.
+  const identityPreview = await jsonRequest(new URL('/api/user-administration', preview).href, {
+    method: 'POST', headers: { ...previewHeaders, 'Content-Type': 'application/json', Authorization: 'Bearer ' + auth.access_token },
+    body: JSON.stringify({ action: 'preview_user_person', user_id: profile.id })
+  }).catch((error) => fail(`People/user linking preview is unavailable (${error.message}); apply the People/user linking database migration and verify the staging administrator service configuration.`));
+  if (!identityPreview || identityPreview.ok !== true || identityPreview.preview !== true || identityPreview.user_id !== profile.id) fail('People/user linking preview did not confirm the authenticated staging account.');
+  checks.push({ label: 'People/user linking administrator preview', accessible: true, read_only: true });
+  const minutesId = 'c2400000-0000-4000-8000-000000000001';
+  const minutesTitle = 'QA Improvement 260910 minutes save fixture';
+  const minutesNotes = 'Fictional staging acceptance minutes. Atomic draft save and readback only; no operational meeting, approval, distribution or notification.';
+  const existingMinutes = await rest(`hse_meetings?select=id,company_id,title,updated_at&id=eq.${encodeURIComponent(minutesId)}&${companyFilter}&limit=2`)
+    .catch((error) => fail(`atomic minutes fixture lookup failed (${error.message}).`));
+  if (!Array.isArray(existingMinutes) || existingMinutes.length > 1) fail('Ambiguous synthetic minutes fixture; no minutes were saved.');
+  const previousMinutes = existingMinutes[0];
+  if (previousMinutes && (previousMinutes.company_id !== profile.company_id || previousMinutes.title !== minutesTitle || previousMinutes.id !== minutesId || !previousMinutes.updated_at)) fail('Synthetic minutes fixture identity or update token is invalid; no minutes were saved.');
+  const minutesCalendarDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const minutesPayload = {
+    company_id: profile.company_id, title: minutesTitle, meeting_type: 'other', status: 'draft',
+    meeting_date: minutesCalendarDate + 'T05:00:00.000Z', meeting_timezone: 'Asia/Dubai',
+    location: 'Fictional staging verification', chaired_by: '', attendees: '', apologies: '',
+    minutes: minutesNotes, series_id: null, next_meeting_date: null, chair_person_id: null,
+    attendee_person_ids: [], agenda_items: [], recommendations: []
+  };
+  const minutesSaved = await jsonRequest(`${base}/rest/v1/rpc/save_hse_minutes`, {
+    method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_id: minutesId, p_minutes: minutesPayload, p_expected_updated_at: previousMinutes ? previousMinutes.updated_at : null })
+  }).catch((error) => fail(`atomic minutes draft save failed (${error.message}).`));
+  function matchesMinutes(row) {
+    return row && row.id === minutesId && row.company_id === profile.company_id && row.title === minutesTitle && row.status === 'draft' && row.meeting_timezone === 'Asia/Dubai' && row.minutes === minutesNotes && new Date(row.meeting_date).getTime() === new Date(minutesPayload.meeting_date).getTime();
+  }
+  if (!matchesMinutes(minutesSaved && minutesSaved.minutes)) fail('Atomic minutes draft save did not confirm the exact staging record.');
+  const minutesReloaded = await rest(`hse_meetings?select=id,company_id,title,status,meeting_date,meeting_timezone,minutes&id=eq.${encodeURIComponent(minutesId)}&${companyFilter}&limit=1`)
+    .catch((error) => fail(`atomic minutes draft readback failed (${error.message}).`));
+  if (!Array.isArray(minutesReloaded) || minutesReloaded.length !== 1 || !matchesMinutes(minutesReloaded[0])) fail('Atomic minutes draft did not survive a tenant-scoped readback.');
+  checks.push({ label: 'Atomic minutes draft save/readback', accessible: true, record_id: minutesId, operation: 'fictional Draft minutes RPC and exact readback' });
   const sourceRows = new Map();
   for (const [label, resource] of sources) {
     const rows = await rest(resource).catch((error) => fail(`${label} data source is unavailable (${error.message}).`));

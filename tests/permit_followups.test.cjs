@@ -63,6 +63,20 @@ test('notification identity is per permit, event, recipient and day',()=>{
   assert.equal(one.channel,'in_app');
 });
 
+test('complete approval snapshots detect added links while incomplete legacy snapshots retain compatibility',()=>{
+  const ra={id:id(3),company_id:id(1),status:'active',revision:1,updated_at:'2026-10-11T09:00:00Z'};
+  const document={id:id(4),company_id:id(1),status:'current',is_latest:true,updated_at:'2026-10-11T09:00:00Z'};
+  const linked={risks:new Map([[ra.id,ra]]),documents:new Map([[document.id,document]])};
+  const base={...permit,risk_assessment_id:null,method_statement_id:null,linked_reference_snapshot:{approved_at:'2026-10-12T09:00:00Z'}};
+  assert.equal(worker.documentIssue(base,linked),null);
+  assert.equal(worker.documentIssue({...base,risk_assessment_id:ra.id},linked),'Linked Risk Assessment changed after permit approval');
+  assert.equal(worker.documentIssue({...base,method_statement_id:document.id},linked),'Linked method statement changed after permit approval');
+  assert.equal(worker.documentIssue({...base,risk_assessment_id:ra.id,linked_reference_snapshot:{}},linked),null);
+  assert.equal(worker.documentIssue({...base,method_statement_id:document.id,linked_reference_snapshot:{}},linked),null);
+  assert.equal(worker.documentIssue({...base,linked_reference_snapshot:{risk_assessment_id:ra.id}},linked),'Linked Risk Assessment changed after permit approval');
+  assert.equal(worker.documentIssue({...base,linked_reference_snapshot:{method_statement_id:document.id}},linked),'Linked method statement changed after permit approval');
+});
+
 test('cron is authenticated and registered for an hourly run',async()=>{
   const old=process.env.CRON_SECRET;process.env.CRON_SECRET='test-secret';
   try{

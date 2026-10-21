@@ -1,0 +1,18 @@
+#em3plans-list td:last-child,#em3bcp-list td:last-child{white-space:nowrap;min-width:150px}
+#em3plans-list td:last-child .btn,#em3bcp-list td:last-child .btn{margin-right:4px}
+.emergency-review-reminders{margin-top:12px;padding:12px;border:1px solid #f4c66a;border-radius:9px;background:#fff9e9;display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#854f0b}
+#emergency-plan-view .equipment-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;max-height:70vh;overflow:auto}
+#emergency-plan-view .equipment-content section{border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+#emergency-plan-view .equipment-content h3{font-size:12px;margin:0 0 6px;color:var(--text2)}
+#emergency-plan-view .equipment-content p{font-size:13px;white-space:pre-wrap;margin:0}
+.emergency-linked-actions{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:10px;font-size:12px}
+.emergency-linked-actions .btn{white-space:normal;text-align:left}
+.emergency-action-row{display:grid;grid-template-columns:minmax(180px,2fr) minmax(140px,1fr) minmax(130px,1fr) auto;gap:8px;margin:8px 0}
+@media(max-width:700px){.emergency-action-row{grid-template-columns:1fr 1fr}.emergency-action-row input:first-child{grid-column:1/-1}}
+#emergency-simulation .equipment-content{display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow:auto}
+#emergency-simulation .equipment-content label{display:flex;align-items:center;gap:7px}
+#emergency-simulation .emergency-simulation-warning{padding:10px;border:1px solid #d67575;border-radius:8px;background:#fff0f0;color:#882222;font-weight:700}
+.emergency-equipment-prefill{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 12px}
+.emergency-equipment-prefill label{font-size:12px;font-weight:700;color:var(--text2)}
+.emergency-equipment-prefill select{min-width:190px;max-width:100%;flex:1;padding:7px;border:1px solid var(--border);border-radius:7px}
+#ertf-training-prefill{margin-top:8px}

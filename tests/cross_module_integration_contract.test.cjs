@@ -59,7 +59,8 @@ scenario('INT-004', 'P0', 'Approval Center preserves workflow-specific decisions
     assert(adapterBlock.includes(`table:'${table}'`), `approval adapter missing ${table}`);
   }
   assert.match(functionSource('loadApprovals'), /approvalsSafe\(api\(/);
-  assert.match(functionSource('approvalsOpen'), /deepLinkStore\(deepLinkNormalise[\s\S]*deepLinkResume\('approval-center'\)/);
+  assert.match(functionSource('approvalsOpen'), /AurisApprovalReview\.open\(rowKey\)/);
+  assert.match(functionSource('approvalsOpenSource'), /deepLinkStore\(deepLinkNormalise[\s\S]*deepLinkResume\('approval-center'\)/);
   assert.match(functionSource('deepLinkResume'), /mapOpenExactSource\(adapter,source\)/);
   assert.match(functionSource('auditSemanticAction'), /return 'approve'[\s\S]*return 'reject'/);
 });

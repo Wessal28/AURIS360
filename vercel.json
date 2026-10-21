@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "public",
   "headers": [
     {
@@ -109,6 +109,21 @@
     "api/process-permit-followups.js": {
       "maxDuration": 30
     },
+    "api/process-emergency-reminders.js": {
+      "maxDuration": 30
+    },
+    "api/process-occupational-health-reminders.js": {
+      "maxDuration": 30
+    },
+    "api/process-ppe-reminders.js": {
+      "maxDuration": 30
+    },
+    "api/process-fire-reminders.js": {
+      "maxDuration": 30
+    },
+    "api/process-chemical-reminders.js": {
+      "maxDuration": 30
+    },
     "api/notification-open.js": {
       "maxDuration": 10
     },
@@ -168,6 +183,30 @@
     {
       "path": "/api/process-atex-reminders",
       "schedule": "20 7 * * *"
+    },
+    {
+      "path": "/api/process-emergency-reminders",
+      "schedule": "25 7 * * *"
+    },
+    {
+      "path": "/api/process-occupational-health-reminders",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/process-ppe-reminders",
+      "schedule": "35 7 * * *"
+    },
+    {
+      "path": "/api/process-fire-reminders",
+      "schedule": "40 7 * * *"
+    },
+    {
+      "path": "/api/process-chemical-reminders",
+      "schedule": "45 7 * * *"
+    },
+    {
+      "path": "/api/process-environmental-reminders",
+      "schedule": "50 7 * * *"
     },
     {
       "path": "/api/process-permit-followups",

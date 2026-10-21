@@ -47,11 +47,11 @@ assert.match(functionSource('mapLoadList'), /api\(['"]\/action_tracker\?select=/
 assert.match(functionSource('mapLoadList'), /Master Action Plan could not be loaded/);
 assert.match(functionSource('mapQueueRefBackfill'), /api\(['"]\/action_tracker\?id=eq\.[\s\S]*\.catch\(function\(\)\{\}\)/);
 
-// The landing dashboard also isolates each source and retries transient login
-// failures, preventing a single unavailable optional source from blanking it.
+// The landing dashboard isolates each source. A failed source remains visibly
+// unavailable; it must not repeatedly replace the whole screen during login.
 assert.match(functionSource('loadDash'), /var safe = async function\(p,key\)[\s\S]*sourceFailures\[key\]=true[\s\S]*return \[\]/);
 assert.match(functionSource('loadDash'), /safe\(apiAllRows\(['"]\/events/);
 assert.match(functionSource('loadDash'), /safe\(apiAllRows\(['"]\/chemical_register/);
-assert.match(functionSource('loadDash'), /options\.initial&&hadApiFailure[\s\S]*attempt[\s\S]*1500/);
+assert.doesNotMatch(functionSource('loadDash'), /setTimeout|_dashInitialRetryTimer/);
 
 console.log('Core Control resilience contract passed (dashboard plus four primary registers and optional dependencies).');

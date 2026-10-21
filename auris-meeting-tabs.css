@@ -1,1 +1,6 @@
 #mtg-tab-schedule,#mtg-tab-minutes{white-space:nowrap}
+
+.meeting-occurrence-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #dce7e2}.mom3rec-resp{width:100%;min-width:130px}#mtg-save-error{padding:12px;background:#fff3f1;color:#9d2525}
+#page-meetings .meeting-occurrences{font-size:14px;line-height:1.45}#page-meetings .meeting-occurrences>h3{font-size:14px;font-weight:700;line-height:1.45;margin:16px 0 8px}#page-meetings .meeting-occurrence-row{font-size:14px;line-height:1.45}#page-meetings .meeting-occurrence-row>span{font-size:14px;min-width:0;overflow-wrap:anywhere}#page-meetings .meeting-occurrence-row>.btn{font-size:12px;flex-shrink:0}
+#mtg-minutes-readonly .meeting-action-link,#mtg-minutes-readonly .meeting-action-link-note{display:block;margin-top:5px;font-size:12px;line-height:1.4}#mtg-minutes-readonly .meeting-action-link{color:var(--green,#137d60);font-weight:600;text-decoration:underline;text-underline-offset:2px}#mtg-minutes-readonly .meeting-action-link-note{color:var(--text2,#64748b)}#mtg-minutes-readonly .meeting-action-linked{cursor:pointer}#mtg-minutes-readonly .meeting-action-link:focus-visible{outline:2px solid #2563eb;outline-offset:3px;border-radius:2px}
+@media(max-width:540px){#page-meetings .meeting-occurrence-row{align-items:flex-start;flex-wrap:wrap}}

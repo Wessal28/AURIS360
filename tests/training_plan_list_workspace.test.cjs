@@ -18,4 +18,30 @@ test('projection is tenant scoped and preserves plan, evidence and attention mea
 test('training plan filters combine type, status, priority, attention and search',()=>{const r=runtime(),select=filters=>r.api.project(plans,current,{records,filters},new Date('2026-09-16T12:00:00Z')).map(x=>x.id);assert.deepEqual(select({type:'refresher'}),['tp-1']);assert.deepEqual(select({status:'completed',priority:'critical'}),['tp-2']);assert.deepEqual(select({attention:'planned_overdue'}),['tp-1']);assert.deepEqual(select({search:'training room'}),['tp-1']);});
 test('unknown training values remain visible without unsafe relabelling',()=>{const r=runtime(),data=r.api.project([{id:'x',company_id:'co-a',training_topic:'Special briefing',training_type:'special',status:'in_review',priority:'urgent',planned_date:'bad'}],current,{});assert.equal(data.length,1);assert.equal(data[0].training_type,'special');assert.equal(data[0].status,'in review');assert.equal(data[0].priority,'urgent');assert.equal(data[0].planned_date,'');});
 test('shared training plan register exposes guarded actions and protects sessions',async()=>{const r=runtime(),calls=[];r.api.mount({},plans,{records,canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'training-plan');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','edit']);await m.options.onAction('open',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','tp-1','co-a'],['edit','tp-1','co-a']]);for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},plans,{canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}});
+
+test('training plan row actions render as labelled icons and retain permission checks',async()=>{
+  const r=runtime(),calls=[];
+  r.api.mount({},plans,{canEdit:true,openRecord:id=>calls.push(['open',id]),editRecord:id=>calls.push(['edit',id]),createAttendance:id=>calls.push(['attendance',id])});
+  const mounted=r.mounted();
+  vm.runInNewContext(read('auris-view-engine.js'),r.window);
+  const host={classList:{add(){}},querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};
+  r.window.AurisViewEngine.mount(host,mounted.data,mounted.options);
+  for(const [key,label,icon] of [['open','Open training plan','ti-eye'],['edit','Edit training plan','ti-pencil'],['attendance','Create attendee records','ti-users-plus']]){
+    const button=host.innerHTML.match(new RegExp('<button[^>]*class="ave-icon-action"[^>]*data-view-action="'+key+'"[^>]*>(.*?)</button>'));
+    assert.ok(button,'The '+key+' row action should be a compact icon');
+    assert.ok(button[0].includes('aria-label="'+label+'"'));
+    assert.ok(button[0].includes('title="'+label+'"'));
+    assert.equal(button[1],'<i class="ti '+icon+'" aria-hidden="true"></i>');
+    await mounted.options.onAction(key,mounted.data[0]);
+  }
+  assert.deepEqual(calls,[['open','tp-1'],['edit','tp-1'],['attendance','tp-1']]);
+  const readonlyRuntime=runtime();
+  readonlyRuntime.api.mount({},plans,{canEdit:false,openRecord:()=>{},editRecord:()=>assert.fail('read-only edit'),createAttendance:()=>assert.fail('read-only attendance')});
+  const readonly=readonlyRuntime.mounted();
+  r.window.AurisViewEngine.mount(host,readonly.data,readonly.options);
+  assert.match(host.innerHTML,/aria-label="Open training plan"/);
+  assert.doesNotMatch(host.innerHTML,/data-view-action="(?:edit|attendance)"/);
+  await assert.rejects(readonly.options.onAction('edit',readonly.data[0]),/unavailable/);
+  await assert.rejects(readonly.options.onAction('attendance',readonly.data[0]),/unavailable/);
+});
 test('release wiring publishes the training plan register before the core loader',()=>{const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-training-plan-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisTrainingPlanListWorkspace\.mount\(el,tpAllData/);assert.match(read('sw-assets.js'),/auris-training-plan-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-training-plan-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-training-plan-list-workspace\.js/);assert.doesNotMatch(read('auris-training-plan-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);});

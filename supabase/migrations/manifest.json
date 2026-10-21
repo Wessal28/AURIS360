@@ -274,8 +274,118 @@
     },
     {
       "order": 55,
+      "file": "20261013000000_emergency_safe_defaults.sql",
+      "sha256": "f24cc9596d7be5cbcdc1fdeb0c56942369379ba1fe2d9b41a6698d1cf6c8c832"
+    },
+    {
+      "order": 56,
+      "file": "20261013010000_emergency_due_reminders.sql",
+      "sha256": "e1734a9dc7f4b57183c1aba0d1926eb1a273c9f6a65ea0999b5907dccdadc55b"
+    },
+    {
+      "order": 57,
+      "file": "20261013020000_occupational_health_safe_defaults.sql",
+      "sha256": "589561c8fb52103d7076ea8d9f6da30c8a909f834104210d8c08a5ba046fec54"
+    },
+    {
+      "order": 58,
+      "file": "20261013030000_occupational_health_followup_links.sql",
+      "sha256": "50709db0302a3702b2fbf71a2347411d47d78226f65b00b3d0e09b68d9581055"
+    },
+    {
+      "order": 59,
       "file": "20261013100000_permit_reference_approval_snapshot.sql",
       "sha256": "1aad27b81f067911c2c418c282b781e98c7a18afa472d173570ebe582cafce2d"
+    },
+    {
+      "order": 60,
+      "file": "20261014010000_occupational_health_clinical_access.sql",
+      "sha256": "27faa5ffcd40ce3e99a0822397e2fc20ede02f5e2afcabcd2d6858906d88bc0c"
+    },
+    {
+      "order": 61,
+      "file": "20261014020000_ppe_safety_workflow.sql",
+      "sha256": "168599c7b860a928b3b2c72be308723809be34f73665d09162867183b6385598"
+    },
+    {
+      "order": 62,
+      "file": "20261014030000_ppe_stock_and_reminders.sql",
+      "sha256": "9a0834c5ce592351c913bb3dc6e841cbde16772c9dae1274bea21b3bad9f31c9"
+    },
+    {
+      "order": 63,
+      "file": "20261014040000_fire_certificate_followup.sql",
+      "sha256": "769ee06f396b05be222d049c31c0ae70c3a2c5456c1426f0ccf63b95d64de792"
+    },
+    {
+      "order": 64,
+      "file": "20261014050000_chemical_control_assurance.sql",
+      "sha256": "a560bf4a04a50919acf162b489a51b46311925c78ae4a90e7a0861c419da7576"
+    },
+    {
+      "order": 65,
+      "file": "20261015010000_environmental_reporting_assurance.sql",
+      "sha256": "625f4a5a7a857c2c0d2a6ecdc6c5b5a38b6a8fb6fd3dca6885c1222019c3d56b"
+    },
+    {
+      "order": 66,
+      "file": "20261018010000_environmental_followup.sql",
+      "sha256": "a432ab3b3e833170d440cd0db1b1b117ef9b0f33f52650a8e42b253fcce01e45"
+    },
+    {
+      "order": 67,
+      "file": "20261018020000_noise_approval_assurance.sql",
+      "sha256": "698117b4d08d1cf2602f59b678099968672b259b2532dfb4f6577ad1bf68c2a4"
+    },
+    {
+      "order": 68,
+      "file": "20261018030000_meetings_reliability.sql",
+      "sha256": "fd21f90a7da9f3efad60fbd77523e911a1603aa312bb5ec1dbcdbbe09be6bbd1"
+    },
+    {
+      "order": 69,
+      "file": "20261018040000_training_workflow.sql",
+      "sha256": "5796436fde8cf1e0293252d15bb57d8adcdbfe77735402f0f05602b655e61da1"
+    },
+    {
+      "order": 70,
+      "file": "20261018050000_action_closure_reliability.sql",
+      "sha256": "b99b4d2cab0d1b503727a843a4ff2f0a691c26a2a309be6760f85fe58c5b23e0"
+    },
+    {
+      "order": 71,
+      "file": "20261019010000_legal_assurance.sql",
+      "sha256": "18f534c4820129f1e9976625924ff0d6184c2c1fea0fa7051e91ed2891816ad4"
+    },
+    {
+      "order": 72,
+      "file": "20261019020000_sop_workspace_drafts.sql",
+      "sha256": "f7997a02b165b7410536eb1c73078db052d53d0d9362fb6cc3af09c39cf2eec2"
+    },
+    {
+      "order": 73,
+      "file": "20261019030000_swms_controlled_release.sql",
+      "sha256": "9caf009b40d06ddc3887e17a952aed5d67b3edbe607657838d3cd0c585d56bf1"
+    },
+    {
+      "order": 74,
+      "file": "20261019040000_document_control_workflows.sql",
+      "sha256": "2161d830ae2eff8642b4904a8e7dfdf592e3e19227551a6fe22fbb2092ad7752"
+    },
+    {
+      "order": 75,
+      "file": "20261020010000_settings_reliability.sql",
+      "sha256": "f7774a420e33475801d47fa24101294dfd92419cd267ab0917ec379fa9323390"
+    },
+    {
+      "order": 76,
+      "file": "20261020020000_meetings_rpc_installation_repair.sql",
+      "sha256": "58000e24ee0f67ebac515a6116bd05ca6d2b94bcd7e520a6bfda7d658525ec8c"
+    },
+    {
+      "order": 77,
+      "file": "20261021010000_people_user_linking.sql",
+      "sha256": "68df4eb82d4a200b09ba63ab837357a25439269a475ef2746714a2abd1abf42e"
     }
   ]
 }

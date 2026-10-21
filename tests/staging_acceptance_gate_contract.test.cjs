@@ -2,9 +2,42 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+
+test('permit reminder deployment requires readable tenant-scoped approval snapshots',()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source,/20261013100000_permit_reference_approval_snapshot\.sql if missing/);
+  assert.match(source,/permits\?select=id,company_id,linked_reference_snapshot&\$\{companyFilter\}&limit=1/);
+});
+
+test('administrator preview diagnostics distinguish setup prerequisites without logging response details', async()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs'),start=source.indexOf('async function responseText('),end=source.indexOf('async function jsonRequest(',start);
+  for(const code of ['linking_setup_required','administration_setup_required','private-token-secret']){
+    const context=vm.createContext({URL,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:false,status:503,statusText:'Service Unavailable',url:'https://preview.vercel.app/api/user-administration',text:async()=>JSON.stringify({code,error:'do-not-log-private-details'})})});
+    vm.runInContext(source.slice(start,end),context);
+    await assert.rejects(context.responseText('https://preview.vercel.app/api/user-administration'),error=>{
+      assert.doesNotMatch(error.message,/private-token-secret|do-not-log-private-details/);
+      if(code!=='private-token-secret')assert.ok(error.message.includes(code));
+      return true;
+    });
+  }
+});
+
+test('People linking release verification previews only the authenticated isolated tenant account', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  const preview = source.indexOf('const identityPreview =');
+  assert.ok(preview > source.indexOf('Authenticated profile is not assigned to the dedicated staging tenant.'));
+  const check = source.slice(preview, source.indexOf('const minutesId =', preview));
+  assert.match(check, /new URL\('\/api\/user-administration', preview\)/);
+  assert.match(check, /action: 'preview_user_person', user_id: profile.id/);
+  assert.match(check, /identityPreview.preview !== true/);
+  assert.match(check, /identityPreview.user_id !== profile.id/);
+  assert.match(check, /read_only: true/);
+  assert.doesNotMatch(check, /invite_user|create_user|link_user_person|onboard_person/);
+});
 
 test('staging acceptance rejects production and requires the approved staging project', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
@@ -21,6 +54,39 @@ test('staging acceptance authenticates without exposing credentials and verifies
   assert.match(source, /AURIS360 Staging Test/);
   assert.match(source, /Authorization: `Bearer \$\{auth\.access_token\}`/);
   assert.doesNotMatch(source, /console\.log\([^\n]*(password|access_token|anonKey)/i);
+});
+
+test('staging acceptance verifies atomic minutes RPC only after sign-in and exact staging tenant checks', () => {
+  const source=read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source,/const \{ verifyMeetingsRpc \} = require\('\.\/verify-meetings-rpc\.cjs'\)/);
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')>source.indexOf("projectRef(runtime.supabaseUrl) !== APPROVED_STAGING_REF"));
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')>source.indexOf('const auth = await retryJsonRequest'));
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')>source.indexOf('Authenticated profile is not assigned to the dedicated staging tenant.'));
+  assert.ok(source.indexOf('await verifyMeetingsRpc(')<source.indexOf('const minutesPayload ='));
+  assert.match(source,/accessToken: auth\.access_token/);
+  assert.match(source,/expectedProjectRef: APPROVED_STAGING_REF/);
+  assert.match(source,/Atomic HSE minutes save RPC/);
+});
+
+test('atomic minutes functional acceptance uses one isolated Draft fixture, optimistic update token and exact tenant readback',()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs');
+  assert.match(source,/minutesId = 'c2400000-0000-4000-8000-000000000001'/);
+  assert.match(source,/QA Improvement 260910 minutes save fixture/);
+  assert.match(source,/hse_meetings\?select=id,company_id,title,updated_at&id=eq\.\$\{encodeURIComponent\(minutesId\)\}&\$\{companyFilter\}&limit=2/);
+  assert.match(source,/previousMinutes\.title !== minutesTitle/);assert.match(source,/!previousMinutes\.updated_at/);
+  assert.match(source,/p_expected_updated_at: previousMinutes \? previousMinutes\.updated_at : null/);
+  assert.match(source,/meeting_type: 'other', status: 'draft'/);assert.match(source,/T05:00:00\.000Z/);assert.match(source,/meeting_timezone: 'Asia\/Dubai'/);
+  assert.match(source,/series_id: null/);assert.match(source,/agenda_items: \[\], recommendations: \[\]/);assert.match(source,/!matchesMinutes\(minutesReloaded\[0\]\)/);
+  assert.match(source,/Atomic minutes draft save\/readback/);assert.doesNotMatch(source,/console\.(log|warn|error)\([^\n]*(minutesPayload|minutesSaved|headers|access_token|anonKey|password)/);
+});
+
+test('the synthetic 09:00 Dubai meeting uses the Dubai calendar date across UTC midnight boundaries',()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs'),assignment=source.match(/const minutesCalendarDate = [^\n]+;/)[0];
+  for(const [instant,expected] of [['2026-10-20T19:30:00.000Z','2026-10-20'],['2026-10-20T21:30:00.000Z','2026-10-21']]){
+    const CalendarDate=class extends Date{constructor(){super(instant);}};
+    const day=vm.runInNewContext(assignment+'\nminutesCalendarDate;',{Intl,Date:CalendarDate});
+    assert.equal(day,expected);assert.equal(new Date(day+'T05:00:00.000Z').toLocaleString('en-GB',{timeZone:'Asia/Dubai',hour:'2-digit',minute:'2-digit',hour12:false}),'09:00');
+  }
 });
 
 test('staging authentication tolerates transient cold starts without masking credential failures', () => {
@@ -95,6 +161,16 @@ test('successful Preview deployments trigger the governed acceptance workflow', 
     assert.match(workflow, new RegExp(`secrets\\.${secret}`));
   }
   assert.match(workflow, /upload-artifact@v4/);
+});
+
+test('staging acceptance serializes the shared tenant job without changing per-deployment duplicate handling',()=>{
+  const workflow=read('.github/workflows/staging-acceptance.yml');
+  assert.match(workflow,/^concurrency:\r?\n  group: staging-acceptance-\$\{\{ github\.event\.deployment\.id \|\| github\.run_id \}\}\r?\n  cancel-in-progress: true/m);
+  const jobConcurrency=workflow.match(/^    concurrency:\r?\n      group: ([^\r\n]+)\r?\n      cancel-in-progress: (true|false)/m);
+  assert.ok(jobConcurrency,'The verify job must serialize writes to the shared staging tenant');
+  assert.equal(jobConcurrency[1],'staging-acceptance-beoutmqttgfyyzndcdxu-tenant-persistence');assert.equal(jobConcurrency[2],'false');
+  assert.doesNotMatch(jobConcurrency[1],/\$\{\{|deployment|run_id|sha/,'Every deployment must use the same tenant lock');
+  assert.ok(workflow.indexOf(jobConcurrency[0])>workflow.indexOf('  verify:'));assert.ok(workflow.indexOf(jobConcurrency[0])<workflow.indexOf('    steps:'));
 });
 
 test('protected Vercel previews use the automation bypass without exposing it in the URL', () => {

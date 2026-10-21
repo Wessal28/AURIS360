@@ -12,7 +12,7 @@ function runtime(){
   const window={Date,AurisPlatformServices:{ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>identity},rbac:{requireAccess:()=>{if(!allowed)throw Error('Access denied');}}},
     AurisViewEngine:{mount:(host,data,options)=>{mounted={data,options};return mounted;}}};
   vm.runInNewContext(read('auris-action-list-workspace.js'),window);
-  return {api:window.AurisActionListWorkspace,identity,mounted:()=>mounted,deny:()=>{allowed=false;}};
+  return {api:window.AurisActionListWorkspace,identity,mounted:()=>mounted,deny:()=>{allowed=false;},window};
 }
 test('projection preserves source identity, semantic labels, dates, progress and attention without mutating records',()=>{
   const r=runtime(),before=JSON.stringify(rows),data=r.api.project(rows,current,{sources:{incident:{label:'Incident'}},statuses:{pending_verification:{label:'Pending Verification'}},reference:row=>row.action_ref||row.id},new Date('2026-09-08T12:00:00'));
@@ -37,6 +37,18 @@ test('open actions and source links call only the explicit legacy bridges with e
   assert.equal(m.options.actions[1].when(m.data[1]),false);
   await assert.rejects(m.options.onAction('approve',m.data[0]),/unavailable/);
 });
+
+test('action-column controls use labelled compact icons while references and source references remain readable links',()=>{
+  const r=runtime();r.api.mount({},rows,{});const mounted=r.mounted();vm.runInNewContext(read('auris-view-engine.js'),r.window);
+  const host={classList:{add(){}},querySelector:()=>null,querySelectorAll:()=>[],innerHTML:''};r.window.AurisViewEngine.mount(host,mounted.data,mounted.options);
+  for(const [key,label,icon] of [['open','Open action','ti-eye'],['source','Open source','ti-link']]){
+    const control=host.innerHTML.match(new RegExp('<button[^>]*class="ave-icon-action"[^>]*data-view-action="'+key+'"[^>]*data-view-row="a"[^>]*>(.*?)</button>'));
+    assert.ok(control);assert.ok(control[0].includes('aria-label="'+label+'"'));assert.ok(control[0].includes('title="'+label+'"'));assert.equal(control[1],'<i class="ti '+icon+'" aria-hidden="true"></i>');
+  }
+  assert.match(host.innerHTML,/<button[^>]*class="ave-link"[^>]*data-view-action="source"[^>]*>INC-1<\/button>/);
+  assert.match(host.innerHTML,/<button[^>]*class="ave-link"[^>]*data-view-action="open"[^>]*>MAP-CA-2026-001<\/button>/);
+  assert.doesNotMatch(host.innerHTML,/<button[^>]*class="ave-icon-action"[^>]*data-view-action="source"[^>]*data-view-row="b"/);
+});
 test('company, profile, role or permissions changed after mount block all callbacks',async()=>{
   for(const change of [r=>r.identity.company.id='co-b',r=>r.identity.profile.id='other',r=>r.identity.role='viewer',r=>r.deny()]){
     const r=runtime();let calls=0;r.api.mount({},rows,{openRecord:()=>calls++,onApplyFilters:()=>calls++});const m=r.mounted();change(r);
@@ -45,7 +57,7 @@ test('company, profile, role or permissions changed after mount block all callba
   }
 });
 test('action loader ignores superseded or switched-company responses before metrics, cache or backfill',async()=>{
-  const core=read('auris-core.js'),code=core.slice(core.indexOf('async function mapLoadList(){'),core.indexOf('function mapActionTypeCode('));
+  const core=read('auris-core.js'),code=core.slice(core.indexOf('function mapRefreshMetrics(){'),core.indexOf('function mapActionTypeCode('));
   let release,company='co-a',rendered=0,backfilled=0;
   const context={mapListLoadGeneration:0,mapAllData:[],ccid:()=>company,prof:{id:'user-a'},activeRole:()=> 'manager',canAccessPage:()=>true,
     document:{getElementById:()=>({innerHTML:'',style:{}})},cf:()=>'',api:()=>new Promise(resolve=>{release=resolve;}),mapRenderList:()=>rendered++,mapQueueRefBackfill:()=>backfilled++};

@@ -18,7 +18,7 @@ function fixture(overrides = {}) {
   const runtime = {
     environment: 'production', releaseSha,
     supabaseUrl: 'https://iarfxjhahzbhncsaohbg.supabase.co',
-    supabaseAnonKey: 'do-not-retain-runtime-key',
+    supabaseAnonKey: 'sb_publishable_do-not-retain-runtime-key',
     ...overrides.runtime
   };
   return {
@@ -70,6 +70,9 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
   assert.equal(result.assets.length, 69);
+  assert.equal(result.verification_scope, 'public_deployment_smoke');
+  assert.deepEqual(result.minutes_rpc, { installed: null, verified: false, result: 'database_not_verified', required_check: 'authenticated_staging_check_required' });
+  assert.ok(!response.requests.some(url=>url.includes('/rest/v1/')));
   assert.ok(response.requests.includes('/auris-toolbox-record-workspace.js'));
   assert.ok(response.requests.includes('/auris-toolbox-list-workspace.js'));
   assert.ok(response.requests.includes('/auris-moc-record-workspace.js'));
@@ -102,6 +105,16 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.ok(response.requests.includes('/kpi-definition-editor.js'));
   assert.equal(JSON.parse(fs.readFileSync(report, 'utf8')).status, 'passed');
   assert.doesNotMatch(fs.readFileSync(report, 'utf8'), /do-not-retain-runtime-key/);
+});
+
+test('public smoke never treats an anonymous guard response as installed or invokes the protected database',async()=>{
+  const response=fixture(),logs=[];
+  const result=await main({env:productionEnv,fetchImpl:response.fetchImpl,logger:{log:value=>logs.push(value)},args:[]});
+  assert.equal(result.minutes_rpc.installed,null);assert.equal(result.minutes_rpc.verified,false);
+  assert.match(result.minutes_rpc.required_check,/authenticated_staging_check_required/);
+  assert.match(logs.join('\n'),/Database RPC readiness is not verified/);
+  assert.doesNotMatch(logs.join('\n'),/do-not-retain-runtime-key/);
+  assert.ok(response.requests.every(url=>!url.startsWith('/rest/')&&!url.startsWith('/auth/')));
 });
 
 test('real smoke failures remain blocking and retain stage-specific evidence', async (t) => {
@@ -177,6 +190,9 @@ test('production smoke is read-only and restricted to canonical production', () 
   assert.match(source, /method|fetch/);
   assert.doesNotMatch(source, /method:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
   assert.doesNotMatch(source, /SUPABASE_(ANON|SERVICE)_KEY/);
+  assert.doesNotMatch(source, /verifyMeetingsRpc|rest\/v1\/rpc/);
+  assert.match(source, /database_not_verified/);
+  assert.match(source, /authenticated_staging_check_required/);
 });
 
 test('production smoke verifies release identity, runtime boundary, headers and critical assets', () => {

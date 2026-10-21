@@ -338,7 +338,7 @@ saCompanyPick(args[0])
 modulesMenuNavigate(args[0])
     },
     "r0111": function (event, args) {
-adminEditCompany(args[0])
+adminViewCompany(args[0])
     },
     "r0112": function (event, args) {
 openModuleAccess(args[0])
