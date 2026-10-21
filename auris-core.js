@@ -10765,6 +10765,8 @@ async function saveMtg(){mtgSaveMom();}
 
 let peAllData=[], peEditingId=null;
 var peopleProfileRequest=0,peopleLoadRequest=0;
+var peopleUserLinkPromise;
+function peopleUserLinkLoad(){if(window.AurisPeopleUserLink)return Promise.resolve(window.AurisPeopleUserLink);if(!peopleUserLinkPromise)peopleUserLinkPromise=new Promise(function(resolve,reject){var script=document.createElement('script');script.src='people-user-linking.js?v=20261021-1';script.onload=function(){if(window.AurisPeopleUserLink)resolve(window.AurisPeopleUserLink);else{peopleUserLinkPromise=null;reject(Error('Account linking could not load. Retry.'));}};script.onerror=function(){peopleUserLinkPromise=null;script.remove();reject(Error('Account linking could not load. Retry.'));};document.head.appendChild(script);});return peopleUserLinkPromise;}
 
 function peopleCanManage(){
 const role=activeRole();
@@ -10855,18 +10857,7 @@ if(!p){toast('Person not found',false);return;}
 peopleFillForm(p);
 }
 async function peopleOnboardUser(id){
-if(!peopleCanManage()||!isAdm()){toast('An administrator must onboard user accounts',false);return;}
-var p=peAllData.find(function(x){return x.id===id;});if(!p){toast('Person not found',false);return;}
-var email=isDeliverableEmail(p.email)?String(p.email).trim():'',phone=String(p.phone||'').trim();
-if(!email&&!phone){toast('Add an email or phone number to this person’s profile first',false);peopleEdit(id);return;}
-var channel=email?'email':'phone';
-var contactConfirmed=false;
-if(email&&phone&&window.AurisUserAccess){channel=await window.AurisUserAccess.chooseContact(p);if(!channel)return;contactConfirmed=true;}
-if(!contactConfirmed&&!(await appConfirmAction({title:'Onboard '+peopleName(p),message:channel==='email'?'Send a login invitation to '+email+'?':'Create a phone login for '+phone+'?',detail:channel==='email'?'Their saved profile details will be used.':'A temporary password will be shown for you to share directly. No SMS is sent.',confirmText:'Onboard user',cancelText:'Cancel'})))return;
-try{var response=await fetch('/api/user-administration',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'onboard_person',person_id:p.id,channel:channel})});var result=await response.json();if(!response.ok)throw new Error(result.error||'Onboarding failed');
-if(result.temporary_password)usersShowTempPasswordResult({email:result.login,full_name:peopleName(p)},result.temporary_password);
-toast(result.existing?'This person is already linked to a user account':channel==='email'?'Invitation sent to '+result.login:'Phone login created');
-}catch(e){toastActionError('Onboard user','People',e);}
+var actor=prof?.id,scope=String(ccid()||'');try{var ui=await peopleUserLinkLoad();if(actor!==prof?.id||scope!==String(ccid()||''))throw Error('Account or company changed. Reopen the person.');return ui.onboard(id);}catch(e){toastActionError('Link user account','People',e);}
 }
 
 function peopleCloseProfile(){
@@ -10901,7 +10892,7 @@ return '<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
   +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-top:-28px">'
   +'<div style="display:flex;gap:14px;align-items:flex-end"><div style="width:64px;height:64px;border-radius:50%;background:'+typeCfg[0]+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;border:4px solid #fff">'+escH(initials)+'</div>'
   +'<div><div style="font-size:18px;font-weight:800">'+escH(peopleName(p))+'</div><div style="font-size:13px;color:var(--text2)">'+escH(p.email||p.phone||'No contact recorded')+'</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><span class="badge bgr"><i class="ti ti-building"></i> '+escH(p.department||'No department')+'</span><span class="badge bgr"><i class="ti ti-map-pin"></i> '+escH(p.site||'No site')+'</span></div></div></div>'
-  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(p.status==='inactive'?'bgr':'bg')+'">'+escH(p.status||'active')+'</span><span class="badge bgr">'+escH(typeCfg[1])+'</span>'+(isAdm()?'<button class="btn btn-sm" type="button" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-user-plus"></i>Onboard user</button>':'')+'</div>'
+  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(p.status==='inactive'?'bgr':'bg')+'">'+escH(p.status||'active')+'</span><span class="badge bgr">'+escH(typeCfg[1])+'</span><span class="people-account-state" data-person-account-status="'+escH(p.id)+'">'+(window.AurisPeopleUserLink?escH(window.AurisPeopleUserLink.personStatus(p)):'')+'</span>'+(isAdm()?'<button class="btn btn-sm" type="button" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-user-plus"></i>Create/link user</button>':'')+'</div>'
   +'</div>';
 }
 function peopleProfileDetails(p){
@@ -10994,8 +10985,9 @@ el.innerHTML='<div class="table-scroll"><table class="data-table people-register
 const args=encodeURIComponent(JSON.stringify([p.id]));
 const profile='<button class="btn btn-sm" data-auris-runtime-onclick="r0035" data-auris-runtime-args="'+args+'"><i class="ti ti-id"></i>Profile</button>';
 const actions=profile+(peopleCanManage()?'<button class="btn btn-sm" data-auris-runtime-onclick="r0036" data-auris-runtime-args="'+args+'"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" data-auris-runtime-onclick="r0038" data-auris-runtime-args="'+args+'">Reactivate</button>':'<button class="btn btn-sm danger" data-auris-runtime-onclick="r0039" data-auris-runtime-args="'+args+'">Deactivate</button>'):'');
-return '<tr><td><strong>'+escH(peopleName(p))+'</strong><small class="people-register-secondary">Staff no. '+escH(p.employee_number||'Not recorded')+'</small></td><td>'+escH(auditLabel(p.person_type||'person'))+(p.company_name?'<small class="people-register-secondary">'+escH(p.company_name)+'</small>':'')+'</td><td>'+escH(p.department||'—')+'<small class="people-register-secondary">'+escH(p.site||'—')+'</small></td><td>'+escH(p.job_title||'—')+'</td><td>'+stat(p.status||'active')+'</td><td><div class="people-register-actions">'+actions+'</div></td></tr>';
+return '<tr data-person-id="'+escH(p.id)+'"><td><strong>'+escH(peopleName(p))+'</strong><small class="people-register-secondary">Staff no. '+escH(p.employee_number||'Not recorded')+'</small></td><td>'+escH(auditLabel(p.person_type||'person'))+(p.company_name?'<small class="people-register-secondary">'+escH(p.company_name)+'</small>':'')+'</td><td>'+escH(p.department||'—')+'<small class="people-register-secondary">'+escH(p.site||'—')+'</small></td><td>'+escH(p.job_title||'—')+'</td><td>'+stat(p.status||'active')+'<small class="people-account-state" data-person-account-status="'+escH(p.id)+'"></small></td><td><div class="people-register-actions">'+actions+'</div></td></tr>';
 }).join('')+'</tbody></table></div>';
+if(window.AurisPeopleUserLink)window.AurisPeopleUserLink.decoratePeople();
 }
 
 async function loadPeople(){
@@ -11010,6 +11002,7 @@ if(request!==peopleLoadRequest||scope!==String(ccid()||'')||actor!==prof?.id)ret
 peAllData=rows;
 [['pe-total',p=>p.status==='active'],['pe-emp',p=>p.person_type==='employee'&&p.status==='active'],['pe-con',p=>p.person_type==='contractor'&&p.status==='active'],['pe-sub',p=>p.person_type==='subcontractor'&&p.status==='active']].forEach(([id,match])=>{const node=document.getElementById(id);if(node)node.textContent=rows.filter(match).length;});
 peopleRender();
+peopleUserLinkLoad().then(function(ui){ui.refreshPeople();}).catch(function(e){toast(e.message,false);});
 }catch(e){if(request===peopleLoadRequest&&scope===String(ccid()||'')&&actor===prof?.id&&el)el.innerHTML=registerErrorHtml('People register',e.message);}
 }
 
@@ -35183,6 +35176,7 @@ return true;
 }
 
 async function loadUsers() {
+  peopleUserLinkLoad().then(function(ui){ui.decorateUsers();}).catch(function(e){toast(e.message,false);});
   var invBtn = document.getElementById('users-invite-btn');
   if(invBtn) invBtn.style.display = isMgr()?'inline-flex':'none';
   var invTab = document.getElementById('utab-invite');
@@ -35219,7 +35213,7 @@ function cuInit() {
   // Default to invite mode; show company dropdown only for sephs_admin
   cuSetMode('invite');
   // Reset all fields
-  ['cu-name','cu-email','cu-password','cu-synthetic'].forEach(function(id){
+  ['cu-name','cu-email','cu-phone','cu-password','cu-synthetic'].forEach(function(id){
     var el = document.getElementById(id); if(el) el.value = '';
   });
   var roleEl = document.getElementById('cu-role'); if(roleEl) roleEl.value = 'employee';
@@ -35228,6 +35222,7 @@ function cuInit() {
   var coRow = document.getElementById('cu-company-row');
   if(coRow) coRow.style.display = isSA() ? 'block' : 'none';
   if(isSA()) cuLoadCompanies();
+  peopleUserLinkLoad().then(function(ui){ui.initCreate();}).catch(function(e){toast(e.message,false);});
 }
 
 function cuSetMode(mode) {
@@ -35300,12 +35295,15 @@ async function cuLoadCompanies() {
     o.value = c.id; o.textContent = c.name;
     sel.appendChild(o);
   });
+  if(Array.from(sel.options).some(function(o){return String(o.value)===String(ccid());}))sel.value=ccid();
+  if(window.AurisPeopleUserLink)window.AurisPeopleUserLink.loadCreatePeople().catch(function(e){toast(e.message,false);});
 }
 
 // Helper: call the admin-users Edge Function with proper auth.
 // Throws on non-OK responses with the error message as .message.
 async function adminFnCall(action, payload) {
   if(window.AurisUserAccess && !window.AurisUserAccess.allowed(prof,'users',(['invite_user','create_user'].includes(action)?'create':'edit'))) throw new Error('Your user access does not allow this action');
+  if(['invite_user','create_user'].includes(action))return (await peopleUserLinkLoad()).request(action,payload);
   // Find the anon key (used in the apikey header). The app stores it as KEY.
   var anonKey = (typeof KEY !== 'undefined') ? KEY : null;
   if(!anonKey) {
@@ -35336,67 +35334,10 @@ async function adminFnCall(action, payload) {
   return data;
 }
 
-async function cuSubmit() {
-  var btn = document.getElementById('cu-submit-btn');
-  var resEl = document.getElementById('cu-result');
-  var name = (document.getElementById('cu-name')?.value || '').trim();
-  var role = document.getElementById('cu-role')?.value || 'employee';
-  var companyId = isSA() ? (document.getElementById('cu-company')?.value || null) : null;
-
-  if(!name) { toast('Please enter the user\'s full name', false); return; }
-  if(isSA() && !companyId) { toast('Please select a company', false); return; }
-
-  resEl.style.display = 'none';
-  resEl.innerHTML = '';
-  if(btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Creating...'; }
-
-  try {
-    if(cuMode === 'invite') {
-      var email = (document.getElementById('cu-email')?.value || '').trim();
-      if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Please enter a valid email address (e.g. name@company.com)');
-      var d = await adminFnCall('invite_user', {
-        email: email, full_name: name, role: role, company_id: companyId
-      });
-      resEl.style.display = 'block';
-      resEl.innerHTML = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12px;color:#065F46">'
-        + '<div style="font-weight:700;margin-bottom:6px">Invitation sent</div>'
-        + 'An email has been sent to <strong>' + escH(email) + '</strong> with a link to set their password. They will be assigned the <strong>' + escH(role) + '</strong> role on completion.'
-        + '</div>';
-    } else {
-      var synth = (document.getElementById('cu-synthetic')?.value || '').trim();
-      var pw = (document.getElementById('cu-password')?.value || '').trim();
-      if(!synth || synth.startsWith('(')) throw new Error('Could not generate username - please re-enter the full name');
-      if(!pw || pw.length < 8) throw new Error('Password must be at least 8 characters');
-      var d2 = await adminFnCall('create_user', {
-        email: synth, password: pw, full_name: name, role: role, company_id: companyId
-      });
-      resEl.style.display = 'block';
-      resEl.innerHTML = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12px;color:#065F46">'
-        + '<div style="font-weight:700;margin-bottom:8px">User created</div>'
-        + 'Share these credentials with the user. They will be required to set a new password on first login.'
-        + '<div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #d1fae5;border-radius:6px;font-family:monospace;font-size:12px">'
-        + '<div><strong>Username:</strong> ' + escH(synth) + '</div>'
-        + '<div><strong>Password:</strong> ' + escH(pw) + '</div>'
-        + '</div>'
-        + '<button class="btn btn-sm" style="margin-top:10px" data-auris-named-action="copy-created-credentials" data-auris-runtime-args="' + encodeURIComponent(JSON.stringify([synth,pw])) + '"><i class="ti ti-copy"></i>Copy credentials</button>'
-        + '</div>';
-    }
-    // Refresh the users list
-    usersLoad();
-    // Reset the form
-    document.getElementById('cu-name').value = '';
-    document.getElementById('cu-email').value = '';
-    if(cuMode === 'direct') { cuUpdateSynthetic(); cuGenPassword(); }
-  } catch(e) {
-    resEl.style.display = 'block';
-    resEl.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;font-size:12px;color:#991b1b">'
-      + '<div style="font-weight:700;margin-bottom:6px">Could not create user</div>'
-      + escH(e.message || 'Unknown error')
-      + '</div>';
-  } finally {
-    if(btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-user-plus"></i>Create user'; }
-  }
+async function cuSubmit(){
+var actor=prof?.id,scope=String(ccid()||'');try{var ui=await peopleUserLinkLoad();if(actor!==prof?.id||scope!==String(ccid()||''))throw Error('Account or company changed. Reopen user creation.');return ui.submit();}catch(e){toast(e.message,false);}
 }
+
 
 // Wire up auto-update of synthetic username when name/company changes
 document.addEventListener('input', function(e) {
@@ -35592,6 +35533,7 @@ function usersRender(data) {
       + '</tr>';
   });
   el.innerHTML = h + '</tbody></table></div>';
+  if(window.AurisPeopleUserLink)window.AurisPeopleUserLink.decorateUsers();
 }
 
 // -- Edit user --------------------------------------------------------

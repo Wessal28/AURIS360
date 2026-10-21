@@ -110,6 +110,10 @@ for (const entry of manifest.migrations) {
   console.log(`Applied ${entry.file}`);
 }
 
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261021010000_people_user_linking.sql')], {
+  label: 'idempotent People/account linking installation', quiet: true
+});
+
 // Reapply the repair against a fully upgraded schema: it must restore the RPC
 // without duplicate policies, routines or constraints, and without data writes.
 run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261020020000_meetings_rpc_installation_repair.sql')], {
@@ -149,6 +153,8 @@ if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'inspection_follow_up.sql')], {label: 'recurring inspection and finding verification'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_access.sql')], {label: 'People onboarding and user access protection'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'people_user_linking.sql')], {label: 'atomic account/People linking, ambiguity, history and company protection'});
+run(process.execPath, ['scripts/verify-people-user-link-concurrency.cjs'], {label: 'competing account/People identity links'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'kpi_atomic_definition.sql')], {
   label: 'atomic KPI transaction behavior'
 });
