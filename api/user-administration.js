@@ -13,7 +13,7 @@ module.exports=async function(req,res){
  const token=String(req.headers.authorization||'').replace(/^Bearer /,'');
  if(!token||token===req.headers.authorization)return send(401,{error:'Sign in required'});
  const base=String(process.env.SUPABASE_URL||'').replace(/\/$/,''),key=process.env.SUPABASE_SERVICE_KEY,anon=process.env.SUPABASE_ANON_KEY;
- if(!base||!key||!anon)return send(503,{error:'User administration is not configured'});
+ if(!base||!key||!anon)return send(503,{error:'User administration is not configured',code:'administration_setup_required'});
  async function call(path,method='GET',body,userToken){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try{

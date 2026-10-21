@@ -48,7 +48,13 @@ async function responseText(url, options = {}) {
       throw new Error('Preview deployment protection rejected the automation bypass secret');
     }
     if (!response.ok) {
-      const error = new Error(`${response.status} ${response.statusText}`);
+      // Retain only these public setup codes, never raw response bodies or
+      // credentials, so database setup and server configuration are distinct.
+      let setupCode = '';
+      if (new URL(url).pathname === '/api/user-administration') {
+        try { const code = JSON.parse(text).code; if (['linking_setup_required', 'administration_setup_required'].includes(code)) setupCode = ` [${code}]`; } catch (_) {}
+      }
+      const error = new Error(`${response.status} ${response.statusText}${setupCode}`);
       error.status = response.status;
       throw error;
     }

@@ -45,6 +45,15 @@ async function invoke(f,body,request={}){
  try{await handler({method:'POST',headers:{authorization:'Bearer synthetic-session'},body,...request},res);return res;}finally{global.fetch=oldFetch;for(const key of Object.keys(vars))if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key];}
 }
 const creation=(extra={})=>({action:'invite_user',company_id:companyId,full_name:'Ada Example',email:'ada@example.test',role:'employee',...extra});
+
+test('the trusted new-account marker is added only after this request provisions Auth',async()=>{
+ const fresh=fixture(),result=await invoke(fresh,creation({_new_account:true}));assert.equal(result.code,200);
+ assert.equal(fresh.rpcCalls()[0].body.p_profile._new_account,undefined);
+ assert.equal(fresh.rpcCalls()[1].body.p_profile._new_account,true);
+ const existing=fixture({target:{},preview:{ok:true,user_id:existingId,person_id:personId}});
+ assert.equal((await invoke(existing,{action:'link_user_person',user_id:existingId,_new_account:true})).code,200);
+ assert.ok(existing.rpcCalls().every(call=>call.body.p_profile._new_account===undefined));assert.equal(existing.authWrites().length,0);
+});
 test('creation performs identity preview before Auth and finalizes the exact newly created identity',async()=>{
  const f=fixture(),r=await invoke(f,creation({person_id:personId,permissions:{all:true}}));assert.equal(r.code,200);assert.equal(r.body.person_id,personId);assert.equal(r.body.user_id,userId);
  const [preview,commit]=f.rpcCalls();assert.equal(preview.body.p_preview,true);assert.equal(commit.body.p_preview,false);assert.equal(commit.body.p_user_id,userId);assert.equal(commit.body.p_person_id,personId);

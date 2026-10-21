@@ -7,6 +7,19 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
+test('administrator preview diagnostics distinguish setup prerequisites without logging response details', async()=>{
+  const source=read('scripts/verify-staging-acceptance.cjs'),start=source.indexOf('async function responseText('),end=source.indexOf('async function jsonRequest(',start);
+  for(const code of ['linking_setup_required','administration_setup_required','private-token-secret']){
+    const context=vm.createContext({URL,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:false,status:503,statusText:'Service Unavailable',url:'https://preview.vercel.app/api/user-administration',text:async()=>JSON.stringify({code,error:'do-not-log-private-details'})})});
+    vm.runInContext(source.slice(start,end),context);
+    await assert.rejects(context.responseText('https://preview.vercel.app/api/user-administration'),error=>{
+      assert.doesNotMatch(error.message,/private-token-secret|do-not-log-private-details/);
+      if(code!=='private-token-secret')assert.ok(error.message.includes(code));
+      return true;
+    });
+  }
+});
+
 test('People linking release verification previews only the authenticated isolated tenant account', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   const preview = source.indexOf('const identityPreview =');
