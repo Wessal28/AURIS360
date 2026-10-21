@@ -409,6 +409,14 @@ async function main() {
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
   const checks = [{ label: 'Atomic HSE minutes save RPC installation', ...minutesRpc }];
+  // Preview only: exercise the deployed administrator endpoint and its service
+  // RPC without creating a login, sending an invitation or applying a link.
+  const identityPreview = await jsonRequest(new URL('/api/user-administration', preview).href, {
+    method: 'POST', headers: { ...previewHeaders, 'Content-Type': 'application/json', Authorization: 'Bearer ' + auth.access_token },
+    body: JSON.stringify({ action: 'preview_user_person', user_id: profile.id })
+  }).catch((error) => fail(`People/user linking preview is unavailable (${error.message}); apply the People/user linking database migration and verify the staging administrator service configuration.`));
+  if (!identityPreview || identityPreview.ok !== true || identityPreview.preview !== true || identityPreview.user_id !== profile.id) fail('People/user linking preview did not confirm the authenticated staging account.');
+  checks.push({ label: 'People/user linking administrator preview', accessible: true, read_only: true });
   const minutesId = 'c2400000-0000-4000-8000-000000000001';
   const minutesTitle = 'QA Improvement 260910 minutes save fixture';
   const minutesNotes = 'Fictional staging acceptance minutes. Atomic draft save and readback only; no operational meeting, approval, distribution or notification.';

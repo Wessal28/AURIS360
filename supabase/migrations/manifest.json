@@ -376,6 +376,11 @@
       "order": 75,
       "file": "20261020020000_meetings_rpc_installation_repair.sql",
       "sha256": "58000e24ee0f67ebac515a6116bd05ca6d2b94bcd7e520a6bfda7d658525ec8c"
+    },
+    {
+      "order": 76,
+      "file": "20261021010000_people_user_linking.sql",
+      "sha256": "68df4eb82d4a200b09ba63ab837357a25439269a475ef2746714a2abd1abf42e"
     }
   ]
 }

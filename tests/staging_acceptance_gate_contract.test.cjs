@@ -7,6 +7,19 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
+test('People linking release verification previews only the authenticated isolated tenant account', () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  const preview = source.indexOf('const identityPreview =');
+  assert.ok(preview > source.indexOf('Authenticated profile is not assigned to the dedicated staging tenant.'));
+  const check = source.slice(preview, source.indexOf('const minutesId =', preview));
+  assert.match(check, /new URL\('\/api\/user-administration', preview\)/);
+  assert.match(check, /action: 'preview_user_person', user_id: profile.id/);
+  assert.match(check, /identityPreview.preview !== true/);
+  assert.match(check, /identityPreview.user_id !== profile.id/);
+  assert.match(check, /read_only: true/);
+  assert.doesNotMatch(check, /invite_user|create_user|link_user_person|onboard_person/);
+});
+
 test('staging acceptance rejects production and requires the approved staging project', () => {
   const source = read('scripts/verify-staging-acceptance.cjs');
   assert.match(source, /::error title=Staging acceptance failed::/);
