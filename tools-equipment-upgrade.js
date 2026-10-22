@@ -3,6 +3,7 @@
 var M={tab:'dashboard',profiles:[],movements:[],assurance:[],maintenance:[],defects:[],schemaReady:true,ready:false};
 var baseLoad=window.loadTools,baseSwitch=window.toolsSwitchTab,baseNew=window.toolsNew,basePrint=window.toolsPrintCurrentView,baseSaveInspection=window.toolsSaveInspection;
 var LEGACY={register:'register',personal:'personal',inspection:'inspection',lifting:'lifting',statutory:'statutory',vehicles:'vehicles',rcd:'rcd'};
+window.AurisToolsReportState=function(){var value=function(id){return String(document.getElementById(id)?.value||'');};return {tab:M.tab,filters:{search:value('tools-search'),category:value('tools-filter-cat'),status:value('tools-filter-status'),inspection:value('tools-filter-inspection')},inspectionFilters:{search:value('tools-insp-search'),status:value('tools-insp-status-filter')||'active'},personId:value('tools-personal-filter'),rcd:{id:value('r5-rcd-print-device'),from:value('r5-rcd-print-from'),to:value('r5-rcd-print-to')}};};
 function e(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function n(v){return String(v||'').toLowerCase().replace(/\s+/g,'_');}
 function today(){return new Date().toISOString().slice(0,10);}

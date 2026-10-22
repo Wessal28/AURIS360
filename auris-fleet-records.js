@@ -52,11 +52,6 @@ async function fleetOpenLinkedRecord(req){
   modal.querySelector('.r5-close')?.focus();return true;
 }
 function fleetPrintVehicleRecord(vehicle){
-  var source=document.querySelector('#fleet-detail-modal .r5-record-dialog');if(!source)return;
-  var host=document.createElement('div');host.id='fleet-print-record';host.hidden=true;
-  var copy=source.cloneNode(true);copy.querySelectorAll('[hidden]').forEach(function(node){node.hidden=false;});
-  copy.querySelectorAll('nav,footer,button,a.btn').forEach(function(node){node.remove();});
-  copy.querySelectorAll('[data-panel]').forEach(function(panel){var h=document.createElement('h3');h.textContent={details:'Vehicle details',inspections:'Inspection history',fuel:'Fuel consumption',services:'Servicing history'}[panel.dataset.panel];panel.prepend(h);});
-  host.appendChild(copy);document.body.appendChild(host);
-  try{printRegisterView('Fleet vehicle record - '+fleetLabel(vehicle),'#fleet-print-record .r5-record-dialog');}finally{host.remove();}
+  if(!window.AurisFleetPrint){toast('Fleet report preview is unavailable. Open Fleet Management and retry.',false);return Promise.resolve(null);}
+  return window.AurisFleetPrint.vehicle(vehicle&&vehicle.id).catch(function(error){toast(error.message||'Vehicle report could not be prepared.',false);});
 }

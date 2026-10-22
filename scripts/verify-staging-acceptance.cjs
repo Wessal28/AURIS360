@@ -177,6 +177,11 @@ async function main() {
     .catch((error) => fail(`auris-training-plan-list-workspace.js deployment verification failed (${error.message}).`));
   if (trainingPlanSource.length < 100) fail('auris-training-plan-list-workspace.js was returned without usable application code.');
   assetSources.set('auris-training-plan-list-workspace.js', trainingPlanSource);
+  for (const [fileName, marker] of [['tools-print-reports.js', 'AurisToolsPrint'], ['fleet-print-reports.js', 'AurisFleetPrint']]) {
+    const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
+      .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
+    requireMarkers(source, fileName, [marker]);
+  }
 
   const functionalViews = [
     ['Executive Dashboard', 'auris-core.js', ['async function loadExecutive()', 'No open incidents']],
