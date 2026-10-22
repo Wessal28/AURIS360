@@ -10,10 +10,10 @@ function registryContext(){const c={globalThis:{}};vm.runInNewContext(read('auri
 
 test('all remaining extraction groups publish immutable service and asset contracts',()=>{
   const w=registryContext();
-  const expected=['actions','meetings','swms','sop','inspection','training','contractor','people','chemical','tools','atex','emergency','fire','esg','legal','fleet','ohealth'];
+  const expected=Array.from(w.AurisModuleRegistry.keys());
   const actual=w.AurisModuleRegistry.list().filter(m=>m.extraction).map(m=>m.key);
   assert.deepEqual(Array.from(actual).sort(),expected.slice().sort());
-  for(const key of expected){const x=w.AurisModuleRegistry.get(key).extraction;assert.equal(x.mode,'extracted');assert.ok(x.services.includes('api'));assert.ok(x.services.includes('rbac'));assert.equal(Object.isFrozen(x),true);}
+  for(const key of expected){const x=w.AurisModuleRegistry.get(key).extraction;assert.equal(x.mode,'extracted');assert.ok(x.services.includes('auth'));assert.ok(x.services.includes('api'));assert.ok(x.services.includes('rbac'));assert.equal(Object.isFrozen(x),true);}
 });
 
 test('large optional module upgrades are lazy rather than part of initial script execution',()=>{

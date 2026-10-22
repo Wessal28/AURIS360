@@ -6081,6 +6081,8 @@ function aiVerifiedInsightFindings(response,snapshot){
 
 // -- Full HSE insights (enhanced) ----------------------------------------------
 async function genFullAI() {
+  window.AurisAIInsightsPrintSnapshot=null;
+  var printInsightContext={company:String(ccid()||''),user:String(prof?.id||''),role:String(typeof activeRole==='function'?activeRole():prof?.role||'')};
   var contentEl = document.getElementById('ai-insights-content');
   var dateEl    = document.getElementById('ai-insights-date');
   if(!contentEl) return;
@@ -6103,6 +6105,11 @@ async function genFullAI() {
       {title:'Legal requirements needing review',count:snapshot.metrics.legal_gaps_current,rows:snapshot.evidence.legal_gaps,page:'legal',next:'Assess gaps and approve corrective plans.'},
       {title:'Year-to-date incidents',count:snapshot.metrics.incidents_ytd,rows:snapshot.evidence.incidents,page:'events',next:'Validate classifications and investigate open records.'}
     ];
+    if(printInsightContext.company!==String(ccid()||'')||printInsightContext.user!==String(prof?.id||'')||printInsightContext.role!==String(typeof activeRole==='function'?activeRole():prof?.role||''))throw Error('Your company or account changed. Generate insights again.');
+    var insightSources=[{module:'actions',section:'all'},{module:'legal',section:'register'},{module:'events',section:'register'}];
+    if(verified.some(function(x){return x.source_type==='inspections'||x.page==='inspection';}))insightSources.push({module:'inspection',section:'all'});
+    if(verified.some(function(x){return x.source_type==='expiring_authorisations'||x.page==='training';}))insightSources.push({module:'training',section:'auth'});
+    window.AurisAIInsightsPrintSnapshot=Object.assign({},printInsightContext,{generatedAt:snapshot.scope.snapshot_at,sources:insightSources,rows:findings.map(function(x){return {title:x.title,value:x.count,interpretation:'Governed register indicator',next_step:x.next};}).concat(verified.map(function(x){return {title:x.title,reference:x.ref,date:x.date,interpretation:x.interpretation,next_step:x.next_step};}))});
     sm('ai-rec-count',findings.filter(function(x){return x.count>0;}).length);
     contentEl.innerHTML='<p>Scope: '+escH(snapshot.scope.company)+' · '+escH(snapshot.scope.period)+' · snapshot '+escH(new Date(snapshot.scope.snapshot_at).toLocaleString('en-GB'))+'. Totals include all register pages; linked evidence shows up to 30 records per source.</p>'+
       findings.map(function(x){var row=x.rows[0];return '<div class="card"><div class="card-title">'+escH(x.title)+': '+x.count+'</div><p>'+escH(x.next)+'</p>'+(row&&row.id?'<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,row.id]))+'">Open source record '+escH(row.event_ref||row.ref||row.reference||row.id)+'</button>':'<small>No source record available in this snapshot.</small>')+'</div>';}).join('')+
@@ -24302,7 +24309,7 @@ async function ppeCreateMapAction(sourceRef, description, responsible, priority,
 async function loadPPE(){
   var head=document.getElementById('ppe-header-btns');
   if(head && !document.getElementById('ppe-print-btn')){
-    head.insertAdjacentHTML('afterbegin','<button class="btn" id="ppe-print-btn" data-auris-generated-onclick="g0212"><i class="ti ti-printer"></i>Print current view</button>');
+    head.insertAdjacentHTML('afterbegin','<button class="btn" id="ppe-print-btn" data-auris-generated-onclick="g0212"><i class="ti ti-printer"></i>Print preview / reports</button>');
   }
   ['ppe-cat-add-btn','ppe-inventory-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
@@ -40544,12 +40551,19 @@ function aurisPrintCSS() {
   `;
 }
 
+function aurisReportCompany() {
+  var selected=typeof ccid==='function'?String(ccid()||''):'',own=typeof co!=='undefined'?co:null,list=typeof saCompanyList!=='undefined'&&Array.isArray(saCompanyList)?saCompanyList:[];
+  if(typeof isSA==='function'&&isSA()&&(typeof sephsCompanyContext==='undefined'||!sephsCompanyContext))throw Error('Select one company before printing.');
+  var company=selected?list.find(function(c){return String(c.id)===selected;})||(own&&String(own.id)===selected?own:null):own;
+  if(!company?.name)throw Error('The selected company identity is unavailable. Reselect the company before printing.');
+  return company;
+}
 function aurisHeader(title, subtitle, refNo) {
   var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
   var B = (window.Brand && window.Brand.get) ? window.Brand.get() : {};
-  var companyName = (co && co.name) || (B && B.display_name) || 'Company';
-  var companyLogo = aurisSafeMediaUrl((co && co.logo_url) || '','image') || null;
-  var tagline = (B && B.tagline) || 'HSE Management Platform';
+  var reportCompany=aurisReportCompany(),companyName=reportCompany.name;
+  var companyLogo = aurisSafeMediaUrl(reportCompany.logo_url || '','image') || null;
+  var tagline = (typeof co!=='undefined'&&String(co?.id)===String(reportCompany.id)&&B?.tagline) || 'HSE Management Platform';
   var aurisLogo = '/assets/auris360-logo-final.png';
 
   var logoBlock = '<div class="rpt-brand-pair">'
@@ -40569,15 +40583,14 @@ function aurisHeader(title, subtitle, refNo) {
 }
 
 function aurisFooter(docType) {
-  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : null;
+  var reportCompany=aurisReportCompany(),B = (typeof co!=='undefined'&&String(co?.id)===String(reportCompany.id)&&window.Brand && window.Brand.get) ? window.Brand.get() : null;
   var customFooter = B && B.pdf_footer_text;
   var hidePoweredBy = B && B.hide_poweredby;
-  var displayName = (B && B.display_name) || (co&&co.name) || 'AURIS360';
+  var displayName = reportCompany.name;
 
   var html = '<div class="rpt-footer">'
     + '<span>' + escH(displayName) + ' | ' + escH(docType) + '</span>'
-    + '<span>This document is system3generated. Verify with original records.</span>'
-    + '<span>Page 1 of 1</span>'
+    + '<span>System-generated copy. Verify with original records.</span>'
     + '</div>';
 
   if (customFooter) {
@@ -41143,18 +41156,7 @@ function printCleanRegisterChrome(root) {
 }
 
 function printReportContextLabel() {
-  try {
-    var visibleLabel = (document.getElementById('sa-company-label')?.textContent || '').replace(/\s+/g, ' ').trim();
-    if (visibleLabel) return visibleLabel;
-    if (typeof isSA === 'function' && isSA() && typeof sephsCompanyContext !== 'undefined' && sephsCompanyContext) {
-      var list = Array.isArray(window.saCompanyList) ? window.saCompanyList : (typeof saCompanyList !== 'undefined' && Array.isArray(saCompanyList) ? saCompanyList : []);
-      var selected = list.find(function(c){ return c.id === sephsCompanyContext; });
-      if (selected && selected.name) return selected.name;
-    }
-    if (typeof co !== 'undefined' && co && co.name) return co.name;
-    if (typeof prof !== 'undefined' && prof && prof.company_name) return prof.company_name;
-  } catch(e) {}
-  return 'Current company';
+  return aurisReportCompany().name;
 }
 
 // Saved asset reports read fresh company-scoped records instead of clipped dialog content.

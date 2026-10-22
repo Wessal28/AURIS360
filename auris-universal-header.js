@@ -1,6 +1,21 @@
 (function(){
   'use strict';
   var pending=false;
+  var reportApis={actions:'AurisActionPrint',chemical:'AurisChemicalPrint',tools:'AurisToolsPrint',fleet:'AurisFleetPrint',training:'AurisTrainingPrint'};
+  function printContext(key){var p=typeof prof!=='undefined'?prof:window.prof;if(!p?.id||typeof ccid!=='function'||!ccid())throw Error('Sign in and select a company before preparing reports.');if(typeof canAccessPage==='function'&&!canAccessPage(key))throw Error('Your account cannot view this module.');return [String(p.id),String(ccid()),String(typeof activeRole==='function'?activeRole():p.role)].join('|');}
+  async function openReports(key){
+    var button=document.getElementById('auris-module-print'),capture;
+    try{capture=printContext(key);if(!window.AurisModuleRegistry?.get(key))throw Error('Reports are unavailable for this module.');if(button?.disabled)return;if(button)button.disabled=true;
+      await window.AurisModuleExtraction.prepare(key,{services:window.AurisPlatformServices});
+      var page=document.querySelector('#app .page.active');if(capture!==printContext(key)||page?.id!=='page-'+key)throw Error('The module, company or account changed. Reopen print options.');
+      if(key==='legal'||key==='meetings')return window.AurisModuleReports.open(key);
+      if(key==='kpi'){if(typeof window.kpiPrint!=='function')throw Error('KPI print tools are unavailable. Reopen Objectives & KPIs.');return window.kpiPrint();}
+      var api=reportApis[key]&&window[reportApis[key]];if(api)return api.open();
+      if(window.AurisPrintCatalogue?.catalogue[key])return window.AurisPrintCatalogue.open(key);
+      throw Error('Report tools could not load. Reopen this module and retry.');
+    }catch(e){if(typeof toast==='function')toast(e.message||String(e),false);}finally{if(button)button.disabled=false;}
+  }
+  window.AurisPrintLauncher=Object.freeze({open:openReports});
   function visible(element){return !!element&&getComputedStyle(element).display!=='none'&&getComputedStyle(element).visibility!=='hidden';}
   function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
   function update(){
@@ -8,6 +23,7 @@
     var page=document.querySelector('#app .page.active'),title=document.getElementById('auris-module-name'),crumb=document.getElementById('auris-module-crumb');
     if(!page||!title||!crumb)return;
     var key=page.id.replace(/^page-/,''),heading=page.querySelector('.page-title'),module=typeof MODULES_DIR!=='undefined'&&MODULES_DIR.find(function(item){return item.k===key;}),name=key==='dashboard'?'Home':key==='kpi'?'Objectives & KPIs':clean(module&&module.l)||clean(heading&&heading.textContent)||clean(document.getElementById('mobile-page-title')?.textContent)||'Dashboard';
+    var reportButton=document.getElementById('auris-module-print');if(reportButton){reportButton.dataset.module=key;reportButton.hidden=!window.AurisModuleRegistry?.get(key);reportButton.title='Print preview and reports · '+name;}
     var quick=document.getElementById('auris-module-quick-actions');
     if(quick){
       var hideQuick=key!=='risk';if(quick.hidden!==hideQuick)quick.hidden=hideQuick;
@@ -40,6 +56,7 @@
   function start(){
     var mirror=document.getElementById('auris-module-section');if(!mirror)return;
     var bar=document.getElementById('auris-module-bar'),sectionWrap=document.getElementById('auris-module-section-wrap');
+    if(bar&&sectionWrap&&!document.getElementById('auris-module-print')){var printButton=document.createElement('button');printButton.id='auris-module-print';printButton.type='button';printButton.className='btn auris-module-print';printButton.innerHTML='<i class="ti ti-printer" aria-hidden="true"></i><span>Print preview / reports</span>';printButton.addEventListener('click',function(){openReports(printButton.dataset.module);});bar.insertBefore(printButton,sectionWrap);}
     if(bar&&sectionWrap&&!document.getElementById('auris-module-quick-actions')){
       var quick=document.createElement('div');quick.id='auris-module-quick-actions';quick.className='auris-module-quick-actions';quick.hidden=true;
       quick.innerHTML='<button type="button" data-risk-action="refresh"><i class="ti ti-refresh"></i> Refresh</button><button type="button" data-risk-action="libraries"><i class="ti ti-books"></i> Risk Libraries</button><button type="button" class="primary" data-risk-action="new"><i class="ti ti-plus"></i> New RA</button><details class="auris-module-more"><summary>More</summary><div><button type="button" data-risk-action="print"><i class="ti ti-printer"></i> Print view</button><button type="button" data-risk-action="import"><i class="ti ti-file-import"></i> Import RA PDF</button></div></details>';
