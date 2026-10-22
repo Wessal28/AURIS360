@@ -177,7 +177,7 @@ async function main() {
     .catch((error) => fail(`auris-training-plan-list-workspace.js deployment verification failed (${error.message}).`));
   if (trainingPlanSource.length < 100) fail('auris-training-plan-list-workspace.js was returned without usable application code.');
   assetSources.set('auris-training-plan-list-workspace.js', trainingPlanSource);
-  for (const [fileName, marker] of [['tools-print-reports.js', 'AurisToolsPrint'], ['fleet-print-reports.js', 'AurisFleetPrint']]) {
+  for (const [fileName, marker] of [['tools-print-reports.js', 'AurisToolsPrint'], ['fleet-print-reports.js', 'AurisFleetPrint'], ['module-print-catalogue.js','AurisPrintCatalogue'], ['operational-print-catalogue.js',"register('events'"], ['specialist-print-catalogue.js',"register('ohealth'"], ['governance-print-catalogue.js',"register('settings'"], ['platform-print-catalogue.js',"register('dashboard'"]]) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
     requireMarkers(source, fileName, [marker]);
