@@ -51,7 +51,7 @@ var extractionMap={
   swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
   inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
-  training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js']},
+  training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js','training-print-reports.js']},
   contractor:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['contractor-management-upgrade.js']},
   people:{group:'people',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   chemical:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['chemical-control-upgrade.js','module-report-preview.js','chemical-print-reports.js']},
