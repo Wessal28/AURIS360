@@ -55,7 +55,7 @@ function toolsShowRecord(row,current,history){
   document.body.appendChild(host);
   host.addEventListener('click',function(event){try{AurisToolsListWorkspace.assertSession(current);}catch(error){event.preventDefault();event.stopImmediatePropagation();host.remove();toast(error.message,false);}},true);
   host.querySelector('[data-equipment-close]').addEventListener('click',function(){host.remove();});
-  host.querySelector('[data-equipment-print]').addEventListener('click',function(){printRegisterView('Equipment Record - '+(row.name||''),'#equipment-record .equipment-content');});
+  host.querySelector('[data-equipment-print]').addEventListener('click',function(){if(window.AurisToolsPrint)return window.AurisToolsPrint.record(row.id,current);toast('Equipment report tools are unavailable. Reload the application and retry.',false);});
   host.querySelector('[data-equipment-edit]')?.addEventListener('click',function(){toolsRecordWindow(row.id,'edit');});
   host.querySelectorAll('[data-equipment-inspection]').forEach(function(button){button.addEventListener('click',function(){toolsViewInspection(button.dataset.equipmentInspection);});});
   host.querySelectorAll('[data-equipment-reference]').forEach(function(button){button.addEventListener('click',function(){var record=history.find(function(result){return result.info.table===button.dataset.equipmentReference;}),entry=record?.rows.find(function(item){return String(item.id)===button.dataset.referenceId;});if(entry)toolsShowHistoryEntry(record.info,entry);});});
