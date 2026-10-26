@@ -64,3 +64,4 @@
 @media(max-width:768px){.auris-module-quick-actions{order:3;width:100%;justify-content:flex-end}.auris-module-quick-actions button{flex:1;justify-content:center}.auris-module-section{order:2}}
 @media(max-width:370px){.auris-module-section{max-width:none;width:100%;margin-left:0}}
 @media print{#app .page .page-title.auris-title-mirrored,#page-kpi .kpi-x-title.auris-title-mirrored{display:block!important}.auris-module-bar{display:none!important}}
+.auris-module-bar:has(.auris-module-print){flex-wrap:wrap}.auris-module-print{margin-left:auto;flex-shrink:0;white-space:nowrap;min-height:40px;font-size:13px}.auris-module-print~.auris-module-quick-actions,.auris-module-print~.auris-module-section{margin-left:0}.auris-module-print:disabled{opacity:.6;cursor:wait}@media(max-width:768px){.auris-module-print{font-size:12px;padding:8px 10px}.auris-module-print~.auris-module-section{max-width:100%}}

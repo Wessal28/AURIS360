@@ -43,14 +43,14 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260910-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1&action-chemical-reports-20261020-1&tools-fleet-print-20261022-1"></script>
+<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1&action-chemical-reports-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
 <script src="auris-platform-services.js?v=20260831-3"></script>
 <script src="auris-module-runtime.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle.js?v=20260901-13&settings-20261020-1"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
 <script src="auris-view-engine.js?v=20261002-3"></script>
-<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1&action-chemical-reports-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1"></script>
+<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1&action-chemical-reports-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
 <script src="auris-module-layout.js?v=20260831-4&legal-meetings-fix-20261020-1"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
 <script src="auris-approval-centre.js?v=20260901-10"></script>
@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="training-workflow.css?v=20261018-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -205,6 +205,11 @@
 <link rel="stylesheet" href="auris-settings-static.css?v=20260903-1">
 <link rel="stylesheet" href="auris-site-map-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-fire-certificates-static.css?v=20260815-1">
+<link rel="prefetch" as="script" href="module-print-catalogue.js?v=20261022-1">
+<link rel="prefetch" as="script" href="operational-print-catalogue.js?v=20261022-1">
+<link rel="prefetch" as="script" href="specialist-print-catalogue.js?v=20261022-1">
+<link rel="prefetch" as="script" href="governance-print-catalogue.js?v=20261022-1">
+<link rel="prefetch" as="script" href="platform-print-catalogue.js?v=20261022-1">
 </head>
 <body>
 <div id="login-screen">
@@ -2268,7 +2273,7 @@
 <div class="auris-bbs-s-7299078644">Behaviour-Based Safety - Safety observation cards - Positive behaviour - Unsafe acts &amp; conditions - Trend analysis</div>
 </div>
 <div class="auris-bbs-s-9c40389b4a">
-<button class="btn" id="obs-print-btn" data-auris-onclick="h0255"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" id="obs-print-btn" data-auris-onclick="h0255"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary" id="obs-new-btn" data-auris-onclick="h0256"><i class="ti ti-plus"></i>New observation</button>
 </div>
 </div>
@@ -2565,7 +2570,7 @@
 <div id="insp-subtitle" class="auris-audit-s-7299078644">Workplace - Equipment - PPE - Fire - Environmental - ISO Audits - Regulatory</div>
 </div>
 <div id="insp-header-btns" class="auris-audit-s-9c40389b4a">
-<button class="btn" id="audit-print-current-btn" data-auris-onclick="h0288"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" id="audit-print-current-btn" data-auris-onclick="h0288"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button type="button" class="btn" id="audit-escalation-config-btn" hidden>Reminder rules</button>
 <button type="button" class="btn" id="audit-reviewers-config-btn" hidden>Manage reviewers</button>
 <button class="btn btn-primary" id="insp-new-btn" data-auris-onclick="h0289"><i class="ti ti-plus"></i>New inspection</button>
@@ -2895,7 +2900,7 @@ Offline mode - changes will sync when connection is restored
 <div id="risk-add-btn" class="auris-risk-s-9c40389b4a">
 <button class="btn btn-sm" id="ra-lib-btn" data-auris-onclick="h0329"><i class="ti ti-books"></i>Libraries</button>
 <button class="btn btn-sm" id="ra-import-pdf-btn" data-auris-onclick="h0330"><i class="ti ti-file-import"></i>Import RA PDF</button>
-<button class="btn btn-sm" data-auris-onclick="h0331" title="Print current register"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn btn-sm" data-auris-onclick="h0331" title="Print current register"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary auris-risk-s-6aa34d7432" data-auris-onclick="h0332" id="ra-new-main-btn"><i class="ti ti-plus"></i>New RA</button>
 <button class="btn btn-sm" data-auris-onclick="h0333" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
@@ -4426,7 +4431,7 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div><div class="page-title">ATEX Areas</div><div class="auris-atex-s-7299078644">Hazardous area zones, explosive atmospheres, controls and inspection tracking</div></div>
 <div class="auris-atex-s-9c40389b4a">
-<button class="btn" id="atex-print-btn" data-auris-onclick="h0495"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" id="atex-print-btn" data-auris-onclick="h0495"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn" id="atex-plan-btn"><i class="ti ti-map-2"></i>Site zoning plan</button>
 <button class="btn btn-primary auris-atex-s-6aa34d7432" id="atex-add-btn" data-auris-onclick="h0496"><i class="ti ti-plus"></i>Add ATEX area</button>
 </div>
@@ -4875,7 +4880,7 @@ Offline mode - changes will sync when connection is restored
 <div id="ptw-register-actions" class="auris-ptw-s-9c40389b4a">
 <button class="btn btn-sm auris-ptw-s-8d39dd1732" id="ptw-btn-active" data-auris-onclick="h0527"><i class="ti ti-activity"></i>Active</button>
 <button class="btn btn-sm" id="ptw-btn-all" data-auris-onclick="h0528"><i class="ti ti-list"></i>All</button>
-<button class="btn btn-sm" data-auris-onclick="h0529" title="Print register"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn btn-sm" data-auris-onclick="h0529" title="Print register"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-sm" data-auris-onclick="h0530" title="Print opened permit"><i class="ti ti-file-description"></i>Print permit</button>
 <button class="btn btn-primary auris-ptw-s-6aa34d7432" id="ptw-new-btn" data-auris-onclick="h0531"><i class="ti ti-plus"></i>New Permit</button>
 </div>
@@ -5262,7 +5267,7 @@ Offline mode - changes will sync when connection is restored
 <div id="page-contractor" class="page">
 <div class="page-header">
 <div><div class="page-title">Contractor Management</div><div class="auris-contractor-s-7299078644">Pre-assessment, evaluation, authorisation to work and incident reporting</div></div>
-<div class="auris-contractor-s-9c40389b4a"><button class="btn" id="con-print-btn" data-auris-onclick="h0578"><i class="ti ti-printer"></i>Print current view</button><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="con-add-btn" data-auris-onclick="h0579"><i class="ti ti-plus"></i>Register contractor</button></div>
+<div class="auris-contractor-s-9c40389b4a"><button class="btn" id="con-print-btn" data-auris-onclick="h0578"><i class="ti ti-printer"></i>Print preview / reports</button><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="con-add-btn" data-auris-onclick="h0579"><i class="ti ti-plus"></i>Register contractor</button></div>
 </div>
 <div class="auris-contractor-s-475caf50fd">
 <button class="mtg-tab active" id="con-tab-register" data-auris-onclick="h0580">Register</button>
@@ -5428,7 +5433,7 @@ Offline mode - changes will sync when connection is restored
 <div id="page-esg" class="page">
 <div class="page-header">
 <div><div class="page-title">Environmental Operations &amp; ESG Data</div><div class="auris-esg-s-7299078644">Operational waste, water, energy, spills and inspections; not a full ESG disclosure</div></div>
-<div id="esg-header-btns" class="auris-esg-s-9c40389b4a"><button class="btn" id="esg-print-btn" data-auris-onclick="h0607"><i class="ti ti-printer"></i>Print current view</button></div>
+<div id="esg-header-btns" class="auris-esg-s-9c40389b4a"><button class="btn" id="esg-print-btn" data-auris-onclick="h0607"><i class="ti ti-printer"></i>Print preview / reports</button></div>
 </div>
 <div class="card auris-esg-s-9f15d2e401"><label for="esg-report-period">Reporting month</label><input id="esg-report-period" type="month" aria-label="Environmental reporting month"><span>Choose a month, then open a total to see its records.</span><button type="button" class="btn btn-sm" id="esg-export-csv"><i class="ti ti-download"></i> Export month CSV</button></div>
 <div class="auris-esg-s-0cf9615f1f">
@@ -5480,7 +5485,7 @@ Offline mode - changes will sync when connection is restored
 <div id="page-emergency" class="page">
 <div class="page-header">
 <div><div class="page-title">Emergency Management</div><div class="auris-emergency-s-7299078644">Response plans - ERT - Muster points - Drills - Activations - BCP - Equipment</div></div>
-<div id="em3header-btns" class="auris-emergency-s-9c40389b4a"><button class="btn" id="em3print-btn" data-auris-onclick="h0638"><i class="ti ti-printer"></i>Print current view</button></div>
+<div id="em3header-btns" class="auris-emergency-s-9c40389b4a"><button class="btn" id="em3print-btn" data-auris-onclick="h0638"><i class="ti ti-printer"></i>Print preview / reports</button></div>
 </div>
 
 <!-- Tabs -->
@@ -6120,7 +6125,7 @@ Offline mode - changes will sync when connection is restored
 <div id="page-ohealth" class="page">
 <div class="page-header">
 <div><div class="page-title">Occupational Health</div><div class="auris-ohealth-s-7299078644">Medical surveillance - Audiometry - Spirometry - Vaccination - Exposure monitoring - Occupational disease</div></div>
-<div id="oh-header-btns" class="auris-ohealth-s-9c40389b4a"><button class="btn" data-auris-onclick="h0685"><i class="ti ti-printer"></i>Print current view</button></div>
+<div id="oh-header-btns" class="auris-ohealth-s-9c40389b4a"><button class="btn" data-auris-onclick="h0685"><i class="ti ti-printer"></i>Print preview / reports</button></div>
 </div>
 
 <!-- Tabs -->
@@ -7208,7 +7213,7 @@ Offline mode - changes will sync when connection is restored
 </div><!-- end page-ppe -->
 
 <div id="page-noise" class="page">
-<div class="page-header"><div><div class="page-title">Noise Survey</div><div class="auris-noise-s-7299078644">Noise measurements - layout map - hearing protector adequacy</div></div><div class="auris-noise-s-9c40389b4a"><button class="btn" data-auris-onclick="h0784"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" data-auris-onclick="h0785"><i class="ti ti-plus"></i>New survey</button></div></div>
+<div class="page-header"><div><div class="page-title">Noise Survey</div><div class="auris-noise-s-7299078644">Noise measurements - layout map - hearing protector adequacy</div></div><div class="auris-noise-s-9c40389b4a"><button class="btn" data-auris-onclick="h0784"><i class="ti ti-printer"></i>Print preview / reports</button><button class="btn btn-primary" data-auris-onclick="h0785"><i class="ti ti-plus"></i>New survey</button></div></div>
 <div class="card auris-noise-s-6aa34d7432" id="noise-form">
 <div class="auris-noise-s-9cbea4862c"><div class="card-title auris-noise-s-ab79ea2b85" id="noise-form3title">New noise survey</div><div class="auris-noise-s-c9dc9b5648"><button id="noise-del-btn" class="btn auris-noise-s-8cbd87102f" data-auris-onclick="h0786"><i class="ti ti-trash"></i></button><button class="btn" data-auris-onclick="h0787"><i class="ti ti-printer"></i>Print survey</button><button class="btn btn-primary" data-auris-onclick="h0788"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" data-auris-onclick="h0789">Cancel</button></div></div>
 <div class="mtg-tabs auris-noise-s-b56987dbcb">
@@ -8342,7 +8347,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-moc-s-7299078644">Control process, equipment, chemical, legal and organisational changes before they create new risks</div>
 </div>
 <div class="auris-moc-s-c9dc9b5648">
-<button class="btn" data-auris-onclick="h0915"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" data-auris-onclick="h0915"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn" data-auris-onclick="h0916"><i class="ti ti-list-check"></i>Open linked MAP</button>
 <button class="btn btn-primary" data-auris-onclick="h0917"><i class="ti ti-plus"></i>New change request</button>
 </div>
@@ -8784,7 +8789,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-sop-s-7299078644">Upload a task video > extract frames > AI generates a complete Standard Operating Procedure</div>
 </div>
 <div class="auris-sop-s-9c40389b4a">
-<button class="btn" data-auris-onclick="h0957"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" data-auris-onclick="h0957"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary" data-auris-onclick="h0958"><i class="ti ti-plus"></i>New SOP</button>
 </div>
 </div>
@@ -8947,7 +8952,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-swms-s-7299078644">Safe Work Method Statement register - Work steps - Hazards - Controls - Sign-off</div>
 </div>
 <div class="auris-swms-s-9c40389b4a">
-<button class="btn" data-auris-onclick="h0976"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" data-auris-onclick="h0976"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary" data-auris-onclick="h0977"><i class="ti ti-plus"></i>New SWMS</button>
 </div>
 </div>
@@ -9063,7 +9068,7 @@ Offline mode - changes will sync when connection is restored
 <div class="auris-documents-s-7299078644">Version control - Approval workflow - Controlled copies - Acknowledgements - Expiry tracking</div>
 </div>
 <div id="doc-add-btn" class="auris-documents-s-9c40389b4a">
-<button class="btn" id="dc-print-btn" data-auris-onclick="h0989"><i class="ti ti-printer"></i>Print current view</button>
+<button class="btn" id="dc-print-btn" data-auris-onclick="h0989"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn" type="button" data-auris-runtime-onclick="r0154"><i class="ti ti-qrcode"></i>QR labels</button>
 <button class="btn btn-primary auris-documents-s-6aa34d7432" id="dc-new-btn" data-auris-onclick="h0990"><i class="ti ti-plus"></i>New document</button>
 </div>
@@ -9491,7 +9496,7 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <link rel="stylesheet" href="auris-document-control.css"/>
 
 <div id="page-people" class="page">
-<div class="page-header"><div class="page-title">People</div><div class="auris-people-s-9c40389b4a"><button class="btn" id="people-print-btn" data-auris-onclick="h1041"><i class="ti ti-printer"></i>Print register</button><div id="people-add-btn"></div></div></div><div id="people-edit-modal" class="people-editor-overlay"><div class="card auris-people-s-6aa34d7432" id="people-form" role="dialog" aria-modal="true" aria-label="Person editor"><div class="people-editor-heading"><div class="card-title">Add person</div><button type="button" class="btn" data-auris-onclick="h1044" aria-label="Close person editor">Close</button></div><div class="auris-people-s-7f83ce9623">Personal information</div><div class="form3row3"><div class="form3group"><label class="form3label">First name</label><input type="text" id="pef-first"/></div><div class="form3group"><label class="form3label">Last name</label><input type="text" id="pef-last"/></div><div class="form3group"><label class="form3label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form3group"><label class="form3label">Gender</label><select id="pef-gender"><option value="">-</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form3group"><label class="form3label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div class="auris-people-s-b1a3814463">Employment</div><div class="form3row3"><div class="form3group"><label class="form3label">Person type</label><select id="pef-type" data-auris-onchange="h1042"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form3group"><label class="form3label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form3group"><label class="form3label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Site</label><input type="text" id="pef-site"/></div><div class="form3group"><label class="form3label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form3group"><label class="form3label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Start date</label><input type="date" id="pef-start"/></div><div class="form3group"><label class="form3label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" class="auris-people-s-6aa34d7432"><div class="auris-people-s-b1a3814463">Contractor details</div><div class="form3row"><div class="form3group"><label class="form3label">Company name</label><input type="text" id="pef-coname"/></div><div class="form3group"><label class="form3label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form3row"><div class="form3group"><label class="form3label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form3group"><label class="form3label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div class="auris-people-s-b1a3814463">Contact & HSE</div><div class="form3row"><div class="form3group"><label class="form3label">Email</label><input type="email" id="pef-email"/></div><div class="form3group"><label class="form3label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form3group"><label class="form3label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form3group"><label class="form3label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form3row"><div class="form3group"><label class="form3label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form3group"><label class="form3label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form3group"><label class="form3label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div class="auris-people-s-9c40389b4a"><button class="btn btn-primary" data-auris-onclick="h1043"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" data-auris-onclick="h1044">Cancel</button></div></div></div><div class="metrics auris-people-s-bf4a218e05"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">-</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value auris-people-s-7608acb292" id="pe-emp">-</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value auris-people-s-e1bc9acca5" id="pe-con">-</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value auris-people-s-4e3b78e924" id="pe-sub">-</div></div></div><div class="card"><div class="card-title">People register<div class="auris-people-s-9c40389b4a"><input id="people-search" type="search" aria-label="Search people" placeholder="Name, staff no., email or phone"/><select id="filter-ptype" aria-label="Person type" class="auris-people-s-0562392f73" data-auris-onchange="h1045"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" aria-label="Person status" class="auris-people-s-0562392f73" data-auris-onchange="h1045"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header"><div class="page-title">People</div><div class="auris-people-s-9c40389b4a"><button class="btn" id="people-print-btn" data-auris-onclick="h1041"><i class="ti ti-printer"></i>Print preview / reports</button><div id="people-add-btn"></div></div></div><div id="people-edit-modal" class="people-editor-overlay"><div class="card auris-people-s-6aa34d7432" id="people-form" role="dialog" aria-modal="true" aria-label="Person editor"><div class="people-editor-heading"><div class="card-title">Add person</div><button type="button" class="btn" data-auris-onclick="h1044" aria-label="Close person editor">Close</button></div><div class="auris-people-s-7f83ce9623">Personal information</div><div class="form3row3"><div class="form3group"><label class="form3label">First name</label><input type="text" id="pef-first"/></div><div class="form3group"><label class="form3label">Last name</label><input type="text" id="pef-last"/></div><div class="form3group"><label class="form3label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form3group"><label class="form3label">Gender</label><select id="pef-gender"><option value="">-</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form3group"><label class="form3label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div class="auris-people-s-b1a3814463">Employment</div><div class="form3row3"><div class="form3group"><label class="form3label">Person type</label><select id="pef-type" data-auris-onchange="h1042"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form3group"><label class="form3label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form3group"><label class="form3label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Site</label><input type="text" id="pef-site"/></div><div class="form3group"><label class="form3label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form3group"><label class="form3label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Start date</label><input type="date" id="pef-start"/></div><div class="form3group"><label class="form3label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" class="auris-people-s-6aa34d7432"><div class="auris-people-s-b1a3814463">Contractor details</div><div class="form3row"><div class="form3group"><label class="form3label">Company name</label><input type="text" id="pef-coname"/></div><div class="form3group"><label class="form3label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form3row"><div class="form3group"><label class="form3label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form3group"><label class="form3label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div class="auris-people-s-b1a3814463">Contact & HSE</div><div class="form3row"><div class="form3group"><label class="form3label">Email</label><input type="email" id="pef-email"/></div><div class="form3group"><label class="form3label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form3row3"><div class="form3group"><label class="form3label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form3group"><label class="form3label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form3group"><label class="form3label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form3row"><div class="form3group"><label class="form3label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form3group"><label class="form3label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form3group"><label class="form3label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div class="auris-people-s-9c40389b4a"><button class="btn btn-primary" data-auris-onclick="h1043"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" data-auris-onclick="h1044">Cancel</button></div></div></div><div class="metrics auris-people-s-bf4a218e05"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">-</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value auris-people-s-7608acb292" id="pe-emp">-</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value auris-people-s-e1bc9acca5" id="pe-con">-</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value auris-people-s-4e3b78e924" id="pe-sub">-</div></div></div><div class="card"><div class="card-title">People register<div class="auris-people-s-9c40389b4a"><input id="people-search" type="search" aria-label="Search people" placeholder="Name, staff no., email or phone"/><select id="filter-ptype" aria-label="Person type" class="auris-people-s-0562392f73" data-auris-onchange="h1045"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" aria-label="Person status" class="auris-people-s-0562392f73" data-auris-onchange="h1045"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-users" class="page">
 <div class="page-header">
 <div>
@@ -9499,7 +9504,7 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div id="users-subtitle" class="auris-users-roles-s-7299078644">Manage access levels across all HSE roles</div>
 </div>
 <div class="auris-users-roles-s-9c40389b4a">
-<button class="btn" data-auris-onclick="h1046"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" data-auris-onclick="h1046"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary auris-users-roles-s-6aa34d7432" id="users-invite-btn" data-auris-onclick="h1047"><i class="ti ti-user-plus"></i>Invite user</button>
 <button class="btn auris-users-roles-s-c10eff76d5" data-auris-onclick="h1048"><i class="ti ti-building-plus"></i>Onboard Client</button>
 </div>
@@ -9832,7 +9837,7 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="card auris-administration-s-01b4441777">
 <div class="auris-administration-s-9d0b23f5fa">Company Register</div>
 <div class="auris-administration-s-c9dc9b5648">
-<button class="btn" data-auris-onclick="h1077"><i class="ti ti-printer"></i>Print register</button>
+<button class="btn" data-auris-onclick="h1077"><i class="ti ti-printer"></i>Print preview / reports</button>
 <button class="btn btn-primary" data-auris-onclick="h1066"><i class="ti ti-plus"></i>Add company</button>
 </div>
 </div>
@@ -11855,7 +11860,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1&login-layout-20261020-1&login-meeting-legal-20261020-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20261008-pdf-icons-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
-<link rel="stylesheet" href="auris-universal-header.css?v=20261004-4&legal-meetings-fix-20261020-1">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261004-4&legal-meetings-fix-20261020-1&remaining-module-print-20261022-1">
 <link rel="stylesheet" href="auris-single-module-header.css?v=20261004-2">
 <link rel="stylesheet" href="auris-sidebar-navigation.css?v=20261002-1">
 <link rel="stylesheet" href="auris-command-centre-priorities.css?v=20261002-1">
@@ -11895,7 +11900,7 @@ I can help you:<br>
 <link rel="prefetch" href="sop-video-upgrade.js?v=20261019-1" as="script"/>
 <script src="auris-icon-system.js?v=20261008-pdf-icons-1"></script>
 <script src="auris-section-picker.js?v=20261009-1&idle-20261020-1"></script>
-<script src="auris-universal-header.js?v=20261004-4&legal-meetings-fix-20261020-1"></script>
+<script src="auris-universal-header.js?v=20261004-4&legal-meetings-fix-20261020-1&remaining-module-print-20261022-1"></script>
 <script src="auris-sidebar-navigation.js?v=20261002-1"></script>
 <script src="requirements-5.js?v=20260824-1&report-preview-20261020-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>

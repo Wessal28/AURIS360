@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { buildMeetingsRpcIsolationFixture } = require('./meetings-rpc-isolation-fixture.cjs');
+const { buildSchemaValidationSql, assertSchemaValidationResult } = require('./verify-print-catalogue-schema.cjs');
 
 const root = path.resolve(__dirname, '..');
 const migrationDir = path.join(root, 'supabase', 'migrations');
@@ -149,6 +150,10 @@ const drift = ['tables', 'policies', 'routines']
   .filter((key) => Number(inventory[key]) !== expectations[key])
   .map((key) => `${key}: expected ${expectations[key]}, replayed ${inventory[key]}`);
 if (drift.length) fail(`schema drift detected (${drift.join('; ')}).`);
+
+console.log(assertSchemaValidationResult(JSON.parse(run(psql, [...commonArgs, '--quiet', '--tuples-only', '--no-align', '--file', '-'], {
+  capture: true, label: 'print catalogue schema contract', input: buildSchemaValidationSql()
+}))));
 
 console.log(`Migration replay passed: ${inventory.tables} tables, ${inventory.policies} policies, ${inventory.routines} routines.`);
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'inspection_follow_up.sql')], {label: 'recurring inspection and finding verification'});

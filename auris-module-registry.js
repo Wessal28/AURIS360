@@ -51,7 +51,7 @@ var extractionMap={
   swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
   inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
-  training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js']},
+  training:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['learning-competency-upgrade.js','elearning-course-path.js','training-print-reports.js']},
   contractor:{group:'people',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:['contractor-management-upgrade.js']},
   people:{group:'people',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},
   chemical:{group:'specialist-controls',mode:'extracted',services:['auth','api','rbac','audit'],assets:['chemical-control-upgrade.js','module-report-preview.js','chemical-print-reports.js']},
@@ -64,6 +64,23 @@ var extractionMap={
   fleet:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js','fleet-print-reports.js']},
   ohealth:{group:'assets-health',mode:'extracted',services:['auth','api','rbac','audit','notifications'],assets:[]}
 };
+
+// Report definitions remain optional module assets. Existing upgrades run first;
+// the shared preview and catalogue engine then precede the owning catalogue.
+var reportCatalogues=[
+  {asset:'operational-print-catalogue.js',group:'operations',keys:['events','observation','inspection','permit','workschedule','risk','moc']},
+  {asset:'specialist-print-catalogue.js',group:'specialist-controls',keys:['contractor','atex','fire','emergency','ppe','noise','esg','ohealth']},
+  {asset:'governance-print-catalogue.js',group:'governance',keys:['people','documents','sop','swms','users','admin','approvals','audit','master-data','integrations','settings']},
+  {asset:'platform-print-catalogue.js',group:'platform',keys:['dashboard','executive','ai-insights','work','investigation','engagement','sitemap']}
+];
+reportCatalogues.forEach(function(catalogue){catalogue.keys.forEach(function(key){
+  var extraction=extractionMap[key]||{group:catalogue.group,mode:'extracted',services:['auth','api','rbac','audit'],assets:[]};
+  ['module-report-preview.js','module-print-catalogue.js',catalogue.asset].forEach(function(asset){if(extraction.assets.indexOf(asset)===-1)extraction.assets.push(asset);});
+  extractionMap[key]=extraction;
+});});
+// KPI already loads its specialised print tools on demand. Its extraction
+// boundary adds service readiness without changing that independent loader.
+extractionMap.kpi={group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]};
 
 var platformVersion='2.0.0';
 var lifecycleMigration='20260901040000_modular_foundation_13_application_lifecycle';
