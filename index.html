@@ -43,14 +43,14 @@
 <script src="auris-module-event-handlers-batch-4.js?v=20260814-1"></script>
 <script src="auris-module-event-handlers-batch-5.js?v=20260910-1"></script>
 <script src="/api/runtime-config"></script>
-<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1&action-chemical-reports-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
+<script src="auris-module-registry.js?v=20260903-29&report-preview-20261020-1&action-chemical-reports-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1"></script>
 <script src="auris-platform-services.js?v=20260831-3"></script>
 <script src="auris-module-runtime.js?v=20260901-13"></script>
 <script src="auris-application-lifecycle.js?v=20260901-13&settings-20261020-1"></script>
 <script src="auris-application-lifecycle-persistence.js?v=20260901-13"></script>
 <script src="auris-command-centre.js?v=20260911-trigger-fix-1"></script>
 <script src="auris-view-engine.js?v=20261002-3"></script>
-<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1&action-chemical-reports-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
+<script src="auris-module-extraction.js?v=20260901-12&training-print-20261020-1&report-preview-20261020-1&action-chemical-reports-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1"></script>
 <script src="auris-module-layout.js?v=20260831-4&legal-meetings-fix-20261020-1"></script>
 <script src="auris-workflow-service.js?v=20260903-29"></script>
 <script src="auris-approval-centre.js?v=20260901-10"></script>
@@ -80,8 +80,8 @@
 <script src="auris-noise-list-workspace.js?v=20260916-1"></script>
 <script src="auris-meetings-list-workspace.js?v=20260916-1&icon-actions-20261009-1"></script>
 <script src="auris-training-plan-list-workspace.js?v=20261009-1&icons-20261020-1"></script>
-<script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1&people-access-20260927-1"></script>
-<link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1&people-access-20260927-1">
+<script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1&people-access-20260927-1&work-gantt-20261103-1"></script>
+<link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1&people-access-20260927-1&work-gantt-20261103-1">
 <script src="auris-reporting-engine.js?v=20260901-17"></script>
 <script src="auris-dashboard-designer.js?v=20260901-18"></script>
 <script src="auris-automation-engine.js?v=20260901-19"></script>
@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="training-workflow.css?v=20261018-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -170,7 +170,7 @@
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260823-4">
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
-<link rel="stylesheet" href="auris-work-schedule.css?v=20261005-1">
+<link rel="stylesheet" href="auris-work-schedule.css?v=20261103-1">
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260909-1">
@@ -210,6 +210,8 @@
 <link rel="prefetch" as="script" href="specialist-print-catalogue.js?v=20261022-1">
 <link rel="prefetch" as="script" href="governance-print-catalogue.js?v=20261022-1">
 <link rel="prefetch" as="script" href="platform-print-catalogue.js?v=20261022-1">
+<link rel="prefetch" as="script" href="auris-work-gantt.js?v=20261103-1">
+<link rel="prefetch" as="style" href="auris-work-gantt.css?v=20261103-1">
 </head>
 <body>
 <div id="login-screen">
@@ -1145,6 +1147,7 @@
 <div class="page-header">
 <div><div class="page-title">Work Schedule</div><div class="auris-work-s-7299078644">Plan, track and manage work orders with integrated HSE checks</div></div>
 <div class="auris-work-s-9c40389b4a">
+<button class="btn btn-sm" type="button" id="ws-btn-gantt" aria-pressed="false" aria-controls="ws-gantt-view"><i class="ti ti-chart-gantt" aria-hidden="true"></i>Gantt</button>
 <button class="btn btn-sm" data-auris-onclick="h0146" id="ws-btn-week"><i class="ti ti-calendar-week"></i>Week</button>
 <button class="btn btn-sm" data-auris-onclick="h0147" id="ws-btn-list"><i class="ti ti-list"></i>List</button>
 <button class="btn btn-primary auris-work-s-6aa34d7432" id="ws-add-btn" data-auris-onclick="h0148"><i class="ti ti-plus"></i>New work order</button>
@@ -1164,7 +1167,7 @@
 <div class="card auris-work-s-54bb9f1d16">
 <div class="auris-work-s-d5129e1520">
 <input type="text" id="ws-search" class="auris-work-s-11856befbc" aria-label="Search work orders" placeholder="Search work order, location, supervisor..." data-auris-oninput="h0149"/>
-<select id="ws-filter-status" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
+<select id="ws-filter-status" aria-label="Work status" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All statuses</option>
 <option value="planned">Planned</option>
 <option value="approved">Approved</option>
@@ -1173,7 +1176,7 @@
 <option value="completed">Completed</option>
 <option value="cancelled">Cancelled</option>
 </select>
-<select id="ws-filter-priority" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
+<select id="ws-filter-priority" aria-label="Work priority" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All priorities</option>
 <option value="critical">Critical</option>
 <option value="high">High</option>
@@ -1188,6 +1191,7 @@
 <div id="ws-list-view"><div id="ws-list"><div class="loading-msg">Loading...</div></div></div>
 
 <!-- WEEK VIEW -->
+<div id="ws-gantt-view" class="auris-work-s-6aa34d7432"><div id="ws-gantt-chart"></div></div>
 <div id="ws-week-view" class="auris-work-s-6aa34d7432">
 <div class="card auris-work-s-00178fec1d">
 <button class="btn btn-sm" aria-label="Previous week" title="Previous week" data-auris-onclick="h0151"><i class="ti ti-chevron-left"></i></button>
@@ -11860,7 +11864,7 @@ I can help you:<br>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260824-1&login-layout-20261020-1&login-meeting-legal-20261020-1">
 <link rel="stylesheet" href="auris-company-appearance.css?v=20261008-pdf-icons-1">
 <link rel="stylesheet" href="auris-section-picker.css?v=20261002-2">
-<link rel="stylesheet" href="auris-universal-header.css?v=20261004-4&legal-meetings-fix-20261020-1&remaining-module-print-20261022-1">
+<link rel="stylesheet" href="auris-universal-header.css?v=20261004-4&legal-meetings-fix-20261020-1&remaining-module-print-20261022-1&work-gantt-20261103-1">
 <link rel="stylesheet" href="auris-single-module-header.css?v=20261004-2">
 <link rel="stylesheet" href="auris-sidebar-navigation.css?v=20261002-1">
 <link rel="stylesheet" href="auris-command-centre-priorities.css?v=20261002-1">

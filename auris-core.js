@@ -13381,6 +13381,7 @@ async function sopDelete(id){
 // ===== WORK SCHEDULE MODULE =====
 let wsAllData=[], wsEditingId=null, wsCurrentId=null, wsWeekOffset=0, wsTbtAttendees=[];
 var wsTbtSavePending=false, wsTbtSavedId=null;
+var wsScheduleView='list',wsListLoadGeneration=0,wsListLoading=false;
 
 const WS_STATUS_CFG={
   planned:    ['#E6F1FB','#185FA5','Planned'],
@@ -13413,11 +13414,13 @@ function wsBadge(val, cfg){
 async function loadWorkSchedule(){
   document.getElementById('ws-record-view')?.remove();
   wsEditContext=null;
+  wsAllData=[];
   var addBtn=document.getElementById('ws-add-btn');
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   wsWeekOffset=0;
   var exportBtn=document.getElementById('ws-export-btn');
   if(!exportBtn){var listBtn=document.getElementById('ws-btn-list');if(listBtn){exportBtn=document.createElement('button');exportBtn.id='ws-export-btn';exportBtn.type='button';exportBtn.className='btn btn-sm';exportBtn.innerHTML='<i class="ti ti-download"></i> Export CSV';exportBtn.addEventListener('click',wsExportCsv);listBtn.insertAdjacentElement('afterend',exportBtn);}}
+  var ganttBtn=document.getElementById('ws-btn-gantt');if(ganttBtn&&!ganttBtn.dataset.wsBound){ganttBtn.addEventListener('click',function(){wsSetView('gantt');});ganttBtn.dataset.wsBound='true';}
   wsSetView('list');
 }
 
@@ -13430,18 +13433,24 @@ function wsExportCsv(){
 }
 
 function wsSetView(type){
+  type=['list','week','gantt'].includes(type)?type:'list';wsScheduleView=type;
+  document.getElementById('page-workschedule')?.classList.toggle('ws-gantt-active',type==='gantt');
   var listBtn=document.getElementById('ws-btn-list');
   var weekBtn=document.getElementById('ws-btn-week');
   if(listBtn)listBtn.style.background=type==='list'?'var(--green)':'';
   if(listBtn)listBtn.style.color=type==='list'?'#fff':'';
   if(weekBtn)weekBtn.style.background=type==='week'?'var(--green)':'';
   if(weekBtn)weekBtn.style.color=type==='week'?'#fff':'';
-  ['ws-list-view','ws-week-view','ws-detail-view','ws-form3view','ws-tbt-form'].forEach(function(id){
+  var ganttBtn=document.getElementById('ws-btn-gantt');if(ganttBtn){ganttBtn.style.background=type==='gantt'?'var(--green)':'';ganttBtn.style.color=type==='gantt'?'#fff':'';}
+  [['list',listBtn],['week',weekBtn],['gantt',ganttBtn]].forEach(function(pair){if(pair[1])pair[1].setAttribute('aria-pressed',String(type===pair[0]));});
+  ['ws-list-view','ws-week-view','ws-gantt-view','ws-detail-view','ws-form3view','ws-tbt-form'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   if(type==='list'){
     document.getElementById('ws-list-view').style.display='block';
     wsLoadList();
+  }else if(type==='gantt'){
+    document.getElementById('ws-gantt-view').style.display='block';wsRenderGantt();
   }else{
     document.getElementById('ws-week-view').style.display='block';
     wsRenderWeek();
@@ -13450,16 +13459,32 @@ function wsSetView(type){
 
 function wsShowList(){wsSetView('list');}
 
+function wsRenderGantt(){
+  var host=document.getElementById('ws-gantt-chart');if(!host||wsScheduleView!=='gantt')return;
+  if(wsListLoading){host.innerHTML='<div class="loading-msg" role="status">Loading work schedule…</div>';return;}
+  try{
+    var current=AurisWorkScheduleWorkspace.session(),page=document.getElementById('page-workschedule'),pane=document.getElementById('ws-gantt-view');
+    function guard(){AurisWorkScheduleWorkspace.assertSession(current);if(!host.isConnected||wsScheduleView!=='gantt'||pane?.style.display==='none'||page?.classList&&!page.classList.contains('active'))throw Error('The work schedule view changed. Reopen the work order.');return current;}
+    guard();if(!window.AurisWorkGantt)throw Error('Gantt tools are unavailable. Reopen Work Schedule and retry.');
+    window.AurisWorkGantt.mount(host,wsAllData,{context:guard,filters:{search:document.getElementById('ws-search')?.value,status:document.getElementById('ws-filter-status')?.value,priority:document.getElementById('ws-filter-priority')?.value},onOpen:function(id,origin,mountGuard){function viewerGuard(){guard();if(typeof mountGuard==='function')mountGuard();return current;}viewerGuard();return wsRecordWindow(id,'view',{guard:viewerGuard,origin:origin||document.activeElement});},onRefresh:function(){guard();return wsLoadList();}});
+  }catch(e){host.innerHTML='<div class="loading-msg" role="alert">'+escH(e.message)+'</div>';}
+}
+
 async function wsLoadList(){
   var el=document.getElementById('ws-list');
   if(!el)return;
+  var ticket=++wsListLoadGeneration;wsListLoading=true;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  if(wsScheduleView==='gantt')wsRenderGantt();
   var context;
   try{
     context=AurisWorkScheduleWorkspace.session();
-    var d=await api('/work_schedule?select=*&company_id=eq.'+encodeURIComponent(context.companyId)+'&order=planned_start,created_at.desc');
+    var d=await apiAllRows('/work_schedule?select=*&company_id=eq.'+encodeURIComponent(context.companyId)+'&order=planned_start.asc.nullslast,created_at.desc,id.asc');
     AurisWorkScheduleWorkspace.assertSession(context);
+    if(ticket!==wsListLoadGeneration||document.getElementById('page-workschedule')?.classList&&!document.getElementById('page-workschedule').classList.contains('active'))return;
+    if(!Array.isArray(d))throw Error('The work schedule response was not a record list.');
     wsAllData=(d||[]).filter(function(row){return String(row.company_id)===context.companyId;});
+    wsListLoading=false;
     var today=new Date();
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('ws-m3planned',wsAllData.filter(x=>x.status==='planned'||x.status==='approved').length);
@@ -13469,10 +13494,11 @@ async function wsLoadList(){
     setM('ws-m3hold',wsAllData.filter(x=>x.status==='on_hold').length);
     wsFilter();
     if(document.getElementById('ws-week-view')?.style.display==='block')wsRenderWeek();
-  }catch(e){if(context){try{AurisWorkScheduleWorkspace.assertSession(context);}catch(_){return;}}wsAllData=[];if(el)el.innerHTML=registerErrorHtml('Work Schedule register',e.message);console.error(e);}
+  }catch(e){if(ticket!==wsListLoadGeneration)return;if(context){try{AurisWorkScheduleWorkspace.assertSession(context);}catch(_){return;}}if(document.getElementById('page-workschedule')?.classList&&!document.getElementById('page-workschedule').classList.contains('active'))return;wsAllData=[];wsListLoading=false;if(el)el.innerHTML=registerErrorHtml('Work Schedule register',e.message);if(wsScheduleView==='gantt'){var chart=document.getElementById('ws-gantt-chart');if(chart){chart.innerHTML='<div class="loading-msg" role="alert">Work orders could not be loaded. Your filters are retained.</div><button type="button" class="btn" data-ws-retry>Retry work schedule</button>';chart.querySelector('[data-ws-retry]').addEventListener('click',wsLoadList);}}console.error(e);}
 }
 
 function wsFilter(){
+  if(wsScheduleView==='gantt'){wsRenderGantt();return;}
   var el=document.getElementById('ws-list');if(!el)return;
   if(window.AurisWorkScheduleWorkspace&&window.AurisViewEngine){
     window.AurisWorkScheduleWorkspace.mount(el,wsAllData,{canEdit:isMgr(),filters:{search:document.getElementById('ws-search')?.value,status:document.getElementById('ws-filter-status')?.value,priority:document.getElementById('ws-filter-priority')?.value},onApplyFilters:function(f){[['ws-search','search'],['ws-filter-status','status'],['ws-filter-priority','priority']].forEach(function(pair){var node=document.getElementById(pair[0]);if(node)node.value=f[pair[1]]||'';});wsFilter();}});
@@ -13580,7 +13606,7 @@ async function wsShowDetail(id){
   if(!x){try{var d=await api('/work_schedule?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(ccid()));x=d?.[0];}catch(e){return;}}
   if(!x||String(x.company_id)!==String(ccid()))return;
   wsCurrentId=id;
-  ['ws-list-view','ws-week-view','ws-form3view','ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(i){
+  ['ws-list-view','ws-week-view','ws-gantt-view','ws-form3view','ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(i){
     var el=document.getElementById(i);if(el)el.style.display='none';
   });
   document.getElementById('ws-detail-view').style.display='block';
@@ -13927,7 +13953,7 @@ async function wsNew(){
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=true;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=false;
   wsPopulateSupervisorSelect('','');
-  ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['ws-list-view','ws-week-view','ws-gantt-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
 
@@ -13957,7 +13983,7 @@ async function wsEdit(id){
   var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=x.requires_ra!==false;
   var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=!!x.requires_permit;
   wsPopulateSupervisorSelect(x.supervisor_id||'',x.supervisor_name||'');
-  ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['ws-list-view','ws-week-view','ws-gantt-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-form3view').style.display='block';
 }
 
