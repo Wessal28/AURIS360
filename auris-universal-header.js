@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var pending=false;
+  var pending=false,sectionSource=null;
   var reportApis={actions:'AurisActionPrint',chemical:'AurisChemicalPrint',tools:'AurisToolsPrint',fleet:'AurisFleetPrint',training:'AurisTrainingPrint'};
   function printContext(key){var p=typeof prof!=='undefined'?prof:window.prof;if(!p?.id||typeof ccid!=='function'||!ccid())throw Error('Sign in and select a company before preparing reports.');if(typeof canAccessPage==='function'&&!canAccessPage(key))throw Error('Your account cannot view this module.');return [String(p.id),String(ccid()),String(typeof activeRole==='function'?activeRole():p.role)].join('|');}
   async function openReports(key){
@@ -21,9 +21,9 @@
   function update(){
     pending=false;
     var page=document.querySelector('#app .page.active'),title=document.getElementById('auris-module-name'),crumb=document.getElementById('auris-module-crumb');
-    if(!page||!title||!crumb)return;
+    if(!page||!title||!crumb){sectionSource=null;return;}
     var key=page.id.replace(/^page-/,''),heading=page.querySelector('.page-title'),module=typeof MODULES_DIR!=='undefined'&&MODULES_DIR.find(function(item){return item.k===key;}),name=key==='dashboard'?'Home':key==='kpi'?'Objectives & KPIs':clean(module&&module.l)||clean(heading&&heading.textContent)||clean(document.getElementById('mobile-page-title')?.textContent)||'Dashboard';
-    var reportButton=document.getElementById('auris-module-print');if(reportButton){reportButton.dataset.module=key;reportButton.hidden=!window.AurisModuleRegistry?.get(key);reportButton.title='Print preview and reports · '+name;}
+    var reportButton=document.getElementById('auris-module-print');if(reportButton){reportButton.dataset.module=key;var hidePrint=!window.AurisModuleRegistry?.get(key);if(reportButton.hidden!==hidePrint)reportButton.hidden=hidePrint;reportButton.title='Print preview and reports · '+name;}
     var quick=document.getElementById('auris-module-quick-actions');
     if(quick){
       var hideQuick=key!=='risk';if(quick.hidden!==hideQuick)quick.hidden=hideQuick;
@@ -37,7 +37,8 @@
     var kpiTitle=key==='kpi'&&page.querySelector('.kpi-x-title');if(kpiTitle&&!kpiTitle.classList.contains('auris-title-mirrored'))kpiTitle.classList.add('auris-title-mirrored');
     var original=Array.from(page.querySelectorAll('.auris-section-picker')).find(function(picker){return picker.parentElement&&picker.parentElement.getClientRects().length>0;});
     var source=original&&original.querySelector('select'),mirror=document.getElementById('auris-module-section'),wrap=document.getElementById('auris-module-section-wrap');
-    if(source&&source.options.length){
+    sectionSource=source&&source.options.length?source:null;
+    if(sectionSource){
       if(!original.classList.contains('auris-section-mirrored'))original.classList.add('auris-section-mirrored');
       var options=Array.from(source.options),same=mirror.options.length===options.length&&options.every(function(option,index){return mirror.options[index].textContent===option.textContent&&mirror.options[index].value===option.value;});
       if(!same)mirror.replaceChildren.apply(mirror,options.map(function(option){var copy=document.createElement('option');copy.value=option.value;copy.textContent=option.textContent;return copy;}));
@@ -71,7 +72,15 @@
     profileMenu?.addEventListener('click',function(event){var action=event.target.closest('[data-auris-profile-action]')?.dataset.aurisProfileAction;if(!action)return;closeProfile();if(action==='profile')document.getElementById('sb-user')?.click();if(action==='apps')document.getElementById('modules-trigger')?.click();if(action==='rollout')document.getElementById('dev-mode-toggle')?.click();});
     document.addEventListener('click',function(event){if(profileMenu&&!profileMenu.hidden&&!event.target.closest('#auris-profile-menu,#auris-profile-trigger'))closeProfile();});
     document.addEventListener('keydown',function(event){if(event.key==='Escape')closeProfile();});
-    mirror.addEventListener('change',function(){var page=document.getElementById(mirror.dataset.sourcePage);if(!page||!page.classList.contains('active'))return;var source=page.querySelector('.auris-section-picker select');if(!source)return;source.value=mirror.value;source.dispatchEvent(new Event('change',{bubbles:true}));schedule();});
+    mirror.addEventListener('change',function(){
+      var page=document.getElementById(mirror.dataset.sourcePage),source=sectionSource;
+      if(!page?.classList.contains('active')||!source?.isConnected||source.closest('.page')!==page)return;
+      if(Array.from(source.options).some(function(option){return option.value===mirror.value;})){
+        source.value=mirror.value;
+        source.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      schedule();
+    });
     new MutationObserver(schedule).observe(document.getElementById('app'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','hidden','style','value']});
     schedule();
   }

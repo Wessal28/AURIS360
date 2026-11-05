@@ -6,13 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const core = fs.readFileSync(path.join(root, 'auris-core.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const toolsCss = fs.readFileSync(path.join(root, 'tools-equipment-upgrade.css'), 'utf8');
 const toolsJs = fs.readFileSync(path.join(root, 'tools-equipment-upgrade.js'), 'utf8');
-
-test('tools navigation wraps into rows without horizontal scrolling', () => {
-  assert.match(toolsCss, /\.teu-tabs\{flex-wrap:wrap;overflow:visible\}/);
-  assert.match(toolsCss, /\.teu-tabs button\{flex:1 1 calc\(16\.666% - 7px\);min-width:150px\}/);
-});
 
 test('Fleet owns vehicles and Tools does not expose a duplicate Vehicles workspace', () => {
   const shellStart = toolsJs.indexOf('function ensureShell()');

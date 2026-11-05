@@ -3339,7 +3339,10 @@ const activateRoutedPage=function(){
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
   activatePageNavigation(name,el);
-  if(window.AurisUserAccess)window.AurisUserAccess.activateSections(name);
+  if(window.AurisUserAccess){
+    if(name==='tools')window.AurisUserAccess.applySections();
+    else window.AurisUserAccess.activateSections(name);
+  }
   return target;
 };
 var pageLoader=moduleLoaderFor(name);
@@ -25102,7 +25105,7 @@ function toolsInspectionState(x,today){
   return {last:dt,days:days,due:days>interval,soon:days>Math.max(1,interval-7)&&days<=interval,label:days+' days ago'};
 }
 
-function toolsSwitchTab(tab,btn){
+function toolsSwitchTab(tab,btn,registerLoading){
   if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'tools',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'tools');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
 
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -25111,7 +25114,7 @@ function toolsSwitchTab(tab,btn){
     var el=document.getElementById('tools-view-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   ['tools-form','tools-insp-form','tools-rcd-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
-  if(tab==='register')toolsLoadRegister();
+  if(tab==='register'){if(!registerLoading)toolsLoadRegister();}
   else if(tab==='personal')toolsLoadPersonal();
   else if(tab==='inspection')toolsLoadInspections();
   else if(tab==='lifting')toolsLoadLiftingAccessories();
@@ -25135,13 +25138,28 @@ async function loadTools(){
   if(search&&!search.dataset.bound){search.dataset.bound='1';search.addEventListener('input',toolsRenderInspections);}
   var statusFilter=document.getElementById('tools-insp-status-filter');
   if(statusFilter&&!statusFilter.dataset.bound){statusFilter.dataset.bound='1';statusFilter.addEventListener('change',toolsRenderInspections);}
-  toolsLoadRegister();
+  return toolsLoadRegister();
+}
+
+var toolsReadRequests=Object.create(null);
+function toolsReadScope(){
+  return JSON.stringify([prof?.id,activeRole(),ccid(),cf(),_authSessionGeneration]);
+}
+function toolsBeginRead(section){
+  var request={scope:toolsReadScope()};
+  toolsReadRequests[section]=request;
+  return function(){return toolsReadRequests[section]===request&&toolsReadScope()===request.scope;};
 }
 
 // -- REGISTER ----------------------------------------------------------------
 async function toolsLoadRegister(){
   var el=document.getElementById('tools-register-list');
   if(!el)return;
+  if(toolsReadRequests.register?.scope!==toolsReadScope()){
+    toolsAllData=[];
+    toolsLastInspectionByTool={};
+  }
+  var current=toolsBeginRead('register');
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var res=await Promise.all([
@@ -25150,6 +25168,7 @@ async function toolsLoadRegister(){
       api('/work_schedule_links?select=record_id,work_order_id&link_type=eq.equipment'+cf()+'&limit=5000').catch(function(){return null;}),
       api('/work_schedule?select=id,ref_number,status'+cf()+'&limit=5000').catch(function(){return null;})
     ]);
+    if(!current())return;
     var workById=new Map((res[3]||[]).map(function(work){return [String(work.id),work];}));
     var allocated=new Map();(res[2]||[]).forEach(function(link){var work=workById.get(String(link.work_order_id));if(work&&!['completed','cancelled'].includes(String(work.status||'')))allocated.set(String(link.record_id),work.ref_number||'Work order');});
     toolsAllData=(res[0]||[]).filter(toolsIsGeneralEquipment).map(function(tool){return Object.assign({},tool,{work_order_ref:allocated.get(String(tool.id))||'',availability_unknown:res[2]===null||res[3]===null});});
@@ -25162,7 +25181,7 @@ async function toolsLoadRegister(){
     setM('tools-m3stat',toolsAllData.filter(x=>x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon).length);
     setM('tools-m3due',toolsAllData.filter(function(x){return (x.status||'active')==='active'&&toolsInspectionState(x,today).due;}).length);
     toolsFilterRegister();
-  }catch(e){if(el)el.innerHTML=registerErrorHtml('Tools & Equipment register',e.message);console.error(e);}
+  }catch(e){if(current()){el.innerHTML=registerErrorHtml('Tools & Equipment register',e.message);console.error(e);}}
 }
 
 function toolsFilterRegister(){
@@ -25342,6 +25361,7 @@ function toolsFormBack(){
   toolsRecordEditContext=null;
   document.getElementById('tools-form').style.display='none';
   var returnTab=toolsFormReturnTab||'register';
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-page-select')){teuSwitch(returnTab);return;}
   var view=document.getElementById('tools-view-'+returnTab);if(view)view.style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   var tab=document.getElementById('tools-tab-'+returnTab);if(tab)tab.classList.add('active');
@@ -25442,12 +25462,17 @@ async function toolsDeleteFromList(id){
 async function toolsLoadPersonal(){
   var el=document.getElementById('tools-personal-list');
   if(!el)return;
+  var current=toolsBeginRead('personal'),scope=toolsReadScope();
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   // Populate filter dropdown
   var sel=document.getElementById('tools-personal-filter');
-  if(sel&&sel.options.length<=1){
+  if(sel&&(sel.dataset.toolsPeopleScope!==scope||sel.options.length<=1)){
+    var selected=sel.value;
     sel.innerHTML='<option value="">All employees</option>';
-    (people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;sel.appendChild(o);});
+    var choices=cf()?tenantPeople():people||[];
+    choices.forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;sel.appendChild(o);});
+    if(choices.some(function(p){return String(p.id)===selected;}))sel.value=selected;
+    sel.dataset.toolsPeopleScope=scope;
   }
   var personFilter=document.getElementById('tools-personal-filter')?.value||'';
   try{
@@ -25455,6 +25480,7 @@ async function toolsLoadPersonal(){
     if(personFilter)q+='&assigned_to=eq.'+personFilter;
     else q+='&assigned_to=not.is.null';
     var d=await api(q);
+    if(!current())return;
     var assigned=d||[];
     if(!assigned.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0224"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
@@ -25498,11 +25524,12 @@ async function toolsLoadPersonal(){
       html+='</tbody></table></div>';
     });
     el.innerHTML=html;
-  }catch(err){el.innerHTML=registerErrorHtml('register',err.message);}
+  }catch(err){if(current())el.innerHTML=registerErrorHtml('register',err.message);}
 }
 
 function toolsStartPersonalCheck(personName){
   // Switch to inspection tab and filter by person
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-page-select')){teuSwitch('inspection');return;}
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
   ['register','personal','lifting','statutory','vehicles','rcd'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
@@ -25514,11 +25541,14 @@ function toolsStartPersonalCheck(personName){
 async function toolsLoadInspections(){
   var el=document.getElementById('tools-insp-list');
   if(!el)return;
+  var current=toolsBeginRead('inspection');
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    toolsInspectionData=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100')||[];
+    var rows=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100');
+    if(!current())return;
+    toolsInspectionData=rows||[];
     toolsRenderInspections();
-  }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
+  }catch(e){if(current())el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
 function toolsRenderInspections(){
@@ -25609,12 +25639,14 @@ async function toolsDeleteInspectionPermanently(id){
 async function toolsLoadLiftingAccessories(){
   var el=document.getElementById('tools-lifting-list');
   if(!el)return;
+  var current=toolsBeginRead('lifting');
   el.innerHTML='<div class="loading-msg">Loading lifting accessories...</div>';
   try{
     var res=await Promise.all([
       api('/tools_register?category=eq.lifting'+cf()+'&order=name&select=*'),
       api('/tool_inspections?select=*&status=eq.active'+cf()+'&order=inspection_date.desc&limit=500')
     ]);
+    if(!current())return;
     toolsLiftingData=res[0]||[];
     var inspections=res[1]||[];
     var lastByTool={};
@@ -25681,7 +25713,7 @@ async function toolsLoadLiftingAccessories(){
     h+='</tbody></table></div>';
     el.innerHTML=h;
   }catch(e){
-    el.innerHTML=registerErrorHtml('register',e.message);
+    if(current())el.innerHTML=registerErrorHtml('register',e.message);
   }
 }
 
@@ -25715,7 +25747,7 @@ async function toolsNewInspection(){
 }
 
 async function toolsStartInspection(toolId,returnTab){
-  var activeToolsTab=document.querySelector('#teu-tabs button.active')?.dataset?.tab||document.querySelector('#page-tools [id^="tools-tab-"].active')?.id?.replace('tools-tab-','');
+  var activeToolsTab=window.AurisToolsReportState?.().tab||document.querySelector('#page-tools [id^="tools-tab-"].active')?.id?.replace('tools-tab-','');
   toolsInspectionReturnTab=returnTab||(activeToolsTab==='register'?'register':'inspection');
   var tool=toolsAllData.find(x=>x.id===toolId)||toolsLiftingData.find(x=>x.id===toolId);
   if(!tool&&toolId){try{var d=await api('/tools_register?id=eq.'+toolId+'&select=*');tool=d?.[0];}catch(e){}}
@@ -25826,7 +25858,7 @@ function toolsInspScore(){
 
 function toolsInspFormBack(){
   var target=toolsInspectionReturnTab||'inspection';
-  if(typeof teuSwitch==='function'&&document.getElementById('teu-tabs')){teuSwitch(target);return;}
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-page-select')){teuSwitch(target);return;}
   document.getElementById('tools-insp-form').style.display='none';
   ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   var view=document.getElementById('tools-view-'+target)||document.getElementById('tools-view-inspection');
@@ -25898,10 +25930,13 @@ async function toolsSaveInspection(){
 async function toolsLoadRCD(){
   var el=document.getElementById('tools-rcd-list');
   if(!el)return;
+  var current=toolsBeginRead('rcd');
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
+    if(!current())return;
     var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)&status=eq.active'+cf()+'&order=inspection_date.desc&limit=300&select=*');
+    if(!current())return;
     toolsRcdData=(tools||[]).filter(toolsIsRCD);
     toolsRcdTests=tests||[];
     var lastByTool={};
@@ -25911,7 +25946,6 @@ async function toolsLoadRCD(){
         +'<div style="font-size:38px;margin-bottom:10px"><i class="ti ti-plug-connected"></i></div>'
         +'<div style="font-weight:700;margin-bottom:8px;color:var(--text)">No RCDs registered yet</div>'
         +'<div style="font-size:12px;margin-bottom:14px">Add distribution boards or RCD devices, then record monthly push-button tests.</div>'
-        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0234"><i class="ti ti-plus"></i>Add RCD / DB</button>':'')
         +'</div>';
       return;
     }
@@ -25960,7 +25994,7 @@ async function toolsLoadRCD(){
     document.getElementById('r5-rcd-print-history')?.addEventListener('click',toolsPrintRCDHistory);
     document.getElementById('r5-rcd-print-register')?.addEventListener('click',toolsPrintRCDRegister);
   }catch(e){
-    el.innerHTML=setupFriendlyMessage('RCD register',e.message);
+    if(current())el.innerHTML=setupFriendlyMessage('RCD register',e.message);
   }
 }
 
@@ -25997,7 +26031,7 @@ function toolsNewRCD(){
 function toolsOpenRCDAssetForm(record){
   record=record||{};
   var modal=document.createElement('div');modal.id='tools-rcd-asset-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:13000;display:flex;align-items:center;justify-content:center;padding:20px';
-  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="tools-rcd-asset-title" style="width:min(760px,100%);max-height:92vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 id="tools-rcd-asset-title" style="margin:0">'+(record.id?'Edit RCD':'Add RCD')+'</h2><div style="color:var(--text2);font-size:12px;margin-top:4px">Dedicated RCD and distribution-board record</div></div><button type="button" class="btn btn-sm rcd-asset-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:18px"><div class="form3group"><label class="form3label">RCD / device name *</label><input id="rcda-name" value="'+escH(record.name||'')+'"></div><div class="form3group"><label class="form3label">Make *</label><input id="rcda-make" value="'+escH(record.brand||'')+'" placeholder="e.g. Schneider Electric"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Distribution board reference *</label><input id="rcda-db-ref" value="'+escH(record.distribution_board_reference||'')+'" placeholder="e.g. DB-L1-02"></div><div class="form3group"><label class="form3label">RCD rating *</label><input id="rcda-rating" value="'+escH(record.model||'')+'" placeholder="e.g. 30 mA / 40 A"></div></div><div class="form3group"><label class="form3label">Circuit protected *</label><input id="rcda-circuit" value="'+escH(record.description||'')+'" placeholder="e.g. Workshop socket circuit"></div><div class="form3row"><div class="form3group"><label class="form3label">Location</label><input id="rcda-location" value="'+escH(record.location||'')+'"></div><div class="form3group"><label class="form3label">Serial number</label><input id="rcda-serial" value="'+escH(record.serial_number||'')+'"></div><div class="form3group"><label class="form3label">Status</label><select id="rcda-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="rcda-notes">'+escH(record.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn rcd-asset-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary rcd-asset-save"><i class="ti ti-device-floppy"></i>Save RCD</button></div></div>';
+  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="tools-rcd-asset-title" style="width:min(760px,100%);max-height:92vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 id="tools-rcd-asset-title" style="margin:0">'+(record.id?'Edit RCD / DB':'Add RCD / DB')+'</h2><div style="color:var(--text2);font-size:12px;margin-top:4px">Dedicated RCD and distribution-board record</div></div><button type="button" class="btn btn-sm rcd-asset-cancel" aria-label="Close"><i class="ti ti-x"></i></button></div><div class="form3row" style="margin-top:18px"><div class="form3group"><label class="form3label">RCD / device name *</label><input id="rcda-name" value="'+escH(record.name||'')+'"></div><div class="form3group"><label class="form3label">Make *</label><input id="rcda-make" value="'+escH(record.brand||'')+'" placeholder="e.g. Schneider Electric"></div></div><div class="form3row"><div class="form3group"><label class="form3label">Distribution board reference *</label><input id="rcda-db-ref" value="'+escH(record.distribution_board_reference||'')+'" placeholder="e.g. DB-L1-02"></div><div class="form3group"><label class="form3label">RCD rating *</label><input id="rcda-rating" value="'+escH(record.model||'')+'" placeholder="e.g. 30 mA / 40 A"></div></div><div class="form3group"><label class="form3label">Circuit protected *</label><input id="rcda-circuit" value="'+escH(record.description||'')+'" placeholder="e.g. Workshop socket circuit"></div><div class="form3row"><div class="form3group"><label class="form3label">Location</label><input id="rcda-location" value="'+escH(record.location||'')+'"></div><div class="form3group"><label class="form3label">Serial number</label><input id="rcda-serial" value="'+escH(record.serial_number||'')+'"></div><div class="form3group"><label class="form3label">Status</label><select id="rcda-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div></div><div class="form3group"><label class="form3label">Notes</label><textarea id="rcda-notes">'+escH(record.notes||'')+'</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn rcd-asset-cancel"><i class="ti ti-arrow-left"></i>Cancel</button><button type="button" class="btn btn-primary rcd-asset-save"><i class="ti ti-device-floppy"></i>Save RCD</button></div></div>';
   document.body.appendChild(modal);
   var status=modal.querySelector('#rcda-status');if(status)status.value=record.status||'active';
   var close=function(){modal.remove();};
@@ -26045,7 +26079,7 @@ function toolsStartRCDTest(toolId){
 }
 
 function toolsRCDBack(){
-  if(typeof teuSwitch==='function'&&document.getElementById('teu-tabs')){teuSwitch('rcd');return;}
+  if(typeof teuSwitch==='function'&&document.getElementById('teu-page-select')){teuSwitch('rcd');return;}
   document.getElementById('tools-rcd-form').style.display='none';
   document.getElementById('tools-view-rcd').style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -26105,9 +26139,12 @@ async function toolsLoadStatutory(){
   var el=document.getElementById('tools-stat-list');
   var alertEl=document.getElementById('tools-stat-alerts');
   if(!el)return;
+  var current=toolsBeginRead('statutory');
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  if(alertEl)alertEl.innerHTML='';
   try{
     var d=await api('/tools_register?requires_statutory=eq.true'+cf()+'&order=next_statutory_date&select=*');
+    if(!current())return;
     if(!d||!d.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0224">Add statutory equipment</button>':'')+'</div>';
       if(alertEl)alertEl.innerHTML='';
@@ -26154,7 +26191,7 @@ async function toolsLoadStatutory(){
     });
     h+='</tbody></table></div>';
     if(el)el.innerHTML=h;
-  }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
+  }catch(e){if(current())el.innerHTML=registerErrorHtml('register',e.message);}
 }
 
 // -- VEHICLES -----------------------------------------------------------------
