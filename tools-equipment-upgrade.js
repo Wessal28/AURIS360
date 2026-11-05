@@ -1,14 +1,32 @@
 (function(){
 'use strict';
-var M={tab:'dashboard',profiles:[],movements:[],assurance:[],maintenance:[],defects:[],schemaReady:true,ready:false};
+var M={route:'dashboard',profiles:[],movements:[],assurance:[],maintenance:[],defects:[],schemaReady:true,ready:false};
+var ROUTES={
+  'dashboard':{tab:'dashboard',label:'Dashboard'},
+  'equipment-register':{tab:'register',label:'Equipment Register',legacy:true,action:'Add equipment',open:function(){return baseNew();}},
+  'issue-return':{tab:'custody',label:'Issue & Return',action:'Issue equipment',open:function(){return teuOpenMovement();}},
+  'pre-use-inspection':{tab:'inspection',label:'Pre-use & Inspection',legacy:true,action:'Record inspection',open:function(){return toolsNewInspection();}},
+  'assurance':{tab:'assurance',label:'Assurance',action:'Add assurance record',open:function(){return teuOpenAssurance();}},
+  'maintenance-release':{tab:'maintenance',label:'Maintenance & Release',action:'New maintenance',open:function(){return teuOpenMaintenance();}},
+  'defects-quarantine':{tab:'defects',label:'Defects & Quarantine',action:'Report defect',open:function(){return teuOpenDefect();}},
+  'personal-custody':{tab:'personal',label:'Personal Custody',legacy:true},
+  'lifting-accessories':{tab:'lifting',label:'Lifting Accessories',legacy:true,action:'Add lifting equipment',open:function(){return toolsNewLiftingAccessory();}},
+  'statutory-verification':{tab:'statutory',label:'Statutory Verification',legacy:true},
+  'rcd-testing':{tab:'rcd',label:'RCD Testing',legacy:true}
+};
+var extraTables=['equipment_assurance_profiles','equipment_movements','equipment_assurance_records','equipment_maintenance_events','equipment_defects'];
+var extraFields=['profiles','movements','assurance','maintenance','defects'];
+var extraScope,extraRequest=0,extraLoading=false,registerLoad=null;
+function permittedRoute(key){
+  return Object.hasOwn(ROUTES,key)&&(!window.AurisUserAccess||window.AurisUserAccess.sectionAllowed(me(),'tools',ROUTES[key].tab));
+}
 var baseLoad=window.loadTools,baseSwitch=window.toolsSwitchTab,baseNew=window.toolsNew,basePrint=window.toolsPrintCurrentView,baseSaveInspection=window.toolsSaveInspection;
-var LEGACY={register:'register',personal:'personal',inspection:'inspection',lifting:'lifting',statutory:'statutory',vehicles:'vehicles',rcd:'rcd'};
-window.AurisToolsReportState=function(){var value=function(id){return String(document.getElementById(id)?.value||'');};return {tab:M.tab,filters:{search:value('tools-search'),category:value('tools-filter-cat'),status:value('tools-filter-status'),inspection:value('tools-filter-inspection')},inspectionFilters:{search:value('tools-insp-search'),status:value('tools-insp-status-filter')||'active'},personId:value('tools-personal-filter'),rcd:{id:value('r5-rcd-print-device'),from:value('r5-rcd-print-from'),to:value('r5-rcd-print-to')}};};
+window.AurisToolsReportState=function(){var value=function(id){return String(document.getElementById(id)?.value||'');};return {tab:ROUTES[M.route].tab,filters:{search:value('tools-search'),category:value('tools-filter-cat'),status:value('tools-filter-status'),inspection:value('tools-filter-inspection')},inspectionFilters:{search:value('tools-insp-search'),status:value('tools-insp-status-filter')||'active'},personId:value('tools-personal-filter'),rcd:{id:value('r5-rcd-print-device'),from:value('r5-rcd-print-from'),to:value('r5-rcd-print-to')}};};
 function e(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function n(v){return String(v||'').toLowerCase().replace(/\s+/g,'_');}
 function today(){return new Date().toISOString().slice(0,10);}
 function me(){try{return (typeof prof!=='undefined'&&prof)||window.prof||{};}catch(_){return window.prof||{};}}
-function equipment(){try{return toolsAllData||[];}catch(_){return[];}}
+function equipment(){try{return registerLoad?[]:toolsAllData||[];}catch(_){return[];}}
 function eq(id){return equipment().find(function(x){return String(x.id)===String(id);})||{};}
 function eqName(id){var x=eq(id);return (x.ref_number?x.ref_number+' - ':'')+(x.name||'Equipment');}
 function profile(id){return M.profiles.find(function(x){return String(x.equipment_id)===String(id);})||{};}
@@ -23,11 +41,34 @@ function field(label,id,type,value,opts,full){var ctl=type==='textarea'?'<textar
 function ensureDrawer(){if(document.getElementById('teu-drawer-bg'))return;document.body.insertAdjacentHTML('beforeend','<div class="teu-drawer-bg" id="teu-drawer-bg" data-auris-module-onclick="d0056"><aside class="teu-drawer"><header><h2 id="teu-drawer-title">Equipment control</h2><button class="teu-btn compact" type="button" aria-label="Close" title="Close" data-auris-module-onclick="d0057"><i class="ti ti-x"></i></button></header><div class="teu-drawer-body" id="teu-drawer-body"></div><footer id="teu-drawer-foot"></footer></aside></div>');}
 function drawer(title,body,foot){ensureDrawer();document.getElementById('teu-drawer-title').textContent=title;document.getElementById('teu-drawer-body').innerHTML=body;document.getElementById('teu-drawer-foot').innerHTML=foot||'';document.getElementById('teu-drawer-bg').classList.add('open');}
 window.teuCloseDrawer=function(){document.getElementById('teu-drawer-bg')?.classList.remove('open');};
-function ensureShell(){var page=document.getElementById('page-tools');if(!page||page.dataset.teuReady)return;page.dataset.teuReady='1';page.classList.add('teu-page');var head=page.querySelector('.page-header');if(head)head.outerHTML='<header class="teu-hero"><div><div class="teu-kicker">Identify - Assure - Issue - Inspect - Maintain - Release</div><h1>Tools &amp; Equipment</h1><p>Know what each asset is, whether it is ready for the intended work, who holds it, what assurance is due, and why it is blocked or returned to service.</p></div><div class="teu-actions"><button class="teu-btn" data-auris-module-onclick="d0058"><i class="ti ti-printer"></i>Print current view</button><button class="teu-btn primary" data-auris-module-onclick="d0059"><i class="ti ti-plus"></i>Add record</button></div></header>';
-  var old=document.getElementById('tools-tab-register')?.parentElement;if(old){old.id='teu-legacy-tabs';old.insertAdjacentHTML('beforebegin','<nav class="teu-tabs" id="teu-tabs">'+[['dashboard','ti-layout-dashboard','Dashboard'],['register','ti-tool','Equipment Register'],['custody','ti-user-check','Issue & Return'],['inspection','ti-clipboard-check','Pre-use & Inspection'],['assurance','ti-certificate','Assurance'],['maintenance','ti-settings','Maintenance & Release'],['defects','ti-alert-triangle','Defects & Quarantine'],['personal','ti-user','Personal Custody'],['lifting','ti-crane','Lifting'],['statutory','ti-rosette-discount-check','Statutory'],['rcd','ti-plug-connected','RCD Testing']].map(function(x){return '<button data-tab="'+x[0]+'" data-auris-module-onclick="d0060" data-auris-module-args="'+encodeURIComponent(JSON.stringify([x[0]]))+'"><i class="ti '+x[1]+'"></i>'+x[2]+'</button>';}).join('')+'</nav><section id="teu-view-dashboard" class="teu-view"></section><section id="teu-view-custody" class="teu-view"></section><section id="teu-view-assurance" class="teu-view"></section><section id="teu-view-maintenance" class="teu-view"></section><section id="teu-view-defects" class="teu-view"></section>');}
-  ensureDrawer();M.ready=true;
+function ensureShell(){var page=document.getElementById('page-tools');if(!page||page.dataset.teuReady)return;page.dataset.teuReady='1';page.classList.add('teu-page');var head=page.querySelector('.page-header');if(head)head.outerHTML='<header class="teu-hero"><div><div class="teu-kicker">Identify - Assure - Issue - Inspect - Maintain - Release</div><h1>Tools &amp; Equipment</h1><p>Know what each asset is, whether it is ready for the intended work, who holds it, what assurance is due, and why it is blocked or returned to service.</p></div><div class="teu-actions"><button class="teu-btn" data-auris-module-onclick="d0058"><i class="ti ti-printer"></i>Print current view</button><button class="teu-btn primary" style="display:none" data-auris-module-onclick="d0059"><i class="ti ti-plus"></i>Add record</button></div></header>';
+  var old=document.getElementById('tools-tab-register')?.parentElement;
+  if(!old)return;
+  old.insertAdjacentHTML('beforebegin','<label class="auris-section-picker"><span>Section</span><select id="teu-page-select" aria-label="Go to Tools &amp; Equipment page"></select></label><section id="teu-view-dashboard" class="teu-view"></section><section id="teu-view-custody" class="teu-view"></section><section id="teu-view-assurance" class="teu-view"></section><section id="teu-view-maintenance" class="teu-view"></section><section id="teu-view-defects" class="teu-view"></section>');
+  var select=document.getElementById('teu-page-select');
+  select.addEventListener('change',function(){if(!teuSwitch(select.value))select.value=M.route;});
+  ensureDrawer();
+  M.ready=true;
 }
-async function loadExtra(){var r=await Promise.allSettled([api('/equipment_assurance_profiles?select=*'+cf()+'&order=updated_at.desc'),api('/equipment_movements?select=*'+cf()+'&order=created_at.desc&limit=300'),api('/equipment_assurance_records?select=*'+cf()+'&order=created_at.desc&limit=300'),api('/equipment_maintenance_events?select=*'+cf()+'&order=created_at.desc&limit=300'),api('/equipment_defects?select=*'+cf()+'&order=created_at.desc&limit=300')]);M.profiles=r[0].status==='fulfilled'?(r[0].value||[]):[];M.movements=r[1].status==='fulfilled'?(r[1].value||[]):[];M.assurance=r[2].status==='fulfilled'?(r[2].value||[]):[];M.maintenance=r[3].status==='fulfilled'?(r[3].value||[]):[];M.defects=r[4].status==='fulfilled'?(r[4].value||[]):[];M.schemaReady=r.every(function(x){return x.status==='fulfilled';});renderAll();}
+function equipmentScope(){
+  return typeof toolsReadScope==='function'?toolsReadScope():JSON.stringify([ccid(),cf(),me().id,me().role]);
+}
+async function loadExtra(){
+  var scope=equipmentScope(),request=++extraRequest,filter=cf();
+  if(extraScope!==scope){
+    extraScope=scope;
+    extraFields.forEach(function(field){M[field]=[];});
+    extraLoading=true;
+  }
+  var results=await Promise.allSettled(extraTables.map(function(table,index){
+    return api('/'+table+'?select=*'+filter+(index===0?'&order=updated_at.desc':'&order=created_at.desc&limit=300'));
+  }));
+  if(request!==extraRequest||scope!==equipmentScope())return;
+  extraFields.forEach(function(field,index){M[field]=results[index].status==='fulfilled'?(results[index].value||[]):[];});
+  M.schemaReady=results.every(function(result){return result.status==='fulfilled';});
+  extraLoading=false;
+  renderAll();
+}
 function openDefects(id){return M.defects.filter(function(x){return String(x.equipment_id)===String(id)&&!['closed','disposed'].includes(x.status);});}
 function latestIssue(id){return M.movements.find(function(x){return String(x.equipment_id)===String(id)&&x.movement_type==='issue'&&x.status==='open';});}
 function overdueAssurance(id){return M.assurance.filter(function(x){return String(x.equipment_id)===String(id)&&x.next_due_date&&x.next_due_date<today()&&x.validation_status==='validated';});}
@@ -37,13 +78,53 @@ function renderCustody(){var rows=M.movements.slice(0,120).map(function(x){var d
 function renderAssurance(){var profiles=equipment().map(function(x){var p=profile(x.id),r=readiness(x.id);return row(eqName(x.id),(p.id?(p.criticality+' - '+p.ownership_type+' - '+(p.intended_use||'use not stated')):'Assurance profile not yet defined'),r.ready?'ready':(p.acceptance_status||'pending'),'<button class="teu-btn compact" data-auris-module-onclick="d0061" data-auris-module-args="'+encodeURIComponent(JSON.stringify([e(x.id)]))+'">Profile</button>');}).join(''),records=M.assurance.slice(0,80).map(function(x){return row(eqName(x.equipment_id)+' - '+x.record_type,(x.reference||'')+(x.next_due_date?' - next due '+x.next_due_date:'')+(x.restrictions?' - '+x.restrictions:''),x.validation_status,'<button class="teu-btn compact" data-auris-module-onclick="d0065" data-auris-module-args="'+encodeURIComponent(JSON.stringify([e(x.id)]))+'">Review</button>');}).join('');return (M.schemaReady?'':schemaNote())+'<div class="teu-grid two"><section class="teu-panel"><div class="teu-panel-head"><div><h3>Equipment assurance profiles</h3><p>Define criticality, ownership, intended use, limits and acceptance before issue.</p></div></div>'+profiles+'</section><section class="teu-panel"><div class="teu-panel-head"><div><h3>Certificates, calibration &amp; release evidence</h3><p>Uploaded or referenced evidence remains submitted until an authorised validation.</p></div><button class="teu-btn primary" data-auris-module-onclick="d0066"><i class="ti ti-plus"></i>Add record</button></div>'+(records||empty('ti-certificate-off','No assurance records','Add a certificate, calibration, acceptance or return-to-service record.'))+'</section></div>';}
 function renderMaintenance(){var rows=M.maintenance.map(function(x){return row((x.reference||'Maintenance')+' - '+eqName(x.equipment_id),(x.maintenance_type||'')+' - '+x.problem_description+(x.planned_date?' - planned '+x.planned_date:''),x.status+(x.release_status==='released'?' / released':''),'<button class="teu-btn compact" data-auris-module-onclick="d0067" data-auris-module-args="'+encodeURIComponent(JSON.stringify([e(x.id)]))+'">Review</button>');}).join('');return (M.schemaReady?'':schemaNote())+'<section class="teu-panel"><div class="teu-panel-head"><div><h3>Maintenance and return to service</h3><p>Record work, test evidence and a separate release decision. Completing a job never reactivates equipment by itself.</p></div><button class="teu-btn primary" data-auris-module-onclick="d0068"><i class="ti ti-plus"></i>New maintenance</button></div>'+(rows||empty('ti-settings-off','No maintenance events','Create preventive, corrective, breakdown, recall or modification work.'))+'</section>';}
 function renderDefects(){var rows=M.defects.map(function(x){return row((x.reference||'Defect')+' - '+eqName(x.equipment_id),x.description+(x.quarantine_location?' - quarantine: '+x.quarantine_location:''),x.severity+' / '+x.status,'<button class="teu-btn compact" data-auris-module-onclick="d0069" data-auris-module-args="'+encodeURIComponent(JSON.stringify([e(x.id)]))+'">Review</button>');}).join('');return (M.schemaReady?'':schemaNote())+'<section class="teu-panel"><div class="teu-panel-head"><div><h3>Defects, quarantine and disposition</h3><p>Critical defects block the equipment immediately. Closure requires verification and, where required, release authority.</p></div><button class="teu-btn primary" data-auris-module-onclick="d0070"><i class="ti ti-plus"></i>Report defect</button></div>'+(rows||empty('ti-shield-check','No defects recorded','Report damage, failed checks, recalls or condition concerns here.'))+'</section>';}
-function renderAll(){if(!M.ready)return;var f={dashboard:renderDashboard,custody:renderCustody,assurance:renderAssurance,maintenance:renderMaintenance,defects:renderDefects};Object.keys(f).forEach(function(k){var v=document.getElementById('teu-view-'+k);if(v)v.innerHTML=f[k]();});}
+function renderAll(){if(!M.ready)return;var f={dashboard:renderDashboard,custody:renderCustody,assurance:renderAssurance,maintenance:renderMaintenance,defects:renderDefects};Object.keys(f).forEach(function(k){var v=document.getElementById('teu-view-'+k);if(v)v.innerHTML=extraLoading||registerLoad?'<p class="loading-msg">Loading equipment records…</p>':f[k]();});}
 function hideCustom(){document.querySelectorAll('#page-tools .teu-view').forEach(function(x){x.classList.remove('active');x.style.display='none';});}
 function hideLegacy(){['register','personal','inspection','lifting','statutory','vehicles','rcd'].forEach(function(t){var x=document.getElementById('tools-view-'+t);if(x)x.style.display='none';});['tools-form','tools-insp-form','tools-rcd-form'].forEach(function(id){var x=document.getElementById(id);if(x)x.style.display='none';});}
-window.teuSwitch=function(tab){ensureShell();var legacy=LEGACY[tab];if(legacy&&window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(me(),'tools',legacy)){toast('You do not have access to this equipment page.',false);return false;}M.tab=tab;hideCustom();hideLegacy();if(legacy){baseSwitch(legacy,document.getElementById('tools-tab-'+legacy));hideCustom();}else{var v=document.getElementById('teu-view-'+tab);if(v){v.classList.add('active');v.style.display='block';}renderAll();}document.querySelectorAll('#teu-tabs button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});var action=document.querySelector('.teu-hero .teu-actions .primary'),labels={inspection:'Record inspection',custody:'Issue equipment',assurance:'Add assurance record',maintenance:'New maintenance',defects:'Report defect',lifting:'Add lifting equipment',rcd:'Add RCD'};if(action){action.innerHTML='<i class="ti ti-plus"></i>'+e(labels[tab]||'Add equipment');action.style.display=['dashboard','personal','statutory'].includes(tab)?'none':'';}return true;};
-window.toolsSwitchTab=function(tab){var custom=Object.keys(LEGACY).find(function(k){return LEGACY[k]===tab;})||tab;return teuSwitch(custom);};
-window.teuPrint=function(){if(LEGACY[M.tab])return basePrint();if(typeof printRegisterView==='function')return printRegisterView('Tools & Equipment - '+M.tab,'#teu-view-'+M.tab);window.print();};
-window.teuPrimaryAction=function(){if(M.tab==='custody')return teuOpenMovement();if(M.tab==='assurance')return teuOpenAssurance();if(M.tab==='maintenance')return teuOpenMaintenance();if(M.tab==='defects')return teuOpenDefect();if(M.tab==='inspection'&&typeof toolsNewInspection==='function')return toolsNewInspection();if(M.tab==='lifting'&&typeof toolsNewLiftingAccessory==='function')return toolsNewLiftingAccessory();if(M.tab==='rcd'&&typeof toolsNewRCD==='function')return toolsNewRCD();if(M.tab==='register')return baseNew();};
+function syncPicker(routes){
+  var select=document.getElementById('teu-page-select');
+  if(!select)return;
+  if(select.options.length!==routes.length||routes.some(function(key,index){return select.options[index].value!==key;})){
+    select.innerHTML=options(routes.map(function(key){return [key,ROUTES[key].label];}),M.route);
+  }
+  select.value=M.route;
+}
+window.teuSwitch=function(key){
+  ensureShell();
+  if(!Object.hasOwn(ROUTES,key))key=Object.keys(ROUTES).find(function(route){return ROUTES[route].tab===key;});
+  if(!M.ready||!permittedRoute(key))return false;
+  var route=ROUTES[key],tab=route.tab;
+  M.route=key;
+  hideCustom();
+  hideLegacy();
+  if(route.legacy){
+    baseSwitch(tab,document.getElementById('tools-tab-'+tab),!!registerLoad);
+  }else{
+    document.querySelectorAll('#page-tools [id^="tools-tab-"]').forEach(function(button){button.classList.remove('active');});
+    var view=document.getElementById('teu-view-'+tab);
+    view.classList.add('active');
+    view.style.display='block';
+    renderAll();
+  }
+  syncPicker(Object.keys(ROUTES).filter(permittedRoute));
+  var action=document.querySelector('.teu-hero .teu-actions .primary');
+  if(action){
+    action.innerHTML=route.action?'<i class="ti ti-plus"></i>'+e(route.action):'';
+    action.style.display=route.action&&(!route.legacy||typeof isMgr!=='function'||isMgr())?'':'none';
+  }
+  return true;
+};
+window.toolsSwitchTab=window.teuSwitch;
+window.teuPrint=function(){
+  var route=ROUTES[M.route];
+  if(route.legacy)return basePrint();
+  if(typeof printRegisterView==='function')return printRegisterView('Tools & Equipment - '+route.label,'#teu-view-'+route.tab);
+  window.print();
+};
+window.teuPrimaryAction=function(){
+  var route=ROUTES[M.route];
+  if(permittedRoute(M.route)&&(!route.legacy||typeof isMgr!=='function'||isMgr()))return route.open?.();
+};
 window.teuOpenProfile=function(id){var x=profile(id),body='<div class="teu-note"><strong>'+e(eqName(id))+'</strong><br>Acceptance is scoped to the recorded use, environment, rating and configuration.</div><div class="teu-form">'+field('Criticality','teu-p-criticality','select','',options([['standard','Standard'],['elevated','Elevated'],['safety_critical','Safety critical'],['statutory','Statutory']],x.criticality||'standard'))+field('Ownership','teu-p-owner-type','select','',options([['company','Company owned'],['contractor','Contractor owned'],['hired','Hired'],['leased','Leased']],x.ownership_type||'company'))+field('Owner / custodian','teu-p-owner','text',x.owner_custodian||'')+field('Acceptance','teu-p-status','select','',options([['pending','Pending'],['accepted','Accepted'],['conditional','Conditional'],['rejected','Rejected'],['suspended','Suspended']],x.acceptance_status||'pending'))+field('Intended use / task','teu-p-use','textarea',x.intended_use||'',null,true)+field('Permitted environment','teu-p-env','text',x.permitted_environment||'')+field('Capacity / rating','teu-p-rating','text',x.capacity_rating||'')+field('Approved configuration','teu-p-config','textarea',x.configuration||'',null,true)+field('Limitations / restrictions','teu-p-limits','textarea',x.limitations||'',null,true)+field('Assurance requirements','teu-p-req','textarea',x.assurance_requirements||'',null,true)+field('Acceptance authority','teu-p-authority','text',x.acceptance_authority||'')+field('Acceptance date','teu-p-date','date',x.acceptance_date||'')+field('Review due','teu-p-review','date',x.review_due||'')+field('Critical availability block','teu-p-block','checkbox',x.critical_block,'Prevent issue and work-ready status until an authorised review clears the block.')+field('Block reason','teu-p-reason','textarea',x.block_reason||'',null,true)+'</div>';drawer('Equipment assurance profile',body,'<button class="teu-btn" data-auris-module-onclick="d0057">Cancel</button><button class="teu-btn primary" data-auris-module-onclick="d0071" data-auris-module-args="'+encodeURIComponent(JSON.stringify([e(id)]))+'">Save profile</button>');};
 window.teuSaveProfile=async function(id){if(!M.schemaReady)return toast('Run tools_equipment_module_upgrade.sql before saving lifecycle records.',false);var g=function(k){return document.getElementById(k)?.value||'';},status=g('teu-p-status'),authority=g('teu-p-authority').trim(),date=g('teu-p-date');if(['accepted','conditional','rejected','suspended'].includes(status)&&(!authority||!date))return toast('A decision requires acceptance authority and date.',false);var body={company_id:ccid(),equipment_id:id,criticality:g('teu-p-criticality'),ownership_type:g('teu-p-owner-type'),owner_custodian:g('teu-p-owner')||null,intended_use:g('teu-p-use')||null,permitted_environment:g('teu-p-env')||null,capacity_rating:g('teu-p-rating')||null,configuration:g('teu-p-config')||null,limitations:g('teu-p-limits')||null,assurance_requirements:g('teu-p-req')||null,acceptance_status:status,acceptance_authority:authority||null,acceptance_date:date||null,review_due:g('teu-p-review')||null,critical_block:!!document.getElementById('teu-p-block')?.checked,block_reason:g('teu-p-reason')||null,updated_at:new Date().toISOString()};try{var x=profile(id),r;if(x.id)r=await api('/equipment_assurance_profiles?id=eq.'+encodeURIComponent(x.id),{m:'PATCH',p:'return=representation',b:body});else{body.created_by=me().id||null;r=await api('/equipment_assurance_profiles',{m:'POST',p:'return=representation',b:body});}if(r?.[0])M.profiles=M.profiles.filter(function(z){return String(z.equipment_id)!==String(id);}).concat(r[0]);teuCloseDrawer();renderAll();toast('Assurance profile saved');}catch(err){toast('Profile not saved: '+err.message,false);}};
 window.teuOpenMovement=function(){var body='<div class="teu-note warning"><strong>Issue is a work-readiness decision.</strong> The asset must be active, accepted for its intended use, current for required assurance and free from open defects.</div><div class="teu-form">'+field('Equipment','teu-m-eq','select','',eqOptions(''))+field('Holder / recipient','teu-m-holder','text','')+field('Holder reference','teu-m-holder-ref','text','')+field('Custody type','teu-m-custody','select','',options([['individual','Individual'],['crew','Crew'],['location','Location'],['contractor','Contractor']],'individual'))+field('Task reference','teu-m-task','text','')+field('Work package / permit reference','teu-m-work','text','')+field('Destination / location','teu-m-to','text','')+field('Expected return','teu-m-return','datetime-local','')+field('Condition at issue','teu-m-condition','textarea','',null,true)+field('Eligibility evidence reference','teu-m-eligibility','text','')+field('User and task eligibility verified','teu-m-verified','checkbox',false,'A supervisor has checked competence/authorisation and that this asset is suitable for the stated task.')+field('Evidence / handover reference','teu-m-evidence','text','')+'</div>';drawer('Issue equipment',body,'<button class="btn" data-auris-module-onclick="d0057"><i class="ti ti-arrow-left"></i>Cancel</button><button class="btn btn-primary" data-auris-module-onclick="d0072"><i class="ti ti-device-floppy"></i>Issue equipment</button>');};
@@ -76,6 +157,22 @@ window.toolsSaveInspection=async function(){
   }catch(err){toast(saved?'Inspection saved, but its restriction or refresh needs attention: '+err.message:'Inspection not saved: '+err.message,false);return saved;}
   finally{if(saveButton){saveButton.disabled=false;saveButton.innerHTML=saveButton.dataset.originalLabel||'Save inspection';}}
 };
-window.loadTools=async function(){ensureShell();await baseLoad();await loadExtra();teuSwitch(M.tab||'dashboard');};
+window.loadTools=async function(){
+  ensureShell();
+  var permitted=Object.keys(ROUTES).filter(permittedRoute);
+  var route=permitted.includes(M.route)?M.route:permitted[0];
+  teuCloseDrawer();
+  if(!route){hideCustom();hideLegacy();syncPicker([]);return;}
+  var loading=registerLoad={scope:equipmentScope()};
+  var register=baseLoad(),records=loadExtra();
+  teuSwitch(route);
+  try{await Promise.all([register,records]);}
+  finally{
+    if(loading===registerLoad&&loading.scope===equipmentScope()){
+      registerLoad=null;
+      renderAll();
+    }
+  }
+};
 try{if(typeof L!=='undefined')L.tools=window.loadTools;}catch(_){ }
 })();
