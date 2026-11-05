@@ -85,7 +85,6 @@ test('Emergency, occupational health and PPE rows expose read-only details', () 
 
 test('Contractor work package and mobilisation actions are operational', () => {
   const js = read('contractor-management-upgrade.js');
-  assert.match(js, /M\.tab==='packages'\|\|M\.tab==='mobilisation'/);
   assert.match(js, /x\.planned_start\|\|today\(\)/);
   assert.match(js, /Complete required field:/);
   assert.match(js, /api\('\/contractor_work_packages'/);

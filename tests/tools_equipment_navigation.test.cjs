@@ -364,3 +364,45 @@ test('the shared dropdown sends changes to the visible picker it mirrored', () =
   assert.equal(f.get('current-picker').value, 'records');
   assert.equal(f.mirror.value, 'records');
 });
+
+test('switching modules immediately disables and clears the previous options until the new source exists', async () => {
+  const f = fixture();
+  f.get('page-dashboard').innerHTML = '<label class="auris-section-picker"><select><option value="overview">Home overview</option></select></label>';
+  f.flush();
+  assert.equal(f.mirror.disabled, false);
+  const opening = f.ctx.showPage('tools', null);
+  assert.equal(f.mirror.disabled, true, 'No prior module options while waiting for the first animation frame');
+  assert.equal(f.mirror.options.length, 0);
+  f.flush();
+  assert.equal(f.wrapper.hidden, true);
+  assert.equal(f.mirror.disabled, true, 'No usable dropdown while the Tools source is absent');
+  await opening;
+  f.load('tools-equipment-upgrade.js');
+  await f.ctx.loadTools();
+  f.flush();
+  assertMenu(f);
+  assert.equal(f.mirror.disabled, false);
+});
+
+test('a late module load cannot restore its old page or menu after a second module opens', async () => {
+  const f = fixture();
+  f.ctx.co = {};
+  f.load('auris-module-registry.js');
+  f.load('auris-module-runtime.js');
+  f.load('tools-equipment-upgrade.js');
+  const release = f.deferLoads();
+  f.ctx.moduleLoaderFor = name => name === 'tools' ? f.ctx.loadTools : () => {};
+  const opening = f.ctx.showPage('tools', null);
+  f.flush();
+  assertMenu(f);
+  f.get('page-dashboard').innerHTML = '<label class="auris-section-picker"><select><option value="overview">Home overview</option></select></label>';
+  await f.ctx.showPage('dashboard', null);
+  f.flush();
+  assert.equal(f.mirror.value, 'overview');
+  release();
+  await opening;
+  f.flush();
+  assert.equal(f.get('page-dashboard').classList.contains('active'), true);
+  assert.equal(f.tools.classList.contains('active'), false);
+  assert.equal(f.mirror.value, 'overview');
+});

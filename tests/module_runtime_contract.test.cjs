@@ -43,3 +43,19 @@ test('runtime cancellation leaves the active module unchanged',()=>{
   assert.equal(result.cancelled,true);
   assert.equal(window.AurisModuleRuntime.current(),'dashboard');
 });
+
+test('late success or failure does not enter an abandoned module or reset the active route',async()=>{
+  for(const fail of [false,true]){
+    const window=runtimeContext(),runtime=window.AurisModuleRuntime,calls=[];
+    window.AurisModuleExtraction={isolateFailure(){calls.push('failure UI');}};
+    runtime.register('contractor',{enter(){calls.push('entered Contractor');}});
+    let finish, reject;
+    const slow=new Promise((resolve,failure)=>{finish=resolve;reject=failure;});
+    const first=runtime.activate('contractor',{loader:()=>slow});
+    runtime.activate('sop',{loader:()=>{}});
+    if(fail)reject(Error('late load failure'));else finish();
+    await first;
+    assert.deepEqual(calls,[]);
+    assert.equal(runtime.current(),'sop');
+  }
+});
