@@ -4,7 +4,7 @@
 var registry=root.AurisModuleRegistry;
 if(!registry)throw new Error('AurisModuleRuntime requires AurisModuleRegistry.');
 
-var activeKey=null;
+var activeKey=null,activeRoute=null;
 var hooks=Object.create(null);
 
 function emit(phase,detail,cancelable){
@@ -29,7 +29,7 @@ function activate(key,options){
   var status=readiness(key,options.enabledKeys);
   if(!status.manifest)throw new Error('Unknown AURIS module: '+key);
   if(options.strictDependencies&&status.missing.length)throw new Error('Module '+key+' requires: '+status.missing.join(', '));
-  var previous=activeKey,context={key:key,previousKey:previous,manifest:status.manifest,missingDependencies:status.missing,element:options.element||null,services:root.AurisPlatformServices||null};
+  var previous=activeKey,previousRoute=activeRoute,context={key:key,previousKey:previous,manifest:status.manifest,missingDependencies:status.missing,element:options.element||null,services:root.AurisPlatformServices||null};
   if(previous&&previous!==key){
     if(emit('before-leave',context,true)===false)return {ok:false,cancelled:true,key:key};
     if(callHook(previous,'beforeLeave',context)===false)return {ok:false,cancelled:true,key:key};
@@ -39,9 +39,26 @@ function activate(key,options){
   if(typeof options.activateView==='function')options.activateView(status.manifest);
   if(previous&&previous!==key){callHook(previous,'leave',context);emit('leave',context,false);}
   activeKey=key;
+  activeRoute=context;
   var loader=typeof options.loader==='function'?options.loader:root[status.manifest.loader];
-  function complete(){callHook(key,'enter',context);emit('enter',context,false);return {ok:true,key:key,previousKey:previous,missingDependencies:status.missing};}
-  function failed(error){activeKey=previous;context.error=error;emit('error',context,false);if(root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.isolateFailure==='function'){root.AurisModuleExtraction.isolateFailure(key,error,context);return {ok:false,key:key,previousKey:previous,recoverable:true,error:error};}throw error;}
+  function complete(){
+    if(activeRoute===context){callHook(key,'enter',context);emit('enter',context,false);}
+    return {ok:true,key:key,previousKey:previous,missingDependencies:status.missing};
+  }
+  function failed(error){
+    var wasActive=activeRoute===context;
+    context.error=error;
+    if(wasActive){
+      activeKey=previous;
+      activeRoute=previousRoute;
+      emit('error',context,false);
+    }
+    if(root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.isolateFailure==='function'){
+      if(wasActive)root.AurisModuleExtraction.isolateFailure(key,error,context);
+      return {ok:false,key:key,previousKey:previous,recoverable:true,error:error};
+    }
+    throw error;
+  }
   try{
     var preparation=root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.prepare==='function'?root.AurisModuleExtraction.prepare(key,context):null;
     if(preparation&&typeof preparation.then==='function')return preparation.then(function(){loader=root[status.manifest.loader]||loader;var loaded=typeof loader==='function'?loader(context):undefined;return loaded&&typeof loaded.then==='function'?loaded.then(complete,failed):complete();},failed);

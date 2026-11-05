@@ -18,10 +18,36 @@
   window.AurisPrintLauncher=Object.freeze({open:openReports});
   function visible(element){return !!element&&getComputedStyle(element).display!=='none'&&getComputedStyle(element).visibility!=='hidden';}
   function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
+  function sectionReady(source,page){
+    var picker=source?.parentElement;
+    return !!(source?.isConnected&&!source.disabled&&source.options.length&&source.closest('.page')===page&&!picker.hidden&&picker.parentElement?.getClientRects().length);
+  }
+  function sectionOptionsMatch(mirror,source){
+    return mirror.options.length===source.options.length&&Array.from(source.options).every(function(option,index){
+      var copy=mirror.options[index];
+      return copy.value===option.value&&copy.textContent===option.textContent&&!!copy.disabled===!!option.disabled&&!!copy.hidden===!!option.hidden;
+    });
+  }
+  function resetSection(mirror,wrap){
+    sectionSource=null;
+    if(!mirror.disabled)mirror.disabled=true;
+    mirror.dataset.sourcePage='';
+    if(mirror.options.length)mirror.replaceChildren();
+    if(wrap&&!wrap.hidden)wrap.hidden=true;
+  }
+  function preparePage(pageId){
+    var mirror=document.getElementById('auris-module-section');
+    if(!mirror)return;
+    if(mirror.dataset.sourcePage!==pageId)resetSection(mirror,document.getElementById('auris-module-section-wrap'));
+    schedule();
+  }
+  window.AurisModuleHeader=Object.freeze({preparePage:preparePage});
   function update(){
     pending=false;
     var page=document.querySelector('#app .page.active'),title=document.getElementById('auris-module-name'),crumb=document.getElementById('auris-module-crumb');
-    if(!page||!title||!crumb){sectionSource=null;return;}
+    var mirror=document.getElementById('auris-module-section'),wrap=document.getElementById('auris-module-section-wrap');
+    if(!mirror||!wrap)return;
+    if(!page||!title||!crumb){resetSection(mirror,wrap);return;}
     var key=page.id.replace(/^page-/,''),heading=page.querySelector('.page-title'),module=typeof MODULES_DIR!=='undefined'&&MODULES_DIR.find(function(item){return item.k===key;}),name=key==='dashboard'?'Home':key==='kpi'?'Objectives & KPIs':clean(module&&module.l)||clean(heading&&heading.textContent)||clean(document.getElementById('mobile-page-title')?.textContent)||'Dashboard';
     var reportButton=document.getElementById('auris-module-print');if(reportButton){reportButton.dataset.module=key;var hidePrint=!window.AurisModuleRegistry?.get(key);if(reportButton.hidden!==hidePrint)reportButton.hidden=hidePrint;reportButton.title='Print preview and reports · '+name;}
     var quick=document.getElementById('auris-module-quick-actions');
@@ -35,18 +61,23 @@
     if(title.textContent!==name)title.textContent=name;
     if(heading&&!heading.classList.contains('auris-title-mirrored'))heading.classList.add('auris-title-mirrored');
     var kpiTitle=key==='kpi'&&page.querySelector('.kpi-x-title');if(kpiTitle&&!kpiTitle.classList.contains('auris-title-mirrored'))kpiTitle.classList.add('auris-title-mirrored');
-    var original=Array.from(page.querySelectorAll('.auris-section-picker')).find(function(picker){return picker.parentElement&&picker.parentElement.getClientRects().length>0;});
-    var source=original&&original.querySelector('select'),mirror=document.getElementById('auris-module-section'),wrap=document.getElementById('auris-module-section-wrap');
-    sectionSource=source&&source.options.length?source:null;
-    if(sectionSource){
-      if(!original.classList.contains('auris-section-mirrored'))original.classList.add('auris-section-mirrored');
-      var options=Array.from(source.options),same=mirror.options.length===options.length&&options.every(function(option,index){return mirror.options[index].textContent===option.textContent&&mirror.options[index].value===option.value;});
-      if(!same)mirror.replaceChildren.apply(mirror,options.map(function(option){var copy=document.createElement('option');copy.value=option.value;copy.textContent=option.textContent;return copy;}));
+    var source=Array.from(page.querySelectorAll('.auris-section-picker')).map(function(picker){return picker.querySelector('select');}).find(function(select){return sectionReady(select,page);});
+    if(source){
+      sectionSource=source;
+      var picker=source.parentElement;
+      if(!picker.classList.contains('auris-section-mirrored'))picker.classList.add('auris-section-mirrored');
+      if(!sectionOptionsMatch(mirror,source)){
+        mirror.disabled=true;
+        mirror.replaceChildren(...Array.from(source.options).map(function(option){
+          var copy=document.createElement('option');copy.value=option.value;copy.textContent=option.textContent;copy.disabled=!!option.disabled;copy.hidden=!!option.hidden;return copy;
+        }));
+      }
       if(mirror.value!==source.value)mirror.value=source.value;
       mirror.dataset.sourcePage=page.id;
       if(wrap.hidden)wrap.hidden=false;
-    }else{if(!wrap.hidden)wrap.hidden=true;mirror.dataset.sourcePage='';}
-    var section=page.dataset.swmsEditorLabel||(source&&source.selectedOptions[0]?clean(source.selectedOptions[0].textContent):'');
+      if(mirror.disabled)mirror.disabled=false;
+    }else{resetSection(mirror,wrap);}
+    var section=page.dataset.swmsEditorLabel||clean(source?.selectedOptions[0]?.textContent);
     var path=name==='Home'?'':' / '+name+(section?' / '+section:'');if(crumb.textContent!==path)crumb.textContent=path;
     var company=document.getElementById('auris-global-company'),sidebarCompany=document.getElementById('sb-company');
     if(company&&sidebarCompany){var companyName=clean(sidebarCompany.textContent);if(company.textContent!==companyName)company.textContent=companyName;var hideCompany=visible(document.getElementById('sa-company-switcher'))||!companyName;if(company.hidden!==hideCompany)company.hidden=hideCompany;}
@@ -73,15 +104,25 @@
     document.addEventListener('click',function(event){if(profileMenu&&!profileMenu.hidden&&!event.target.closest('#auris-profile-menu,#auris-profile-trigger'))closeProfile();});
     document.addEventListener('keydown',function(event){if(event.key==='Escape')closeProfile();});
     mirror.addEventListener('change',function(){
-      var page=document.getElementById(mirror.dataset.sourcePage),source=sectionSource;
-      if(!page?.classList.contains('active')||!source?.isConnected||source.closest('.page')!==page)return;
-      if(Array.from(source.options).some(function(option){return option.value===mirror.value;})){
+      var page=document.querySelector('#app .page.active'),source=sectionSource;
+      if(mirror.disabled||mirror.dataset.sourcePage!==page?.id||!sectionReady(source,page)||!sectionOptionsMatch(mirror,source)){
+        schedule();
+        return;
+      }
+      if(Array.from(source.options).some(function(option){return option.value===mirror.value&&!option.disabled&&!option.hidden;})){
         source.value=mirror.value;
         source.dispatchEvent(new Event('change',{bubbles:true}));
+        if(sectionSource===source&&source.isConnected)mirror.value=source.value;
       }
       schedule();
     });
-    new MutationObserver(schedule).observe(document.getElementById('app'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','hidden','style','value']});
+    new MutationObserver(function(){
+      if(sectionSource){
+        var page=document.querySelector('#app .page.active');
+        if(mirror.dataset.sourcePage!==page?.id||!sectionSource.isConnected||sectionSource.disabled||!sectionOptionsMatch(mirror,sectionSource))resetSection(mirror,sectionWrap);
+      }
+      schedule();
+    }).observe(document.getElementById('app'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','hidden','style','value','disabled']});
     schedule();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();

@@ -38,3 +38,103 @@ test('manual entry opens the existing step editor and adds its first authored st
 test('moving between wizard steps alone does not trigger an unsaved-content warning',async()=>{const f=fixture();let prompts=0;f.w.appConfirmAction=async()=>{prompts++;return false};await f.w.sopNew();f.w.sopCurrentStep=2;await f.w.sopNew();assert.equal(prompts,0);});
 
 test('legacy workspace resume loads exact company-scoped evidence instead of relying on the global cache',async()=>{const f=fixture();const paths=[];f.w.api=async path=>{paths.push(path);if(path.startsWith('/sop_video_projects'))return [{id:'legacy',company_id:'company-a',title:'Legacy fictional SOP',processing_status:'draft',consent_confirmed:false}];return [{company_id:'company-a',project_id:'legacy',instruction_text:'Retained legacy instruction',source_label:'reviewer_added',reviewer_disposition:'pending'}]};await f.w.sovFocusProject('legacy');assert.match(paths[1],/project_id=eq.legacy&company_id=eq.company-a/);assert.equal(f.w.sopFrames[0].narration,'Retained legacy instruction');});
+
+// The existing SOP workspace fixture supplies the wizard and read/write API.
+// These mounted elements exercise the same picker listener and view changes as the module.
+function navigationFixture(){
+ const f=fixture(),w=f.w,doc=w.document,byId=f.elements;
+ const get=doc.getElementById,query=doc.querySelectorAll;
+ const page=get('page-sop'),library=get('sop-view-list'),create=get('sop-view-create'),picker=get('sov-page-select');
+ const views=[library,create],events={};
+ page.dataset={};
+ page.classList.contains=key=>key==='active';
+ library.id='sop-view-list';create.id='sop-view-create';
+ library.innerHTML='SOP Library';
+ create.innerHTML='Step 1 - Task Information';
+ library.parentNode={insertBefore(node){byId[node.id]=node;views.push(node);}};
+ const legacy=get('sop-tab-list');
+ legacy.parentElement={insertAdjacentHTML(position,markup){
+  assert.equal(position,'beforebegin');assert.match(markup,/<select id="sov-page-select"/);
+ }};
+ picker.options=[];
+ picker.replaceChildren=(...options)=>picker.options=options;
+ picker.addEventListener=(event,handler)=>events[event]=handler;
+ doc.querySelectorAll=selector=>selector==='#page-sop .sov-view'?views:query(selector);
+ w.sopLoadList=async()=>[];
+ return {...f,picker,views,choose(tab){
+  assert.ok(picker.options.some(option=>option.value===tab),'Missing option: '+tab);
+  picker.value=tab;
+  return events.change();
+ },expectView(tab,id,content){
+  assert.equal(picker.value,tab);
+  const visible=views.filter(view=>view.style.display==='block');
+  assert.deepEqual(visible.map(view=>view.id),[id]);
+  assert.match(visible[0].innerHTML,content);
+ }};
+}
+
+test('SOP picker opens each named view, including the wizard and distinct templates, before the initial reads settle',async()=>{
+ const f=navigationFixture(),paths=[];
+ let finishReads;
+ const readGate=new Promise(resolve=>{finishReads=resolve;});
+ f.w.api=async(path,options)=>{assert.equal(options,undefined);paths.push(path);return readGate;};
+ const loaded=f.w.loadSOP();
+ assert.deepEqual(Array.from(f.picker.options,option=>[option.value,option.textContent]),[
+  ['dashboard','Dashboard'],['library','SOP Library'],['create','Create SOP'],
+  ['review','Drafts & Review'],['approvals','Approvals'],['templates','Templates']
+ ]);
+ const routes=[
+  ['templates','sov-view-templates',/Standard task SOP[\s\S]*Safety-critical SOP[\s\S]*Quality \/ process SOP/],
+  ['library','sop-view-list',/SOP Library/],
+  ['create','sop-view-create',/Task Information/],
+  ['review','sov-view-review',/Drafts &amp; review queue/],
+  ['approvals','sov-view-approvals',/Approval &amp; publication queue/],
+  ['dashboard','sov-view-dashboard',/Recent video workspaces/]
+ ];
+ for(const [tab,id,content] of routes){
+  await f.choose(tab);f.expectView(tab,id,content);
+  if(tab==='create'){
+   assert.equal(f.w.sopCurrentStep,1);
+   assert.match(f.messages.at(-1),/New draft/);
+  }
+ }
+ await f.choose('templates');finishReads([]);await loaded;
+ f.expectView(...routes[0]);
+ assert.equal(paths.length,2);
+ assert.ok(paths.every(path=>path.includes('company_id=eq.company-a')));
+ assert.equal(f.writes.length,0);
+});
+
+test('Create SOP picker and page button use the same guarded new workspace flow',async()=>{
+ const f=navigationFixture();await f.w.loadSOP();
+ assert.equal(await f.w.sopNew(),true);
+ f.expectView('create','sop-view-create',/Task Information/);
+ f.field('sop-title','Unsaved fictional title');
+ await f.choose('templates');
+ let finishConfirm;
+ f.w.appConfirmAction=()=>new Promise(resolve=>{finishConfirm=resolve;});
+ const cancelled=f.choose('create');
+ f.expectView('templates','sov-view-templates',/Standard task SOP/);
+ finishConfirm(false);
+ assert.equal(await cancelled,false);
+ assert.equal(f.elements['sop-title'].value,'Unsaved fictional title');
+ const superseded=f.choose('create');
+ await f.choose('library');
+ finishConfirm(true);
+ assert.equal(await superseded,false);
+ f.expectView('library','sop-view-list',/SOP Library/);
+ assert.equal(f.elements['sop-title'].value,'Unsaved fictional title');
+ f.w.appConfirmAction=async()=>true;
+ assert.equal(await f.choose('create'),true);
+ f.expectView('create','sop-view-create',/Task Information/);
+ assert.equal(f.elements['sop-title'].value,'');
+});
+
+test('SOP picker does not offer Create SOP if the account cannot open that section',async()=>{
+ const f=navigationFixture();
+ f.w.AurisUserAccess={sectionAllowed:(_profile,module,section)=>module==='sop'&&section!=='create'};
+ await f.w.loadSOP();
+ assert.ok(!f.picker.options.some(option=>option.value==='create'));
+ assert.equal(await f.w.sopNew(),false);
+ f.expectView('dashboard','sov-view-dashboard',/Recent video workspaces/);
+});

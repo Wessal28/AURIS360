@@ -886,12 +886,12 @@ let conAllData=[], conPaData=[], conEvData=[], conAtwData=[], conCirData=[];
 // (legacy conPa/Ev/Atw/CirEditId variables removed - replaced by cpaEditingId/cevEditingId/catwEditingId/cirEditingId in the canonical module)
 let conCurrentTab='register';
 
-async function loadContractors(){
+async function loadContractors(skipRoute){
   // Role-gate all 5 add-buttons across the contractor sub-tabs
   ['con-add-btn','cpa-add-btn','cev-add-btn','catw-add-btn','cir-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
-  conSwitchTab('register',document.getElementById('con-tab-register'));
+  if(skipRoute!==true)conSwitchTab('register',document.getElementById('con-tab-register'));
 }
 
 
@@ -3328,19 +3328,24 @@ closeTransientOverlays();
 if(window.AurisApprovalReview)window.AurisApprovalReview.close();
 peopleCloseProfile();usersCloseModal();peopleFormVisible(false);
 if(typeof mobileFieldReleaseForm==='function')mobileFieldReleaseForm();
-var routeReady;
+var routeReady,routeRequest={};
 const activateRoutedPage=function(){
-  // Shared page CSS owns visibility; routing only changes the active state.
-  document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
+  // A loader finishing after another module opened must not reclaim the page.
+  if(routeRequest.started&&showPage.activeRequest!==routeRequest)return null;
   const target=document.getElementById('page-'+name);
   if(!target)return null;
+  routeRequest.started=true;
+  showPage.activeRequest=routeRequest;
+  window.AurisModuleHeader?.preparePage(target.id);
+  // Shared page CSS owns visibility; routing only changes the active state.
+  document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
   target.classList.add('active');
   // Dynamic/upgraded modules must not be allowed to retain a stale inline
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
   activatePageNavigation(name,el);
   if(window.AurisUserAccess){
-    if(name==='tools')window.AurisUserAccess.applySections();
+    if(['tools','contractor','sop'].includes(name))window.AurisUserAccess.applySections();
     else window.AurisUserAccess.activateSections(name);
   }
   return target;
@@ -21386,7 +21391,7 @@ function conDateState(dateStr,days){
   return {missing:false,expired:dt<today,soon:dt>=today&&dt<=soon,label:dt.toLocaleDateString('en-GB')};
 }
 
-function conSwitchTab(tab,btn){
+function conSwitchTab(tab,btn,registerLoading){
   if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'contractor',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'contractor');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
 
   document.querySelectorAll('[id^="con-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -21397,7 +21402,7 @@ function conSwitchTab(tab,btn){
   ['con-form','cpa-form','cev-form','catw-form','cir-form'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
-  if(tab==='register')conLoadRegister();
+  if(tab==='register'&&!registerLoading)conLoadRegister();
   else if(tab==='score')conLoadSafetyScore();
   else if(tab==='preassess')cpaLoad();
   else if(tab==='eval')cevLoad();

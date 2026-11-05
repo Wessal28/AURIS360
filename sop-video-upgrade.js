@@ -1,7 +1,15 @@
 (function(){
 'use strict';
-var X={tab:'dashboard',projects:[],evidence:[],schemaReady:true,ready:false,activeProjectId:null};
-var baseLoad=window.loadSOP,baseSwitch=window.sopSwitchTab,baseNew=window.sopNew,baseRenderFrames=window.sopRenderFrames,baseBuildPreview=window.sopBuildPreview,baseSave=window.sopSaveDocument;
+var X={tab:'dashboard',projects:[],evidence:[],schemaReady:true,ready:false,activeProjectId:null,navigation:0};
+var pages={
+  dashboard:{label:'Dashboard',id:'sov-view-dashboard',section:'list'},
+  library:{label:'SOP Library',id:'sop-view-list',section:'list'},
+  create:{label:'Create SOP',id:'sop-view-create',section:'create'},
+  review:{label:'Drafts & Review',id:'sov-view-review',section:'list'},
+  approvals:{label:'Approvals',id:'sov-view-approvals',section:'list'},
+  templates:{label:'Templates',id:'sov-view-templates',section:'list'}
+};
+var baseNew=window.sopNew,baseBuildPreview=window.sopBuildPreview,baseSave=window.sopSaveDocument;
 function e(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function profile(){try{return (typeof prof!=='undefined'&&prof)||window.prof||{};}catch(_){return window.prof||{};}}
 function documents(){try{return (typeof sopAllData!=='undefined'&&sopAllData)||window.sopAllData||[];}catch(_){return window.sopAllData||[];}}
@@ -11,16 +19,31 @@ function pill(v){var s=norm(v),tone=/approved|published|ready/.test(s)?'green':/
 function schemaNote(){return '<div class="sov-note warning"><strong>Workspace storage is unavailable.</strong> Your current entries remain in the editor. Contact an administrator before leaving unsaved work.</div>';}
 function empty(icon,title,text,action){return '<div class="sov-empty"><i class="ti '+icon+'"></i><strong>'+e(title)+'</strong><span>'+e(text)+'</span>'+(action||'')+'</div>';}
 function ensureShell(){
-  var page=document.getElementById('page-sop');if(!page||page.dataset.sovReady)return;
+  var page=document.getElementById('page-sop');
+  var oldTabs=document.getElementById('sop-tab-list')?.parentElement;
+  var list=document.getElementById('sop-view-list'),create=document.getElementById('sop-view-create');
+  if(!page||page.dataset.sovReady||!oldTabs||!list||!create)return;
   page.dataset.sovReady='1';page.classList.add('sov-page');
   var header=page.querySelector('.page-header');
   if(header)header.outerHTML='<header class="sov-hero"><div><div class="sov-kicker">Evidence before automation · Human approval remains mandatory</div><h1>SOP Generator</h1><p>Create controlled procedures from task video, retain the source behind every proposed step, and publish only after competent review and approval.</p></div><div class="sov-actions"><button class="sov-btn" data-auris-module-onclick="b0032"><i class="ti ti-printer"></i>Print library</button><button class="sov-btn primary" data-auris-module-onclick="b0033"><i class="ti ti-video-plus"></i>Create SOP</button></div></header>';
-  var oldTabs=document.getElementById('sop-tab-list')?.parentElement;
-  if(oldTabs)oldTabs.outerHTML='<nav class="sov-tabs" id="sov-tabs"><button data-tab="dashboard" data-auris-module-onclick="b0034"><i class="ti ti-layout-dashboard"></i>Dashboard</button><button id="sop-tab-list" data-tab="library" data-auris-module-onclick="b0035"><i class="ti ti-books"></i>SOP Library</button><button id="sop-tab-create" data-tab="create" data-auris-module-onclick="b0033"><i class="ti ti-video-plus"></i>Create SOP</button><button data-tab="review" data-auris-module-onclick="b0036"><i class="ti ti-list-check"></i>Drafts &amp; Review</button><button data-tab="approvals" data-auris-module-onclick="b0037"><i class="ti ti-rosette-discount-check"></i>Approvals</button><button data-tab="templates" data-auris-module-onclick="b0038"><i class="ti ti-template"></i>Templates</button></nav>';
-  var list=document.getElementById('sop-view-list');var create=document.getElementById('sop-view-create');
-  if(list){list.classList.add('sov-view');list.dataset.sovView='library';}
-  if(create){create.classList.add('sov-view');create.dataset.sovView='create';enhanceWizard();}
-  ['dashboard','review','approvals','templates'].forEach(function(v){var s=document.createElement('section');s.id='sov-view-'+v;s.className='sov-view';s.dataset.sovView=v;list.parentNode.insertBefore(s,list);});
+  oldTabs.insertAdjacentHTML('beforebegin','<label class="auris-section-picker"><span>Section</span><select id="sov-page-select" aria-label="Go to SOP Generator page"></select></label>');
+  var select=document.getElementById('sov-page-select');
+  select.addEventListener('change',function(){
+    var tab=select.value;
+    select.value=X.tab;
+    if(tab==='create')return sopNew();
+    return sovSwitch(tab);
+  });
+  list.classList.add('sov-view');
+  create.classList.add('sov-view');
+  enhanceWizard();
+  Object.keys(pages).forEach(function(tab){
+    if(tab==='library'||tab==='create')return;
+    var section=document.createElement('section');
+    section.id=pages[tab].id;
+    section.className='sov-view';
+    list.parentNode.insertBefore(section,list);
+  });
   X.ready=true;mountDraftTools();
 }
 function enhanceWizard(){
@@ -50,8 +73,43 @@ function renderReview(){var rows=X.projects.filter(function(p){return !/approved
 function renderApprovals(){var rows=X.projects.filter(function(p){return /awaiting_approval|approved|published/.test(norm(p.processing_status));});return (X.schemaReady?'':schemaNote())+'<section class="sov-panel"><div class="sov-panel-head"><div><h3>Approval &amp; publication queue</h3><p>Only evidence-reviewed drafts can reach this queue. Approval never occurs automatically.</p></div></div>'+(rows.map(projectRow).join('')||empty('ti-signature-off','No approval requests','Submit a reviewed workspace when all blocking evidence decisions are complete.'))+'</section>';}
 function renderTemplates(){return '<div class="sov-note"><strong>Templates guide structure; they do not supply evidence.</strong> Required sections must be completed or formally marked not applicable by the reviewer.</div><div class="sov-template-grid"><article class="sov-template"><i class="ti ti-list-details"></i><h3>Standard task SOP</h3><p>Purpose, scope, responsibilities, prerequisites, tools/PPE, procedure steps, completion and revision approval.</p></article><article class="sov-template"><i class="ti ti-shield-exclamation"></i><h3>Safety-critical SOP</h3><p>Adds mandatory risk links, hold points, abnormal conditions and explicit verification of every safety-critical step.</p></article><article class="sov-template"><i class="ti ti-checkup-list"></i><h3>Quality / process SOP</h3><p>Adds acceptance criteria, quality checks, tolerances and non-conformance response without allowing AI-created limits.</p></article></div>';}
 function renderAll(){if(!X.ready)return;var d=document.getElementById('sov-view-dashboard'),r=document.getElementById('sov-view-review'),a=document.getElementById('sov-view-approvals'),t=document.getElementById('sov-view-templates');if(d)d.innerHTML=renderDashboard();if(r)r.innerHTML=renderReview();if(a)a.innerHTML=renderApprovals();if(t)t.innerHTML=renderTemplates();var library=document.getElementById('sop-view-list');if(library){var drafts=document.getElementById('sov-library-drafts');if(!drafts){drafts=document.createElement('section');drafts.id='sov-library-drafts';drafts.className='sov-panel';library.prepend(drafts);}drafts.innerHTML=(X.schemaReady?'':schemaNote())+'<h3>Saved workspaces</h3><p>Incomplete drafts are separate from generated SOP documents. Resume work here.</p>'+X.projects.filter(function(p){return !/approved|published|superseded|withdrawn/.test(norm(p.processing_status));}).slice(0,20).map(projectRow).join('');var refresh=document.createElement('button');refresh.type='button';refresh.className='sov-btn';refresh.textContent='Refresh saved workspaces';refresh.addEventListener('click',function(){loadAux().catch(function(error){draftMessage(error.message,true);});});drafts.appendChild(refresh);}}
-window.sovSwitch=function(tab){ensureShell();X.tab=tab;document.querySelectorAll('#page-sop .sov-view').forEach(function(v){var on=v.dataset.sovView===tab;v.classList.toggle('active',on);v.style.display=on?'block':'none';});document.querySelectorAll('#sov-tabs button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});if(tab==='library'&&typeof sopLoadList==='function')sopLoadList();else renderAll();};
-window.sopSwitchTab=function(tab,btn){if(tab==='list')return sovSwitch('library');if(tab==='create')return sovSwitch('create');return baseSwitch(tab,btn);};
+function pageAllowed(tab){
+  return Object.hasOwn(pages,tab)&&(!window.AurisUserAccess||window.AurisUserAccess.sectionAllowed(profile(),'sop',pages[tab].section));
+}
+function availablePages(){
+  return Object.keys(pages).filter(function(tab){return pageAllowed(tab)&&document.getElementById(pages[tab].id);});
+}
+function syncPicker(){
+  if(!X.ready)return;
+  var select=document.getElementById('sov-page-select'),available=availablePages();
+  if(select.options.length!==available.length||available.some(function(tab,index){return select.options[index].value!==tab;})){
+    select.replaceChildren(...available.map(function(tab){
+      var option=document.createElement('option');
+      option.value=tab;
+      option.textContent=pages[tab].label;
+      return option;
+    }));
+  }
+  select.value=X.tab;
+}
+window.sovSwitch=function(tab,refresh){
+  ensureShell();
+  if(!pageAllowed(tab))return false;
+  var target=document.getElementById(pages[tab].id);
+  if(!target)return false;
+  if(tab!=='library')renderAll();
+  document.querySelectorAll('#page-sop .sov-view').forEach(function(view){
+    var active=view===target;
+    view.classList.toggle('active',active);
+    view.style.display=active?'block':'none';
+  });
+  X.navigation++;
+  X.tab=tab;
+  syncPicker();
+  if(tab==='library'&&refresh!==false&&typeof sopLoadList==='function')sopLoadList();
+  return true;
+};
+window.sopSwitchTab=function(tab){return sovSwitch(tab==='list'?'library':tab);};
 // Workspace persistence is independent of media processing and approval.
 var draftFields={'sop-title':'title','sop-dept':'department','sop-risk':'risk','sop-video-author':'authorId','sop-version':'version','sop-review-date':'reviewDate','sop-desc':'description','sop-ppe-extra':'ppeExtra'};
 function value(id){return String(document.getElementById(id)?.value||'');}
@@ -64,7 +122,23 @@ function lockDraft(on){X.saving=on;var create=document.getElementById('sop-view-
 function draftSignature(){var saved=workspaceSnapshot();delete saved.step;return JSON.stringify(saved);}
 async function discardDraft(){if(X.savedSnapshot===draftSignature()||!X.started)return true;return appConfirmAction({title:'Leave unsaved SOP changes?',message:'Save workspace first to retain these entries. Leaving this editor discards changes since its last save.',confirmText:'Discard unsaved changes',cancelText:'Keep editing'});}
 function resetWorkspace(){X.activeProjectId=null;X.newId=crypto.randomUUID();X.context=account();X.started=true;window.sopGeneratedData=null;baseNew();['sov-language','sov-template','sov-privacy'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.value=['en','standard','internal'][i];});if(document.getElementById('sov-consent'))document.getElementById('sov-consent').checked=false;X.savedSnapshot=draftSignature();}
-window.sopNew=async function(){if(X.saving||!await discardDraft())return;ensureShell();resetWorkspace();enhanceWizard();sovMountConnected();sovSwitch('create');draftMessage('New draft. You can save information before selecting a video or confirming recording authorisation.');};
+window.sopNew=async function(){
+  if(X.saving||!pageAllowed('create'))return false;
+  var page=document.getElementById('page-sop'),wasActive=page?.classList.contains?.('active');
+  var request=++X.navigation;
+  try{
+    var expected=account();
+    if(!await discardDraft()||request!==X.navigation||wasActive&&!page.classList.contains('active'))return false;
+    assertAccount(expected);
+    ensureShell();
+    resetWorkspace();
+    enhanceWizard();
+    sovMountConnected();
+    sovSwitch('create');
+    draftMessage('New draft. You can save information before selecting a video or confirming recording authorisation.');
+    return true;
+  }catch(err){draftMessage(err.message,true);return false;}
+};
 window.sovFocusProject=async function(projectId){if(X.saving||!await discardDraft())return;var expected=account(),opening=X.opening=(X.opening||0)+1;try{var rows=await api('/sop_video_projects?select=*&id=eq.'+encodeURIComponent(projectId)+cf()+'&limit=1');assertAccount(expected);if(opening!==X.opening)return;var p=rows?.[0];if(!p||String(p.company_id)!==String(ccid()))throw Error('Workspace unavailable in this company.');if(!['draft','uploaded','processing_failed','ready_for_review','changes_requested'].includes(norm(p.processing_status)))throw Error('This workspace is in review or already approved. Use its controlled document rather than overwrite it.');
  var legacyEvidence=[];if(!p.processing_detail?.workspace){legacyEvidence=await api('/sop_video_evidence?select=*&project_id=eq.'+encodeURIComponent(p.id)+cf()+'&order=sequence_no.asc');assertAccount(expected);if(opening!==X.opening)return;if(!Array.isArray(legacyEvidence)||legacyEvidence.some(function(row){return String(row.company_id)!==String(ccid())||String(row.project_id)!==String(p.id);}))throw Error('The workspace evidence could not be verified. Your current entries remain unchanged.');}
  ensureShell();resetWorkspace();X.activeProjectId=p.id;X.projects=X.projects.filter(function(x){return x.id!==p.id;}).concat([p]);var saved=p.processing_detail?.workspace||{task:{title:p.title,department:p.site_name},frames:legacyEvidence.map(function(x){return {time:x.source_start_seconds,dataUrl:x.image_reference,narration:x.instruction_text,hazard:x.safety_notes,source_type:x.source_label,review_state:x.reviewer_disposition,safetyCritical:x.safety_critical};})};
@@ -94,6 +168,20 @@ var baseExtract=window.sopExtractFrames;window.sopExtractFrames=function(){if(!d
 var baseNext=window.sopNextStep;window.sopNextStep=function(from){if(from===3){if(window.sopFrames?.some(function(f){return !!f.dataUrl;})&&!document.getElementById('sov-consent')?.checked)return draftMessage('Confirm recording authorisation before using video images.',true);var b=blockers();if(b.length){sopRenderFrames();return toast(b.length+' step(s) need an instruction and explicit reviewer acceptance before generation.',false);}}return baseNext(from);};
 window.sopBuildPreview=function(data,meta){var task=taskInfo();meta=Object.assign({},meta,{author:task.author,authorId:task.authorId,description:task.description});baseBuildPreview(data,meta);var root=document.getElementById('sop-printable');if(!root)return;var rows=(window.sopFrames||sopFrames||[]).map(function(f,i){return '<tr><td>'+(i+1)+'</td><td>'+e((f.source_type||'reviewer_added').replace(/_/g,' '))+'</td><td>'+e(f.time==null?'Reviewer entry':Math.round(f.time)+' sec')+'</td><td>'+e(f.confidence==null?'N/A':f.confidence+'%')+'</td><td>'+e((f.review_state||'pending').replace(/_/g,' '))+'</td></tr>';}).join('');root.insertAdjacentHTML('beforeend','<section class="sov-provenance"><p><strong>Task description:</strong> '+e(meta.description||'Not recorded')+'</p><h3>Source evidence &amp; reviewer traceability</h3><div class="sov-provenance-note">This appendix records how each proposed step was derived. AI-supported content remains advisory until accepted by an authorised reviewer.</div><table><thead><tr><th>Step</th><th>Source</th><th>Timestamp</th><th>Confidence</th><th>Disposition</th></tr></thead><tbody>'+rows+'</tbody></table></section>');};
 window.sopSaveDocument=async function(){if(blockers().length)return toast('Resolve all evidence-review blockers before saving the controlled SOP.',false);var project=await sovSaveWorkspace();if(!project)return;var result=await baseSave();var documentRow=result?.document;if(!documentRow?.id)return result;try{var rows=await api('/sop_video_projects?id=eq.'+encodeURIComponent(project.id),{m:'PATCH',p:'return=representation',b:{sop_document_id:String(documentRow.id),updated_at:new Date().toISOString()}});if(rows?.[0]){project=rows[0];X.projects=X.projects.map(function(p){return String(p.id)===String(project.id)?project:p;});}sovMountConnected();}catch(err){toast('SOP was saved, but its project-to-Document reference could not be completed: '+err.message,false);}return result;};
-window.loadSOP=async function(){ensureShell();var current=account();if(X.context&&X.context!==current){X.projects=[];X.evidence=[];resetWorkspace();X.started=false;}X.context=current;var desired=X.tab||'dashboard';await baseLoad();await loadAux();sovSwitch(desired);mediaStatus();};
+window.loadSOP=async function(){
+  ensureShell();
+  var current=account(),desired=X.tab,available=availablePages();
+  if(X.context&&X.context!==current){
+    X.projects=[];X.evidence=[];
+    resetWorkspace();
+    X.started=false;
+  }
+  X.context=current;
+  if(!sovSwitch(available.includes(desired)?desired:available[0],false))return;
+  mediaStatus();
+  await Promise.all([pageAllowed('library')&&typeof sopLoadList==='function'?sopLoadList():null,loadAux()]);
+  assertAccount(current);
+  renderAll();
+};
 try{if(typeof L!=='undefined')L.sop=window.loadSOP;}catch(_){ }
 })();

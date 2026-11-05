@@ -33,7 +33,8 @@ function runtime(){
     querySelector(s){if(s==='select')return this.children.find(x=>x.tagName==='SELECT')||null;return null;}
     closest(s){if(s==='.page')return this.page||null;if(s.includes('auris-section-picker'))return null;return null;}
   }
-  const page=new Element('section'),host=new Element('div'),bar=new Element('div');
+  const page=new Element('section'),host=new Element('div');
+  let bar=new Element('div');
   page.id='page-ppe';bar.page=page;bar.className='module-tabs';host.appendChild(bar);
   const buttons=['Dashboard','Inspections'].map((label,index)=>{const b=new Element('button');b.textContent=label;b.id=index?'ppe-tab-inspections':'ppe-tab-dash';if(!index)b.className='active';bar.appendChild(b);return b;});
   const document={readyState:'complete',body:host,documentElement:host,createElement:t=>new Element(t),querySelectorAll:()=>[bar],querySelector:()=>null,getElementById:id=>buttons.find(b=>b.id===id)||null};
@@ -42,7 +43,15 @@ function runtime(){
   function flush(limit=12){for(let frame=0;frame<limit;frame++){const batch=records;records=[];for(const o of observers){const relevant=batch.filter(r=>(r.type==='childList'&&o.options.childList)||(r.type==='attributes'&&o.options.attributes&&(!o.options.attributeFilter||o.options.attributeFilter.includes(r.attributeName))));if(relevant.length)o.fn(relevant);}const queued=frames.splice(0);queued.forEach(fn=>fn());if(!records.length&&!frames.length)return frame+1;}assert.fail('Navigation keeps scheduling updates after '+limit+' idle frames');}
   function load(file){vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),scope);}
   records=[];
-  return {scope,bar,buttons,load,flush,mutate,writes:()=>writes,picker:()=>host.children[0].querySelector('select')};
+  function replaceBar(nextButtons){
+    const next=new Element('div');next.page=page;next.className='module-tabs';
+    nextButtons.forEach(button=>next.appendChild(button));
+    host.children[host.children.indexOf(bar)]=next;
+    next.parentElement=host;bar.parentElement=null;
+    mutate(host,'childList');
+    bar=next;
+  }
+  return {scope,bar,buttons,load,flush,mutate,replaceBar,writes:()=>writes,picker:()=>host.children[0].querySelector('select')};
 }
 
 test('section navigation settles after mounting, dynamic content and tab changes',()=>{
@@ -60,4 +69,24 @@ test('permission and section observers settle together and react to permission c
   r.scope.prof.permissions.access_v1['ppe.inspections']={view:false};r.scope.AurisUserAccess.applySections();r.flush();assert.equal(r.buttons[1].hidden,true);
   delete r.scope.prof.permissions.access_v1['ppe.inspections'];r.scope.AurisUserAccess.applySections();r.flush();assert.equal(r.buttons[1].hidden,false);
   r.mutate(r.bar,'childList');r.flush();const settled=r.writes();r.flush();assert.equal(r.writes(),settled);
+});
+
+test('a regenerated tab row rebinds the picker without using detached or newly shifted targets',()=>{
+  const r=runtime(),opens=[];r.load('auris-section-picker.js');r.flush();
+  r.buttons[0].listeners.click=()=>opens.push('old Dashboard');
+  const replacement=r.buttons.map((button,index)=>{
+    const next=new button.constructor('button');next.textContent=button.textContent;next.listeners.click=()=>opens.push(index?'Inspections':'Dashboard');
+    return next;
+  });
+  r.replaceBar(replacement);
+  r.picker().value='0';r.picker().listeners.change();
+  assert.deepEqual(opens,[],'Do not dispatch to a detached tab while the picker refreshes');
+  r.flush();
+  r.picker().value='0';r.picker().listeners.change();
+  assert.deepEqual(opens,['Dashboard']);
+  replacement[0].hidden=true;
+  r.picker().value='0';r.picker().listeners.change();
+  assert.deepEqual(opens,['Dashboard'],'Do not dispatch the old Dashboard index to Inspections');
+  r.flush();
+  assert.deepEqual(r.picker().options.map(option=>option.textContent),['Inspections']);
 });
