@@ -7,11 +7,14 @@ const comparison=require('../kpi-year-comparison.js');
 
 const source=fs.readFileSync(path.join(__dirname,'..','kpi-module-upgrade.js'),'utf8');
 const boot="if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kpiXBoot);else kpiXBoot();";
+// The owner-control case records September as the last compiled month. Keep
+// that scenario fixed rather than changing it when the real calendar advances.
+class FixtureDate extends Date{constructor(...args){super(...(args.length?args:['2026-10-22T12:00:00Z']));}static now(){return new Date('2026-10-22T12:00:00Z').getTime();}}
 
 function runtime(options={}){
   const calls=[],dashboard={innerHTML:'',querySelectorAll:()=>[]},panel={outerHTML:''};
   const document={readyState:'loading',addEventListener(){},getElementById(id){return id==='year-sel'?{value:'2026'}:id==='kpi-x-dashboard'?dashboard:null;},querySelector(selector){return selector==='#kpi-x-dashboard > .kpi-x-comparison'?panel:null;}};
-  const c={window:null,document,Date,console,ccid:()=>options.company||'company-a',api:async url=>{calls.push(url);if(options.fail)throw new Error('Network unavailable');return [];},AurisKpiYearComparison:comparison,kpiKPIs:[],kpiIndicators:[],kpiMonthlyData:{},kpiObjectives:[],kpiConfigPublished:{},isMgr:()=>true};
+  const c={window:null,document,Date:FixtureDate,console,ccid:()=>options.company||'company-a',api:async url=>{calls.push(url);if(options.fail)throw new Error('Network unavailable');return [];},AurisKpiYearComparison:comparison,kpiKPIs:[],kpiIndicators:[],kpiMonthlyData:{},kpiObjectives:[],kpiConfigPublished:{},isMgr:()=>true};
   c.window=c;vm.createContext(c);vm.runInContext(source.replace(boot,'window.qa={comparison:kpiXComparisonHtml,dashboard:kpiXRenderDashboard};'),c);
   return {c,calls,dashboard,panel};
 }

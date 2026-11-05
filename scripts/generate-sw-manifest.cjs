@@ -64,6 +64,7 @@ const dynamicPrintAssets = [
 ];
 for (const asset of dynamicPrintAssets) assetSet.add(asset);
 const lazyModuleAssets = [
+  'auris-work-gantt.js', 'auris-work-gantt.css',
   'module-print-catalogue.js', 'operational-print-catalogue.js', 'specialist-print-catalogue.js', 'governance-print-catalogue.js', 'platform-print-catalogue.js',
   'people-user-linking.js', 'people-user-linking.css',
   'sop-video-upgrade.js',

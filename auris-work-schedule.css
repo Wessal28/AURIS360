@@ -202,3 +202,5 @@
 .ws-te-picker-row small{display:block;color:var(--text2);margin-top:3px;line-height:1.4}
 .ws-te-picker-unavailable{color:var(--text2);font-size:12px;text-align:right;max-width:180px}
 .ws-te-picker-empty{font-size:13px;color:var(--text2);padding:20px;text-align:center}
+
+#ws-gantt-view.auris-work-s-6aa34d7432{display:none}

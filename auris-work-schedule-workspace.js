@@ -59,15 +59,57 @@ root.AurisWorkScheduleWorkspace=Object.freeze({mount:mount,project:project,defin
 })(typeof window!=='undefined'?window:globalThis);
 
 var wsOpeningLinkedRecord=false,wsEditContext=null;
+var wsRecordGeneration=0,wsRecordPending=null,wsRecordViewer=null;
+function wsRecordFailure(message,cancelled){var error=Error(message);error.wsRecordSafe=true;error.wsRecordCancelled=!!cancelled;return error;}
+function wsSafeRecordFailure(error){
+  if(error&&error.wsRecordSafe)return error;
+  var message=String(error&&error.message||''),known=['Sign in and select a company to open work orders.','Select a company to open work orders.','Account, company or access changed. Reopen the work order.','Access denied','Manager access is required to change work orders.','Unsupported work-order record.','Select the company that owns this work order.','This record is no longer linked to the work order.','Access to the linked module is required.','Access to the linked module changed.','Linked record not found or access denied.'];
+  return wsRecordFailure(known.includes(message)?message:'The work order could not be opened. Your schedule is unchanged. Retry, or refresh the page.');
+}
+function wsRecordFeedback(request,message,failed){
+  if(!request||request.generation!==wsRecordGeneration||typeof document.createElement!=='function')return;
+  var page=document.getElementById('page-workschedule');if(!page||typeof page.appendChild!=='function')return;
+  var box=request.feedback;if(!box){box=document.createElement('div');box.id='ws-record-open-status';box.className='card ws-record-open-status';request.feedback=box;page.appendChild(box);}
+  box.setAttribute('role',failed?'alert':'status');box.innerHTML='<p>'+escH(message)+'</p><button type="button" class="btn btn-sm">'+(failed?'Dismiss':'Cancel opening')+'</button>';
+  box.querySelector('button').addEventListener('click',function(){if(failed)box.remove();else wsCancelRecordRequest();});
+}
+function wsCancelRecordRequest(){
+  wsRecordGeneration++;
+  var pending=wsRecordPending;wsRecordPending=null;
+  if(pending){pending.cancel(wsRecordFailure('Work-order opening cancelled.',true));pending.feedback?.remove();}
+}
+function wsBeginRecordRequest(options){
+  options=options||{};wsCancelRecordRequest();document.getElementById('ws-record-open-status')?.remove();
+  var page=document.getElementById('page-workschedule'),origin=options.origin||document.activeElement;
+  var pageWasActive=!!(page&&page.classList&&page.classList.contains('active'));
+  var request={generation:wsRecordGeneration,current:AurisWorkScheduleWorkspace.session(),origin:origin,returnFocus:options.returnFocus||origin,guard:options.guard,feedback:null,cancelled:null};
+  request.aborted=new Promise(function(resolve,reject){request.cancel=function(error){if(!request.cancelled){request.cancelled=error;reject(error);}};});
+  request.check=function(){
+    if(request.cancelled)throw request.cancelled;
+    if(request.generation!==wsRecordGeneration)throw wsRecordFailure('A newer work-order request replaced this one.',true);
+    AurisWorkScheduleWorkspace.assertSession(request.current);
+    if(origin&&origin.isConnected===false||pageWasActive&&(page.isConnected===false||!page.classList.contains('active')))throw wsRecordFailure('The schedule view changed. Reopen the work order.',true);
+    if(typeof request.guard==='function')try{if(request.guard()===false)throw Error('View changed');}catch(_){throw wsRecordFailure('The schedule view changed. Reopen the work order.',true);}
+  };
+  wsRecordPending=request;
+  if(typeof setTimeout==='function')request.timer=setTimeout(function(){request.cancel(wsRecordFailure('Opening the work order took too long. Your schedule is unchanged. Retry when the connection is available.'));},20000);
+  if(pageWasActive&&typeof MutationObserver==='function'){request.observer=new MutationObserver(function(){if(!page.classList.contains('active')&&wsRecordPending===request)wsCancelRecordRequest();});request.observer.observe(page,{attributes:true,attributeFilter:['class']});}
+  return request;
+}
+function wsCloseRecordViewer(restoreFocus){
+  wsCancelRecordRequest();var viewer=wsRecordViewer;wsRecordViewer=null;
+  if(viewer){viewer.dispose();viewer.host.remove();if(restoreFocus!==false&&viewer.opener&&viewer.opener.isConnected!==false&&typeof viewer.opener.focus==='function')viewer.opener.focus({preventScroll:true});}
+  else document.getElementById('ws-record-view')?.remove();
+}
 function wsMaySave(){
   try{if(!isMgr()||!wsEditContext)throw Error('Reopen the work order with manager access before saving.');AurisWorkScheduleWorkspace.assertSession(wsEditContext);return true;}
   catch(e){toast(e.message,false);return false;}
 }
-async function wsRecordWindow(id,mode){
+async function wsRecordWindow(id,mode,options){
   try{
     var current=AurisWorkScheduleWorkspace.session();
-    return await wsOpenRecordRequest({record:id,table:'work_schedule',company:current.companyId,mode:mode||'view'});
-  }catch(e){toast(e.message,false);return false;}
+    return await wsOpenRecordRequest({record:id,table:'work_schedule',company:current.companyId,mode:mode||'view'},options);
+  }catch(e){var error=wsSafeRecordFailure(e);if(!error.wsRecordCancelled)toast(error.message,false);return false;}
 }
 var WS_RECORD_LINKS={tbt:{label:'Toolbox talk',module:'meetings',table:'toolbox_talks',ref:'tbt_ref'},prestart:{label:'Pre-start check',module:'inspection',table:'inspections',ref:'reference_no'},site:{label:'Site inspection',module:'inspection',table:'inspections',ref:'reference_no'},ra:{label:'Risk assessment',module:'risk',table:'risk_assessments',ref:'ra_ref'},ptw:{label:'Permit to work',module:'permit',table:'permits',ref:'permit_number'},event:{label:'Incident / hazard',module:'events',table:'events',ref:'event_ref'},equipment:{label:'Equipment',module:'tools',table:'tools_register',ref:'ref_number'}};
 function wsRecordLinks(row,extra){
@@ -77,20 +119,21 @@ function wsRecordLinks(row,extra){
   add('tbt',row.toolbox_talk_id);add('prestart',row.prestart_id);add('site',row.site_inspection_id);add('ra',row.risk_assessment_id||row.ra_ref,row.ra_ref);add('ptw',row.permit_id||row.permit_ref,row.permit_ref);add('event',row.linked_event_ref);
   return links;
 }
-async function wsReadRecordLinks(row,current){
+async function wsReadRecordLinks(row,current,guard){
   var warning='',extra=[];
-  async function allRows(path){var rows=[],page;do{page=await api(path+'&limit=1000&offset='+rows.length);AurisWorkScheduleWorkspace.assertSession(current);if(!Array.isArray(page))throw new Error('Linked record response is invalid.');rows=rows.concat(page);}while(page.length===1000);return rows;}
+  function check(){AurisWorkScheduleWorkspace.assertSession(current);if(guard)guard();}
+  async function allRows(path){var rows=[],page;do{check();page=await api(path+'&limit=1000&offset='+rows.length);check();if(!Array.isArray(page))throw new Error('Linked record response is invalid.');rows=rows.concat(page);}while(page.length===1000);return rows;}
   try{extra=await allRows('/work_schedule_links?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&work_order_id=eq.'+encodeURIComponent(row.id));}
   catch(e){warning='Additional linked records could not be loaded. Direct work-order links are shown. Reload to retry.';}
-  AurisWorkScheduleWorkspace.assertSession(current);
+  check();
   extra=(extra||[]).filter(function(link){return String(link.company_id)===current.companyId&&String(link.work_order_id)===String(row.id);});
   var reverse=await Promise.allSettled(['ra','ptw','tbt'].map(function(kind){var info=WS_RECORD_LINKS[kind],field=kind==='tbt'?'work_schedule_id':'work_order_id';return allRows('/'+info.table+'?select=id,company_id,'+field+','+info.ref+'&company_id=eq.'+encodeURIComponent(current.companyId)+'&'+field+'=eq.'+encodeURIComponent(row.id));}));
-  AurisWorkScheduleWorkspace.assertSession(current);
+  check();
   reverse.forEach(function(result,index){var kind=['ra','ptw','tbt'][index],info=WS_RECORD_LINKS[kind],field=kind==='tbt'?'work_schedule_id':'work_order_id';if(result.status==='rejected'){warning='Some linked records could not be loaded. Reload to retry.';return;}(result.value||[]).forEach(function(record){if(String(record.company_id)===current.companyId&&String(record[field])===String(row.id))extra.push({link_type:kind,record_id:record.id,record_ref:record[info.ref]});});});
   // Standalone talks store their work-order link in notes rather than work_schedule_id.
   try{
     var markerRows=await allRows('/toolbox_talks?select=id,company_id,tbt_ref,notes&company_id=eq.'+encodeURIComponent(current.companyId)+'&notes=ilike.*'+encodeURIComponent(String(row.id))+'*');
-    AurisWorkScheduleWorkspace.assertSession(current);
+    check();
     (markerRows||[]).forEach(function(talk){
       if(String(talk.company_id)!==current.companyId)return;
       var marker=String(talk.notes||'').match(/\[AURIS360_LINKED_WORK:({[^\]]+})\]/);
@@ -104,16 +147,17 @@ async function wsReadRecordLinks(row,current){
     if(link.ref!=='Reference unavailable'||!canAccessPage(info.module))return;
     try{
       var records=await api('/'+info.table+'?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&id=eq.'+encodeURIComponent(link.value)+'&limit=1');
-      AurisWorkScheduleWorkspace.assertSession(current);
+      check();
       var record=(records||[]).find(function(item){return String(item.id)===link.value&&String(item.company_id)===current.companyId;});
       if(record&&canAccessPage(info.module))link.ref=record[info.ref]||record.ref_number||record.reference_no||'Reference unavailable';
     }catch(e){/* Keep the exact link usable even when reference lookup fails. */}
   }));
-  AurisWorkScheduleWorkspace.assertSession(current);
+  check();
   return {links:links,warning:warning};
 }
 function wsRecordFields(row,fields){
-  return '<dl class="ws-record-fields">'+fields.map(function(field){var value=row[field[0]];if(typeof value==='boolean')value=value?'Yes':'No';if(Array.isArray(value))value=value.map(function(item){return typeof item==='object'?JSON.stringify(item):item;}).join(', ');if(value&&typeof value==='object')value=JSON.stringify(value);return '<div><dt>'+escH(field[1])+'</dt><dd>'+escH(value==null||value===''?'Not recorded':String(value))+'</dd></div>';}).join('')+'</dl>';
+  function readable(value){if(Array.isArray(value))return value.map(readable).filter(Boolean).join(', ');if(value&&typeof value==='object')return value.full_name||value.name||value.person_name||value.employee_name||[value.first_name,value.last_name].filter(Boolean).join(' ')||'Name not recorded';return value;}
+  return '<dl class="ws-record-fields">'+fields.map(function(field){var value=readable(row[field[0]]);if(typeof value==='boolean')value=value?'Yes':'No';if(value&&['planned_start','planned_end','talk_date','event_date'].includes(field[0])){var raw=String(value),date=new Date(raw);value=Number.isNaN(date.getTime())?'Invalid recorded date':/^\d{4}-\d{2}-\d{2}$/.test(raw)?raw.slice(8,10)+'/'+raw.slice(5,7)+'/'+raw.slice(0,4):date.toLocaleString('en-GB',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});}if(value&&['work_type','status','priority','risk_level','category','permit_type'].includes(field[0]))value=String(value).replace(/_/g,' ').replace(/^./,function(c){return c.toUpperCase();});return '<div><dt>'+escH(field[1])+'</dt><dd>'+escH(value==null||value===''?'Not recorded':String(value))+'</dd></div>';}).join('')+'</dl>';
 }
 function wsReadOnlyHtml(row){
   return '<section><h3>Work details</h3>'+wsRecordFields(row,[['description','Description'],['location','Location'],['department','Department'],['work_type','Work type'],['notes','Notes']])+'</section><section><h3>Schedule & people</h3>'+wsRecordFields(row,[['planned_start','Planned start'],['planned_end','Planned end'],['estimated_duration','Estimated duration'],['supervisor_name','Supervisor'],['team_members','Team members']])+'</section><section><h3>Readiness</h3>'+wsRecordFields(row,[['status','Status'],['priority','Priority'],['risk_level','Risk level'],['requires_ra','Risk assessment required'],['requires_permit','Permit required']])+'</section>';
@@ -135,19 +179,28 @@ function wsRelatedRecordsHtml(data,linked){
   var links=data.links||[];
   return '<section class="ws-related-records"><h3>Related HSE records</h3><p>Select Open to view a linked record.</p>'+(data.warning?'<p role="alert">'+escH(data.warning)+'</p>':'')+(links.length?'<div class="ws-linked-table"><table><thead><tr><th>Record type</th><th>Reference</th><th>Action</th></tr></thead><tbody>'+links.map(function(link,index){var active=linked&&linked.info===WS_RECORD_LINKS[link.kind]&&String(linked.row.id)===link.value;return '<tr'+(active?' class="ws-related-active"':'')+'><td>'+escH(WS_RECORD_LINKS[link.kind].label)+'</td><td>'+escH(link.ref)+'</td><td>'+(active?'Current record':'<button type="button" class="btn btn-sm" data-ws-related="'+index+'" aria-label="Open '+escH(WS_RECORD_LINKS[link.kind].label+' '+link.ref)+'"><i class="ti ti-eye" aria-hidden="true"></i> Open</button>')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p>No HSE records linked.</p>')+'</section>';
 }
-function wsShowReadOnly(row,current,linkData,linked){
+function wsShowReadOnly(row,current,linkData,linked,options){
+  options=options||{};
+  var opener=options.returnFocus||options.origin||wsRecordViewer?.opener||document.activeElement;
+  if(wsRecordViewer)wsRecordViewer.dispose();
   document.getElementById('ws-record-view')?.remove();
   var host=document.createElement('div');host.id='ws-record-view';host.className='ws-record-overlay';
   var title=linked?linked.row.title||linked.row.activity||linked.row.permit_number||linked.info.label:row.title||'Work order';
   var content=linked?wsLinkedRecordHtml(linked):wsReadOnlyHtml(row);
   host.innerHTML='<section class="ws-record-window" role="dialog" aria-modal="true" aria-labelledby="ws-record-title"><header><div><p>Work Schedule · Read only</p><h2 id="ws-record-title">'+escH(title)+'</h2><p>'+escH(linked?(linked.row[linked.info.ref]||'Reference unavailable'):(row.ref_number||'Draft'))+'</p></div>'+(linked?'<button class="btn" data-ws-back>Back to work order</button>':'')+'<button class="btn" data-ws-close>Close</button></header><nav aria-label="Work order actions">'+(!linked&&isMgr()?'<a class="btn" target="_blank" rel="noopener" href="'+escH(AurisWorkScheduleWorkspace.href(row.id,'edit',current.companyId))+'">Edit work order</a><a class="btn btn-primary" target="_blank" rel="noopener" href="'+escH(AurisWorkScheduleWorkspace.href(row.id,'manage',current.companyId))+'">Manage work & HSE checks</a>':'')+'</nav>'+(!linked&&isMgr()?'<nav class="ws-create-actions" aria-label="Create related records">'+[['tbt','Toolbox talk','meetings'],['prestart','Pre-start check','inspection'],['site','Site inspection','inspection'],['tools','Tools and equipment','tools'],['ra','Risk assessment','risk'],['ptw','Permit to work','permit']].filter(function(action){return canAccessPage(action[2]);}).map(function(action){return '<button type="button" class="btn" data-ws-create="'+action[0]+'">'+action[1]+'</button>';}).join('')+'</nav>':'')+'<div class="ws-record-content">'+content+wsRelatedRecordsHtml(linkData,linked)+'</div></section>';
-  document.getElementById('page-workschedule').appendChild(host);
+  var page=document.getElementById('page-workschedule');page.appendChild(host);
+  var pageWasActive=!!page.classList?.contains('active'),viewObserver;
+  var focusIn=function(event){if(wsRecordViewer?.host!==host)return;if(pageWasActive&&!page.classList.contains('active')){wsCloseRecordViewer(false);return;}if(host.isConnected!==false&&typeof host.contains==='function'&&!host.contains(event.target))host.querySelector('[data-ws-close]').focus({preventScroll:true});};
+  if(typeof document.addEventListener==='function')document.addEventListener('focusin',focusIn);
+  if(page.classList&&typeof MutationObserver==='function'){viewObserver=new MutationObserver(function(){if(page.classList.contains('active'))pageWasActive=true;else if(pageWasActive&&wsRecordViewer?.host===host)wsCloseRecordViewer(false);});viewObserver.observe(page,{attributes:true,attributeFilter:['class']});}
+  wsRecordViewer={host:host,opener:opener,dispose:function(){viewObserver?.disconnect();if(typeof document.removeEventListener==='function')document.removeEventListener('focusin',focusIn);}};
+  function requestOptions(origin){return {origin:origin,returnFocus:opener,guard:options.guard};}
   var openingRelated=false;
   async function openRelated(event){
     var item=event.target.closest('[data-ws-related]');if(!item||openingRelated)return;
     event.preventDefault();var selected=linkData.links[Number(item.getAttribute('data-ws-related'))];if(!selected)return;
     openingRelated=true;
-    try{AurisWorkScheduleWorkspace.assertSession(current);await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'view',linked:selected});}catch(e){toast(e.message,false);}finally{openingRelated=false;}
+    try{AurisWorkScheduleWorkspace.assertSession(current);await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'view',linked:selected},requestOptions(item));}catch(e){var error=wsSafeRecordFailure(e);if(!error.wsRecordCancelled)toast(error.message,false);}finally{openingRelated=false;}
   }
   host.addEventListener('click',async function(event){
     var button=event.target.closest('[data-ws-create]');if(!button)return;
@@ -156,47 +209,58 @@ function wsShowReadOnly(row,current,linkData,linked){
       AurisWorkScheduleWorkspace.assertSession(current);
       var action=button.dataset.wsCreate;
       if(!isMgr()||!canAccessPage(({tbt:'meetings',prestart:'inspection',site:'inspection',tools:'tools',ra:'risk',ptw:'permit'})[action]))throw Error('Access to this form changed.');
-      await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'manage'});
+      await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'manage'},requestOptions(button));
       if(action==='tbt')wsOpenToolboxTalk();else if(action==='prestart')wsOpenPreStart();else if(action==='site')wsOpenSiteInspection();
       else if(action==='tools')await wsOpenToolsCheck();else if(action==='ra')await wsOpenRA();else if(action==='ptw')await wsOpenPTW();
-    }catch(error){toast(error.message,false);}finally{button.disabled=false;}
+    }catch(error){error=wsSafeRecordFailure(error);if(!error.wsRecordCancelled)toast(error.message,false);}finally{button.disabled=false;}
   });
   host.addEventListener('click',openRelated);
   var back=host.querySelector('[data-ws-back]');
-  if(back)back.addEventListener('click',async function(){back.disabled=true;try{AurisWorkScheduleWorkspace.assertSession(current);await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'view'});}catch(e){toast(e.message,false);}finally{back.disabled=false;}});
-  host.querySelector('[data-ws-close]').addEventListener('click',function(){host.remove();});
-  host.addEventListener('keydown',function(event){if(event.key==='Escape')host.remove();if(event.key==='Tab'){var items=Array.from(host.querySelectorAll('button,a[href],[data-ws-related]')),first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
-  host.addEventListener('click',async function(event){var anchor=event.target.closest('a');if(!anchor)return;event.preventDefault();try{AurisWorkScheduleWorkspace.assertSession(current);var params=new URL(anchor.href).searchParams;await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:params.get('wsMode')||'view',linked:params.has('wsLinkedKind')?{kind:params.get('wsLinkedKind'),value:params.get('wsLinkedValue')}:null});}catch(e){event.preventDefault();host.remove();toast(e.message,false);}},true);
-  host.querySelector('button').focus();
+  if(back)back.addEventListener('click',async function(){back.disabled=true;try{AurisWorkScheduleWorkspace.assertSession(current);await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:'view'},requestOptions(back));}catch(e){var error=wsSafeRecordFailure(e);if(!error.wsRecordCancelled)toast(error.message,false);}finally{back.disabled=false;}});
+  host.querySelector('[data-ws-close]').addEventListener('click',function(){wsCloseRecordViewer(true);});
+  host.addEventListener('keydown',function(event){if(event.key==='Escape'){event.preventDefault();event.stopPropagation?.();wsCloseRecordViewer(true);return;}if(event.key==='Tab'){var items=typeof host.querySelectorAll==='function'?Array.from(host.querySelectorAll('button,a[href],input,select,textarea,[tabindex]')).filter(function(item){return !item.disabled&&!item.hidden&&item.getAttribute?.('tabindex')!=='-1'&&(typeof item.getClientRects!=='function'||item.getClientRects().length>0);}):[],first=items[0],last=items[items.length-1];if(!first){event.preventDefault();host.querySelector('[data-ws-close]').focus();}else if(event.shiftKey&&(document.activeElement===first||!host.contains?.(document.activeElement))){event.preventDefault();last.focus();}else if(!event.shiftKey&&(document.activeElement===last||!host.contains?.(document.activeElement))){event.preventDefault();first.focus();}}});
+  host.addEventListener('click',async function(event){var anchor=event.target.closest('a');if(!anchor)return;event.preventDefault();try{AurisWorkScheduleWorkspace.assertSession(current);var params=new URL(anchor.href).searchParams;await wsOpenRecordRequest({record:row.id,company:current.companyId,mode:params.get('wsMode')||'view',linked:params.has('wsLinkedKind')?{kind:params.get('wsLinkedKind'),value:params.get('wsLinkedValue')}:null},requestOptions(anchor));}catch(e){var error=wsSafeRecordFailure(e);if(!error.wsRecordCancelled)toast(error.message,false);}},true);
+  host.querySelector('[data-ws-close]').focus({preventScroll:true});
 }
-async function wsOpenRecordRequest(req){
-  var current=AurisWorkScheduleWorkspace.session();
+async function wsOpenRecordRequest(req,options){
+  options=options||{};
+  var request=wsBeginRecordRequest(options),current=request.current,opened=false;
+  try{return await Promise.race([open(),request.aborted]);}
+  catch(error){error=wsSafeRecordFailure(error);if(!error.wsRecordCancelled)wsRecordFeedback(request,error.message,true);throw error;}
+  finally{if(typeof clearTimeout==='function')clearTimeout(request.timer);request.observer?.disconnect();if(wsRecordPending===request)wsRecordPending=null;if(opened)request.feedback?.remove();}
+  async function open(){
+  request.check();wsRecordFeedback(request,'Opening saved work order and linked records…',false);
   if(req.table&&req.table!=='work_schedule')throw Error('Unsupported work-order record.');
   if(req.company&&String(req.company)!==current.companyId)throw Error('Select the company that owns this work order.');
   var rows=await api('/work_schedule?select=*&id=eq.'+encodeURIComponent(req.record)+'&company_id=eq.'+encodeURIComponent(current.companyId));
-  AurisWorkScheduleWorkspace.assertSession(current);
+  request.check();
   var row=(rows||[]).find(function(item){return String(item.id)===String(req.record)&&String(item.company_id)===current.companyId;});
-  if(!row)return false;
+  if(!row)throw wsRecordFailure('This work order is unavailable in the selected company. Refresh the schedule and retry.');
   var query=new URLSearchParams(location.search),mode=req.mode||query.get('wsMode')||'view';
-  wsAllData=wsAllData.filter(function(item){return String(item.company_id)===current.companyId&&String(item.id)!==String(row.id);});wsAllData.push(row);wsCurrentId=row.id;
+  function selectRow(){wsAllData=wsAllData.filter(function(item){return String(item.company_id)===current.companyId&&String(item.id)!==String(row.id);});wsAllData.push(row);wsCurrentId=row.id;}
   if(mode==='edit'||mode==='manage'){
     if(!isMgr())throw Error('Manager access is required to change work orders.');
-    document.getElementById('ws-record-view')?.remove();
+    request.check();selectRow();
+    // Existing editor/manage functions own their loading and save lifecycle.
+    if(typeof clearTimeout==='function')clearTimeout(request.timer);
+    if(wsRecordViewer){wsRecordViewer.dispose();wsRecordViewer.host.remove();wsRecordViewer=null;}else document.getElementById('ws-record-view')?.remove();
     wsOpeningLinkedRecord=true;
     try{if(mode==='edit')await wsEdit(row.id);else await wsShowDetail(row.id);}finally{wsOpeningLinkedRecord=false;}
-    return true;
+    opened=true;return true;
   }
-  var data=await wsReadRecordLinks(row,current),kind=req.mode?(req.linked&&req.linked.kind):query.get('wsLinkedKind'),linked=null;
+  var data=await wsReadRecordLinks(row,current,request.check),kind=req.mode?(req.linked&&req.linked.kind):query.get('wsLinkedKind'),linked=null;
+  request.check();
   if(kind){
     var selected=data.links.find(function(link){return link.kind===kind&&link.value===(req.linked?req.linked.value:query.get('wsLinkedValue'));});
     if(!selected)throw Error('This record is no longer linked to the work order.');
     var info=WS_RECORD_LINKS[kind];if(!canAccessPage(info.module))throw Error('Access to the linked module is required.');
     var field=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.value)?'id':info.ref;
     var records=await api('/'+info.table+'?select=*&company_id=eq.'+encodeURIComponent(current.companyId)+'&'+field+'=eq.'+wsRestEqValue(selected.value)+'&limit=1');
-    AurisWorkScheduleWorkspace.assertSession(current);
+    request.check();
     if(!canAccessPage(info.module))throw Error('Access to the linked module changed.');
     if(!records||!records[0]||String(records[0].company_id)!==current.companyId||String(records[0][field])!==selected.value)throw Error('Linked record not found or access denied.');
     linked={info:info,row:records[0]};
   }
-  wsShowReadOnly(row,current,data,linked);return true;
+  request.check();selectRow();wsShowReadOnly(row,current,data,linked,{origin:request.origin,returnFocus:request.returnFocus,guard:options.guard});opened=true;return true;
+  }
 }
