@@ -60,14 +60,49 @@ root.legalAIApplyStatus=function(){toast('AI suggestions are provisional. Record
 root.lcaSyncAssessmentRows=function(){throw Error('Draft worksheets cannot publish results. Use the explicit assessment approval.');};
 root.lcaDelete=async function(){if(!S.assessment||!await appConfirmAction({title:'Archive assessment',message:'Retain this assessment and its decision history?',confirmText:'Archive',cancelText:'Keep assessment'}))return;try{await request('/rpc/save_legal_assessment',{m:'POST',b:{p_id:S.assessment.id,p_revision:S.assessment.revision,p_body:{company_id:ccid()},p_rows:[],p_command:'archive'}});lcaBack();}catch(error){feedback('legal-assessment-feedback',error.message,true);}};
 
-function sourceSnapshot(){return JSON.stringify(Object.keys(fieldMap).concat(['lr-leg-main','lr-leg-type','lr-requirement']).map(function(id){return [id,val(id)];}));}
+function requirementDetails(){
+ var profile={};
+ Object.keys(fieldMap).forEach(function(id){profile[fieldMap[id]]=val(id);});
+ var fields={'lr-leg-main':'legislation','lr-leg-title':'title','lr-section':'section','lr-subsection':'subsection','lr-requirement':'requirement','lr-leg-type':'legislation_type','lr-category':'category','lr-jurisdiction':'jurisdiction','lr-authority':'authority','lr-obligation':'obligation_type','lr-frequency':'frequency','lr-controls':'controls','lr-evidence-req':'evidence_required','lr-evidence-loc':'evidence_location','lr-further-controls':'further_controls','lr-penalty':'penalty_risk','lr-notes':'notes','lr-responsibility':'responsibility','lr-target-date':'target_date','lr-effective-date':'effective_date','lr-review-date':'review_date'};
+ var body={company_id:ccid()};
+ Object.keys(fields).forEach(function(id){body[fields[id]]=val(id)||null;});
+ body.responsible_person=body.responsibility;
+ return {body:body,profile:profile};
+}
+function sourceSnapshot(){return JSON.stringify(Object.keys(fieldMap).concat(['lr-req-ref','lr-leg-main','lr-leg-type','lr-requirement']).map(function(id){return [id,val(id)];}));}
 function sourceControls(){var host=panel('legx-source-card','legal-source-decision');host.replaceChildren();var p=document.createElement('p');p.id='legal-source-feedback';p.textContent=S.req?.source_verification_status==='verified'?'Source verified · '+new Date(S.req.source_verified_at).toLocaleString():'Source unverified. Classification alone does not verify a source.';host.appendChild(p);button(host,'Verify saved source',verifySource).disabled=!S.req;button(host,'View source and requirement history',function(){showHistory('legal_requirements',S.req?.id);}).disabled=!S.req;var legacy=el('lr-applicable');if(legacy){if(!Array.from(legacy.options).some(function(o){return o.value==='';}))legacy.add(new Option('Not decided',''));legacy.value=S.req?.applicable===false?'false':S.req?.applicable===true?'true':'';legacy.disabled=true;}document.querySelectorAll('[name="lr-status-r"]').forEach(function(x){x.disabled=true;x.closest('label')?.removeAttribute('data-auris-onclick');});['lr-status','lr-compliance-score','lr-gap','lr-last-assessed','lr-assessed-by'].forEach(function(id){if(el(id))el(id).disabled=true;});}
-root.legalNewRequirement=function(){if(S.busy)return;previous.newReq();S.req=null;S.newReqId=crypto.randomUUID();sourceControls();};
-root.legalLoadReqIntoForm=function(r){previous.loadReq(r);S.req=r;var app=el('legx-app-decision');if(app)app.value=r.applicability_decision||(r.applicable===false?'not_applicable':r.applicable===true?'applicable':'legal_review');if(el('legx-app-rationale'))el('legx-app-rationale').value=r.applicability_rationale||val('legx-app-rationale');sourceControls();S.sourceSnapshot=sourceSnapshot();};
-async function saveRequirement(){if(S.busy)return;try{if(!workflowCanMutate('legal','legal compliance'))return;busy(true);var profile={};Object.keys(fieldMap).forEach(function(id){profile[fieldMap[id]]=val(id);});
- var fields={'lr-leg-main':'legislation','lr-leg-title':'title','lr-section':'section','lr-subsection':'subsection','lr-requirement':'requirement','lr-leg-type':'legislation_type','lr-category':'category','lr-jurisdiction':'jurisdiction','lr-authority':'authority','lr-obligation':'obligation_type','lr-frequency':'frequency','lr-controls':'controls','lr-evidence-req':'evidence_required','lr-evidence-loc':'evidence_location','lr-further-controls':'further_controls','lr-penalty':'penalty_risk','lr-notes':'notes','lr-responsibility':'responsibility','lr-target-date':'target_date','lr-effective-date':'effective_date','lr-review-date':'review_date'},body={company_id:ccid()};Object.keys(fields).forEach(function(id){body[fields[id]]=val(id)||null;});body.responsible_person=body.responsibility;
- feedback('legal-source-feedback','Saving requirement and governance profile together…');var r=await request('/rpc/save_legal_requirement',{m:'POST',b:{p_id:S.req?.id||S.newReqId,p_expected:S.req?.updated_at||null,p_body:body,p_profile:profile}});S.req=r;lrEditId=r.id;await previous.load();await legalLoadRegister();legalOpenReq(r.id);legalEditReq();feedback('legal-source-feedback','Requirement and source profile saved. Compliance results require an approved assessment.');
- }catch(error){feedback('legal-source-feedback',errorMessage(error),true);}finally{busy(false);}}
+root.legalNewRequirement=function(){if(S.busy)return;previous.newReq();S.req=null;S.requirementSnapshot=null;S.newReqId=crypto.randomUUID();if(el('lr-req-ref')){el('lr-req-ref').value='';el('lr-req-ref').removeAttribute('aria-invalid');}sourceControls();};
+root.legalLoadReqIntoForm=function(r){previous.loadReq(r);S.req=r;if(el('lr-req-ref')){el('lr-req-ref').value=r.req_ref||r.reference_no||'';el('lr-req-ref').removeAttribute('aria-invalid');}var app=el('legx-app-decision');if(app)app.value=r.applicability_decision||(r.applicable===false?'not_applicable':r.applicable===true?'applicable':'legal_review');if(el('legx-app-rationale'))el('legx-app-rationale').value=r.applicability_rationale||val('legx-app-rationale');sourceControls();S.sourceSnapshot=sourceSnapshot();S.requirementSnapshot=JSON.stringify(requirementDetails());};
+async function saveRequirement(){if(S.busy)return;try{if(!workflowCanMutate('legal','legal compliance'))return;
+ var details=requirementDetails(),snapshot=JSON.stringify(details),body=details.body,profile=details.profile;
+ var reference=val('lr-req-ref'),referenceField=el('lr-req-ref');
+ if(!reference&&(S.req?.req_ref||S.req?.reference_no)){
+  referenceField?.setAttribute('aria-invalid','true');
+  referenceField?.focus();
+  throw Error('Enter a requirement reference.');
+ }
+ referenceField?.removeAttribute('aria-invalid');
+ if(reference)body.req_ref=reference;
+ var referenceOnly=Boolean(reference&&S.req&&reference!==String(S.req.req_ref||S.req.reference_no||'')&&S.requirementSnapshot===snapshot);
+ if(referenceOnly){
+  body={company_id:ccid(),req_ref:reference};
+  profile=null;
+ }
+ var args={p_id:S.req?.id||S.newReqId,p_expected:S.req?.updated_at||null,p_body:body,p_profile:profile};
+ if(referenceOnly)args.p_reference_only=true;
+ busy(true);feedback('legal-source-feedback','Saving requirement…');var r=await request('/rpc/save_legal_requirement',{m:'POST',b:args});
+ S.req=r;lrEditId=r.id;
+ if(Object.hasOwn(body,'req_ref')&&r.req_ref!==body.req_ref){
+  S.requirementSnapshot=snapshot;
+  feedback('legal-source-feedback','Requirement details were saved. The Legal Compliance database update is required to change the reference. Your entered reference is retained. Retry after the update.',true);
+  return;
+ }
+ await previous.load();await legalLoadRegister();legalOpenReq(r.id);legalEditReq();feedback('legal-source-feedback','Requirement and source profile saved. Compliance results require an approved assessment.');
+ }catch(error){
+  var message=referenceOnly&&/could not find the function public\.save_legal_requirement\b/i.test(error.message||'')?
+   'This reference change needs the Legal Compliance database update. This attempt was not saved. Your entries remain in this form.':errorMessage(error);
+  feedback('legal-source-feedback',message,true);
+ }finally{busy(false);}}
 async function verifySource(){if(!S.req||S.busy)return;try{if(S.sourceSnapshot!==sourceSnapshot())throw Error('Save source and applicability changes before verifying the saved source.');var c=context(),n=await note('Verify saved requirement source');if(!n)return;current(c);busy(true);var r=await request('/rpc/verify_legal_source',{m:'POST',b:{p_id:S.req.id,p_expected:S.req.updated_at,p_note:n}});S.req=r;var i=lrAllData.findIndex(function(x){return x.id===r.id;});if(i>=0)lrAllData[i]=r;sourceControls();feedback('legal-source-feedback','Saved source verified by the signed-in reviewer at '+new Date(r.source_verified_at).toLocaleString()+'. Unsaved form changes were not verified.');}catch(error){feedback('legal-source-feedback',errorMessage(error),true);}finally{busy(false);}}
 root.legalSaveReq=saveRequirement;
 
