@@ -386,6 +386,11 @@
       "order": 77,
       "file": "20261021010000_people_user_linking.sql",
       "sha256": "68df4eb82d4a200b09ba63ab837357a25439269a475ef2746714a2abd1abf42e"
+    },
+    {
+      "order": 78,
+      "file": "20261110010000_legal_requirement_reference_edit.sql",
+      "sha256": "92d9b0041562db848bf0da1d45cbb5fb74edd1d3ff0d19cccdc74722d3c8ad2f"
     }
   ]
 }
