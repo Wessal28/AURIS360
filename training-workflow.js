@@ -23,8 +23,232 @@ function friendly(value){return String(value||'Not recorded').replace(/_/g,' ').
 async function viewPlan(id){var c=context();try{var p=await fetchOne('training_plan',id,c);aurisReadOnlyRecordModal('Training session',p.training_topic,p,planFields(p));var modal=document.getElementById('auris-readonly-record-modal');modal.querySelector('.auris-readonly-close')?.setAttribute('aria-label','Close training session');if(isMgr()){var footer=modal.querySelector('[role="dialog"]').lastElementChild;footer.prepend(button('Create attendee records',function(){modal.remove();attendance(p.id);}),button('Edit planned session',function(){assertContext(c);modal.remove();lcuSwitch('sessions');tpAllData=tpAllData.filter(function(x){return x.id!==p.id;}).concat([p]);tpOpen(p.id);}));}}catch(e){toastActionError('Open training session','Training',e);}}
 async function viewRecord(id,back){var c=context();try{var r=await fetchOne('training_followup',id,c);lcuSwitch('records');var host=panel('Training record · '+recordLabel(r),back||function(){lcuSwitch('records');});host.trainingReturn=back;document.getElementById('train-view-followup').style.display='none';var dl=el('dl');[['Learner',r.person_name],['Course',r.training_topic],['Date',r.training_date],['Attendance',friendly(r.attendance_status||'pending')],['Result',r.passed===true?'Pass':r.passed===false?'Fail':'Pending assessment'],['Expiry',r.expiry_date||'No expiry recorded'],['Evidence review',friendly(r.evidence_review_status||'pending')],['Review note',r.evidence_review_note],['Refresher due',r.refresher_due]].forEach(function(x){dl.append(el('dt',x[0]),el('dd',x[1]||'Not recorded'));});host.appendChild(dl);if(r.plan_id)host.appendChild(button('View planned session',function(){viewPlan(r.plan_id);}));var url=r.certificate_url||r.evidence_url;if(url)host.appendChild(button('Preview certificate evidence',function(){trainingPreviewAttachment(url,r.certificate||r.training_topic);}));if(isMgr()){host.appendChild(button('Edit learner record',function(){host.remove();tfAllData=tfAllData.filter(function(x){return x.id!==r.id;}).concat([r]);tfOpen(r.id);}));host.appendChild(button('Review supporting evidence',function(){reviewEvidence(r,host,c);}));host.appendChild(button('Plan refresher',function(){host.remove();lcuSwitch('sessions');tpNew();document.getElementById('tp-topic').value=r.training_topic;document.getElementById('tp-group').value=r.person_name||'';document.getElementById('tp-type').value='refresher';document.getElementById('tp-planned-date').value=r.refresher_due||r.expiry_date||'';document.getElementById('tp-form').dataset.sourceTrainingId=r.id;participants({participant_ids:r.person_id?[r.person_id]:[]});}));}}catch(e){toastActionError('View training record','Training',e);}}
 async function reviewEvidence(r,host,c){var decision=await appPrompt({title:'Evidence review',message:'Review the actual supporting evidence before recording a decision. This review does not grant work authorisation or practical competence.',options:[{value:'reviewed',label:'Evidence reviewed'},{value:'rejected',label:'Evidence rejected'}]});if(!decision)return;var note=await appPrompt({title:'Evidence review',message:'Record the evidence checked and the review conclusion.'});if(!note?.trim())return;try{assertContext(c);var saved=await api('/rpc/review_training_evidence',{m:'POST',b:{p_id:r.id,p_decision:decision,p_note:note}});assertContext(c);if(!saved?.id&& !saved?.[0]?.id)throw Error('Review confirmation was incomplete.');host.remove();await viewRecord(r.id,host.trainingReturn);toast('Evidence review saved. Competency decisions remain separate.');}catch(e){if(host.isConnected)feedback(host,e.message);}}
-async function competency(personId,compId){var c=context();try{var entry=(cmAllData||[]).find(function(x){return x.person_id===personId&&x.competency_id===compId&&String(x.company_id)===c.company;}),comp=(compAllData||[]).find(function(x){return x.id===compId&&String(x.company_id)===c.company;}),person=(people||[]).find(function(x){return x.id===personId&&String(x.company_id)===c.company;});if(!person||!comp)throw Error('Reload the competency matrix to view this person.');var records=await api('/training_followup?select=*&company_id=eq.'+encodeURIComponent(c.company)+'&person_id=eq.'+encodeURIComponent(personId)+'&order=training_date.desc');assertContext(c);var host=panel('Competency · '+personFullName(person)+' · '+comp.name,function(){lcuSwitch('competency');});document.getElementById('train-view-matrix').style.display='none';host.append(el('p','Current level: '+(entry?.current_level??'Not assessed')+' · Required level: '+(entry?.required_level??2)),el('p',entry?.notes||'No assessment notes recorded.'),el('h3','Supporting evidence'));var linked=(records||[]).find(function(r){return r.id===entry?.supporting_training_id;});host.append(el('p',linked?recordLabel(linked)+' · '+friendly(linked.evidence_review_status):'No training record is linked to this competency decision.'));var select=el('select');select.setAttribute('aria-label','Supporting training evidence');select.add(new Option('Manual assessment — retain a reason in assessment notes',''));(records||[]).filter(function(r){return String(r.company_id)===c.company;}).forEach(function(r){var p=el('p',recordLabel(r)+' · '+(r.passed===true?'Pass':r.passed===false?'Fail':'Pending')+' · '+friendly(r.evidence_review_status||'pending'));p.appendChild(button('View evidence',function(){viewRecord(r.id,function(){lcuSwitch('competency');competency(personId,compId);});}));host.appendChild(p);if(r.passed===true&&r.evidence_review_status==='reviewed'&&!['expired','invalid'].includes(expiry(r.expiry_date).state))select.add(new Option(recordLabel(r),r.id));});select.value=linked?.id||'';if(isMgr()){host.appendChild(select);host.appendChild(button('Update competency',async function(){try{assertContext(c);var reason=await appPrompt({title:'Competency assessment',message:'Record the assessment basis and any limitations. Attendance or a certificate alone does not establish competence.',value:entry?.notes||''});if(!reason?.trim())return;assertContext(c);await cmUpdateCell(personId,compId,select.value||null,reason);host.remove();}catch(e){feedback(host,e.message);}}));}}catch(e){toastActionError('View competency','Training',e);}}
+const competencyLevels = ['No knowledge','Theoretical','First experience','Good level','Expert'];
+
+function levelLabel(value){
+  return value!=null&&competencyLevels[value]!=null ? value+' · '+competencyLevels[value] : 'Not assessed';
+}
+
+function competency(personId, competencyId){
+  const scope=context();
+  const person=cmPeople.find(p=>p.id===personId&&String(p.company_id)===scope.company);
+  const skill=cmCompetencies.find(c=>c.id===competencyId&&String(c.company_id)===scope.company);
+  if(!person||!skill){
+    toast('This cell is unavailable in the selected company. Reload the competency matrix.',false);
+    return;
+  }
+  let entry=cmAllData.find(r=>r.person_id===personId&&r.competency_id===competencyId&&String(r.company_id)===scope.company);
+  if(document.getElementById('training-competency-dialog'))return;
+
+  const triggerId='training-matrix-'+personId+'-'+competencyId;
+  const dialog=el('dialog');
+  const heading=el('h2','Competency status');
+  const personLabel=el('p',personFullName(person)+' · '+skill.name);
+  const header=el('header');
+  const content=el('div');
+  const footer=el('footer');
+  let saving=false;
+  dialog.id='training-competency-dialog';
+  dialog.className='training-competency-dialog';
+  dialog.setAttribute('aria-labelledby','training-competency-dialog-title');
+  heading.id='training-competency-dialog-title';
+  heading.tabIndex=-1;
+  header.append(heading,personLabel);
+  dialog.append(header,content,footer);
+  dialog.addEventListener('cancel',event=>{
+    event.preventDefault();
+    if(!saving)closeDialog();
+  });
+  dialog.addEventListener('close',restoreFocus);
+
+  function restoreFocus(){
+    if(!dialog.isConnected)return;
+    dialog.remove();
+    document.getElementById(triggerId)?.focus({preventScroll:true});
+  }
+
+  function closeDialog(){
+    dialog.close();
+    restoreFocus();
+  }
+
+  function canUpdate(){
+    return isMgr()&&!root.AurisUserAccess?.requestIssue(prof,'/competency_matrix',entry?'PATCH':'POST');
+  }
+
+  function summaryField(list,label,value){
+    const block=el('div');
+    block.append(el('dt',label),el('dd',value));
+    list.appendChild(block);
+  }
+
+  function showStatus(){
+    heading.textContent='Competency status';
+    const levels=el('dl');
+    levels.className='training-competency-levels';
+    const status=entry?.current_level==null ? 'Not assessed'
+      : entry.required_level==null ? 'Required level not recorded'
+      : entry.current_level<entry.required_level ? 'Below required level' : 'Meets required level';
+    summaryField(levels,'Current level',levelLabel(entry?.current_level));
+    summaryField(levels,'Required level',entry?.required_level!=null ? levelLabel(entry.required_level)
+      : entry ? 'Not recorded' : levelLabel(2)+' (default)');
+    summaryField(levels,'Status',status);
+
+    const evidenceId=entry?.supporting_training_id;
+    const evidence=el('p',evidenceId?'Loading linked evidence…':'No training record linked.');
+    evidence.setAttribute('role','status');
+    const notes=el('p',entry?.notes||'No assessment notes recorded.');
+    notes.className='training-competency-notes';
+    content.replaceChildren(levels,el('h3','Assessment notes'),notes,el('h3','Supporting evidence'),evidence);
+    footer.replaceChildren(button('Close',closeDialog));
+    if(canUpdate()){
+      const update=button('Update competency',showEditor);
+      update.classList.add('btn-primary');
+      footer.appendChild(update);
+    }
+    heading.focus();
+    if(!evidenceId)return;
+    fetchOne('training_followup',evidenceId,scope).then(record=>{
+      if(!dialog.open||!evidence.isConnected)return;
+      if(record.person_id!==personId)throw Error('The linked training record is unavailable for this person.');
+      evidence.textContent=recordLabel(record)+' · '+friendly(record.evidence_review_status||'pending')+' · '+expiry(record.expiry_date).label;
+      content.appendChild(button('View training record',()=>{
+        assertContext(scope);
+        closeDialog();
+        viewRecord(record.id,()=>{
+          lcuSwitch('competency');
+          competency(personId,competencyId);
+        });
+      }));
+    }).catch(()=>{
+      if(evidence.isConnected)evidence.textContent='A training record is linked. Its details are unavailable.';
+    });
+  }
+
+  function formField(form,label,control){
+    const wrap=el('label',label);
+    wrap.className='training-workflow-field';
+    wrap.appendChild(control);
+    form.appendChild(wrap);
+    return control;
+  }
+
+  function levelField(form,label,value,required){
+    const select=el('select');
+    select.required=required;
+    select.add(new Option(required?'Select a level':'Not assessed',''));
+    competencyLevels.forEach((_,index)=>select.add(new Option(levelLabel(index),String(index))));
+    select.value=value==null?'':String(value);
+    return formField(form,label,select);
+  }
+
+  function showEditor(){
+    assertContext(scope);
+    if(!canUpdate())return;
+    heading.textContent='Update competency';
+    const form=el('form');
+    form.id='training-competency-editor';
+    form.className='training-competency-editor';
+    const levels=el('div');
+    levels.className='training-competency-edit-levels';
+    const current=levelField(levels,'Current level',entry?.current_level,false);
+    const required=levelField(levels,'Required level',entry?.required_level??2,true);
+    form.appendChild(levels);
+
+    const evidence=formField(form,'Supporting training evidence',el('select'));
+    evidence.add(new Option('Manual assessment',''));
+    evidence.disabled=true;
+    const notes=formField(form,'Assessment notes',el('textarea'));
+    notes.required=true;
+    notes.rows=4;
+    notes.value=entry?.notes||'';
+    const guidance=el('p','Record the assessment basis and any limitations.');
+    const message=el('p','Loading available training evidence…');
+    message.className='training-competency-message';
+    message.setAttribute('role','status');
+    form.append(guidance,message);
+    content.replaceChildren(form);
+    const cancel=button('Cancel',showStatus);
+    const save=el('button','Save competency');
+    save.type='submit';
+    save.className='btn btn-primary';
+    save.setAttribute('form',form.id);
+    save.disabled=true;
+    footer.replaceChildren(cancel,save);
+    current.focus();
+
+    const savedLink=entry?.supporting_training_id;
+    const unavailable=new Option('Linked evidence is unavailable or no longer eligible',savedLink||'');
+    if(savedLink){
+      evidence.add(unavailable);
+      evidence.value=savedLink;
+      unavailable.disabled=true;
+    }
+    const enableEditor=()=>{
+      evidence.disabled=false;
+      save.disabled=!!savedLink&&evidence.value===savedLink&&unavailable.parentNode===evidence;
+    };
+    evidence.addEventListener('change',enableEditor);
+    api('/training_followup?select=id,company_id,person_id,training_topic,person_name,training_date,passed,evidence_review_status,expiry_date&company_id=eq.'+encodeURIComponent(scope.company)+'&person_id=eq.'+encodeURIComponent(personId)+'&order=training_date.desc').then(records=>{
+      assertContext(scope);
+      if(!form.isConnected)return;
+      const eligible=(records||[]).filter(r=>String(r.company_id)===scope.company&&r.person_id===personId
+        &&r.passed===true&&r.evidence_review_status==='reviewed'&&!['expired','invalid'].includes(expiry(r.expiry_date).state));
+      if(eligible.some(record=>record.id===savedLink))unavailable.remove();
+      eligible.forEach(record=>evidence.add(new Option(recordLabel(record),record.id)));
+      evidence.value=savedLink||'';
+      message.textContent=unavailable.parentNode===evidence?'Select other evidence or choose Manual assessment.':'';
+      enableEditor();
+    }).catch(()=>{
+      if(!form.isConnected)return;
+      message.textContent=savedLink?'Training evidence could not be loaded. Cancel and try again to preserve the existing link.'
+        :'Training evidence could not be loaded. You can still save a manual assessment.';
+      if(!savedLink)enableEditor();
+    });
+
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(saving||save.disabled)return;
+      const assessmentNotes=notes.value.trim();
+      if(!assessmentNotes){
+        message.textContent='Enter the assessment basis in the notes.';
+        notes.focus();
+        return;
+      }
+      const changes={
+        current_level:current.value===''?null:Number(current.value),required_level:Number(required.value),
+        supporting_training_id:evidence.value||null,notes:assessmentNotes
+      };
+      if(required.value==='')return;
+      saving=true;
+      save.disabled=true;
+      cancel.disabled=true;
+      message.textContent='Saving competency…';
+      try{
+        entry=await cmUpdateCell(scope,person,skill,entry,changes);
+        assertContext(scope);
+        if(dialog.open){
+          await cmLoad();
+          assertContext(scope);
+          if(dialog.open)showStatus();
+        }
+      }catch(error){
+        message.textContent=actionErrorMessage('Save competency','Training & Competency',error.message);
+        save.disabled=false;
+        cancel.disabled=false;
+      }finally{
+        saving=false;
+      }
+    });
+  }
+
+  document.body.appendChild(dialog);
+  showStatus();
+  dialog.showModal();
+  heading.focus();
+}
+
 function validateInduction(topics,status){if(status!=='completed')return;var keys=INDUCTION_CHECKLIST_SECTIONS.flatMap(function(s){return s.items.map(function(x){return x[0];});}),missing=keys.filter(function(k){return !topics.includes(k)&&!topics.includes('na:'+k);});if(missing.length)throw Error('Complete each induction checklist item or explicitly mark it N/A before selecting Completed.');if(!topics.includes('entrant_declaration_understood'))throw Error('Confirm the entrant’s understanding before marking the induction Completed.');}
 function initInduction(){document.getElementById('indf-status').value='in_progress';document.querySelectorAll('[name="ind-st-r"]').forEach(function(r){r.checked=r.value==='in_progress';});['indf-cert-issued','indf-sig'].forEach(function(id){document.getElementById(id).checked=false;});}
-root.TrainingWorkflow=Object.freeze({expiry:expiry,filter:filter,outcome:outcome,localToday:localToday,context:context,assertContext:assertContext,initRecord:initRecord,participants:participants,attendance:attendance,viewPlan:viewPlan,viewRecord:viewRecord,competency:competency,validateInduction:validateInduction,initInduction:initInduction,friendly:friendly});
+root.TrainingWorkflow=Object.freeze({expiry:expiry,filter:filter,outcome:outcome,localToday:localToday,context:context,assertContext:assertContext,initRecord:initRecord,participants:participants,attendance:attendance,viewPlan:viewPlan,viewRecord:viewRecord,competency:competency,levelLabel:levelLabel,validateInduction:validateInduction,initInduction:initInduction,friendly:friendly});
 })(typeof window!=='undefined'?window:globalThis);

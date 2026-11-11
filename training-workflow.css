@@ -1,1 +1,108 @@
 .training-workflow-panel header{display:flex;align-items:center;justify-content:space-between;gap:1rem}.training-workflow-form,.training-workflow-panel dl{display:grid;gap:1rem}.training-workflow-field{display:grid;gap:.4rem}.training-workflow-form fieldset{display:flex;flex-wrap:wrap;gap:1rem}.training-workflow-form fieldset label{display:flex;gap:.4rem;align-items:center}.training-workflow-panel button{margin:.3rem}.training-workflow-panel dt{font-weight:700}.training-workflow-panel dd{margin:0}.training-workflow-feedback{padding:1rem;background:#fff7df;border:1px solid #d6b251;border-radius:.5rem}#tp-participants{min-height:8rem;width:100%}
+
+.training-matrix-cell {
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.training-matrix-cell:focus-visible {
+  outline: 2px solid #1a5685;
+  outline-offset: 2px;
+}
+.training-competency-dialog {
+  box-sizing: border-box;
+  width: min(42rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--border, #dbe3eb);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+  color: var(--text, #152a40);
+  box-shadow: 0 20px 64px rgb(19 39 56 / .24);
+  overflow-wrap: anywhere;
+}
+.training-competency-dialog::backdrop {
+  background: rgb(18 32 49 / .55);
+}
+.training-competency-dialog header {
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #dbe3eb);
+}
+.training-competency-dialog h2 {
+  margin: 0 0 .3rem;
+  font-size: 1.3rem;
+}
+.training-competency-dialog header p {
+  color: var(--text2, #425a70);
+}
+.training-competency-levels,
+.training-competency-edit-levels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .7rem;
+}
+.training-competency-levels > div {
+  padding: .7rem .85rem;
+  border: 1px solid var(--border, #dbe3eb);
+  border-radius: .65rem;
+  background: var(--bg, #f4f7fa);
+}
+.training-competency-levels > div:last-child {
+  grid-column: 1 / -1;
+}
+.training-competency-levels dt {
+  color: var(--text2, #425a70);
+  font-size: .85rem;
+}
+.training-competency-levels dd {
+  margin: .15rem 0 0;
+  font-weight: 650;
+}
+.training-competency-dialog h3 {
+  margin: 1.05rem 0 .3rem;
+  font-size: 1rem;
+}
+.training-competency-dialog p {
+  margin: 0;
+}
+.training-competency-notes {
+  white-space: pre-wrap;
+}
+.training-competency-dialog p + button {
+  margin-top: .55rem;
+}
+.training-competency-editor {
+  display: grid;
+  gap: .9rem;
+}
+.training-competency-editor select,
+.training-competency-editor textarea {
+  min-width: 0;
+  width: 100%;
+}
+.training-competency-message:empty {
+  display: none;
+}
+.training-competency-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #dbe3eb);
+}
+@media (max-width: 480px) {
+  .training-competency-levels,
+  .training-competency-edit-levels {
+    grid-template-columns: 1fr;
+  }
+}
