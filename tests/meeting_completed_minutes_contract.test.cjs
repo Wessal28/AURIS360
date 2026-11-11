@@ -36,9 +36,26 @@ const vm=require('node:vm');
 function minutesHarness(){
  let company='company-a',rendered=0,error='';const modal={querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}};
  const c={mtgMinutesData:[{id:'meeting-1',company_id:company,status:'completed'}],ccid:()=>company,prof:{id:'user-a'},document:{getElementById:()=>null,createElement:()=>modal,body:{appendChild(){rendered++;}}},mtgSplitAgendaPayload:()=>({items:[]}),mtgSplitRecommendationPayload:()=>({recs:[]}),mtgAttachActions(){},mtgPreparePrint(){},AurisMeetingTime:{display:String},escH:String,MTG_TYPES:{},isMgr:()=>false,toastActionError:(a,b,e)=>{error=e.message;}};
- vm.createContext(c);const start=source.indexOf('async function mtgViewMomReadOnly(id){'),end=source.indexOf('\nasync function mtgOpenMom',start);assert.ok(end>start);vm.runInContext(source.slice(start,end),c);
+ c.window=c;
+ vm.createContext(c);const start=source.indexOf('async function mtgViewMomReadOnly(id){'),end=source.indexOf('\nasync function mtgOpenMom',start);assert.ok(end>start);vm.runInContext(source.slice(source.indexOf('function mtgMinutesRemovalMode('),source.indexOf('var mtgMinutesRemovalPending='))+source.slice(start,end),c);
  return {c,modal,switchCompany(){company='company-b';},get rendered(){return rendered;},get error(){return error;}};
 }
 test('partial completed minutes fetch full company-scoped content before rendering',async()=>{const h=minutesHarness();h.c.api=async path=>{assert.ok(path.includes('company_id=eq.company-a'));assert.ok(path.includes('id=eq.meeting-1'));return [{id:'meeting-1',company_id:'company-a',title:'Saved title',minutes:'Stored discussion'}];};await h.c.mtgViewMomReadOnly('meeting-1');assert.equal(h.rendered,1);assert.match(h.modal.innerHTML,/Stored discussion/);});
 test('company switch during minutes fetch prevents stale content from rendering',async()=>{const h=minutesHarness();h.c.api=async()=>{h.switchCompany();return [{id:'meeting-1',company_id:'company-a',title:'Saved'}];};await h.c.mtgViewMomReadOnly('meeting-1');assert.equal(h.rendered,0);assert.match(h.error,/company changed/);});
 test('wrong-company minutes response is rejected',async()=>{const h=minutesHarness();h.c.api=async()=>[{id:'meeting-1',company_id:'company-b',title:'Other'}];await h.c.mtgViewMomReadOnly('meeting-1');assert.equal(h.rendered,0);assert.match(h.error,/unavailable for this company/);});
+
+test('the minutes viewer offers the status-appropriate removal action to authorized users',async()=>{
+  const h=minutesHarness();
+  let status='completed';
+  h.c.isMgr=()=>true;
+  h.c.api=async()=>[{id:'meeting-1',company_id:'company-a',title:'Saved',status}];
+  await h.c.mtgViewMomReadOnly('meeting-1');
+  assert.match(h.modal.innerHTML, /Cancel minutes/);
+  status='cancelled';
+  delete h.c.mtgMinutesData[0].title;
+  await h.c.mtgViewMomReadOnly('meeting-1');
+  assert.match(h.modal.innerHTML, /Delete minutes permanently/);
+  h.c.AurisUserAccess={requestIssue:()=> 'Denied'};
+  await h.c.mtgViewMomReadOnly('meeting-1');
+  assert.doesNotMatch(h.modal.innerHTML,/r5-remove-minutes/);
+});
