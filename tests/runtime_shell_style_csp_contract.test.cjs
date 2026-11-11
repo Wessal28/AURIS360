@@ -21,7 +21,7 @@ test('shared runtime visibility uses a bounded class helper', () => {
 
 test('authentication shell visibility no longer writes display styles', () => {
   const start = core.indexOf('function authShowPanel(name)');
-  const end = core.indexOf('async function loadProf(uid)', start);
+  const end = core.indexOf('async function loadProf(', start);
   const auth = core.slice(start, end);
   assert.ok(start > 0 && end > start);
   assert.doesNotMatch(auth, /\.style\.display/);

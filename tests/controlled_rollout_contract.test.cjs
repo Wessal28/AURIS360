@@ -45,8 +45,8 @@ assert.strictEqual(context.rolloutModuleAllowed('events'), false, 'paused cohort
 assert.strictEqual(context.rolloutModuleAllowed('dashboard'), true, 'non-cohort platform pages remain compatible');
 
 assert.match(html, /if\(!rolloutModuleAllowed\(pageKey\)\) return false/);
-assert.match(html, /await loadProf\(authData\.user\.id\);\s*await loadRolloutRuntimeConfig\(\);/);
-assert.match(html, /await loadProf\(stored\.user_id\);\s*await loadRolloutRuntimeConfig\(\);/);
+assert.match(html, /await authLoadWorkspaceProfile\(authData, requirePasswordChange\);\s*if\(generation!==_authSessionGeneration\)return false;\s*await loadRolloutRuntimeConfig\(\);/);
+assert.match(html, /await authLoadWorkspaceProfile\(stored\);\s*if\(generation!==_authSessionGeneration\)return;\s*await loadRolloutRuntimeConfig\(\);/);
 assert.match(html, /status==='enabled'&&!ROLLOUT_RELEASE_GATES\.every/);
 assert.match(html, /status==='pilot'&&!\['database','security','navigation'\]\.every/);
 assert.match(html, /settings-rollout-control-card/);
