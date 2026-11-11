@@ -91,9 +91,9 @@ function aurisShowRuntimeConfigurationError(){var message=aurisRuntimeConfigurat
 let tok=null,prof=null,co=null,chkItems=[],people=[];
 let rolePreview=null;
 const RL={inspector:1,manager:2,admin:3,sephs_admin:4};
-function isInternalSephsAdminAccount(){
-  var role=prof?.role||'';
-  var companyName=(co?.name||prof?.company_name||'').toLowerCase().trim();
+function isInternalSephsAdminAccount(profile=prof,company=co){
+  var role=profile?.role||'';
+  var companyName=(company?.name||profile?.company_name||'').toLowerCase().trim();
   return role==='sephs_admin' || (role==='admin' && (companyName==='sephs consulting' || companyName==='auris360' || companyName==='auris 360'));
 }
 function activeRole(){
@@ -206,7 +206,7 @@ const accessIssue=window.AurisUserAccess&&window.AurisUserAccess.requestIssue(pr
 if(accessIssue)throw new Error(accessIssue);
 const scopeIssue=apiCompanyScopeIssue(path,o,method);
 if(scopeIssue)throw new Error(scopeIssue);
-const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
+const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined,signal:o.signal});
 if(r.status===204||r.status===205){auditApiMutation(path,method,o,null);return null;}
 const txt=await r.text();
 if(!txt||txt.trim()===''){
@@ -1832,6 +1832,7 @@ function authShowPanel(name) {
   var suc=document.getElementById('login-success');
   if(err){aurisSetDisplay(err,'none');err.textContent='';}
   if(suc){aurisSetDisplay(suc,'none');suc.textContent='';}
+  aurisSetDisplay('auth-retry-workspace','none');
   // Pre-fill reset email from login email
   if(name==='forgot'){
     var loginEmail=document.getElementById('login-email')?.value;
@@ -1856,6 +1857,7 @@ function authShowSuccess(msg) {
 }
 
 function authShowLoading(msg) {
+  aurisSetDisplay('auth-retry-workspace','none');
   var el=document.getElementById('auth-loading');
   var msgEl=document.getElementById('auth-loading-msg');
   aurisSetDisplay(el,'flex');
@@ -1979,8 +1981,7 @@ async function doLogin() {
   try {
     var credentials={password:pw};if(em.indexOf('@')!==-1)credentials.email=em;else credentials.phone=em.replace(/[\s().-]/g,'');
     var d=await authQ('/token?grant_type=password',credentials);
-    await authOnSignIn(d);
-    auditLogEvent('login','auth','User signed in',{email:em});
+    if(await authOnSignIn(d)!==false) auditLogEvent('login','auth','User signed in',{email:em});
   } catch(e) {
     var msg = e.message||'Sign in failed';
     if(msg.toLowerCase().includes('invalid login')) msg='Invalid email or password. Please try again.';
@@ -2239,29 +2240,41 @@ function authScheduleRefresh(session) {
 }
 
 // -- On successful sign in -----------------------------------------------------
-async function authOnSignIn(authData) {
-  _authSessionGeneration++;
+async function authOnSignIn(authData, requirePasswordChange) {
+  var generation=++_authSessionGeneration;
   if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
   _authRefreshPromise=null;
   tok = authData.access_token;
   _authSession = authData;
   authSaveSession(authData);
   authScheduleRefresh(authData);
-  await loadProf(authData.user.id);
-  await loadRolloutRuntimeConfig();
+  prof=null;co=null;rolePreview=null;
+  aurisSetDisplay('app','none');
+  authShowLoading('Opening your workspace...');
+  try {
+    await authLoadWorkspaceProfile(authData, requirePasswordChange);
+    if(generation!==_authSessionGeneration)return false;
+    await loadRolloutRuntimeConfig();
+    if(generation!==_authSessionGeneration)return false;
+  } catch(error) {
+    if(generation===_authSessionGeneration)authWorkspaceFailure(error);
+    return false;
+  }
   // Stamp last_login on the profile (fresh sign-in only, not page refresh)
   try {
-    await api('/profiles?id=eq.'+authData.user.id, {
+    await api('/profiles?id=eq.'+encodeURIComponent(prof.id), {
       m:'PATCH', p:'return=minimal', b:{last_login:new Date().toISOString()}
     });
   } catch(e) { /* non-critical */ }
+  if(generation!==_authSessionGeneration)return false;
   // Log session
   try {
     await api('/auth_sessions_log',{
       m:'POST', p:'return=minimal',
-      b:{user_id:authData.user.id, email:authData.user.email, action:'login', created_at:new Date().toISOString()}
+      b:{user_id:prof.id, email:authData.user?.email||prof.email, action:'login', created_at:new Date().toISOString()}
     });
   } catch(ex) {}
+  if(generation!==_authSessionGeneration)return false;
   // Show app
   authHideLoading();
   aurisSetDisplay('login-screen','none');
@@ -2282,6 +2295,67 @@ async function authOnSignIn(authData) {
   if(typeof deepLinkScheduleResume==='function') deepLinkScheduleResume('sign-in');
   else setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
   setTimeout(function(){genDashAI();}, 3000);
+  return true;
+}
+
+function authWorkspaceFailure(error) {
+  aurisSetDisplay('app','none');
+  aurisSetDisplay('ai-panel','none');
+  aurisSetDisplay('login-screen','flex');
+  prof=null;co=null;rolePreview=null;
+  authShowPanel('signin');
+  if(error?.sessionExpired){
+    authClearSession();
+    tok=null;_authSession=null;
+  }
+  authShowErr(error?.workspaceMessage||'Your workspace could not load. Check your connection and try again.');
+  if(authGetStoredSession()?.access_token)aurisSetDisplay('auth-retry-workspace','block');
+}
+
+async function authLoadWorkspaceProfile(session, requirePasswordChange) {
+  var generation=_authSessionGeneration;
+  var controller=new AbortController();
+  var timeout=setTimeout(function(){controller.abort();},15000);
+  try {
+    var uid=session.user?.id||session.user_id;
+    if(!uid){
+      var response=await fetch(SB+'/auth/v1/user',{
+        headers:{apikey:KEY,Authorization:'Bearer '+session.access_token},
+        signal:controller.signal
+      });
+      if(!response.ok){
+        if(response.status===401)throw Object.assign(new Error('Session expired'),{
+          sessionExpired:true,workspaceMessage:'Your session has expired. Please sign in again.'
+        });
+        throw new Error('Could not identify the saved session');
+      }
+      uid=(await response.json()).id;
+      if(!uid)throw new Error('The saved session did not identify a user');
+    }
+    if(generation!==_authSessionGeneration)return;
+    var profile=await loadProf(uid,{signal:controller.signal});
+    if(generation!==_authSessionGeneration)return;
+    if(requirePasswordChange&&!profile.must_change_password){
+      try {
+        await api('/profiles?id=eq.'+encodeURIComponent(uid),{
+          m:'PATCH',p:'return=minimal',signal:controller.signal,
+          b:{must_change_password:true,updated_at:new Date().toISOString()}
+        });
+        if(generation!==_authSessionGeneration)return;
+        profile.must_change_password=true;
+        setTimeout(function(){if(generation===_authSessionGeneration)pwChangeShow(true);},300);
+      } catch(error) {
+        console.warn('Could not flag invite password setup',error);
+      }
+    }
+    if(generation!==_authSessionGeneration)return;
+    var latest=authGetStoredSession();
+    if(latest?.access_token===session.access_token&&!latest.user_id){
+      authSaveSession(Object.assign({},latest,{user_id:uid}));
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // -- doLogout ------------------------------------------------------------------
@@ -2421,32 +2495,16 @@ async function authInitSession() {
         authShowPanel('update-pw');
         return;
       }
-      // Invite or signup-confirm - load the dashboard, then force password change.
-      // We mark must_change_password and let loadProf trigger the pw-change modal.
+      // Verify the invite identity before opening the workspace.
       try {
-        // Find the user id from the JWT we just received
-        var payload = JSON.parse(atob(hashToken.split('.')[1]));
-        var uid = payload.sub;
-        // Hide the login screen and show the dashboard scaffold
-        aurisSetDisplay('login-screen','none');
-        aurisSetDisplay('app','flex');
-        // Patch the profile to set must_change_password=true so loadProf shows the modal
-        try {
-          await api('/profiles?id=eq.' + uid, {
-            m:'PATCH', p:'return=minimal',
-            b: { must_change_password: true, updated_at: new Date().toISOString() }
-          });
-        } catch(patchErr) {
-          console.warn('Could not pre-flag must_change_password:', patchErr);
-        }
-        // Now load the profile - loadProf will detect must_change_password and prompt
-        await loadProf(uid);
-        await loadDash();
-        return;
+        await authOnSignIn({
+          access_token:hashToken,refresh_token:hashRefreshToken,
+          expires_at:Math.floor(Date.now()/1000)+3600
+        },true);
       } catch(e) {
-        console.error('Invite token handling failed:', e);
-        // Fall through to regular login
+        authWorkspaceFailure(e);
       }
+      return;
     }
   }
 
@@ -2459,11 +2517,15 @@ async function authInitSession() {
     // No session - show login normally
     if(typeof wsFinishWindowLoading==='function')wsFinishWindowLoading();
     aurisSetDisplay('login-screen','flex');
+    aurisSetDisplay('app','none');
+    authHideLoading();
     return;
   }
 
   // Show a subtle restoring indicator (not the full loading overlay)
   var loginScreen = document.getElementById('login-screen');
+  aurisSetDisplay('app','none');
+  prof=null;co=null;rolePreview=null;
   aurisSetDisplay(loginScreen,'flex');
 
   // A slow profile/network response must not erase a valid session. Keep the
@@ -2480,6 +2542,8 @@ async function authInitSession() {
     if(!stored.refresh_token) {
       clearTimeout(timeout);
       authClearSession();
+      tok=null;_authSession=null;
+      authShowErr('Your session has expired. Please sign in again.');
       return;
     }
     try {
@@ -2489,22 +2553,26 @@ async function authInitSession() {
       return;
     } catch(e) {
       clearTimeout(timeout);
-      if(e.status===400||e.status===401)authClearSession();
-      authHideLoading();
-      authShowErr(e.status===400||e.status===401
-        ? 'Your session has expired. Please sign in again.'
-        : 'We could not refresh your session. Please check your connection and try again.');
+      if(e.status===400||e.status===401)authWorkspaceFailure({
+        sessionExpired:true,workspaceMessage:'Your session has expired. Please sign in again.'
+      });
+      else authWorkspaceFailure(e);
       return;
     }
   }
 
   // Token still valid - restore session silently
   tok = stored.access_token;
+  _authSession=stored;
+  var generation=_authSessionGeneration;
   try {
     authScheduleRefresh(stored);
-    await loadProf(stored.user_id);
+    await authLoadWorkspaceProfile(stored);
+    if(generation!==_authSessionGeneration)return;
     await loadRolloutRuntimeConfig();
+    if(generation!==_authSessionGeneration)return;
     clearTimeout(timeout);
+    authHideLoading();
     // Hide login, show app
     aurisSetDisplay('login-screen','none');
     aurisSetDisplay('app','block');
@@ -2524,9 +2592,9 @@ async function authInitSession() {
     setTimeout(function(){genDashAI();}, 3000);
   } catch(e) {
     clearTimeout(timeout);
-    authHideLoading();
-    aurisSetDisplay('login-screen','flex');
-    authShowErr('We could not restore your session. Please check your connection or sign in again.');
+    if(generation===_authSessionGeneration)authWorkspaceFailure(e);
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -2545,14 +2613,27 @@ async function authLoadCompanyDropdown() {
 
 // -- Init on page load ----------------------------------------------------------
 window.addEventListener('load', function() {
+  document.getElementById('auth-retry-workspace')?.addEventListener('click',function(){authInitSession();});
   authInitSession();
 });
 
-async function loadProf(uid){
-try{
-const d=await api('/profiles?id=eq.'+uid+'&select=*,companies(*)');
-if(d&&d[0]){
-prof=d[0];co=d[0].companies;
+async function loadProf(uid, options){
+uid=uid||prof?.id;
+if(!uid)throw new Error('The session did not identify an account');
+var generation=_authSessionGeneration;
+const d=await api('/profiles?id=eq.'+encodeURIComponent(uid)+'&select=*,companies(*)',options);
+if(generation!==_authSessionGeneration)return;
+const profile=Array.isArray(d)&&d.length===1&&d[0]?.id===uid?d[0]:null;
+if(!profile)throw Object.assign(new Error('Workspace profile unavailable'),{
+  workspaceMessage:'Your workspace profile could not be found. Retry or contact your administrator.'
+});
+if(profile.status&&profile.status!=='active')throw Object.assign(new Error('Workspace profile inactive'),{
+  workspaceMessage:'Your account is inactive. Contact your administrator to restore access.'
+});
+if(!profile.role||(!profile.company_id&&!isInternalSephsAdminAccount(profile,profile.companies)))throw Object.assign(new Error('Workspace assignment incomplete'),{
+  workspaceMessage:'Your workspace access is incomplete. Contact your administrator to check your company and role.'
+});
+prof=profile;co=profile.companies;
 // Sidebar branding rule:
 //   - sephs_admin ? ALWAYS shows AURIS360 (they own the platform, not a single client)
 //   - Other users ? shows their company name + logo (white-label experience)
@@ -2588,8 +2669,7 @@ if(prof.must_change_password) {
   setTimeout(function(){ pwChangeShow(true); }, 300);  // small delay so dashboard paints first
 }
 if(typeof notificationCentreInit==='function')setTimeout(notificationCentreInit,0);
-}
-}catch(e){console.error(e);}
+return profile;
 }
 
 // ---------------------------------------------------------------------------

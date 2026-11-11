@@ -12,7 +12,7 @@ function between(start,end){
 }
 const startupSource=[
   between('async function doLogin()','// -- doRegister'),
-  between('async function authOnSignIn(authData)','// -- doLogout'),
+  between('async function authOnSignIn(authData, requirePasswordChange)','// -- doLogout'),
   between('async function authInitSession()','async function authLoadCompanyDropdown'),
   between('var _dashLoadGeneration=','// DASHBOARD REDESIGN HELPERS'),
   between('function dashRenderControlCentre(data)','// -- Personal dashboard render')
@@ -32,7 +32,7 @@ function harness(){
   Object.defineProperty(panel,'innerHTML',{get:()=>panelHtml,set:value=>{panelHtml=value;paint.push(value);}});
   node('login-email').value='fictional@example.test';node('login-pw').value='fictional-password';
   let stored={access_token:'fictional-token',refresh_token:'fictional-refresh',user_id:'user-1',expires_at:Date.now()/1000+3600};
-  const c={console:{warn(){},log(){},error(...args){errors.push(args);}},URLSearchParams,URL,Date,
+  const c={console:{warn(){},log(){},error(...args){errors.push(args);}},URLSearchParams,URL,Date,AbortController,
     tok:'fictional-token',prof:{id:'user-1',role:'admin',company_id:'company-1',full_name:'Fictional User'},
     co:{id:'company-1',name:'Fictional Company'},sephsCompanyContext:null,saCompanyList:[],
     company:'company-1',_authLoginBusy:false,_authSessionGeneration:0,_authRefreshTimer:null,_authRefreshPromise:null,_authSession:null,
