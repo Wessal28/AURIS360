@@ -16,4 +16,40 @@ test('projection is tenant scoped and preserves minutes, action and next meeting
 test('meeting filters combine type, status, attention and search',()=>{const r=runtime(),select=filters=>r.api.project(meetings,current,{filters},new Date('2026-09-16T12:00:00Z')).map(x=>x.id);assert.deepEqual(select({type:'management_review'}),['mom-2']);assert.deepEqual(select({status:'draft'}),['mom-1']);assert.deepEqual(select({attention:'action_overdue'}),['mom-1']);assert.deepEqual(select({search:'boardroom'}),['mom-1']);});
 test('unknown meeting values remain visible without unsafe relabelling',()=>{const r=runtime(),data=r.api.project([{id:'x',company_id:'co-a',title:'Special forum',meeting_type:'special',status:'in_review',meeting_date:'bad',recommendations:'bad'}],current,{});assert.equal(data.length,1);assert.equal(data[0].type,'special');assert.equal(data[0].status,'in review');assert.equal(data[0].meeting_date,'');});
 test('shared HSE meeting register exposes guarded actions and protects sessions',async()=>{const r=runtime(),calls=[];r.api.mount({},meetings,{canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'hse-meetings');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','edit']);await m.options.onAction('open',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','mom-1','co-a'],['edit','mom-1','co-a']]);for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},meetings,{canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}});
+
+test('minutes removal labels match record status and the selected row is rechecked on click', async () => {
+  const r = runtime();
+  const rows = meetings.concat([
+    {id:'cancelled',company_id:'co-a',status:'cancelled'},
+    {id:'legacy-archive',company_id:'co-a',status:'draft',minutes:'[Archived 2026-09-13] Legacy minutes'}
+  ]);
+  const calls = [];
+  let allowed = true;
+  r.api.mount({}, rows, {
+    canRemove: record => {
+      assert.ok(rows.includes(record), 'check permissions using the raw record');
+      return allowed && record.id !== 'mom-2';
+    },
+    removeRecord: (id, session) => calls.push([id, session.companyId])
+  });
+  const view = r.mounted();
+  const action = view.options.actions.find(item => item.key === 'remove');
+  const [draft, completed, cancelled, legacy] = view.data;
+  assert.equal(action.label(draft), 'Cancel minutes');
+  assert.equal(action.label(cancelled), 'Delete minutes permanently');
+  assert.equal(action.label(legacy), 'Delete minutes permanently');
+  assert.equal(action.when(draft), true);
+  assert.equal(action.when(completed), false);
+  assert.equal(action.when(cancelled), true);
+  await view.options.onAction('remove', cancelled);
+  await assert.rejects(view.options.onAction('remove', completed), /unavailable/);
+  await assert.rejects(view.options.onAction('remove', {...draft, company_id:'co-b'}), /outside the current register/);
+  r.window.navigator.onLine = false;
+  await assert.rejects(view.options.onAction('remove', draft), /Reconnect before removing/);
+  r.window.navigator.onLine = true;
+  allowed = false;
+  await assert.rejects(view.options.onAction('remove', draft), /unavailable/);
+  assert.deepEqual(calls, [['cancelled','co-a']]);
+});
+
 test('release wiring publishes the meetings register before the core loader',()=>{const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-meetings-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisMeetingsListWorkspace\.mount\(el,mtgMinutesData/);assert.match(read('sw-assets.js'),/auris-meetings-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-meetings-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-meetings-list-workspace\.js/);assert.doesNotMatch(read('auris-meetings-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);});

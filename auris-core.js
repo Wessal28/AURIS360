@@ -8066,7 +8066,7 @@ try{
 const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
 const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
 if(window.AurisNoiseListWorkspace){
-  try{return window.AurisNoiseListWorkspace.mount(el,d||[],{canEdit:isMgr(),openRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,survey_ref:selected.survey_ref,survey_type:selected.survey_type,site:selected.site,survey_date:selected.survey_date,conducted_by:selected.conducted_by,instrument_used:selected.instrument_used,calibration_date:selected.calibration_date,weather_conditions:selected.weather_conditions,layout_title:selected.layout_title,measurements:selected.measurements,hpe_assessment:selected.hpe_assessment,notes:selected.notes};return aurisReadOnlyRecordModal('Noise survey details',selected.site||'Noise survey',safe,aurisReadableRecordFields(safe));},printRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');return noisePrintSurvey(id);},editRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit noise surveys.');return noiseOpenSurvey(id);},onApplyFilters:function(){loadNoise();}});}
+  try{return window.AurisNoiseListWorkspace.mount(el,d||[],{canEdit:isMgr(),canRemove:mtgCanRemoveMinutes,removeRecord:mtgDeleteMomFromList,openRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');var safe={id:selected.id,company_id:selected.company_id,survey_ref:selected.survey_ref,survey_type:selected.survey_type,site:selected.site,survey_date:selected.survey_date,conducted_by:selected.conducted_by,instrument_used:selected.instrument_used,calibration_date:selected.calibration_date,weather_conditions:selected.weather_conditions,layout_title:selected.layout_title,measurements:selected.measurements,hpe_assessment:selected.hpe_assessment,notes:selected.notes};return aurisReadOnlyRecordModal('Noise survey details',selected.site||'Noise survey',safe,aurisReadableRecordFields(safe));},printRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');return noisePrintSurvey(id);},editRecord:function(id,current){var selected=(d||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This noise survey is unavailable or outside your company access.');if(!isMgr())throw new Error('Manager access is required to edit noise surveys.');return noiseOpenSurvey(id);},onApplyFilters:function(){loadNoise();}});}
   catch(error){el.innerHTML=registerErrorHtml('Noise Survey register',error.message||String(error));console.error(error);return;}
 }
 if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
@@ -9965,19 +9965,64 @@ async function mtgApiWithSchemaFallback(path,opts,optionalCols){
   }
   return await api(path,Object.assign({},opts,{b:body}));
 }
-async function mtgReadMinuteForDelete(id){
-  try{
-    var rows=await api('/hse_meetings?id=eq.'+id+'&select=status,minutes');
-    return rows?.[0]||{};
-  }catch(e){
-    if(!mtgIsSchemaColumnError(e))throw e;
-    try{
-      var rows2=await api('/hse_meetings?id=eq.'+id+'&select=status');
-      return rows2?.[0]||{};
-    }catch(e2){
-      if(!mtgIsSchemaColumnError(e2))throw e2;
-      return {};
+function mtgMinutesRemovalMode(row){
+  return String(row?.status||'').toLowerCase()==='cancelled'||/^\[Archived \d{4}-\d{2}-\d{2}\]/i.test(String(row?.minutes||'').trim())?'delete':'cancel';
+}
+
+function mtgCanRemoveMinutes(row){
+  if(!row||!isMgr()||String(row.company_id||'')!==String(ccid()||''))return false;
+  var method=mtgMinutesRemovalMode(row)==='delete'?'DELETE':'PATCH';
+  return !window.AurisUserAccess?.requestIssue(prof,'/hse_meetings',method);
+}
+
+var mtgMinutesRemovalPending=false;
+async function mtgRemoveMinutes(id){
+  if(!id||mtgSavingMom||mtgMinutesRemovalPending)return false;
+  var companyId=String(ccid()||''),userId=String(prof?.id||''),role=activeRole();
+  if(!companyId||!userId||!isMgr())return false;
+  function assertContext(){
+    if(companyId!==String(ccid()||'')||userId!==String(prof?.id||'')||role!==activeRole()){
+      throw Error('Your account, company or access changed. Reopen the minutes.');
     }
+  }
+  var path='/hse_meetings?id=eq.'+encodeURIComponent(id)+'&company_id=eq.'+encodeURIComponent(companyId);
+  mtgMinutesRemovalPending=true;
+  try{
+    var rows=await api(path+'&select=id,company_id,title,status,minutes,updated_at');
+    assertContext();
+    var current=rows?.[0];
+    if(rows?.length!==1||String(current.id)!==String(id)||String(current.company_id)!==companyId){
+      throw Error('These minutes are unavailable for the selected company.');
+    }
+    if(!mtgCanRemoveMinutes(current))throw Error('You do not have permission to remove these minutes.');
+    var deleting=mtgMinutesRemovalMode(current)==='delete';
+    var confirmed=deleting
+      ? await appConfirmDelete('cancelled meeting minutes','This removes the minutes and any actions stored only with them. Master Action Plan records are kept.')
+      : await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel '+(current.title||'these meeting minutes')+'?',detail:'The minutes stay in the register as Cancelled. Linked actions remain available.',confirmText:'Cancel minutes',cancelText:'Back',danger:true});
+    if(!confirmed)return false;
+    assertContext();
+    if(!mtgCanRemoveMinutes(current))throw Error('You do not have permission to remove these minutes.');
+    var version=current.updated_at==null?'is.null':'eq.'+encodeURIComponent(current.updated_at);
+    var status=current.status==null?'is.null':'eq.'+encodeURIComponent(current.status);
+    var options=deleting?{m:'DELETE',p:'return=representation'}
+      :{m:'PATCH',p:'return=representation',b:{status:'cancelled',updated_at:new Date().toISOString()}};
+    var result=await api(path+'&updated_at='+version+'&status='+status,options);
+    assertContext();
+    var saved=result?.[0];
+    if(result?.length!==1||String(saved.id)!==String(id)||String(saved.company_id)!==companyId||(!deleting&&saved.status!=='cancelled')){
+      throw Error('The change could not be confirmed. Refresh the register and reopen the minutes.');
+    }
+    if(deleting){
+      mtgMinutesData=mtgMinutesData.filter(function(row){return String(row.id)!==String(id)||String(row.company_id)!==companyId;});
+    }else mtgMergeMinutes([saved]);
+    toast(deleting?'Minutes deleted.':'Minutes cancelled.');
+    if(document.getElementById('mtg-roadmap-container'))mtgRenderRoadmap();
+    return true;
+  }catch(error){
+    toastActionError('Remove meeting minutes','HSE Meetings',error);
+    return false;
+  }finally{
+    mtgMinutesRemovalPending=false;
   }
 }
 
@@ -10459,7 +10504,7 @@ function mtgSendMinutes(){
 
 var mtgSavingMom=false;
 async function mtgSaveMom(){
-  if(mtgSavingMom)return;var form=document.getElementById('mtg-mom3form'),version=form.dataset.editVersion;try{mtgAssertEditor(version);}catch(e){mtgSaveError(e.message);return;}
+  if(mtgSavingMom||mtgMinutesRemovalPending)return;var form=document.getElementById('mtg-mom3form'),version=form.dataset.editVersion;try{mtgAssertEditor(version);}catch(e){mtgSaveError(e.message);return;}
   var title=document.getElementById('mom3title')?.value?.trim();
   if(!title){toast('Please enter a meeting title',false);return;}
   var recs=mtgCollectRecs();
@@ -10499,22 +10544,15 @@ async function mtgSaveMom(){
 }
 
 async function mtgDeleteMom(){
-  if(!mtgEditingMomId)return;
+  var id=mtgEditingMomId;
+  if(!id||mtgSavingMom)return;
+  var button=document.getElementById('mtg-mom3del-btn');
+  if(button)button.disabled=true;
   try{
-    var current=await mtgReadMinuteForDelete(mtgEditingMomId);
-    if(current.status!=='cancelled'&&!ohIsArchivedText(current.minutes)){
-      if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
-      await mtgApiWithSchemaFallback('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',minutes:ohArchivedText(current.minutes),updated_at:new Date().toISOString()}},['minutes','updated_at','status']);
-      toast('Minutes cancelled/archived');
-      mtgMomBack();
-      return;
-    }
-    if(!(await appConfirmDelete('cancelled meeting minutes','Permanent deletion should be used only for duplicate/test minutes. Linked meeting actions will also be removed.')))return;
-    await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+mtgEditingMomId,{m:'DELETE'});
-    await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'DELETE'});
-    toast('Minutes deleted!');
-    mtgMomBack();
-  }catch(e){toastActionError('Delete meeting minutes','HSE Meetings',e);console.error(e);}
+    if(await mtgRemoveMinutes(id)&&mtgEditingMomId===id)mtgMomBack();
+  }finally{
+    if(button)button.disabled=false;
+  }
 }
 
 function mtgMomBack(){
@@ -10617,7 +10655,7 @@ function mtgRenderRoadmap(){
     var weekSet={};
     weeks.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
     (mtgMinutesData||[]).forEach(function(m){
-      if(m.series_id===series.id&&m.meeting_date){
+      if(m.series_id===series.id&&m.meeting_date&&String(m.status||'').toLowerCase()!=='cancelled'){
         var md=new Date(AurisMeetingTime.wall(m.meeting_date,m.meeting_timezone).slice(0,10)+'T12:00:00');
         if(md.getFullYear()===mtgRoadmapYear){
           var mw=mtgGetWeekNumber(md);
@@ -10737,7 +10775,7 @@ async function mtgLoadMinutes(){
         +'<td style="padding:10px"><div style="display:flex;gap:4px">'
         +'<button class="btn btn-sm r5-mtg-view" data-id="'+x.id+'" title="View minutes"><i class="ti ti-eye"></i></button>'
         +(isMgr()?'<button class="btn btn-sm r5-mtg-edit" data-id="'+x.id+'" title="Edit minutes"><i class="ti ti-edit"></i></button>':'')
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0064"><i class="ti ti-trash"></i></button>':'')
+        +(mtgCanRemoveMinutes(x)?'<button type="button" class="btn btn-sm" style="color:var(--red)" data-id="'+escH(x.id)+'" data-auris-generated-onclick="g0064" title="'+(mtgMinutesRemovalMode(x)==='delete'?'Delete minutes permanently':'Cancel minutes')+'" aria-label="'+(mtgMinutesRemovalMode(x)==='delete'?'Delete minutes permanently':'Cancel minutes')+'"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
@@ -10759,8 +10797,29 @@ async function mtgViewMomReadOnly(id){
   document.getElementById('mtg-minutes-readonly')?.remove();var modal=document.createElement('div');modal.id='mtg-minutes-readonly';modal.className='r5-record-modal';
   var agenda=mtgSplitAgendaPayload(m.agenda_items).items||[], recommendations=mtgSplitRecommendationPayload(m.recommendations).recs||[];
   var rows=function(items,cols){return items.length?'<div class="table-scroll"><table class="data-table"><thead><tr>'+cols.map(function(c){return '<th>'+escH(c[0])+'</th>';}).join('')+'</tr></thead><tbody>'+items.map(function(x){return '<tr>'+cols.map(function(c){return '<td>'+escH(x[c[1]]||'-')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<div class="empty">No records.</div>';};
-  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true"><header><div><div class="r5-kicker">Read-only minutes</div><h2>'+escH(m.title||'Minutes of Meeting')+'</h2><p>'+escH(m.meeting_date?AurisMeetingTime.display(m.meeting_date,m.meeting_timezone)+(m.meeting_timezone?'':' · original timezone not recorded'):'Date not recorded')+'</p></div><button class="btn btn-sm r5-close" aria-label="Close minutes" title="Close minutes"><i class="ti ti-x"></i></button></header><div class="r5-detail-grid"><div><span>Meeting type</span><strong>'+escH(MTG_TYPES[m.meeting_type]||m.meeting_type||'-')+'</strong></div><div><span>Location</span><strong>'+escH(m.location||'-')+'</strong></div><div><span>Chaired by</span><strong>'+escH(m.chaired_by||'-')+'</strong></div><div><span>Status</span><strong>'+escH(m.status||'-')+'</strong></div></div><h3>Minutes</h3><div class="card">'+escH(m.minutes||'No narrative minutes recorded.').replace(/\n/g,'<br>')+'</div><h3>Agenda and discussion</h3>'+rows(agenda,[['Agenda item','item'],['Discussion / decision','notes']])+'<h3>Actions and recommendations</h3>'+rows(recommendations,[['Action','desc'],['Responsible','resp'],['Due','date'],['Priority','prio'],['Status','status']])+'<footer><button class="btn r5-print"><i class="ti ti-printer"></i>Print minutes</button>'+(isMgr()?'<button class="btn r5-edit"><i class="ti ti-edit"></i>Edit minutes</button>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
-  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});modal.querySelector('.r5-edit')?.addEventListener('click',function(){modal.remove();mtgOpenMom(id);});mtgPreparePrint(m,modal,companyId,userId);modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});mtgAttachActions(m,modal,companyId,userId);return true;
+  modal.innerHTML='<div class="card r5-record-dialog" role="dialog" aria-modal="true"><header><div><div class="r5-kicker">Read-only minutes</div><h2>'+escH(m.title||'Minutes of Meeting')+'</h2><p>'+escH(m.meeting_date?AurisMeetingTime.display(m.meeting_date,m.meeting_timezone)+(m.meeting_timezone?'':' · original timezone not recorded'):'Date not recorded')+'</p></div><button class="btn btn-sm r5-close" aria-label="Close minutes" title="Close minutes"><i class="ti ti-x"></i></button></header><div class="r5-detail-grid"><div><span>Meeting type</span><strong>'+escH(MTG_TYPES[m.meeting_type]||m.meeting_type||'-')+'</strong></div><div><span>Location</span><strong>'+escH(m.location||'-')+'</strong></div><div><span>Chaired by</span><strong>'+escH(m.chaired_by||'-')+'</strong></div><div><span>Status</span><strong>'+escH(m.status||'-')+'</strong></div></div><h3>Minutes</h3><div class="card">'+escH(m.minutes||'No narrative minutes recorded.').replace(/\n/g,'<br>')+'</div><h3>Agenda and discussion</h3>'+rows(agenda,[['Agenda item','item'],['Discussion / decision','notes']])+'<h3>Actions and recommendations</h3>'+rows(recommendations,[['Action','desc'],['Responsible','resp'],['Due','date'],['Priority','prio'],['Status','status']])+'<footer><button class="btn r5-print"><i class="ti ti-printer"></i>Print minutes</button>'+(isMgr()?'<button class="btn r5-edit"><i class="ti ti-edit"></i>Edit minutes</button>':'')+(mtgCanRemoveMinutes(m)?'<button type="button" class="btn btn-danger r5-remove-minutes"><i class="ti ti-trash"></i>'+(mtgMinutesRemovalMode(m)==='delete'?'Delete minutes permanently':'Cancel minutes')+'</button>':'')+'<button class="btn btn-primary r5-close">Close</button></footer></div>';
+  document.body.appendChild(modal);modal.querySelectorAll('.r5-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});modal.querySelector('.r5-edit')?.addEventListener('click',function(){modal.remove();mtgOpenMom(id);});mtgPreparePrint(m,modal,companyId,userId);modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});mtgAttachActions(m,modal,companyId,userId);
+  var removeButton=modal.querySelector('.r5-remove-minutes');
+  removeButton?.addEventListener('click',async function(){
+    removeButton.disabled=true;
+    modal.inert=true;
+    // Keep the record open beneath both stages of the shared confirmation.
+    modal.style.zIndex='900';
+    try{
+      if(await mtgRemoveMinutes(id)){
+        modal.remove();
+        await mtgLoadMinutes();
+      }
+    }finally{
+      if(modal.isConnected){
+        modal.style.zIndex='';
+        modal.inert=false;
+        removeButton.disabled=false;
+        removeButton.focus();
+      }
+    }
+  });
+  return true;
 }
 
 async function mtgOpenMom(id){
@@ -10828,7 +10887,9 @@ async function mtgOpenMom(id){
   }else if(re){re.style.display='block';}
   mtgBindActionOwners();document.getElementById('mtg-mom3title').textContent='Minutes of Meeting';
   document.getElementById('mtg-mom3ref').textContent=m.title||'';
-  document.getElementById('mtg-mom3del-btn').style.display=isMgr()?'inline-flex':'none';
+  var removeButton=document.getElementById('mtg-mom3del-btn');
+  removeButton.style.display=mtgCanRemoveMinutes(m)?'inline-flex':'none';
+  removeButton.querySelector('span').textContent=mtgMinutesRemovalMode(m)==='delete'?'Delete minutes permanently':'Cancel minutes';
   document.getElementById('mtg-view-schedule').style.display='none';
   document.getElementById('mtg-view-minutes').style.display='none';
   document.getElementById('mtg-series-form').style.display='none';
@@ -10836,21 +10897,7 @@ async function mtgOpenMom(id){
 }
 
 async function mtgDeleteMomFromList(id){
-  try{
-    var current=await mtgReadMinuteForDelete(id);
-    if(current.status!=='cancelled'&&!ohIsArchivedText(current.minutes)){
-      if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
-      await mtgApiWithSchemaFallback('/hse_meetings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',minutes:ohArchivedText(current.minutes),updated_at:new Date().toISOString()}},['minutes','updated_at','status']);
-      toast('Minutes cancelled/archived');
-      mtgLoadMinutes();
-      return;
-    }
-    if(!(await appConfirmDelete('cancelled meeting minutes','Permanent deletion should be used only for duplicate/test minutes. Linked meeting actions will also be removed.')))return;
-    await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+id,{m:'DELETE'});
-    await api('/hse_meetings?id=eq.'+id,{m:'DELETE'});
-    toast('Minutes deleted!');
-    mtgLoadMinutes();
-  }catch(e){toastActionError('Delete meeting minutes','HSE Meetings',e);console.error(e);}
+  if(await mtgRemoveMinutes(id))await mtgLoadMinutes();
 }
 
 function escH2(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
