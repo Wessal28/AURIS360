@@ -40,6 +40,9 @@
   margin: 0 0 .3rem;
   font-size: 1.3rem;
 }
+.training-competency-dialog h2:focus {
+  outline: none;
+}
 .training-competency-dialog header p {
   color: var(--text2, #425a70);
 }
