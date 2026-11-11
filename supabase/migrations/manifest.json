@@ -391,6 +391,11 @@
       "order": 78,
       "file": "20261110010000_legal_requirement_reference_edit.sql",
       "sha256": "92d9b0041562db848bf0da1d45cbb5fb74edd1d3ff0d19cccdc74722d3c8ad2f"
+    },
+    {
+      "order": 79,
+      "file": "20261112010000_training_matrix_reset.sql",
+      "sha256": "2c6744eaf2104fd2f20dc64352bc78adf15a8938d8b39be8630f249b78766d6e"
     }
   ]
 }

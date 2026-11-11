@@ -6,11 +6,13 @@
 <div class="fixture-banner"><span>Local Training verification · Synthetic records only · No tenant data or notifications</span><button type="button" id="fixture-open-print">Print reports</button></div>
 <div class="fixture-scope"><strong>Synthetic Engineering Ltd</strong>Selected client company · Signed in as a SEPHS administrator</div><p id="fixture-feedback" class="fixture-feedback" role="status"></p>
 <div id="app" class="fixture-main"><!-- TRAINING_PAGE --></div>
+<script src="/training-workflow.js"></script><script src="/training-matrix.js"></script>
 <script>
 window.prof={id:'synthetic-admin',full_name:'Synthetic Administrator',company_id:'sephs-company',role:'sephs_admin'};
 window.co={id:'sephs-company',name:'SEPHS Consulting',logo_url:'/assets/brand/auris360-icon-192.png'};
 window.sephsCompanyContext='synthetic-company';
 window.saCompanyList=[{id:'synthetic-company',name:'Synthetic Engineering Ltd',logo_url:'/assets/auris360-logo-final.png',address:'Synthetic Industrial Estate'}];
+window.sidebarViewedCompany=()=>saCompanyList[0];
 window.ccid=()=>sephsCompanyContext;window.cf=()=> '&company_id=eq.'+encodeURIComponent(ccid());window.isSA=()=>true;window.isMgr=()=>true;window.trainYear=2026;
 window.escH=value=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 window.toast=message=>{document.getElementById('fixture-feedback').textContent=message;};window.toastActionError=(action,module,error)=>toast(action+': '+error.message);
@@ -36,10 +38,11 @@ window.api=async function(url,options){
   return JSON.parse(JSON.stringify(rows));
 };window.apiAllRows=(url,options)=>api(url,options);
 window.AurisPlatformServices={ready:()=>true,auth:{isAuthenticated:()=>true,current:()=>({company:saCompanyList[0],profile:prof,role:prof.role})},rbac:{requireAccess:module=>{if(module!=='training')throw Error('Only Training is available in the fixture.');}}};
-window.TrainingWorkflow={context:()=>({company:ccid(),user:prof.id}),assertContext:c=>{if(c.company!==ccid()||c.user!==prof.id)throw Error('Fixture scope changed.');},viewRecord:id=>toast('Synthetic learner record: '+id),expiry:value=>({state:!value?'no_expiry':value<'2026-10-20'?'expired':value<'2027-01-18'?'expiring':'current'})};
+window.TrainingWorkflow={...window.TrainingWorkflow,viewRecord:id=>toast('Synthetic learner record: '+id),expiry:value=>({state:!value?'no_expiry':value<'2026-10-20'?'expired':value<'2027-01-18'?'expiring':'current'})};
 window.tpTypeLabel=value=>({internal:'Classroom / internal',external:'External course',online:'Online / e-learning'})[value]||value;
 window.tpProviderFromRecord=row=>row.provider||row.training_provider||'';
 window.trainingPrintCurrentView=()=>window.AurisTrainingPrint.open();window.elcNew=window.elcBack=()=>toast('Editing is disabled in the synthetic print fixture.');
+window.cmLoad=()=>AurisTrainingMatrix.load();window.cmAddCompetency=()=>AurisTrainingMatrix.addCompetency();
 window.loadTraining=async()=>{await cmLoad();tfRender(tfAllData);authRender(authAllData);};
 window.trainSwitchTab=function(tab,button){
   document.querySelectorAll('#page-training [id^="train-view-"]').forEach(view=>{view.style.display=view.id==='train-view-'+tab?'block':'none';});
@@ -60,5 +63,6 @@ window.open=function(){
 <script src="/auris-view-engine.js"></script><script src="/auris-training-plan-list-workspace.js"></script><script src="/auris-module-event-handlers-batch-4.js"></script><script src="/learning-competency-upgrade.js"></script><script src="/training-print-reports.js"></script>
 <script>
 document.getElementById('fixture-open-print').addEventListener('click',()=>AurisTrainingPrint.open());
+document.getElementById('cm3add-comp-btn').addEventListener('click',cmAddCompetency);
 loadTraining().then(()=>{document.getElementById('tp-year-label').textContent=trainYear;lcuSwitch('sessions');document.getElementById('fixture-feedback').textContent='Synthetic Training data loaded. Print previews must show Synthetic Engineering Ltd.';}).catch(error=>toast(error.message));
 </script></body></html>

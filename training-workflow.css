@@ -103,6 +103,17 @@
   padding-top: 1rem;
   border-top: 1px solid var(--border, #dbe3eb);
 }
+.training-matrix-actions { flex-wrap: wrap; align-items: center; }
+.training-matrix-actions [hidden] { display: none; }
+.training-matrix-picker { max-height: 40vh; overflow: auto; }
+.training-matrix-picker label:not([hidden]) {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  padding: .4rem .2rem;
+}
+.training-matrix-picker input { width: auto; flex: none; }
+.training-matrix-picker-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 @media (max-width: 480px) {
   .training-competency-levels,
   .training-competency-edit-levels {

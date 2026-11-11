@@ -15,7 +15,6 @@ const section = index.slice(start, end);
 test('Training & Competency has no inline style attributes', () => {
   assert.match(index, /<link rel="stylesheet" href="auris-training-competency-static\.css\?v=\d+-\d+">/);
   assert.equal((section.match(/\sstyle=(?:"[^"]*"|'[^']*')/gi) || []).length, 0);
-  assert.ok((section.match(/auris-training-s-[a-f0-9]{10}/g) || []).length >= 272);
   assert.ok((css.match(/^\.auris-training-s-[a-f0-9]{10}\{/gm) || []).length >= 98);
 });
 

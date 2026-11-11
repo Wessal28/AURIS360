@@ -48,9 +48,12 @@ function table(heads,values,classes){return '<table class="kpr-table trp-table '
 function validity(r){var today=localDay(),exp=String(r.expiry_date||'').slice(0,10);return !exp?'No expiry recorded':exp<today?'Expired':exp===today?'Expires today':'Expiry not reached';}
 function inYear(row,year,kind){if(!year)return true;if(kind==='plan'||kind==='external')return Number(row.year)===Number(year)||!row.year&&String(row.planned_date||'').slice(0,4)===String(year);var field=kind==='records'?'training_date':kind==='inductions'?'induction_date':kind==='elearning'?'enrolment_date':kind==='assessments'?'scheduled_at':null;return !field||String(row[field]||'').slice(0,4)===String(year);}
 function buildMatrix(data,paper){
- var ppl=data.people.filter(function(p){return p.status==='active';}).sort(function(a,b){return text(a.last_name).localeCompare(text(b.last_name));}),comps=data.competencies.slice().sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0)||text(a.name).localeCompare(text(b.name));}),map=new Map();
+ var matrix=data.matrixSettings;
+ var ppl=root.TrainingWorkflow.matrixMembers(data.people.filter(function(p){return p.status==='active';}),matrix?.person_ids??null).slice().sort(function(a,b){return text(a.last_name).localeCompare(text(b.last_name));});
+ var comps=root.TrainingWorkflow.matrixMembers(data.competencies,matrix?.competency_ids??null).slice().sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0)||text(a.name).localeCompare(text(b.name));});
+ var map=new Map();
  data.competency_matrix.forEach(function(r){var key=r.person_id+':'+r.competency_id;map.set(key,map.has(key)?null:r);});
- if(!ppl.length||!comps.length)return {html:'<p class="trp-empty">No active people or competency definitions are recorded for this company.</p>',count:ppl.length};
+ if(!ppl.length||!comps.length)return {html:'<p class="trp-empty">No active people or competency columns are included in this matrix.</p>',count:ppl.length};
  var size=paper==='A3'?12:8,html='';
  for(var from=0;from<comps.length;from+=size){var group=comps.slice(from,from+size);html+='<section class="trp-matrix-block"><h2>Competencies '+(from+1)+'–'+(from+group.length)+' of '+comps.length+'</h2><table class="kpr-table trp-table trp-matrix"><thead><tr><th scope="col">Person / Role</th>'+group.map(function(c){return '<th scope="col">'+esc(c.name)+'</th>';}).join('')+'</tr></thead><tbody>';
   ppl.forEach(function(p){html+='<tr><th scope="row">'+esc([p.first_name,p.last_name].filter(Boolean).join(' ')||p.full_name||'Name not recorded')+'<small>'+esc(p.job_title||'Role not recorded')+'</small></th>';group.forEach(function(comp){var key=p.id+':'+comp.id,r=map.get(key),cur=r&&r.current_level,req=r&&r.required_level,validCur=Number.isInteger(cur)&&cur>=0&&cur<=4,validReq=Number.isInteger(req)&&req>=0&&req<=4,gap=validCur&&validReq&&cur<req;html+='<td class="'+(validCur?'trp-level-'+cur:'trp-unassessed')+(gap?' trp-gap':'')+'">'+(map.has(key)&&r===null?'Multiple records<br>Review required':(validCur?cur:'—')+' / '+(validReq?req:'—')+(gap?'<small>Gap</small>':!validCur?'<small>Not assessed</small>':''))+'</td>';});html+='</tr>';});html+='</tbody></table></section>';}
@@ -88,7 +91,16 @@ function currentTable(kind,c){
 async function capture(kind,options,c){
  check(c,kind);var branding=brand(c),result;
  if(options.scope==='current')result=currentTable(kind,c);
- else{var tables=reports[kind].tables,data={};await Promise.all(tables.map(async function(t){data[t]=await rows(t,c);}));check(c,kind);result=buildRows(kind,data,options.year,options.paper);}
+ else{
+  var data={};
+  await Promise.all(reports[kind].tables.map(async function(t){data[t]=await rows(t,c);}));
+  check(c,kind);
+  if(kind==='matrix'){
+   data.matrixSettings=await root.TrainingWorkflow.matrixSettings(c.company);
+   check(c,kind);
+  }
+  result=buildRows(kind,data,options.year,options.paper);
+ }
  var basis={plan:'plan year',external:'plan year',records:'training date',inductions:'induction date',elearning:'enrolment date',assessments:'scheduled date'},period=kind==='matrix'?'Current recorded levels':options.year?'Reporting year '+options.year+' · '+basis[kind]:'All recorded dates';
  return {kind:kind,title:reports[kind].label,company:branding,html:result.html,count:result.count,note:result.note||'',scope:options.scope==='current'?'Currently displayed list · personal filters and columns':period+' · records accessible to your account',paper:options.paper};
 }

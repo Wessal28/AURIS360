@@ -2361,6 +2361,7 @@ async function authLoadWorkspaceProfile(session, requirePasswordChange) {
 // -- doLogout ------------------------------------------------------------------
 function doLogout() {
   document.getElementById('training-competency-dialog')?.close?.();
+  document.getElementById('training-matrix-dialog')?.close?.();
   auditLogEvent('logout','auth','User signed out',{email:prof?.email||null});
   if(window.AurisWorkflowService&&typeof window.AurisWorkflowService.clearCompany==='function')window.AurisWorkflowService.clearCompany(ccid());
   if(window.AurisApprovalCentre&&typeof window.AurisApprovalCentre.clearCompany==='function')window.AurisApprovalCentre.clearCompany(ccid());
@@ -3314,6 +3315,7 @@ function canAccessPage(pageKey) {
 
 function closeTransientOverlays(){
   document.getElementById('training-competency-dialog')?.close?.();
+  document.getElementById('training-matrix-dialog')?.close?.();
   [
     'obj-modal',
     'kpi-edit-modal',
@@ -32830,6 +32832,7 @@ function trainSwitchTab(tab, btn){
   if(window.AurisUserAccess&&!window.AurisUserAccess.sectionAllowed(prof,'training',tab)){var permitted=window.AurisUserAccess.firstSection(prof,'training');if(!permitted)return false;tab=permitted.id;btn=document.getElementById(permitted.button);}
 
   document.getElementById('training-competency-dialog')?.close?.();
+  document.getElementById('training-matrix-dialog')?.close?.();
   document.querySelectorAll('#page-training [id^="train-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
   ['matrix','competency','induction','plan','followup','elearning','auth','tna'].forEach(function(t){
@@ -32856,8 +32859,6 @@ async function loadTraining(){
   if(authBtn)authBtn.style.display=isMgr()?'inline-flex':'none';
   var tfBtn=document.getElementById('tf-add-btn');
   if(tfBtn)tfBtn.style.display=isMgr()?'inline-flex':'none';
-  var cmBtn=document.getElementById('cm3add-comp-btn');
-  if(cmBtn)cmBtn.style.display=isMgr()?'inline-flex':'none';
   var tnaBtn=document.getElementById('tna-add-btn');
   if(tnaBtn)tnaBtn.style.display=isMgr()?'inline-flex':'none';
   var trainAiBtn=document.getElementById('train-ai-btn');
@@ -32953,79 +32954,7 @@ function trainingPreviewAttachment(url,name){
 }
 
 // -- COMPETENCY MATRIX -------------------------------------------------------
-async function cmLoad(){
-  var loadContext=TrainingWorkflow.context();
-  var el=document.getElementById('cm3table');
-  if(!el)return;
-  el.innerHTML='<div class="loading-msg">Loading...</div>';
-  try{
-    var [comps, people_data, cm] = await Promise.all([
-      api('/competencies?select=*'+cf()+'&order=sort_order,name'),
-      api('/people?select=id,company_id,first_name,last_name,job_title&status=eq.active'+cf()+'&order=last_name'),
-      api('/competency_matrix?select=*'+cf())
-    ]);
-    TrainingWorkflow.assertContext(loadContext);
-    cmCompetencies=comps||[];
-    cmPeople=people_data||[];
-    cmAllData=cm||[];
-    if(!cmCompetencies.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-        +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
-        +'<div style="font-weight:600;margin-bottom:8px">No competencies defined yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0309"><i class="ti ti-plus"></i>Add first competency</button>':'')
-        +'</div>';
-      return;
-    }
-    // Build matrix
-    var cmMap={};
-    cmAllData.forEach(function(r){cmMap[r.person_id+'_'+r.competency_id]=r;});
-
-    var html='<table style="border-collapse:collapse;font-size:12px;min-width:100%">';
-    // Header
-    html+='<thead><tr><th style="padding:8px 12px;background:#1a3a5c;color:#fff;text-align:left;min-width:160px;position:sticky;left:0;z-index:3">Person / Role</th>';
-    cmCompetencies.forEach(function(comp){
-      html+='<th style="padding:6px 4px;background:#1a3a5c;color:#cce4ff;text-align:center;min-width:80px;font-size:10px;font-weight:600;max-width:90px;word-wrap:break-word">'+escH(comp.name)+'</th>';
-    });
-    if(isMgr())html+='<th style="padding:6px;background:#1a3a5c;width:60px"></th>';
-    html+='</tr></thead><tbody>';
-    // Rows
-    cmPeople.forEach(function(p,pi){
-      var bg=pi%2===0?'#fff':'#f9fafb';
-      html+='<tr style="border-bottom:1px solid #f0f0f0">';
-      html+='<td style="padding:8px 12px;background:'+bg+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;font-weight:600">'
-        +escH(p.last_name+', '+p.first_name)
-        +'<br><span style="font-size:10px;color:var(--text2);font-weight:400">'+escH(p.job_title||'')+'</span>'
-        +'</td>';
-      cmCompetencies.forEach(function(comp){
-        var entry=cmMap[p.id+'_'+comp.id];
-        var cur=entry?entry.current_level:null;
-        var req=entry?entry.required_level:2;
-        var isGap=cur!==null&&cur<req;
-        var bg2=cur!==null?LEVEL_COLORS[cur]:'#f9fafb';
-        var col2=cur!==null?LEVEL_TEXT[cur]:'#ccc';
-        html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
-          +'<button type="button" class="training-matrix-cell" style="background:'+bg2+';color:'+col2+';border-color:'+(isGap?'var(--red)':'transparent')+'" '
-          +'title="'+escH(comp.name)+': '+escH(TrainingWorkflow.levelLabel(cur))+' (required: '+req+')" '
-          +'aria-label="'+escH('View '+personFullName(p)+' · '+comp.name+' · '+TrainingWorkflow.levelLabel(cur))+'" '
-          +'id="'+escH('training-matrix-'+p.id+'-'+comp.id)+'" data-pid="'+escH(p.id)+'" data-cid="'+escH(comp.id)+'" data-auris-generated-onclick="g0310">'
-          +(cur!==null?cur:'-')
-          +(isGap?'<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--red)"></span>':'')
-          +'</button></td>';
-      });
-      if(isMgr()){
-        html+='<td style="padding:4px;background:'+bg+'"></td>';
-      }
-      html+='</tr>';
-    });
-    html+='</tbody></table>';
-    // Gap legend
-    el.innerHTML=html+'<div style="padding:10px 16px;border-top:1px solid var(--border);background:#fafafa;font-size:11px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap">'
-      +LEVEL_COLORS.map(function(c,i){return '<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:'+c+';border:1px solid #e5e7eb;display:inline-block"></span>'+TrainingWorkflow.levelLabel(i)+'</span>';}).join('')
-      +'<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--red);display:inline-block"></span>Gap identified</span>'
-      +'</div>';
-  }catch(e){if(el)el.innerHTML=registerErrorHtml('register',e.message);console.error(e);}
-}
-
+async function cmLoad(){return window.AurisTrainingMatrix?.load();}
 async function cmEditCell(personId,compId){return TrainingWorkflow.competency(personId,compId);}
 async function cmUpdateCell(context, person, competency, entry, changes){
   TrainingWorkflow.assertContext(context);
@@ -33058,18 +32987,7 @@ async function cmUpdateCell(context, person, competency, entry, changes){
   return saved;
 }
 
-async function cmAddCompetency(){
-  var name=await appPrompt({title:'Add competency',message:'Competency name',placeholder:'e.g. Fire extinguisher use'});
-  if(!name||!name.trim())return;
-  var cat=await appPrompt({title:'Add competency',message:'Category',value:'General',placeholder:'e.g. Fire Safety, Technical, Personal'});
-  try{
-    var body={company_id:ccid(),name:name.trim(),category:cat||'General',sort_order:cmCompetencies.length};
-    var created=await api('/competencies',{m:'POST',p:'return=representation',b:body});
-    trainingAudit('create','Competency catalogue item added','competencies',(created&&created[0])||Object.assign({competency_name:body.name},body),{category:body.category});
-    toast('Competency added!');
-    cmLoad();
-  }catch(e){toastActionError('Add competency','Training & Competency',e);}
-}
+async function cmAddCompetency(){return window.AurisTrainingMatrix?.addCompetency();}
 
 // -- TRAINING NEEDS ANALYSIS -------------------------------------------------
 async function tnaLoad(){
@@ -36341,7 +36259,10 @@ function saCompanyGetContext() {
   catch(e) { return null; }
 }
 function saCompanySetContext(companyId) {
-  if(sephsCompanyContext!==companyId)document.getElementById('training-competency-dialog')?.close?.();
+  if(sephsCompanyContext!==companyId){
+    document.getElementById('training-competency-dialog')?.close?.();
+    document.getElementById('training-matrix-dialog')?.close?.();
+  }
   try {
     if(companyId) localStorage.setItem(SA_COMPANY_CTX_KEY, companyId);
     else localStorage.removeItem(SA_COMPANY_CTX_KEY);
