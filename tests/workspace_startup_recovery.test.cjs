@@ -74,7 +74,12 @@ function harness(stored = session({user_id: userId})) {
     api: async (route, opts = {}) => {
       const url = new URL(route, 'https://db.fixture.test');
       calls.push({route: url.pathname, id: url.searchParams.get('id'), method: opts.m || 'GET'});
-      if (url.pathname === '/profiles' && (!opts.m || opts.m === 'GET')) return profileRead(url, opts);
+      if (url.pathname === '/profiles' && (!opts.m || opts.m === 'GET')) {
+        if (url.searchParams.get('select') !== '*,companies:companies!profiles_company_id_fkey(*)') {
+          throw Object.assign(new Error('The profiles–companies relationship is ambiguous without the owning-company foreign key'), {code: 'PGRST201'});
+        }
+        return profileRead(url, opts);
+      }
       return [];
     },
     loadRolloutRuntimeConfig: async () => {},

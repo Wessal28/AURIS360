@@ -56,6 +56,30 @@ test('staging acceptance authenticates without exposing credentials and verifies
   assert.doesNotMatch(source, /console\.log\([^\n]*(password|access_token|anonKey)/i);
 });
 
+test('staging startup loads the authenticated profile through the owning-company foreign key', async () => {
+  const source = read('scripts/verify-staging-acceptance.cjs');
+  const start = source.indexOf('const profiles = await rest(');
+  const end = source.indexOf('const minutesRpc =', start);
+  assert.ok(start > 0 && end > start);
+  const run = (profiles) => vm.runInNewContext(`(async () => { ${source.slice(start, end)} return company.name; })()`, {
+    auth: { user: { id: 'staging-user' } },
+    rest: async (resource) => {
+      assert.equal(resource, 'profiles?id=eq.staging-user&select=*,companies:companies!profiles_company_id_fkey(*)');
+      return profiles;
+    },
+    fail: (message) => { throw new Error(message); }
+  });
+  const company = { id: 'staging-company', name: 'AURIS360 Staging Test' };
+  const profile = { id: 'staging-user', company_id: company.id, role: 'admin', status: 'active', companies: company };
+  assert.equal(await run([profile]), company.name);
+  await assert.rejects(run([{ ...profile, id: 'other-user' }]), /no usable application profile/);
+  await assert.rejects(run([{ ...profile, status: 'inactive' }]), /profile is not active/);
+  for (const companies of [null, [company], { ...company, id: 'other-company' }, { ...company, name: 'Another company' }]) {
+    await assert.rejects(run([{ ...profile, companies }]), /not assigned to the dedicated staging tenant/);
+  }
+  assert.match(source, /requireMarkers\(coreSource, 'Workspace profile', \['companies:companies!profiles_company_id_fkey\(\*\)'\]\)/);
+});
+
 test('staging acceptance verifies atomic minutes RPC only after sign-in and exact staging tenant checks', () => {
   const source=read('scripts/verify-staging-acceptance.cjs');
   assert.match(source,/const \{ verifyMeetingsRpc \} = require\('\.\/verify-meetings-rpc\.cjs'\)/);

@@ -2621,7 +2621,7 @@ async function loadProf(uid, options){
 uid=uid||prof?.id;
 if(!uid)throw new Error('The session did not identify an account');
 var generation=_authSessionGeneration;
-const d=await api('/profiles?id=eq.'+encodeURIComponent(uid)+'&select=*,companies(*)',options);
+const d=await api('/profiles?id=eq.'+encodeURIComponent(uid)+'&select=*,companies:companies!profiles_company_id_fkey(*)',options);
 if(generation!==_authSessionGeneration)return;
 const profile=Array.isArray(d)&&d.length===1&&d[0]?.id===uid?d[0]:null;
 if(!profile)throw Object.assign(new Error('Workspace profile unavailable'),{
@@ -35509,7 +35509,7 @@ async function usersLoad() {
   el.innerHTML='<div class="loading-msg" role="status">Loading users…</div>';
   try{
     var filter=prof?.company_id&&!sa?'&company_id=eq.'+encodeURIComponent(prof.company_id):'';
-    var rows=await api('/profiles?select=*,companies(name)'+filter+'&order=full_name')||[];
+    var rows=await api('/profiles?select=*,companies:companies!profiles_company_id_fkey(name)'+filter+'&order=full_name')||[];
     if(request!==usersLoadRequest||actor!==prof?.id||scope!==String(ccid()||'')||sa!==isSA())return;
     usersAllData=rows;usersSetupControls();usersPopulateCompanyFilter();usersFilter();usersPopulateRoleSelector();if(document.getElementById('users-page-select')?.value==='roles')rolesRenderMatrix();
   }catch(e){if(request===usersLoadRequest&&actor===prof?.id&&scope===String(ccid()||'')){usersAllData=[];el.innerHTML=registerErrorHtml('Users register',e.message);}}
