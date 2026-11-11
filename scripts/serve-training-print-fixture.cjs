@@ -8,7 +8,7 @@ function fixture(){
   const iconStyle=[...index.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map(match=>match[0]).find(tag=>tag.includes('@tabler/icons-webfont'))||'';
   const core=read('auris-core.js');
   function renderer(name,next){const a=core.indexOf(name),b=core.indexOf(next,a);if(a<0||b<0)throw Error('Training renderer was not found: '+name);return core.slice(a,b);}
-  const renderers=[renderer('async function cmLoad(){','async function cmEditCell('),renderer('function tfRender(data){','function tfShowForm(){'),renderer('function authRender(data){','async function authUploadCertificate(')].join('\n');
+  const renderers=[renderer('function tfRender(data){','function tfShowForm(){'),renderer('function authRender(data){','async function authUploadCertificate(')].join('\n');
   return read('tests/fixtures/training-print-reports.html').replace('<!-- APP_STYLES -->',iconStyle+'\n'+styles.join('\n')).replace('<!-- TRAINING_PAGE -->',index.slice(start,end+marker.length)).replace('/* TRAINING_RENDERERS */',renderers);
 }
 http.createServer((request,response)=>{

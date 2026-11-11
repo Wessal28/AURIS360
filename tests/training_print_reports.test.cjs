@@ -1,5 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'..','training-print-reports.js'),'utf8');
+const workflow=fs.readFileSync(path.join(__dirname,'..','training-workflow.js'),'utf8');
 class FixedDate extends Date{constructor(...args){super(...(args.length?args:['2026-10-20T12:00:00+04:00']));}}
 function runtime(){
  let company='client',denied=false;const calls=[],tables={
@@ -10,10 +11,11 @@ function runtime(){
   competencies:[{id:'first-aid',company_id:'client',name:'First aid'},{id:'height',company_id:'client',name:'Work at height'},{id:'fire',company_id:'client',name:'Fire safety'}],
   competency_matrix:[{id:'cm1',company_id:'client',person_id:'worker',competency_id:'first-aid',current_level:0,required_level:2},{id:'cm2',company_id:'client',person_id:'worker',competency_id:'height',current_level:null,required_level:2}],
   learning_practical_assessments:[{id:'pa',company_id:'client',reference:'PRA-1',candidate_name:'Learner',competency_name:'Height',result:'not_yet_competent',status:'draft',critical_failure:true,verification_status:'pending'}],
-  induction_records:[],training_needs:[],elearning_courses:[],elearning_enrolments:[]
+  induction_records:[],training_needs:[],elearning_courses:[],elearning_enrolments:[],training_matrix_settings:[]
  };
- const c={Date:FixedDate,Intl,URL,Map,console,location:{href:'https://example.test/',origin:'https://example.test'},document:{getElementById:()=>null},prof:{id:'admin',role:'sephs_admin',company_id:'sephs'},co:{id:'sephs',name:'SEPHS Consulting',logo_url:'/wrong-logo.png'},saCompanyList:[{id:'client',name:'Client Engineering <Ltd>',logo_url:'/client-logo.png'}],ccid:()=>company,AurisUserAccess:{sectionAllowed:()=>!denied},apiAllRows:async url=>{calls.push(url);const key=url.split(/[/?]/)[1];return JSON.parse(JSON.stringify(tables[key]||[]));}};
- c.window=c;vm.createContext(c);vm.runInContext(source,c);return {api:c.AurisTrainingPrint,c,tables,calls,company:value=>company=value,deny:()=>denied=true};
+ const read=async url=>{calls.push(url);const key=url.split(/[/?]/)[1];return JSON.parse(JSON.stringify(tables[key]||[]));};
+ const c={Date:FixedDate,Intl,URL,Map,console,location:{href:'https://example.test/',origin:'https://example.test'},document:{getElementById:()=>null},prof:{id:'admin',role:'sephs_admin',company_id:'sephs'},co:{id:'sephs',name:'SEPHS Consulting',logo_url:'/wrong-logo.png'},saCompanyList:[{id:'client',name:'Client Engineering <Ltd>',logo_url:'/client-logo.png'}],ccid:()=>company,AurisUserAccess:{sectionAllowed:()=>!denied},api:read,apiAllRows:read};
+ c.window=c;vm.createContext(c);vm.runInContext(workflow,c);vm.runInContext(source,c);return {api:c.AurisTrainingPrint,c,tables,calls,company:value=>company=value,deny:()=>denied=true};
 }
 test('switched administrators print the selected client name and logo without SEPHS branding',async()=>{
  const h=runtime(),s=await h.api.capture('plan',{scope:'company',year:2026,paper:'A4'},h.api.context()),html=h.api.documentHtml(s);
@@ -32,16 +34,34 @@ test('legacy tables without reliable company provenance cannot be printed as cur
  const fresh=await h.api.capture('inductions',{scope:'company',paper:'A4'},h.api.context());assert.match(fresh.html,/No matching/);
 });
 test('all company-data reads are explicitly scoped and foreign rows are rejected',async()=>{
- const h=runtime(),before=JSON.stringify(h.tables);await h.api.capture('matrix',{scope:'company',paper:'A3'},h.api.context());assert.ok(h.calls.every(u=>u.includes('company_id=eq.client')&&u.includes('order=id.asc')));assert.equal(JSON.stringify(h.tables),before);
+ const h=runtime(),before=JSON.stringify(h.tables);await h.api.capture('matrix',{scope:'company',paper:'A3'},h.api.context());assert.ok(h.calls.every(u=>u.includes('company_id=eq.client')));assert.ok(h.calls.filter(u=>!u.startsWith('/training_matrix_settings?')).every(u=>u.includes('order=id.asc')));assert.equal(JSON.stringify(h.tables),before);
  h.tables.training_plan.push({id:'foreign',company_id:'other',year:2026});await assert.rejects(h.api.capture('plan',{scope:'company',paper:'A4'},h.api.context()),/did not match the selected company/);
 });
 test('session and section access changes stop pending report generation',async()=>{
  const h=runtime(),ctx=h.api.context();h.deny();await assert.rejects(h.api.capture('plan',{scope:'company'},ctx),/do not have access/);assert.equal(h.calls.length,0);
  const x=runtime(),expected=x.api.context();x.c.apiAllRows=async()=>{x.company('other');return x.tables.training_plan;};await assert.rejects(x.api.capture('plan',{scope:'company',paper:'A4'},expected),/account or company changed/);
+ const m=runtime(),matrixContext=m.api.context();m.c.api=async()=>{m.company('other');return [];};await assert.rejects(m.api.capture('matrix',{scope:'company',paper:'A4'},matrixContext),/account or company changed/);
 });
 test('matrix reports preserve zero, null and absent levels and show recorded gaps only',async()=>{
  const h=runtime(),s=await h.api.capture('matrix',{scope:'company',paper:'A4'},h.api.context());assert.equal(s.count,1);assert.match(s.html,/0 \/ 2/);assert.match(s.html,/— \/ 2/);assert.match(s.html,/— \/ —/);assert.match(s.html,/Not assessed/);assert.match(s.html,/<small>Gap<\/small>/);assert.doesNotMatch(s.html,/inactive/);assert.match(s.html,/Missing levels are never counted as zero/);
  h.tables.competency_matrix.push({...h.tables.competency_matrix[0],id:'duplicate',current_level:4});const conflict=await h.api.capture('matrix',{scope:'company',paper:'A4'},h.api.context());assert.match(conflict.html,/Multiple records<br>Review required/);
+});
+test('a cell-only reset prints the retained dimensions with unassessed levels',async()=>{
+ const h=runtime();
+ h.tables.competency_matrix.forEach(row=>{row.current_level=null;row.required_level=null;});
+ const s=await h.api.capture('matrix',{scope:'company',paper:'A4'},h.api.context());
+ assert.equal(s.count,1);assert.match(s.html,/Asha Shah/);assert.match(s.html,/First aid/);assert.match(s.html,/— \/ —/);assert.match(s.html,/Not assessed/);assert.doesNotMatch(s.html,/<small>Gap<\/small>/);
+});
+test('a full reset prints an empty matrix and only re-added members appear after rebuilding',async()=>{
+ const h=runtime(),layout={company_id:'client',person_ids:[],competency_ids:[]};
+ h.tables.training_matrix_settings.push(layout);
+ const capture=()=>h.api.capture('matrix',{scope:'company',paper:'A4'},h.api.context());
+ const cleared=await capture();
+ assert.equal(cleared.count,0);assert.match(cleared.html,/No active people or competency columns/);assert.doesNotMatch(cleared.html,/Asha Shah|First aid/);
+ layout.person_ids=['worker'];layout.competency_ids=['height'];
+ h.tables.people.push({id:'other-worker',company_id:'client',first_name:'Other',last_name:'Worker',status:'active'});
+ const rebuilt=await capture();
+ assert.equal(rebuilt.count,1);assert.match(rebuilt.html,/Asha Shah/);assert.match(rebuilt.html,/Work at height/);assert.doesNotMatch(rebuilt.html,/Other Worker|First aid|Fire safety/);
 });
 test('wide matrices split into readable labelled competency groups',()=>{
  const h=runtime(),data={...h.tables,competencies:Array.from({length:19},(_,i)=>({id:'c'+i,name:'Competency '+i,company_id:'client'}))};assert.equal((h.api.buildRows('matrix',data,null,'A4').html.match(/trp-matrix-block/g)||[]).length,3);assert.equal((h.api.buildRows('matrix',data,null,'A3').html.match(/trp-matrix-block/g)||[]).length,2);

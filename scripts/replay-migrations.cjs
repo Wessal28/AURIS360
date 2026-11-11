@@ -181,6 +181,7 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_re
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql')], {label: 'HSE minutes RPC named arguments, invoker policy and execution grants'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_workflow.sql')], {label: 'linked training attendance, evidence review and explicit competency decisions'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_matrix_reset.sql')], {label: 'company-scoped training matrix resets and retained competency history'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'action_closure.sql')], {label: 'action closure integrity and bounded notification cleanup'});
 run(process.execPath, ['scripts/verify-action-closure-concurrency.cjs'], {label: 'action closure timeout rollback and retry'});

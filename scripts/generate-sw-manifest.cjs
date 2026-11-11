@@ -68,7 +68,7 @@ const lazyModuleAssets = [
   'module-print-catalogue.js', 'operational-print-catalogue.js', 'specialist-print-catalogue.js', 'governance-print-catalogue.js', 'platform-print-catalogue.js',
   'people-user-linking.js', 'people-user-linking.css',
   'sop-video-upgrade.js',
-  'learning-competency-upgrade.js', 'elearning-course-path.js',
+  'training-matrix.js', 'learning-competency-upgrade.js', 'elearning-course-path.js',
   'contractor-management-upgrade.js', 'chemical-control-upgrade.js',
   'tools-equipment-upgrade.js', 'legal-compliance-upgrade.js',
     'auris-ohealth-worker.js', 'auris-ppe-workflow.js',

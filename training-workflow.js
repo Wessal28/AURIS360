@@ -25,6 +25,31 @@ async function viewRecord(id,back){var c=context();try{var r=await fetchOne('tra
 async function reviewEvidence(r,host,c){var decision=await appPrompt({title:'Evidence review',message:'Review the actual supporting evidence before recording a decision. This review does not grant work authorisation or practical competence.',options:[{value:'reviewed',label:'Evidence reviewed'},{value:'rejected',label:'Evidence rejected'}]});if(!decision)return;var note=await appPrompt({title:'Evidence review',message:'Record the evidence checked and the review conclusion.'});if(!note?.trim())return;try{assertContext(c);var saved=await api('/rpc/review_training_evidence',{m:'POST',b:{p_id:r.id,p_decision:decision,p_note:note}});assertContext(c);if(!saved?.id&& !saved?.[0]?.id)throw Error('Review confirmation was incomplete.');host.remove();await viewRecord(r.id,host.trainingReturn);toast('Evidence review saved. Competency decisions remain separate.');}catch(e){if(host.isConnected)feedback(host,e.message);}}
 const competencyLevels = ['No knowledge','Theoretical','First experience','Good level','Expert'];
 
+async function matrixSettings(company){
+  try{
+    const rows=await api('/training_matrix_settings?select=person_ids,competency_ids&company_id=eq.'+encodeURIComponent(company));
+    return {person_ids:null,competency_ids:null,...rows[0],available:true};
+  }catch(error){
+    const message=String(error.message||'');
+    if(!/training_matrix_settings/i.test(message)||!/schema cache|does not exist|not found/i.test(message))throw error;
+    return {person_ids:null,competency_ids:null,available:false};
+  }
+}
+
+function matrixMembers(items,ids){
+  if(ids==null)return items;
+  const selected=new Set(ids);
+  return items.filter(item=>selected.has(item.id));
+}
+
+function formField(form,label,control){
+  const wrap=el('label',label);
+  wrap.className='training-workflow-field';
+  wrap.appendChild(control);
+  form.appendChild(wrap);
+  return control;
+}
+
 function levelLabel(value){
   return value!=null&&competencyLevels[value]!=null ? value+' · '+competencyLevels[value] : 'Not assessed';
 }
@@ -90,8 +115,7 @@ function competency(personId, competencyId){
       : entry.required_level==null ? 'Required level not recorded'
       : entry.current_level<entry.required_level ? 'Below required level' : 'Meets required level';
     summaryField(levels,'Current level',levelLabel(entry?.current_level));
-    summaryField(levels,'Required level',entry?.required_level!=null ? levelLabel(entry.required_level)
-      : entry ? 'Not recorded' : levelLabel(2)+' (default)');
+    summaryField(levels,'Required level',entry?.required_level!=null ? levelLabel(entry.required_level) : 'Not recorded');
     summaryField(levels,'Status',status);
 
     const evidenceId=entry?.supporting_training_id;
@@ -123,14 +147,6 @@ function competency(personId, competencyId){
     }).catch(()=>{
       if(evidence.isConnected)evidence.textContent='A training record is linked. Its details are unavailable.';
     });
-  }
-
-  function formField(form,label,control){
-    const wrap=el('label',label);
-    wrap.className='training-workflow-field';
-    wrap.appendChild(control);
-    form.appendChild(wrap);
-    return control;
   }
 
   function levelField(form,label,value,required){
@@ -250,5 +266,5 @@ function competency(personId, competencyId){
 
 function validateInduction(topics,status){if(status!=='completed')return;var keys=INDUCTION_CHECKLIST_SECTIONS.flatMap(function(s){return s.items.map(function(x){return x[0];});}),missing=keys.filter(function(k){return !topics.includes(k)&&!topics.includes('na:'+k);});if(missing.length)throw Error('Complete each induction checklist item or explicitly mark it N/A before selecting Completed.');if(!topics.includes('entrant_declaration_understood'))throw Error('Confirm the entrant’s understanding before marking the induction Completed.');}
 function initInduction(){document.getElementById('indf-status').value='in_progress';document.querySelectorAll('[name="ind-st-r"]').forEach(function(r){r.checked=r.value==='in_progress';});['indf-cert-issued','indf-sig'].forEach(function(id){document.getElementById(id).checked=false;});}
-root.TrainingWorkflow=Object.freeze({expiry:expiry,filter:filter,outcome:outcome,localToday:localToday,context:context,assertContext:assertContext,initRecord:initRecord,participants:participants,attendance:attendance,viewPlan:viewPlan,viewRecord:viewRecord,competency:competency,levelLabel:levelLabel,validateInduction:validateInduction,initInduction:initInduction,friendly:friendly});
+root.TrainingWorkflow=Object.freeze({expiry:expiry,filter:filter,outcome:outcome,localToday:localToday,context:context,assertContext:assertContext,initRecord:initRecord,participants:participants,attendance:attendance,viewPlan:viewPlan,viewRecord:viewRecord,competency:competency,levelLabel:levelLabel,validateInduction:validateInduction,initInduction:initInduction,friendly:friendly,matrixSettings:matrixSettings,matrixMembers:matrixMembers});
 })(typeof window!=='undefined'?window:globalThis);
