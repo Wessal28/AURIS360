@@ -78,7 +78,7 @@
 <script src="auris-emergency-list-workspace.js?v=20260920-1"></script>
 <script src="auris-esg-list-workspace.js?v=20261015-assurance-1"></script>
 <script src="auris-noise-list-workspace.js?v=20260916-1"></script>
-<script src="auris-meetings-list-workspace.js?v=20260916-1&icon-actions-20261009-1"></script>
+<script src="auris-meetings-list-workspace.js?v=20260916-1&icon-actions-20261009-1&minutes-removal-20261111-1"></script>
 <script src="auris-training-plan-list-workspace.js?v=20261009-1&icons-20261020-1"></script>
 <script src="auris-work-schedule-workspace.js?v=20260920-1&work-record-20260923-1&people-access-20260927-1&work-gantt-20261103-1"></script>
 <link rel="stylesheet" href="auris-work-schedule-workspace.css?v=20260920-1&work-record-20260923-1&people-access-20260927-1&work-gantt-20261103-1">
@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="training-workflow.css?v=20261111-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1&tools-page-routing-20261105-1&shared-page-routing-20261105-1&workspace-startup-20261111-1&profile-company-link-20261111-1&competency-dialog-20261111-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1&tools-page-routing-20261105-1&shared-page-routing-20261105-1&workspace-startup-20261111-1&profile-company-link-20261111-1&competency-dialog-20261111-1&minutes-removal-20261111-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -7658,7 +7658,7 @@ Offline mode - changes will sync when connection is restored
 <option value="cancelled">Cancelled</option>
 </select>
 <button class="btn" data-auris-onclick="h0831"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="mtg-mom3del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0832"><i class="ti ti-trash"></i>Delete</button>
+<button type="button" id="mtg-mom3del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0832"><i class="ti ti-trash"></i><span>Cancel minutes</span></button>
 <button id="mtg-mom3send-btn" class="btn auris-meetings-s-78e42ea312" data-auris-onclick="h0833"><i class="ti ti-send"></i>Send minutes</button>
 <button class="btn" data-auris-onclick="h0834"><i class="ti ti-printer"></i>Print minutes</button>
 <button class="btn btn-primary" data-auris-onclick="h0835"><i class="ti ti-device-floppy"></i>Save minutes</button>

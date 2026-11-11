@@ -43,8 +43,39 @@ function definition(){return {rowKey:'id',views:['list','card','board','calendar
 ]};}
 function mount(host,rows,options){
   options=options||{};var current=session();if(!root.AurisViewEngine)throw new Error('The shared HSE meeting register is unavailable. Reload the application.');var projected=project(rows,current,options);
-  return root.AurisViewEngine.mount(host,projected,{moduleKey:'hse-meetings',label:'HSE Meeting Register',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),actions:[{key:'open',label:'Open minutes',icon:'ti-eye'},{key:'edit',label:'Edit minutes',icon:'ti-pencil',when:function(){return options.canEdit===true;}}],onApplyFilters:function(value){assertSession(current);if(typeof options.onApplyFilters==='function')options.onApplyFilters(filters(value));},onAction:async function(key,row){
-    assertSession(current);var selected=projected.find(function(item){return item.id===row.id&&item.company_id===row.company_id&&item.source_table===row.source_table;});if(!selected)throw new Error('These meeting minutes are outside the current register. Reload to retry.');if(root.navigator&&root.navigator.onLine===false)throw new Error('Reconnect before opening the meeting minutes.');var callback=key==='open'?options.openRecord:key==='edit'&&options.canEdit===true?options.editRecord:null;if(typeof callback!=='function')throw new Error('This meeting minutes action is unavailable. Reload the register.');await callback(selected.id,current);
+  var actions=[
+    {key:'open',label:'Open minutes',icon:'ti-eye'},
+    {key:'edit',label:'Edit minutes',icon:'ti-pencil',when:function(){return options.canEdit===true;}}
+  ];
+  var canRemove;
+  if(typeof options.removeRecord==='function'&&typeof options.canRemove==='function'){
+    var recordsById=new Map((Array.isArray(rows)?rows:[]).filter(function(row){
+      return row?.id&&String(row.company_id||'')===current.companyId;
+    }).map(function(row){return [String(row.id),row];}));
+    canRemove=function(row){
+      var record=recordsById.get(row.id);
+      return row.company_id===current.companyId&&row.source_table==='hse_meetings'&&!!record&&options.canRemove(record)===true;
+    };
+    actions.push({
+      key:'remove',
+      label:function(row){
+        return row.status==='Cancelled'||/^\[Archived \d{4}-\d{2}-\d{2}\]/i.test(row.minutes)?'Delete minutes permanently':'Cancel minutes';
+      },
+      icon:'ti-trash',
+      when:canRemove
+    });
+  }
+  return root.AurisViewEngine.mount(host,projected,{moduleKey:'hse-meetings',label:'HSE Meeting Register',definition:definition(),context:function(){return assertSession(current);},filters:filters(options.filters),actions:actions,onApplyFilters:function(value){assertSession(current);if(typeof options.onApplyFilters==='function')options.onApplyFilters(filters(value));},onAction:async function(key,row){
+    assertSession(current);
+    var selected=projected.find(function(item){return item.id===row.id&&item.company_id===row.company_id&&item.source_table===row.source_table;});
+    if(!selected)throw new Error('These meeting minutes are outside the current register. Reload to retry.');
+    if(root.navigator&&root.navigator.onLine===false)throw new Error(key==='remove'?'Reconnect before removing the meeting minutes.':'Reconnect before opening the meeting minutes.');
+    var callback;
+    if(key==='open')callback=options.openRecord;
+    else if(key==='edit'&&options.canEdit===true)callback=options.editRecord;
+    else if(key==='remove'&&canRemove?.(selected))callback=options.removeRecord;
+    if(typeof callback!=='function')throw new Error('This meeting minutes action is unavailable. Reload the register.');
+    await callback(selected.id,current);
   }});
 }
 root.AurisMeetingsListWorkspace=Object.freeze({version:'1.0.0',mount:mount,project:project,definition:definition,filters:filters,dateState:dateState});

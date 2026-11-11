@@ -12,6 +12,53 @@ test('a missing save confirmation does not clear the awareness draft or report s
 test('awareness loading does not expose another company response',async()=>{const x=awareness(async()=>[{id:'bad',company_id:'other',theme:'FOREIGN',planned_month:1,discussion_points:['PRIVATE']}]);await x.app.load();assert.doesNotMatch(x.host.innerHTML,/FOREIGN|PRIVATE/);});
 test('minutes and linked actions are saved through one transaction without deleting existing actions',()=>{const a=core.indexOf('async function mtgSaveMom(){'),b=core.indexOf('\nasync function mtgDeleteMom',a),source=core.slice(a,b);assert.match(source,/rpc\/save_hse_minutes/);assert.match(source,/p_expected_updated_at/);assert.doesNotMatch(source,/m:'DELETE'/);assert.match(source,/mtgSaveError/);assert.match(core,/adapter.key==='meetings'.*mtgViewMomReadOnly\(id\)/);});
 
+test('minutes removal cancels first and verifies tenant, version and the confirmed deletion', async () => {
+  const initial = {id:'minutes-a',company_id:'company-a',title:'Fixture',status:'completed',minutes:'Approved narrative',updated_at:'2026-11-11T07:00:00+00:00'};
+  let row = {...initial}, company = row.company_id, permitted = true, accepted = false, stale = false;
+  const writes = [], confirmations = [], errors = [];
+  const c = runtime({
+    ccid:()=>company, prof:{id:'manager-a'}, activeRole:()=> 'manager', isMgr:()=>true, mtgSavingMom:false, mtgMinutesData:[row],
+    AurisUserAccess:{requestIssue:()=>permitted?'':'Denied'},
+    appConfirmAction:async()=>{confirmations.push('cancel');return accepted;},
+    appConfirmDelete:async()=>{confirmations.push('delete');return accepted;},
+    toast:()=>{}, toastActionError:(_action,_module,error)=>errors.push(error.message),
+    api:async(path,opts)=>{
+      assert.match(path,/^\/hse_meetings\?id=eq\.minutes-a&company_id=eq\.company-a/);
+      if(!opts)return [{...row}];
+      assert.equal(opts.p,'return=representation');
+      const query = new URLSearchParams(path.split('?')[1]);
+      assert.equal(query.get('updated_at'),'eq.'+row.updated_at);
+      assert.equal(query.get('status'),'eq.'+row.status);
+      writes.push(opts.m);
+      if(stale)return [];
+      const result = [{...row,...opts.b}];
+      row = opts.m==='DELETE'?null:result[0];
+      return result;
+    }
+  });
+  const start = core.indexOf('function mtgMinutesRemovalMode('), end = core.indexOf('function mtgNewSeries(',start);
+  vm.runInContext(core.slice(start,end),c);
+  assert.equal(await c.mtgRemoveMinutes(initial.id),false);
+  assert.deepEqual(writes,[]);
+  accepted=true;
+  assert.equal(await c.mtgRemoveMinutes(initial.id),true);
+  assert.equal(row.status,'cancelled');
+  assert.equal(row.minutes,initial.minutes);
+  assert.equal(c.mtgMinutesData[0].status,'cancelled');
+  permitted=false;
+  assert.equal(await c.mtgRemoveMinutes(initial.id),false);
+  permitted=true;
+  stale=true;
+  assert.equal(await c.mtgRemoveMinutes(initial.id),false);
+  assert.equal(c.mtgMinutesData.length,1);
+  assert.match(errors.at(-1),/could not be confirmed/);
+  stale=false;
+  assert.equal(await c.mtgRemoveMinutes(initial.id),true);
+  assert.deepEqual(writes,['PATCH','DELETE','DELETE']);
+  assert.deepEqual(confirmations,['cancel','cancel','delete','delete']);
+  assert.equal(c.mtgMinutesData.length,0);
+});
+
 test('the print template retains the entered meeting time and identifies the timezone',()=>{let printed='';const values={mom3title:{value:'Fictional minutes'},mom3type:{value:'management_review'},mom3date:{value:'2026-10-18T09:00'},'mtg-mom3form':{dataset:{timezone:'Asia/Dubai'}}};const c=runtime({document:{addEventListener(){},getElementById:id=>values[id]},mtgCollectSignoff:()=>({}),mtgCollectAgenda:()=>[],mtgCollectRecs:()=>[],momGetAttendees:()=>'',momGetApologies:()=>'',escH:String,aurisPrint:html=>{printed=html;}});const a=core.indexOf('function mtgPrintMom(){'),b=core.indexOf('function mtgSendMinutes(){',a);vm.runInContext(core.slice(a,b),c);c.mtgPrintMom();assert.match(printed,/18\/10\/2026 09:00 \(Asia\/Dubai\)/);assert.doesNotMatch(printed,/13:00/);});
 
 test('older valid meeting types remain selectable instead of changing to Management Review on edit',()=>{const html=fs.readFileSync('index.html','utf8'),select=html.match(/<select id="mom3type">([\s\S]*?)<\/select>/)[1];for(const value of ['safety_committee','toolbox_talk','emergency_drill','hse_committee','management_review','other'])assert.ok(select.includes('value="'+value+'"'),value);});
