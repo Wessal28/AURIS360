@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="training-workflow.css?v=20261111-1">
 <script src="auris-approval-review.js?v=20261019-1"></script>
 <link rel="prefetch" href="auris-settings-tools.js?v=20261020-1&settings-20261020-1" as="script"/>
-<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1&tools-page-routing-20261105-1&shared-page-routing-20261105-1&workspace-startup-20261111-1&profile-company-link-20261111-1&competency-dialog-20261111-1&minutes-removal-20261111-1"></script>
+<script src="auris-core.js?v=20260903-29-kpi-drafts-20260913-1-monthly-review-1&launcher-icons-20260916-1&ppe-usability-20260917-3&work-schedule-20260920-1&equipment-20260920-1&fleet-20261003-2&atex-20260920-1&fire-20260920-1&emergency-20260920-1&chemical-20260920-1&work-record-20260923-1&people-access-20260927-1&record-windows-20261002-1&command-centre-20261002-1&risk-workflow-20261004-2&incident-config-20261004-1&work-equipment-20261005-2&legal-not-assessed-20261008-1&meeting-draft-20261008-1&alert-file-20261009-1&bulletin-view-20261009-1&training-plan-values-20261009-1&legal-edit-prefill-20261009-1&training-cert-20261009-1&trust-20261011-1&trust-pagination-20261011-1&ai-evidence-20261012-1&oh-followups-20261013-2&chemical-assurance-20261015-2&esg-assurance-20261018-1&meeting-reliability-20261018-1&training-workflow-20261018-1&people-users-20261019-1&company-approval-20261019-1&settings-20261020-1&login-layout-20261020-1&login-meeting-legal-20261020-1&report-preview-20261020-1&legal-meetings-fix-20261020-1&tools-fleet-print-20261022-1&remaining-module-print-20261022-1&work-gantt-20261103-1&tools-page-routing-20261105-1&shared-page-routing-20261105-1&workspace-startup-20261111-1&profile-company-link-20261111-1&competency-dialog-20261111-1&minutes-removal-20261111-1&agenda-schedule-removal-20261112-1"></script>
 <link rel="stylesheet" href="auris-ohealth-workflow.css?v=20261013-1">
 <link rel="stylesheet" href="auris-emergency-workflow.css?v=20261013-2">
 <script src="kpi-definition-editor.js?v=20260913-objective-atomic-1"></script>
@@ -7278,7 +7278,7 @@ Offline mode - changes will sync when connection is restored
 <button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-bulletins" data-auris-onclick="h0803">Safety Bulletins</button>
 <button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-awareness" data-auris-onclick="h1400">Safety Awareness</button>
 </div>
-<link rel="stylesheet" href="auris-meeting-tabs.css?v=20261020-1"/>
+<link rel="stylesheet" href="auris-meeting-tabs.css?v=20261112-1"/>
 
 <!-- Schedule tab -->
 <div id="mtg-view-schedule">
@@ -7293,6 +7293,7 @@ Offline mode - changes will sync when connection is restored
 <button class="btn btn-sm" aria-label="Previous meeting period" title="Previous meeting period" data-auris-onclick="h0804"><i class="ti ti-chevron-left"></i></button>
 <button class="btn btn-sm" aria-label="Next meeting period" title="Next meeting period" data-auris-onclick="h0805"><i class="ti ti-chevron-right"></i></button>
 <button class="btn btn-sm" data-auris-onclick="h0806">Today</button>
+<button class="btn btn-sm" type="button" id="mtg-manage-schedules" aria-controls="mtg-series-list">Manage schedules</button>
 <button class="btn btn-primary btn-sm auris-meetings-s-6aa34d7432" id="mtg-new-series-btn2" data-auris-onclick="h0798"><i class="ti ti-plus"></i>Add schedule</button>
 </div>
 </div>
@@ -7311,7 +7312,7 @@ Offline mode - changes will sync when connection is restored
 <div id="mtg-roadmap-container"><div class="loading-msg">Loading roadmap...</div></div>
 </div>
 <!-- Series list (collapsible) -->
-<div class="card auris-meetings-s-97f630a23b">
+<div class="card auris-meetings-s-97f630a23b" id="mtg-all-schedules">
 <div class="auris-meetings-s-9d1c7c2900" data-auris-onclick="h0807">
 <div class="auris-meetings-s-9d0b23f5fa">All Meeting Schedules</div>
 <i class="ti ti-chevron-down" id="series-list-chev"></i>
@@ -7606,7 +7607,7 @@ Offline mode - changes will sync when connection is restored
 <div id="mtg-series-title" class="auris-meetings-s-30e294142f">New Meeting Schedule</div>
 <div class="auris-meetings-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0828"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="mtg-series-del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0829"><i class="ti ti-trash"></i>Delete</button>
+<button type="button" id="mtg-series-del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0829"><i class="ti ti-trash"></i><span>Deactivate schedule</span></button>
 <button class="btn btn-primary" data-auris-onclick="h0830"><i class="ti ti-device-floppy"></i>Save schedule</button>
 </div>
 </div>

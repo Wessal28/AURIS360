@@ -4,3 +4,29 @@
 #page-meetings .meeting-occurrences{font-size:14px;line-height:1.45}#page-meetings .meeting-occurrences>h3{font-size:14px;font-weight:700;line-height:1.45;margin:16px 0 8px}#page-meetings .meeting-occurrence-row{font-size:14px;line-height:1.45}#page-meetings .meeting-occurrence-row>span{font-size:14px;min-width:0;overflow-wrap:anywhere}#page-meetings .meeting-occurrence-row>.btn{font-size:12px;flex-shrink:0}
 #mtg-minutes-readonly .meeting-action-link,#mtg-minutes-readonly .meeting-action-link-note{display:block;margin-top:5px;font-size:12px;line-height:1.4}#mtg-minutes-readonly .meeting-action-link{color:var(--green,#137d60);font-weight:600;text-decoration:underline;text-underline-offset:2px}#mtg-minutes-readonly .meeting-action-link-note{color:var(--text2,#64748b)}#mtg-minutes-readonly .meeting-action-linked{cursor:pointer}#mtg-minutes-readonly .meeting-action-link:focus-visible{outline:2px solid #2563eb;outline-offset:3px;border-radius:2px}
 @media(max-width:540px){#page-meetings .meeting-occurrence-row{align-items:flex-start;flex-wrap:wrap}}
+
+#mtg-manage-schedules {
+  white-space: nowrap;
+}
+
+#page-meetings .auris-meetings-s-39c68df36f {
+  flex-wrap: wrap;
+}
+
+.meeting-agenda-schedule-title {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.meeting-schedule-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.meeting-schedule-actions .btn {
+  min-height: 28px;
+  padding: 3px 5px;
+  font-size: 11px;
+}

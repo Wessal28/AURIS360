@@ -9862,16 +9862,22 @@ function mtgKickAgendaRoadmap(){
     },delay);
   });
 }
+var mtgSeriesLoadVersion=0;
 async function mtgLoadSeries(){
+  var loadVersion=++mtgSeriesLoadVersion;
   var requestCompany=String(ccid()||''),requestUser=String(prof?.id||'');
+  var isCurrent=function(){return loadVersion===mtgSeriesLoadVersion&&requestCompany===String(ccid()||'')&&requestUser===String(prof?.id||'');};
   var el=document.getElementById('mtg-series-list');
   try{
     var d=await api('/meeting_series?select=*'+cf()+'&order=meeting_type,title');
-    if(requestCompany!==String(ccid()||'')||requestUser!==String(prof?.id||''))return;mtgSeriesData=d||[];
+    if(!isCurrent())return;
     try{
       var mins=await api('/hse_meetings?select=id,company_id,series_id,meeting_date,meeting_timezone,status'+cf());
-      if(requestCompany!==String(ccid()||'')||requestUser!==String(prof?.id||''))return;mtgMergeMinutes(mins||[],true);
+      if(!isCurrent())return;
+      mtgMergeMinutes(mins||[],true);
     }catch(_){}
+    if(!isCurrent())return;
+    mtgSeriesData=d||[];
     if(!d||!d.length){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
@@ -9907,8 +9913,10 @@ async function mtgLoadSeries(){
         +'<td style="padding:10px 12px">'+escH(s.location||'--')+'</td>'
         +'<td style="padding:10px 12px;font-weight:'+(isOverdue?'800':'600')+';color:'+(isOverdue?'#DC2626':'#374151')+'">'+escH(nextDt)+(isOverdue?' <i class="ti ti-alert-triangle"></i>':'')+'</td>'
         +'<td style="padding:10px 12px"><span style="background:'+statusColor+'15;color:'+statusColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+statusLabel+'</span></td>'
-        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" data-id="'+s.id+'" data-auris-generated-onclick="g0060"><i class="ti ti-file-text"></i>Create minutes</button>'
-        +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" data-auris-generated-onclick="g0061" title="Edit schedule" style="margin-left:6px"><i class="ti ti-edit"></i></button>':'')
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'
+        +(active&&isMgr()?'<button type="button" class="btn btn-primary btn-sm" data-id="'+escH(s.id)+'" data-auris-generated-onclick="g0060"><i class="ti ti-file-text"></i>Create minutes</button>':'')
+        +(mtgCanChangeSeries(s,'PATCH')?'<button type="button" class="btn btn-sm" data-id="'+escH(s.id)+'" data-auris-generated-onclick="g0061" aria-label="Edit schedule" title="Edit schedule"><i class="ti ti-edit"></i></button>':'')
+        +mtgSeriesRemovalButtons(s)
         +'</td></tr>';
     });
     h+='</tbody></table></div>';
@@ -9917,12 +9925,14 @@ async function mtgLoadSeries(){
         +'<button class="btn btn-sm" data-auris-generated-onclick="g0059"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
         +'</div>';
     }
-    if(el)el.innerHTML=h;
+    if(el){el.innerHTML=h;mtgBindSeriesRemoval(el);}
   }catch(e){
+    if(!isCurrent())return;
     if(el)el.innerHTML=registerErrorHtml('register',e.message);
     var rc=document.getElementById('mtg-roadmap-container');
     if(rc)rc.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Could not load roadmap: '+((e&&e.message)||e)+'</div>';
     console.error(e);
+    return;
   }
   // Render roadmap after series loaded
   mtgRenderRoadmap();
@@ -10044,10 +10054,12 @@ function mtgNewSeries(){
 
 function mtgEditSeries(id){
   var s=mtgSeriesData.find(function(x){return x.id===id;});
-  if(!s)return;
+  if(!mtgCanChangeSeries(s,'PATCH'))return;
   mtgEditingSeriesId=id;
   document.getElementById('mtg-series-title').textContent='Edit Meeting Schedule';
-  document.getElementById('mtg-series-del-btn').style.display='inline-flex';
+  var removalButton=document.getElementById('mtg-series-del-btn');
+  removalButton.style.display=s.active!==false||mtgCanChangeSeries(s,'DELETE')?'inline-flex':'none';
+  removalButton.querySelector('span').textContent=s.active!==false?'Deactivate schedule':'Delete schedule';
   var flds={'ms-title':'title','ms-location':'location','ms-chaired-by':'chaired_by','ms-responsible':'responsible','ms-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=s[e[1]]||'';});
   fillPersonSelect('ms-chaired-by',s.chaired_by);fillPersonSelect('ms-responsible',s.responsible);
@@ -10067,7 +10079,9 @@ function mtgSeriesBack(){
   mtgLoadSeries();
 }
 
+var mtgSeriesSavePending=false;
 async function mtgSaveSeries(){
+  if(mtgSeriesRemovalPending||mtgSeriesSavePending)return;
   var title=document.getElementById('ms-title')?.value?.trim();
   if(!title){toast('Please enter a meeting title',false);return;}
   var body={
@@ -10083,6 +10097,7 @@ async function mtgSaveSeries(){
     active:document.getElementById('ms-active')?.value!=='false',
     updated_at:new Date().toISOString()
   };
+  mtgSeriesSavePending=true;
   try{
     if(mtgEditingSeriesId){
       await mtgApiWithSchemaFallback('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:body},['responsible','notes','updated_at']);
@@ -10094,30 +10109,110 @@ async function mtgSaveSeries(){
     }
     mtgSeriesBack();
   }catch(e){toastActionError('Save meeting schedule','HSE Meetings',e);console.error(e);}
+  finally{mtgSeriesSavePending=false;}
 }
 
 async function mtgDeleteSeries(){
-  if(!mtgEditingSeriesId)return;
-  try{
-    var rows=await api('/meeting_series?id=eq.'+mtgEditingSeriesId+'&select=active,notes');
-    var current=rows?.[0]||{};
-    if(current.active!==false&&!ohIsArchivedText(current.notes)){
-      if(!(await appConfirmAction({title:'Deactivate meeting schedule',message:'Deactivate this meeting schedule instead of deleting it?',detail:'Past minutes and schedule history remain traceable.',confirmText:'Deactivate schedule',cancelText:'Back',variant:'danger'})))return;
-      await mtgApiWithSchemaFallback('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:{active:false,notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}},['notes','updated_at']);
-      toast('Schedule deactivated');
-      mtgSeriesBack();
-      return;
+  var id=mtgEditingSeriesId;
+  var selected=mtgSeriesData.find(function(row){return row.id===id;});
+  if(selected&&await mtgRemoveSeries(id,selected.active===false?'delete':'deactivate')&&mtgEditingSeriesId===id)mtgSeriesBack();
+}
+
+function mtgCanChangeSeries(row,method){
+  return !!row&&isMgr()&&String(row.company_id||'')===String(ccid()||'')
+    &&!window.AurisUserAccess?.requestIssue(prof,'/meeting_series',method);
+}
+
+function mtgSeriesRemovalButtons(row){
+  function button(action,label,icon){
+    var description=escH(label+' schedule · '+(row.title||'Meeting schedule'));
+    return '<button type="button" class="btn btn-sm" data-mtg-series-action="'+action+'" data-id="'+escH(row.id)+'" title="'+description+'" aria-label="'+description+'"><i class="ti '+icon+'" aria-hidden="true"></i>'+label+'</button>';
+  }
+  var buttons=(row.active!==false&&mtgCanChangeSeries(row,'PATCH')?button('deactivate','Deactivate','ti-calendar-off'):'')
+    +(mtgCanChangeSeries(row,'DELETE')?button('delete','Delete','ti-trash'):'');
+  return buttons?'<span class="meeting-schedule-actions">'+buttons+'</span>':'';
+}
+
+function mtgBindSeriesRemoval(host){
+  host.querySelectorAll('[data-mtg-series-action]').forEach(function(button){
+    button.addEventListener('click',async function(){
+      button.disabled=true;
+      try{
+        if(await mtgRemoveSeries(button.dataset.id,button.dataset.mtgSeriesAction))await mtgLoadSeries();
+      }finally{button.disabled=false;}
+    });
+  });
+}
+
+var mtgSeriesRemovalPending=false;
+async function mtgRemoveSeries(id,action){
+  if(!id||mtgSeriesSavePending||mtgSeriesRemovalPending||!['deactivate','delete'].includes(action))return false;
+  var company=String(ccid()||''),user=String(prof?.id||''),role=activeRole();
+  if(!company||!user||!isMgr())return false;
+  var deleting=action==='delete',method=deleting?'DELETE':'PATCH';
+  var scope='&company_id=eq.'+encodeURIComponent(company);
+  var path='/meeting_series?id=eq.'+encodeURIComponent(id)+scope;
+  function assertContext(){
+    if(company!==String(ccid()||'')||user!==String(prof?.id||'')||role!==activeRole()){
+      throw Error('Your account, company or access changed. Reopen Meeting Agenda.');
     }
-    if(!(await appConfirmDelete('inactive meeting schedule','Permanent deletion should be used only for duplicate/test schedules.')))return;
-    await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'DELETE'});
-    toast('Schedule deleted!');
-    mtgSeriesBack();
-  }catch(e){toastActionError('Delete meeting schedule','HSE Meetings',e);console.error(e);}
+  }
+  async function checkLinkedMinutes(){
+    var access=window.AurisUserAccess;
+    if(access&&(access.requestIssue(prof,'/hse_meetings','GET')||!access.allowed(prof,'meetings.minutes','view'))){
+      throw Error('Access to view meeting minutes is required to check this schedule.');
+    }
+    var linked=await api('/hse_meetings?select=id&series_id=eq.'+encodeURIComponent(id)+scope+'&limit=1');
+    assertContext();
+    if(!Array.isArray(linked))throw Error('Linked minutes could not be checked. Refresh the agenda and try again.');
+    if(linked.length)throw Error('This schedule has saved minutes. Choose Deactivate schedule to remove its occurrences from the agenda and keep the minutes linked.');
+  }
+  mtgSeriesRemovalPending=true;
+  try{
+    var rows=await api(path+'&select=id,company_id,title,active,updated_at');
+    assertContext();
+    var current=rows?.[0];
+    if(rows?.length!==1||String(current?.id)!==String(id)||String(current.company_id)!==company){
+      throw Error('This schedule is unavailable for the selected company.');
+    }
+    if(!mtgCanChangeSeries(current,method))throw Error('You do not have permission to '+action+' this schedule.');
+    if(!deleting&&current.active===false)throw Error('This schedule is already inactive. Refresh the agenda.');
+    if(deleting)await checkLinkedMinutes();
+    var label=deleting?'Delete schedule':'Deactivate schedule';
+    var confirmed=await appConfirmAction({
+      title:label,message:label+' “'+current.title+'”?',confirmText:label,cancelText:'Back',
+      detail:deleting?'This permanently removes the recurring schedule and its generated occurrences.':'This removes the schedule and its occurrences from the agenda. Saved minutes stay linked.'
+    });
+    if(!confirmed)return false;
+    assertContext();
+    if(!mtgCanChangeSeries(current,method))throw Error('You do not have permission to '+action+' this schedule.');
+    if(deleting)await checkLinkedMinutes();
+    var version=current.updated_at==null?'is.null':'eq.'+encodeURIComponent(current.updated_at);
+    var active=current.active==null?'is.null':'eq.'+encodeURIComponent(current.active);
+    var options={m:method,p:'return=representation'};
+    if(!deleting)options.b={active:false,updated_at:new Date().toISOString()};
+    var result=await api(path+'&updated_at='+version+'&active='+active,options);
+    assertContext();
+    var saved=result?.[0];
+    if(result?.length!==1||String(saved?.id)!==String(id)||String(saved.company_id)!==company||(!deleting&&saved.active!==false)){
+      throw Error('The change could not be confirmed. Refresh the agenda and reopen the schedule.');
+    }
+    mtgSeriesLoadVersion++;
+    mtgSeriesData=deleting?mtgSeriesData.filter(function(row){return row.id!==id;})
+      :mtgSeriesData.map(function(row){return row.id===id?saved:row;});
+    mtgRenderRoadmap();
+    toast(deleting?'Meeting schedule deleted.':'Meeting schedule deactivated.');
+    return true;
+  }catch(error){
+    toastActionError(deleting?'Delete meeting schedule':'Deactivate meeting schedule','HSE Meetings',error);
+    return false;
+  }finally{mtgSeriesRemovalPending=false;}
 }
 
 // -- SCHEDULE MEETING ? open MOM form --------------------------------------
 function mtgScheduleMeeting(seriesId,occurrenceDate){
   var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
+  if(seriesId&&(!s||s.active===false)){toast('This meeting schedule is inactive or unavailable.',false);return;}
   mtgEditingMomId=null;
   // Clear form
   mtgClearMom();
@@ -10602,16 +10697,22 @@ function mtgRenderRoadmap(){
   var container=document.getElementById('mtg-roadmap-container');
   var yearLabel=document.getElementById('mtg-agenda-year');
   var newBtn=document.getElementById('mtg-new-series-btn2');
+  var manageBtn=document.getElementById('mtg-manage-schedules');
   if(yearLabel)yearLabel.textContent=mtgRoadmapYear;
   if(newBtn)newBtn.style.display=isMgr()?'inline-flex':'none';
+  if(manageBtn)manageBtn.onclick=function(){
+    if(!mtgSeriesListOpen)mtgToggleSeriesList();
+    document.getElementById('mtg-all-schedules')?.scrollIntoView({block:'start'});
+  };
   if(!container){
     setTimeout(function(){try{mtgRenderRoadmap();}catch(e){console.error(e);}},100);
     return;
   }
   try{
 
-  if(!mtgSeriesData||!mtgSeriesData.length){
-    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" data-auris-generated-onclick="g0059"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
+  var activeSchedules=(mtgSeriesData||[]).filter(function(schedule){return schedule.active!==false;});
+  if(!activeSchedules.length){
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No active meeting schedules.</div>';
     return;
   }
 
@@ -10646,7 +10747,7 @@ function mtgRenderRoadmap(){
   // DATA ROWS: one per series
   var recurrenceWeeks={'monthly':4,'bimonthly':9,'quarterly':13,'triannual':17,'biannual':26,'annual':52};
 
-  mtgSeriesData.forEach(function(series,si){
+  activeSchedules.forEach(function(series,si){
     var color=typeColors[series.meeting_type]||'#6B7280';
     var rowBg=si%2===0?'#f9fafb':'#ffffff';
 
@@ -10677,7 +10778,9 @@ function mtgRenderRoadmap(){
     html+='<td style="padding:6px 4px;text-align:center;background:'+rowBg+';border:1px solid #e5e7eb;font-weight:700;font-size:11px;color:#374151">'+(si+1)+'</td>';
 
     // Meeting name
-    html+='<td style="padding:6px 8px;background:'+rowBg+';border:1px solid #e5e7eb;font-weight:600;font-size:11px;color:#111827" title="'+series.title+'">'+series.title+'</td>';
+    html+='<td style="padding:6px 8px;background:'+rowBg+';border:1px solid #e5e7eb;font-weight:600;font-size:11px;color:#111827">'
+      +'<div class="meeting-agenda-schedule-title">'+escH(series.title||'Meeting schedule')+'</div>'
+      +mtgSeriesRemovalButtons(series)+'</td>';
 
     // Frequency
     html+='<td style="padding:6px 6px;background:'+rowBg+';border:1px solid #e5e7eb;font-size:10px;color:#6b7280">'+(MTG_RECURRENCE[series.recurrence]||series.recurrence)+'</td>';
@@ -10696,8 +10799,8 @@ function mtgRenderRoadmap(){
         var dotColor=isCompleted?'#1D9E75':hasMom?'#3B82F6':isPast?'#E24B4A':'#EF9F27';
         var dt=occ.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
         html+='<td style="padding:2px 1px;text-align:center;background:'+cellBg+';border:1px solid #e5e7eb;cursor:pointer" '
-          +'title="'+series.title+' - Week '+w+' ('+dt+')" '
-          +'data-series-id="'+series.id+'" data-auris-runtime-onclick="r0034" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w]))+'">'
+          +'title="'+escH(series.title||'Meeting schedule')+' - Week '+w+' ('+dt+')" '
+          +'data-series-id="'+escH(series.id)+'" data-auris-runtime-onclick="r0034" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w]))+'">'
           +'<div style="background:'+dotColor+';border-radius:3px;margin:1px;height:20px;display:flex;align-items:center;justify-content:center">'
           +'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>'
           +'</div>'
@@ -10710,7 +10813,9 @@ function mtgRenderRoadmap(){
   });
 
   html+='</tbody></table>';
-  container.innerHTML=html;mtgRenderOccurrences(container);
+  container.innerHTML=html;
+  mtgBindSeriesRemoval(container);
+  mtgRenderOccurrences(container);
   }catch(e){
     console.error(e);
     container.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Roadmap error: '+((e&&e.message)||e)+'</div>';
