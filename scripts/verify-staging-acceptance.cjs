@@ -357,6 +357,7 @@ async function main() {
     'window.AurisModuleRegistry',
     'pageLoader=moduleLoaderFor(name)'
   ]);
+  requireMarkers(coreSource, 'Workspace profile', ['companies:companies!profiles_company_id_fkey(*)']);
 
   const runtime = runtimeConfig(await responseText(new URL('/api/runtime-config', preview).href, {
     headers: previewHeaders
@@ -382,15 +383,14 @@ async function main() {
     headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify(body)
   });
-  const profiles = await rest(`profiles?select=id,company_id,role,status&id=eq.${encodeURIComponent(auth.user.id)}&limit=1`)
-    .catch((error) => fail(`profile verification failed (${error.message}).`));
-  if (!Array.isArray(profiles) || profiles.length !== 1 || !profiles[0].company_id) fail('Staging identity has no usable application profile.');
-  const profile = profiles[0];
+  const profiles = await rest(`profiles?id=eq.${encodeURIComponent(auth.user.id)}&select=*,companies:companies!profiles_company_id_fkey(*)`)
+    .catch((error) => fail(`workspace profile and owning-company verification failed (${error.message}).`));
+  const profile = Array.isArray(profiles) && profiles.length === 1 ? profiles[0] : null;
+  if (profile?.id !== auth.user.id || !profile.company_id || !profile.role) fail('Staging identity has no usable application profile.');
   if (String(profile.status || '').toLowerCase() !== 'active') fail('Staging test profile is not active.');
 
-  const companies = await rest(`companies?select=id,name&id=eq.${encodeURIComponent(profile.company_id)}&limit=1`)
-    .catch((error) => fail(`tenant verification failed (${error.message}).`));
-  if (!Array.isArray(companies) || companies.length !== 1 || companies[0].name !== 'AURIS360 Staging Test') {
+  const company = profile.companies;
+  if (company?.id !== profile.company_id || company.name !== 'AURIS360 Staging Test') {
     fail('Authenticated profile is not assigned to the dedicated staging tenant.');
   }
 
@@ -420,7 +420,10 @@ async function main() {
     ['Document Control', `documents?select=id&${companyFilter}&limit=1`],
     ['Staging site', `sites?select=id,name,updated_at&${companyFilter}&limit=1`]
   ];
-  const checks = [{ label: 'Atomic HSE minutes save RPC installation', ...minutesRpc }];
+  const checks = [
+    { label: 'Workspace profile and owning company', accessible: true, read_only: true },
+    { label: 'Atomic HSE minutes save RPC installation', ...minutesRpc }
+  ];
   // Preview only: exercise the deployed administrator endpoint and its service
   // RPC without creating a login, sending an invitation or applying a link.
   const identityPreview = await jsonRequest(new URL('/api/user-administration', preview).href, {
@@ -523,7 +526,7 @@ async function main() {
     status: emptySources.length ? 'passed_with_controlled_empty_states' : 'passed',
     preview_host: preview.hostname,
     staging_project_ref: APPROVED_STAGING_REF,
-    tenant_name: companies[0].name,
+    tenant_name: company.name,
     profile_role: profile.role,
     checks,
     deployed_functional_views: functionalViews.map((view) => view[0]),
