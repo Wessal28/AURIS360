@@ -10,3 +10,41 @@ test('completed induction requires deliberate checklist responses and understand
 test('session changes invalidate a pending training operation',()=>{let company='a';const c=runtime({ccid:()=>company,prof:{id:'user'}}),expected=c.TrainingWorkflow.context();company='b';assert.throws(()=>c.TrainingWorkflow.assertContext(expected),/changed/);});
 test('new critical plan/attendance links cannot be silently dropped by schema fallback',async()=>{const calls=[],c=runtime({api:async()=>{calls.push('first');throw Error('Could not find plan_id column');},apiWriteWithMissingColumnFallback:()=>assert.fail('must not discard plan link')});const a=core.indexOf('async function trainingSaveWithFallback('),b=core.indexOf('\nfunction tpProviderMarker',a);vm.runInContext(core.slice(a,b),c);await assert.rejects(c.trainingSaveWithFallback('/training_followup',{}, {plan_id:'plan'},[]),/plan_id/);assert.equal(calls.length,1);});
 test('plan evidence matching respects the actual plan ID rather than another session with the same title',()=>{const window={};vm.runInNewContext(fs.readFileSync('auris-training-plan-list-workspace.js','utf8'),{window});const h=window.AurisTrainingPlanListWorkspace;assert.equal(h.evidenceFor({id:'a',company_id:'c',training_topic:'Course'},[{plan_id:'b',company_id:'c',training_topic:'Course',certificate:'proof'}]).count,0);assert.equal(h.evidenceFor({id:'a',company_id:'c',training_topic:'Course'},[{plan_id:'a',company_id:'c',training_topic:'Old title',certificate:'proof'}]).count,1);});
+
+test('a competency update requires a confirmed row before audit and gap creation', async () => {
+  const calls = [], audits = [];
+  let returnSavedRow = false;
+  const company = 'company-a';
+  const user = 'user-a';
+  const person = {id:'learner', first_name:'Fictional'};
+  const skill = {id:'skill', name:'Fire safety'};
+  const entry = {id:'matrix-entry', current_level:0, required_level:2, updated_at:'2026-11-11T10:00:00+00:00'};
+  const changes = {current_level:1, required_level:2, supporting_training_id:null, notes:'Observed assessment'};
+  const c = runtime({
+    ccid:()=>company, prof:{id:user}, isMgr:()=>true, personFullName:p=>p.first_name,
+    trainingAudit:(...args)=>audits.push(args), toast:()=>{},
+    api:async(path,opts)=>{
+      calls.push({path,opts});
+      return returnSavedRow ? [{...entry,...opts.b}] : [];
+    }
+  });
+  const start = core.indexOf('async function cmUpdateCell(');
+  const end = core.indexOf('async function cmAddCompetency(',start);
+  vm.runInContext(core.slice(start,end),c);
+  const save = () => c.cmUpdateCell(c.TrainingWorkflow.context(),person,skill,entry,changes);
+  assert.equal(c.TrainingWorkflow.levelLabel(0),'0 · No knowledge');
+  assert.equal(c.TrainingWorkflow.levelLabel(null),'Not assessed');
+  await assert.rejects(save(),/save could not be confirmed/i);
+  assert.equal(calls.length,1);
+  assert.equal(audits.length,0);
+  assert.equal(calls[0].opts.p,'return=representation');
+  assert.match(calls[0].path,/id=eq\.matrix-entry&company_id=eq\.company-a&person_id=eq\.learner&competency_id=eq\.skill&updated_at=eq\./);
+  returnSavedRow = true;
+  assert.equal((await save()).current_level,1);
+  assert.equal(calls[2].path,'/action_tracker');
+  assert.equal(calls[2].opts.b.source_id,entry.id);
+  assert.deepEqual(audits.map(a=>a[0]),['update','follow_up']);
+  const unassessed = await c.cmUpdateCell(c.TrainingWorkflow.context(),person,skill,entry,{...changes,current_level:null});
+  assert.equal(unassessed.current_level,null);
+  assert.equal(calls.filter(call=>call.path==='/action_tracker').length,1);
+});
