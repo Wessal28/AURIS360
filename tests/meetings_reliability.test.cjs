@@ -6,6 +6,78 @@ test('ambiguous and nonexistent daylight-saving wall times require correction',(
 test('recurrence preserves occurrence days and month-end anchors',()=>{const h=runtime().AurisMeetingTime;assert.equal(h.next('2026-10-18','quarterly'),'2027-01-18');assert.equal(h.next('2027-01-31','monthly'),'2027-02-28');const rows=h.occurrences({next_date:'2027-01-31',recurrence:'monthly'},2027);assert.ok(rows.includes('2027-02-28'));assert.ok(rows.includes('2027-03-31'));});
 test('an agenda occurrence on Sunday 18 October opens that exact date, not the Monday of its week',()=>{const calls=[],c=runtime({mtgSeriesData:[{id:'s',company_id:'c',title:'Fictional',next_date:'2026-10-18',recurrence:'quarterly'}],mtgMinutesData:[],mtgRoadmapYear:2026,mtgScheduleMeeting:(...args)=>calls.push(args)});let a=core.indexOf('function mtgGetWeeksForSeries('),b=core.indexOf('function mtgCurrentWeek',a);vm.runInContext(core.slice(a,b),c);a=core.indexOf('function mtgClickWeek(seriesId,week){');b=core.indexOf('\nfunction mtgWeekToDate',a);vm.runInContext(core.slice(a,b),c);c.mtgClickWeek('s',c.mtgGetWeekNumber(new Date(2026,9,18,12)));assert.deepEqual(calls,[['s','2026-10-18']]);});
 test('partial roadmap refresh preserves full older minutes and rejects foreign-company cache rows',()=>{const c=runtime({ccid:()=> 'a',mtgMinutesData:[{id:'1',company_id:'a',title:'Old minutes',agenda_items:[{item:'Stored'}]},{id:'foreign',company_id:'b',title:'Other'}]});c.mtgMergeMinutes([{id:'1',company_id:'a',status:'draft'}],true);assert.equal(c.mtgMinutesData.length,1);assert.equal(c.mtgMinutesData[0].title,'Old minutes');assert.equal(c.mtgMinutesData[0].agenda_items[0].item,'Stored');assert.equal(c.mtgParseArray('[{"desc":"Legacy action"}]')[0].desc,'Legacy action');});
+
+test('the agenda shows removal controls on active schedules and excludes inactive duplicates',()=>{
+  const host={innerHTML:'',querySelectorAll:()=>[]};
+  const c=runtime({
+    document:{addEventListener(){},getElementById:id=>id==='mtg-roadmap-container'?host:null},
+    ccid:()=> 'company-a',prof:{id:'manager'},isMgr:()=>true,escH:String,
+    mtgRoadmapYear:2026,mtgGetWeekNumber:()=>53,mtgCurrentWeek:()=>46,mtgGetWeeksForSeries:()=>[],MTG_RECURRENCE:{quarterly:'Quarterly'},
+    mtgSeriesData:[
+      {id:'keep',company_id:'company-a',title:'Main quarterly review',recurrence:'quarterly',active:true},
+      {id:'retired',company_id:'company-a',title:'Inactive duplicate review',recurrence:'quarterly',active:false}
+    ],mtgMinutesData:[]
+  });
+  const start=core.indexOf('function mtgCanChangeSeries('),end=core.indexOf('var mtgSeriesRemovalPending=',start);
+  const roadmap=core.indexOf('function mtgRenderRoadmap(){'),next=core.indexOf('function mtgClickWeek(',roadmap);
+  vm.runInContext(core.slice(start,end)+core.slice(roadmap,next),c);
+  c.mtgRenderOccurrences=()=>{};
+  c.mtgRenderRoadmap();
+  assert.match(host.innerHTML,/Main quarterly review/);
+  assert.match(host.innerHTML,/data-mtg-series-action="delete" data-id="keep"/);
+  assert.doesNotMatch(host.innerHTML,/Inactive duplicate review|data-id="retired"/);
+});
+
+test('schedule removal preserves linked minutes, confirms the exact duplicate and rejects stale writes',async()=>{
+  const initial={id:'duplicate',company_id:'company-a',title:'Duplicate quarterly review',active:true,updated_at:'2026-11-11T07:00:00+00:00'};
+  const keep={id:'keep',company_id:'company-a',title:'Main quarterly review',active:true};
+  let schedule={...initial}, linked=true, mayViewMinutes=true, stale=false, confirm=true;
+  const writes=[], prompts=[], errors=[];
+  const c=runtime({
+    ccid:()=> 'company-a',prof:{id:'manager'},activeRole:()=> 'manager',isMgr:()=>true,
+    mtgSeriesSavePending:false,mtgSeriesLoadVersion:0,mtgSeriesData:[schedule,keep],mtgRenderRoadmap(){},toast(){},
+    AurisUserAccess:{requestIssue:()=>'',allowed:()=>mayViewMinutes},
+    appConfirmAction:async options=>{prompts.push(options);return confirm;},
+    toastActionError:(_action,_module,error)=>errors.push(error.message),
+    api:async(path,options)=>{
+      if(path.startsWith('/hse_meetings?')){
+        assert.equal(options,undefined,'schedule removal never writes to minutes');
+        assert.match(path,/series_id=eq\.duplicate&company_id=eq\.company-a/);
+        return linked?[{id:'retained-minutes'}]:[];
+      }
+      assert.match(path,/^\/meeting_series\?id=eq\.duplicate&company_id=eq\.company-a/);
+      if(!options)return [{...schedule}];
+      const params=new URLSearchParams(path.split('?')[1]);
+      assert.equal(params.get('updated_at'),'eq.'+schedule.updated_at);
+      assert.equal(params.get('active'),'eq.'+schedule.active);
+      assert.equal(options.p,'return=representation');
+      writes.push(options.m);
+      if(stale)return [];
+      if(options.m==='PATCH')schedule={...schedule,...options.b};
+      return [schedule];
+    }
+  });
+  const start=core.indexOf('function mtgCanChangeSeries('),end=core.indexOf('// -- SCHEDULE MEETING',start);
+  vm.runInContext(core.slice(start,end),c);
+  assert.equal(await c.mtgRemoveSeries(initial.id,'delete'),false);
+  assert.match(errors.at(-1),/saved minutes/);
+  mayViewMinutes=false;
+  assert.equal(await c.mtgRemoveSeries(initial.id,'delete'),false);
+  assert.match(errors.at(-1),/Access to view meeting minutes/);
+  assert.deepEqual(writes,[]);
+  assert.equal(await c.mtgRemoveSeries(initial.id,'deactivate'),true);
+  assert.equal(c.mtgSeriesData[0].active,false);
+  linked=false;mayViewMinutes=true;confirm=false;
+  assert.equal(await c.mtgRemoveSeries(initial.id,'delete'),false);
+  assert.match(prompts.at(-1).message,/Duplicate quarterly review/);
+  confirm=true;stale=true;
+  assert.equal(await c.mtgRemoveSeries(initial.id,'delete'),false);
+  assert.equal(c.mtgSeriesData.length,2);
+  stale=false;
+  assert.equal(await c.mtgRemoveSeries(initial.id,'delete'),true);
+  assert.deepEqual(writes,['PATCH','DELETE','DELETE']);
+  assert.deepEqual(Array.from(c.mtgSeriesData,row=>row.id),['keep']);
+});
 function awareness(api){const host={innerHTML:'',addEventListener(){}};const c={document:{readyState:'loading',addEventListener(){},getElementById(){return host;}},window:{},prof:{id:'user'},ccid:()=> 'company',isMgr:()=>true,api};let source=fs.readFileSync('safety-awareness.js','utf8').replace('root.AurisSafetyAwareness={load:load','root.AurisSafetyAwareness={persist:persist,state:state,load:load');vm.runInNewContext(source,c);return {host,app:c.window.AurisSafetyAwareness,c};}
 test('failed awareness saves retain the selected month, theme and all discussion text',async()=>{const x=awareness(async(_path,opts)=>{if(opts)throw Error('network disconnected');return [];});await x.app.load();x.app.state.formOpen=true;await x.app.persist({planned_month:10,theme:'Fictional October theme',discussion_points:['One','Two']});assert.equal(x.app.state.draft.month,10);assert.match(x.host.innerHTML,/value="10" selected/);assert.match(x.host.innerHTML,/Fictional October theme/);assert.match(x.host.innerHTML,/One\nTwo/);assert.match(x.host.innerHTML,/retained/);assert.equal(x.app.state.formOpen,true);});
 test('a missing save confirmation does not clear the awareness draft or report success',async()=>{const x=awareness(async()=>[]);await x.app.load();x.app.state.formOpen=true;await x.app.persist({planned_month:3,theme:'Draft',discussion_points:['Keep me']});assert.equal(x.app.state.formOpen,true);assert.equal(x.app.state.message,'');assert.match(x.host.innerHTML,/Keep me/);});
