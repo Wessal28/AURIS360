@@ -396,6 +396,11 @@
       "order": 79,
       "file": "20261112010000_training_matrix_reset.sql",
       "sha256": "2c6744eaf2104fd2f20dc64352bc78adf15a8938d8b39be8630f249b78766d6e"
+    },
+    {
+      "order": 80,
+      "file": "20261112020000_minutes_action_notification_relationship.sql",
+      "sha256": "b0b0f7a13816bcae2d5a95e2f8e1edadcb91b6c790907e1deba08f0f53f75f2f"
     }
   ]
 }

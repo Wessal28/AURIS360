@@ -8,7 +8,10 @@ grant select,insert,update on public.hse_meetings,public.action_tracker to authe
 grant select,update on public.meeting_series to authenticated;
 insert into auth.users(id) values('c1800000-0000-4000-8000-000000000001');
 insert into public.companies(id,name) values('c1800000-0000-4000-8000-000000000010','Meetings test A'),('c1800000-0000-4000-8000-000000000020','Meetings test B');
-insert into public.profiles(id,company_id,full_name,role,status) values('c1800000-0000-4000-8000-000000000001','c1800000-0000-4000-8000-000000000010','Meeting test admin','admin','active');
+-- The action assignee must resolve to a profile with an email so saving
+-- minutes exercises the real assignment notification trigger.
+insert into public.profiles(id,company_id,full_name,role,status,email)
+values('c1800000-0000-4000-8000-000000000001','c1800000-0000-4000-8000-000000000010','Fictional Owner','admin','active','meetings-fixture@example.com');
 create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 select set_config('request.jwt.claim.sub','c1800000-0000-4000-8000-000000000001',true);
 create or replace function auth.role() returns text language sql stable as $$select 'authenticated'::text$$;
@@ -34,10 +37,60 @@ do $$ declare payload jsonb; result jsonb; m uuid:='c1800000-0000-4000-8000-0000
    perform public.save_hse_minutes(m,jsonb_set(payload,'{recommendations,0,person_id}','"c1800000-0000-4000-8000-000000000031"'),null);raise exception 'foreign owner accepted';
  exception when raise_exception then if sqlerrm not like 'Action owner must be a person in this company%' then raise;end if;end;
  if (select count(*) from public.action_tracker where source_id=m)<>1 then raise exception 'failed save left partial actions';end if;
- result:=public.save_hse_minutes(m,jsonb_set(payload,'{status}','"completed"'),(result->'minutes'->>'updated_at')::timestamptz);
+ payload:=jsonb_set(payload,'{status}','"completed"');
+ payload:=jsonb_set(payload,'{recommendations}',(payload->'recommendations')||'[{"key":"c1800000-0000-4000-8000-000000000061","desc":"Fictional follow-up added at completion","person_id":"c1800000-0000-4000-8000-000000000030","date":"2026-11-05","prio":"medium","status":"open"}]'::jsonb);
+ result:=public.save_hse_minutes(m,payload,(result->'minutes'->>'updated_at')::timestamptz);
+ if result->'minutes'->>'status'<>'completed' or jsonb_array_length(result->'actions')<>2
+   then raise exception 'completing minutes did not save the additional assigned action';end if;
  if (select next_date from public.meeting_series where id='c1800000-0000-4000-8000-000000000040')<>'2027-01-18'::date then raise exception 'completion did not advance recurrence';end if;
+ result:=public.save_hse_minutes(m,payload,(result->'minutes'->>'updated_at')::timestamptz);
+ if jsonb_array_length(result->'actions')<>2 then raise exception 'resaving completed minutes duplicated actions';end if;
 end $$;
 reset role;
+-- Inspect the durable queue as the fixture owner without granting callers
+-- access to the queue or running a delivery worker.
+do $$begin
+ if (select count(*) from public.notification_queue
+     where type='action' and to_email='meetings-fixture@example.com')<>2
+   then raise exception 'each assigned action must enqueue once across repeat minutes saves';end if;
+ if exists(
+   select 1 from public.action_tracker a
+   where a.company_id='c1800000-0000-4000-8000-000000000010'
+     and a.source_module='meeting' and a.source_id='c1800000-0000-4000-8000-000000000050'
+     and 1<>(select count(*) from public.notification_queue q
+       where q.company_id=a.company_id and q.type='action' and q.to_email='meetings-fixture@example.com'
+         and q.related_module='actions' and q.related_table='action_tracker' and q.related_id=a.id
+         and q.related_ref=coalesce(nullif(btrim(a.action_ref),''),a.id::text)
+         and q.record_url='https://auris360.app/?goto=actions&record='||a.id::text||'&table=action_tracker&company='||a.company_id::text)
+ ) then raise exception 'assignment notification did not link to the exact saved action';end if;
+end $$;
+-- An ambiguous same-company name still saves the action without choosing an
+-- arbitrary email recipient.
+select set_config('request.jwt.claim.sub','',true);
+insert into auth.users(id) values('c1800000-0000-4000-8000-000000000002');
+insert into public.profiles(id,company_id,full_name,role,status,email)
+values('c1800000-0000-4000-8000-000000000002','c1800000-0000-4000-8000-000000000010','Fictional Owner','admin','active','another-meetings-fixture@example.com');
+select set_config('request.jwt.claim.sub','c1800000-0000-4000-8000-000000000001',true);
+set local role authenticated;
+do $$
+declare
+  result jsonb;
+begin
+  result:=public.save_hse_minutes('c1800000-0000-4000-8000-000000000051',
+    '{"company_id":"c1800000-0000-4000-8000-000000000010","title":"Fictional minutes with ambiguous assignee email","meeting_type":"management_review","meeting_date":"2026-10-19T05:00:00Z","meeting_timezone":"Asia/Dubai","status":"completed","recommendations":[{"key":"c1800000-0000-4000-8000-000000000062","desc":"Fictional assigned follow-up","person_id":"c1800000-0000-4000-8000-000000000030","date":"2026-11-05","prio":"medium","status":"open"}]}'::jsonb,null);
+  if result->'minutes'->>'status'<>'completed' or jsonb_array_length(result->'actions')<>1
+    or result->'actions'->0->>'assigned_to_id' is distinct from 'c1800000-0000-4000-8000-000000000030'
+    then raise exception 'ambiguous email prevented saving the assigned action';end if;
+end $$;
+reset role;
+do $$begin
+ if exists(
+   select 1 from public.notification_queue q join public.action_tracker a on q.related_id=a.id
+   where a.company_id='c1800000-0000-4000-8000-000000000010'
+     and a.source_module='meeting' and a.source_id='c1800000-0000-4000-8000-000000000051'
+     and q.type='action'
+ ) then raise exception 'ambiguous name was used to choose a notification recipient';end if;
+end $$;
 -- Exercise real table RLS as the authenticated caller, including the corrected
 -- distinction between Minutes access and Schedule access.
 -- Prepare the test restriction with the local maintenance identity. The user
