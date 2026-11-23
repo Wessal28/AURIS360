@@ -4,7 +4,7 @@ function runtime(){
  const el=()=>({innerHTML:'',querySelectorAll:()=>[],querySelector:()=>null});
  const nodes={'year-sel':{value:'2025'},'kpi-objectives-container':el(),'kpi-monthly-table':{querySelector:()=>head},'kpi-monthly-body':el()},head=el();
  let company='a';
- const c={console,Date,URL,Intl,location:{href:'https://example.test/',origin:'https://example.test'},document:{readyState:'loading',addEventListener(){},getElementById:id=>nodes[id]||null,querySelector:()=>null},localStorage:{getItem:()=>null},ccid:()=>company,isSA:()=>false,co:{id:'a',name:'Company <A>',logo_url:'/logo.png'},kpiCanEdit:()=>false,kpiObjectives:[{id:'o',name:'Safety & health'}],kpiKPIs:[{id:'k',year:2025,company_id:'a',objective_id:'o',name:'Recorded KPI',code:'1',frequency:'monthly'},{id:'other',year:2025,company_id:'a',objective_id:'o',name:'Other KPI',code:'2',frequency:'annual'}],kpiIndicators:[{id:'i',kpi_id:'k',name:'<count>',unit:'hours',target_operator:'gte',target_value:4}],kpiMonthlyData:{i:{1:{month:1,actual:0,ytd:0},12:{month:12,actual:4,ytd:4}}},kpiConfigPublished:{cycles:{current_period_excluded:true}},AurisKpiYearComparison:require('../kpi-year-comparison.js'),api:async url=>url.startsWith('/kpis_v2')?[{id:'old',year:2024,code:'1',name:'Recorded KPI'}]:url.startsWith('/kpi_indicators')?[{id:'oldi',kpi_id:'old',name:'<count>',unit:'hours'}]:[{year:2024,month:12,indicator_id:'oldi',actual:2}]};
+ const c={console,Date,URL,Intl,location:{href:'https://example.test/',origin:'https://example.test'},document:{readyState:'loading',addEventListener(){},getElementById:id=>nodes[id]||null,querySelector:()=>null},localStorage:{getItem:()=>null},ccid:()=>company,isSA:()=>false,co:{id:'a',name:'Company <A>',logo_url:'/logo.png'},kpiCanEdit:()=>false,kpiObjectives:[{id:'o',name:'Safety & health'}],kpiKPIs:[{id:'k',year:2025,company_id:'a',objective_id:'o',name:'Recorded KPI',code:'1',frequency:'monthly'},{id:'other',year:2025,company_id:'a',objective_id:'o',name:'Other KPI',code:'2',frequency:'annual'}],kpiIndicators:[{id:'i',kpi_id:'k',name:'<count>',unit:'hours',target_operator:'gte',target_value:4}],kpiMonthlyData:{i:{1:{month:1,actual:0,ytd:0},12:{month:12,actual:4,ytd:4}}},kpiConfigPublished:{cycles:{current_period_excluded:true}},AurisKpiYearComparison:require('../kpi-year-comparison.js'),api:async url=>url.startsWith('/kpis_v2')?[{id:'old',company_id:'a',year:2024,code:'1',name:'Recorded KPI'}]:url.startsWith('/kpi_indicators')?[{id:'oldi',company_id:'a',kpi_id:'old',name:'<count>',unit:'hours'}]:[{company_id:'a',year:2024,month:12,indicator_id:'oldi',actual:2}]};
  c.window=c;vm.createContext(c);vm.runInContext(read('kpi-module-upgrade.js').replace("if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kpiXBoot);else kpiXBoot();",'window.qa={state:kpiXState};'),c);vm.runInContext(read('kpi-print-reports.js'),c);
  return {c,nodes,head,company:value=>company=value};
 }
@@ -20,6 +20,21 @@ test('follow-up grouping and scorecard column choices carry into report sources'
 });
 test('comparison waits for history and prints the complete matching-year table',async()=>{
  const h=runtime();const r=await h.c.AurisKpiReportSource.capture('comparison',true);assert.match(r.html,/Change vs 2024/);assert.match(r.html,/2023/);assert.match(r.html,/\+2 hours/);assert.match(r.html,/100%/);assert.doesNotMatch(r.html,/Loading previous-year/);assert.equal(r.filters,'All KPIs');
+});
+test('comparison captures historical results on the current indicator and retains current-only values',async()=>{
+ const h=runtime();
+ h.c.api=async url=>url.startsWith('/kpi_monthly_data')
+   ?[{company_id:'a',year:2024,month:12,kpi_id:'k',indicator_id:'i',actual:2}]:[];
+ const reused=await h.c.AurisKpiReportSource.capture('comparison',true);
+ assert.match(reused.html,/Change vs 2024/);
+ assert.match(reused.html,/\+2 hours/);
+ h.c.api=async()=>[];
+ const currentOnly=await h.c.AurisKpiReportSource.capture('comparison',true);
+ assert.match(currentOnly.html,/<table>/);
+ assert.match(currentOnly.html,/>4 hours<\/td>/);
+ assert.match(currentOnly.html,/>—<\/td>/);
+ assert.match(currentOnly.html,/No comparable prior-year result/);
+ assert.equal(currentOnly.filters,'All KPIs');
 });
 test('history failure and company/year changes cannot produce a stale report',async()=>{
  const h=runtime();h.c.api=async()=>{throw Error('offline');};await assert.rejects(h.c.AurisKpiReportSource.capture('comparison',true),/could not be loaded/);

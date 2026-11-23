@@ -19,12 +19,36 @@
     return round(nums.reduce(function(a,b){return a+b;},0));
   }
   function illustrative(kpi,rows){return /illustrative|unverified/i.test(String(kpi.description||'')+' '+String(kpi.lifecycle_reason||''))||(rows||[]).some(function(row){return /illustrative|unverified/i.test(String(row.comment||''));});}
-  function index(year,kpis,indicators,monthly){
-    var byKpi=new Map(),byIndicator=new Map(),result=new Map();
-    (kpis||[]).forEach(function(kpi){if(Number(kpi.year)===year&&norm(kpi.status)!=='archived')byKpi.set(String(kpi.id),kpi);});
-    (monthly||[]).forEach(function(row){if(Number(row.year)!==year)return;var id=String(row.indicator_id||'');if(!byIndicator.has(id))byIndicator.set(id,[]);byIndicator.get(id).push(row);});
-    (indicators||[]).forEach(function(indicator){var kpi=byKpi.get(String(indicator.kpi_id));if(!kpi)return;var id=key(kpi,indicator);if(result.has(id)){result.set(id,null);return;}result.set(id,{kpi:kpi,indicator:indicator,rows:byIndicator.get(String(indicator.id))||[]});});
+  function observations(year,monthly){
+    var result=new Map();
+    (monthly||[]).forEach(function(row){
+      var id=String(row.indicator_id||'');
+      if(Number(row.year)!==year||!id)return;
+      if(!result.has(id))result.set(id,[]);
+      result.get(id).push(row);
+    });
     return result;
+  }
+  function matchingRows(rows,kpi){
+    return (rows||[]).filter(function(row){
+      return row.kpi_id==null||String(row.kpi_id)===String(kpi.id);
+    });
+  }
+  function index(year,kpis,indicators,monthly){
+    var byKpi=new Map(),byIndicator=observations(year,monthly),result=new Map();
+    (kpis||[]).forEach(function(kpi){if(Number(kpi.year)===year&&norm(kpi.status)!=='archived')byKpi.set(String(kpi.id),kpi);});
+    (indicators||[]).forEach(function(indicator){var kpi=byKpi.get(String(indicator.kpi_id));if(!kpi)return;var id=key(kpi,indicator);if(result.has(id)){result.set(id,null);return;}result.set(id,{kpi:kpi,indicator:indicator,rows:matchingRows(byIndicator.get(String(indicator.id)),kpi)});});
+    return result;
+  }
+  function previousResult(kpi,indicator,monthly,definitions,cutoff){
+    var own=matchingRows(monthly.get(String(indicator.id)),kpi);
+    var value=aggregate(own,indicator.ytd_method,cutoff);
+    // Recorded years can share one KPI definition and indicator identity.
+    // Prefer that lineage before matching independently defined annual copies.
+    if(value!==null)return {value:value,illustrative:illustrative(kpi,own),matched:true};
+    var match=definitions.get(key(kpi,indicator));
+    if(match)return {value:aggregate(match.rows,match.indicator.ytd_method,cutoff),illustrative:illustrative(match.kpi,match.rows),matched:true};
+    return {value:null,illustrative:false,matched:own.length>0};
   }
   function direction(operator,delta){
     if(delta===0)return 'unchanged';
@@ -35,12 +59,14 @@
   }
   function build(input){
     var year=Number(input.year),cutoff=Math.max(0,Math.min(12,Number(input.cutoff)||0)),current=input.current||{},history=input.history||{},years=[year-1,year-2];
-    var maps={};years.forEach(function(y){maps[y]=index(y,history.kpis,history.indicators,history.monthly);});
+    var maps={},recordedYears={};years.forEach(function(y){maps[y]=index(y,history.kpis,history.indicators,history.monthly);recordedYears[y]=observations(y,history.monthly);});
     var currentRows=current.monthly||{},rows=[];
     (current.kpis||[]).forEach(function(kpi){
       (current.indicators||[]).filter(function(ind){return String(ind.kpi_id)===String(kpi.id);}).forEach(function(ind){
-        var own=Array.isArray(currentRows)?currentRows.filter(function(row){return String(row.indicator_id)===String(ind.id);}):Object.values(currentRows[ind.id]||{}),currentValue=aggregate(own,ind.ytd_method,cutoff),currentIllustrative=illustrative(kpi,own),prior={};
-        years.forEach(function(y){var match=maps[y].get(key(kpi,ind));prior[y]=match?{value:aggregate(match.rows,match.indicator.ytd_method,cutoff),illustrative:illustrative(match.kpi,match.rows),matched:true}:{value:null,illustrative:false,matched:false};});
+        var own=Array.isArray(currentRows)?currentRows.filter(function(row){return String(row.indicator_id)===String(ind.id);}):Object.values(currentRows[ind.id]||{});
+        own=matchingRows(own,kpi).filter(function(row){return row.year==null||Number(row.year)===year;});
+        var currentValue=aggregate(own,ind.ytd_method,cutoff),currentIllustrative=illustrative(kpi,own),prior={};
+        years.forEach(function(y){prior[y]=previousResult(kpi,ind,recordedYears[y],maps[y],cutoff);});
         var previous=prior[year-1],delta=currentValue!=null&&previous.value!=null?round(currentValue-previous.value):null,percent=delta!=null&&previous.value!==0?round(delta/Math.abs(previous.value)*100):null;
         rows.push({code:kpi.code||'',kpi:kpi.name||'',indicator:ind.name||'',unit:ind.unit||'',method:ind.ytd_method||'sum',current:currentValue,currentIllustrative:currentIllustrative,prior:prior,delta:delta,percent:percent,direction:delta==null?'no_comparison':currentIllustrative||previous.illustrative?'illustrative':direction(ind.target_operator,delta)});
       });
