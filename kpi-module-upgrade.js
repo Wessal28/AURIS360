@@ -16,29 +16,37 @@ var kpiXLegacy={};
 var kpiXHistory={key:'',kpis:[],indicators:[],monthly:[],error:'',generation:0};
 var kpiXHistoryPending=null;
 
-async function kpiXLoadHistory(year,companyId){
-  var key=String(companyId||'')+':'+year,generation=++kpiXHistory.generation;
-  if(!companyId){kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Select a company to compare years.',generation:generation};return;}
-  if(kpiXHistory.key===key&&!kpiXHistory.error)return;
-  var scope='&company_id=eq.'+encodeURIComponent(companyId),years='('+[year-1,year-2].join(',')+')';
-  try{
-    var kpis=await api('/kpis_v2?select=*'+scope+'&year=in.'+years);
-    var ids=(kpis||[]).map(function(k){return k.id;}).filter(Boolean);
-    var indicators=[],monthly=[];
-    if(ids.length){
-      var idFilter='&kpi_id=in.('+ids.join(',')+')';
-      var loaded=await Promise.all([
-        api('/kpi_indicators?select=*'+scope+idFilter),
-        api('/kpi_monthly_data?select=*'+scope+'&year=in.'+years+idFilter)
-      ]);
-      indicators=loaded[0]||[];monthly=loaded[1]||[];
-    }
-    if(generation!==kpiXHistory.generation||String(ccid())!==String(companyId)||kpiXSelectedYear()!==year)return;
-    kpiXHistory={key:key,kpis:kpis||[],indicators:indicators,monthly:monthly,error:'',generation:generation};
-  }catch(error){
-    if(generation!==kpiXHistory.generation)return;
-    kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Previous-year results could not be loaded. Reload to retry.',generation:generation};
+function kpiXLoadHistory(year,companyId,refresh){
+  var key=String(companyId||'')+':'+year;
+  if(kpiXHistoryPending&&kpiXHistoryPending.key===key)return kpiXHistoryPending.request;
+  if(!refresh&&kpiXHistory.key===key&&!kpiXHistory.error)return Promise.resolve();
+  var generation=++kpiXHistory.generation;
+  if(!companyId){
+    kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Select a company to compare years.',generation:generation};
+    return Promise.resolve();
   }
+  var scope='&company_id=eq.'+encodeURIComponent(companyId),years='('+[year-1,year-2].join(',')+')';
+  var request=(async function(){
+    try{
+      // Monthly results carry their own reporting year. A KPI definition can be
+      // reused across years, so its definition year must not restrict this read.
+      var read=typeof apiAllRows==='function'?apiAllRows:api;
+      var loaded=await Promise.all([
+        read('/kpis_v2?select=*'+scope+'&order=id.asc'),
+        read('/kpi_indicators?select=*'+scope+'&order=id.asc'),
+        read('/kpi_monthly_data?select=*'+scope+'&year=in.'+years+'&order=id.asc')
+      ]);
+      if(!loaded.every(Array.isArray)||loaded.some(function(rows){return rows.some(function(row){return String(row.company_id)!==String(companyId);});}))throw Error('The historical results do not belong to the selected company.');
+      if(generation!==kpiXHistory.generation||String(ccid())!==String(companyId)||kpiXSelectedYear()!==year)return;
+      kpiXHistory={key:key,kpis:loaded[0],indicators:loaded[1],monthly:loaded[2].filter(function(row){return Number(row.year)===year-1||Number(row.year)===year-2;}),error:'',generation:generation};
+    }catch(error){
+      if(generation!==kpiXHistory.generation||String(ccid())!==String(companyId)||kpiXSelectedYear()!==year)return;
+      kpiXHistory={key:key,kpis:[],indicators:[],monthly:[],error:'Previous-year results could not be loaded. Reload to retry.',generation:generation};
+    }
+  })();
+  kpiXHistoryPending={key:key,request:request};
+  request.finally(function(){if(kpiXHistoryPending&&kpiXHistoryPending.request===request)kpiXHistoryPending=null;});
+  return request;
 }
 
 function kpiXComparisonData(){
@@ -51,14 +59,13 @@ function kpiXEnsureHistory(){
   var year=kpiXSelectedYear(),companyId=typeof ccid==='function'?ccid():null,key=String(companyId||'')+':'+year;
   if(kpiXHistory.key===key||kpiXHistoryPending&&kpiXHistoryPending.key===key)return;
   var request=kpiXLoadHistory(year,companyId);
-  kpiXHistoryPending={key:key,request:request};
   request.then(function(){
     if(String((typeof ccid==='function'?ccid():null)||'')+':'+kpiXSelectedYear()!==key)return;
     var dashboard=document.querySelector('#kpi-x-dashboard > .kpi-x-comparison');
     var reports=document.querySelector('#kpi-x-reports-view > .kpi-x-comparison');
     if(dashboard)dashboard.outerHTML=kpiXComparisonHtml(5);
     if(reports)reports.outerHTML=kpiXComparisonHtml();
-  }).finally(function(){if(kpiXHistoryPending&&kpiXHistoryPending.request===request)kpiXHistoryPending=null;});
+  });
 }
 function kpiXComparisonValue(value,unit){return value==null?'—':kpiXEsc((Number.isInteger(value)?String(value):String(Math.round(value*100)/100))+(unit?' '+unit:''));}
 function kpiXComparisonHtml(limit){
@@ -66,8 +73,8 @@ function kpiXComparisonHtml(limit){
   var data=kpiXComparisonData(),year=kpiXSelectedYear(),cutoff=kpiXCompilationMonth(),period=cutoff?'January–'+KPI_X_MONTHS[cutoff-1]:'No compiled month',title='<div class="kpi-x-panel-title">Year-on-year KPI comparison <span class="kpi-x-panel-sub">'+kpiXEsc(period)+' · same period each year</span></div>';
   if(kpiXHistory.key===String((typeof ccid==='function'?ccid():null)||'')+':'+year&&kpiXHistory.error)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(kpiXHistory.error)+'</p></section>';
   if(!data){kpiXEnsureHistory();return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">Loading previous-year results…</p></section>';}
-  if(!data.rows.length||!data.comparable)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">No matching recorded KPI results are available for a same-period comparison. Missing results are not counted as zero.</p></section>';
-  var rows=limit?data.rows.filter(function(row){return row.delta!=null;}).slice(0,limit):data.rows,prior=year-1,earlier=year-2;
+  if(!data.rows.length)return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">No KPI indicators are available for the selected year.</p></section>';
+  var rows=limit?data.rows.slice().sort(function(a,b){return Number(b.delta!=null)-Number(a.delta!=null);}).slice(0,limit):data.rows,prior=year-1,earlier=year-2;
   var body=rows.map(function(row){
     var previous=row.prior[prior],twoYears=row.prior[earlier],delta=row.delta==null?'—':(row.delta>0?'+':'')+row.delta+(row.unit?' '+row.unit:''),percent=row.percent==null?'':(' ('+(row.percent>0?'+':'')+row.percent+'%)');
     var badge=function(item){return item.illustrative?'<span class="kpi-x-illustrative">Illustrative</span>':'';};
@@ -75,8 +82,9 @@ function kpiXComparisonHtml(limit){
     return '<tr><th scope="row"><strong>'+kpiXEsc(row.code)+' '+kpiXEsc(row.kpi)+'</strong><small>'+kpiXEsc(row.indicator)+'</small></th><td>'+kpiXComparisonValue(row.current,row.unit)+badge({illustrative:row.currentIllustrative})+'</td><td>'+kpiXComparisonValue(previous.value,row.unit)+badge(previous)+'</td><td>'+kpiXComparisonValue(twoYears.value,row.unit)+badge(twoYears)+'</td><td><span class="kpi-x-change '+kpiXEsc(row.direction)+'">'+kpiXEsc(delta+percent)+'</span><small>'+kpiXEsc(change)+'</small></td></tr>';
   }).join('');
   var note='Values use each indicator’s YTD method and only recorded months through the same cutoff. A blank year or missing result is not zero.';
+  if(!data.comparable)note+=' No comparable prior-year result is available; recorded values are shown for each year.';
   if(data.illustrative)note+=' Illustrative/unverified figures are labelled and must not be treated as audit evidence.';
-  return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(note)+'</p><div class="kpi-x-comparison-scroll"><table><thead><tr><th>KPI / indicator</th><th>'+year+'</th><th>'+prior+'</th><th>'+earlier+'</th><th>Change vs '+prior+'</th></tr></thead><tbody>'+body+'</tbody></table></div>'+(limit&&data.comparable>limit?'<div class="kpi-x-comparison-footer">Showing '+rows.length+' of '+data.comparable+' comparable indicators. <button type="button" class="kpi-x-btn" data-auris-module-onclick="d0019" data-auris-module-args="'+encodeURIComponent(JSON.stringify(['reports']))+'">View all in Reports</button></div>':'')+'</section>';
+  return '<section class="kpi-x-panel kpi-x-comparison">'+title+'<p class="kpi-x-comparison-note">'+kpiXEsc(note)+'</p><div class="kpi-x-comparison-scroll"><table><thead><tr><th>KPI / indicator</th><th>'+year+'</th><th>'+prior+'</th><th>'+earlier+'</th><th>Change vs '+prior+'</th></tr></thead><tbody>'+body+'</tbody></table></div>'+(limit&&data.rows.length>limit?'<div class="kpi-x-comparison-footer">Showing '+rows.length+' of '+data.rows.length+' indicators. <button type="button" class="kpi-x-btn" data-auris-module-onclick="d0019" data-auris-module-args="'+encodeURIComponent(JSON.stringify(['reports']))+'">View all in Reports</button></div>':'')+'</section>';
 }
 
 function kpiXColumnStorageKey(){var company=typeof ccid==='function'?ccid():(typeof prof!=='undefined'&&prof&&prof.company_id),user=typeof prof!=='undefined'&&prof&&prof.id;return 'auris360:kpi-scorecard-columns:'+(company||'company')+':'+(user||'user');}
@@ -660,7 +668,7 @@ function kpiXParseComment(value){var text=String(value||''),root='',evidence='',
 function kpiXInstallHooks(){
   if(typeof window.kpiLoadAll==='function'){kpiXLegacy.loadAll=window.kpiLoadAll;window.kpiLoadAll=async function(entryContext){
     var year=kpiXSelectedYear(),companyId=typeof ccid==='function'?ccid():null;
-    var historyLoad=entryContext?Promise.resolve():kpiXLoadHistory(year,companyId);
+    var historyLoad=entryContext?Promise.resolve():kpiXLoadHistory(year,companyId,true);
     await kpiXLegacy.loadAll.apply(this,arguments);
     if(entryContext&&entryContext.indicatorId)kpiEntryCheckContext(entryContext);
     if(typeof window.kpiConfigLoad==='function')await window.kpiConfigLoad();
@@ -732,9 +740,9 @@ window.AurisKpiReportSource={
   kpiXCompute();
   if(kind==='comparison'){
    var key=company+':'+year;
-   if(kpiXHistoryPending&&kpiXHistoryPending.key===key)await kpiXHistoryPending.request;
-   else await kpiXLoadHistory(year,company);
+   await kpiXLoadHistory(year,company,true);
    if(String(ccid())!==company||kpiXSelectedYear()!==year)throw Error('The company or year changed. Reopen print options.');
+   if(kpiXHistory.key!==key)throw Error('Comparison is unavailable. Reload and try again.');
    if(kpiXHistory.error)throw Error(kpiXHistory.error);
   }
   var globalScope=!company&&typeof isSA==='function'&&isSA();
