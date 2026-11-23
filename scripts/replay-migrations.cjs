@@ -121,6 +121,12 @@ run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261020020000_meet
   label: 'idempotent HSE minutes RPC installation repair', quiet: true
 });
 
+// A repair of the earlier RPC is followed by its current workflow separation.
+// Reapplying both must retain tenant policies, function grants and closure guards.
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261123010000_minutes_action_workflow_status.sql')], {
+  label: 'idempotent minutes and Master Action status separation', quiet: true
+});
+
 // Reproduce a partial deployment without optional communication features. The
 // single rollback-only connection restores renamed tables, RPC, data and ACLs
 // before inventory and all remaining behavior checks run.
@@ -179,6 +185,7 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'noise_assur
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_reliability.sql')], {label: 'meeting timezone, stable action identity, atomic saves and awareness access'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meetings_rpc_installation.sql')], {label: 'HSE minutes RPC named arguments, invoker policy and execution grants'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meeting_minutes_action_status.sql')], {label: 'minutes edit saves without approving or reopening linked Master Actions'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_workflow.sql')], {label: 'linked training attendance, evidence review and explicit competency decisions'});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'training_matrix_reset.sql')], {label: 'company-scoped training matrix resets and retained competency history'});
