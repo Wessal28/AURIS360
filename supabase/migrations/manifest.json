@@ -401,6 +401,11 @@
       "order": 80,
       "file": "20261112020000_minutes_action_notification_relationship.sql",
       "sha256": "b0b0f7a13816bcae2d5a95e2f8e1edadcb91b6c790907e1deba08f0f53f75f2f"
+    },
+    {
+      "order": 81,
+      "file": "20261123010000_minutes_action_workflow_status.sql",
+      "sha256": "c603787e0ed35281e0ba38262ff907aed3537f26e42a0436c1bcb980ab309941"
     }
   ]
 }
