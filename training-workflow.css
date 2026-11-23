@@ -86,6 +86,7 @@
   display: grid;
   gap: .9rem;
 }
+.training-competency-editor input:not([type="checkbox"]),
 .training-competency-editor select,
 .training-competency-editor textarea {
   min-width: 0;
@@ -113,6 +114,10 @@
   padding: .4rem .2rem;
 }
 .training-matrix-picker input { width: auto; flex: none; }
+.training-matrix-picker-row:not([hidden]) { display: flex; align-items: center; gap: .6rem; }
+.training-matrix-picker-row > label { flex: 1; min-width: 0; }
+.training-matrix-picker-row > label > span { overflow-wrap: anywhere; }
+.training-matrix-picker-row[hidden] { display: none; }
 .training-matrix-picker-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 @media (max-width: 480px) {
   .training-competency-levels,

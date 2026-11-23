@@ -26,6 +26,10 @@ function cmCanCreateColumn(){
   return cmCompanySelected()&&isMgr()&&!window.AurisUserAccess?.requestIssue(prof,'/competencies','POST');
 }
 
+function cmCanEditColumn(){
+  return cmCompanySelected()&&isMgr()&&!window.AurisUserAccess?.requestIssue(prof,'/competencies','PATCH');
+}
+
 function cmCurrentLayout(){
   if(!cmLayout||!cmCompanySelected())throw Error('Choose a company and reload the matrix.');
   TrainingWorkflow.assertContext(cmLayout.scope);
@@ -40,6 +44,10 @@ async function cmSaveMembers(layout,axis,ids,add){
   }});
   TrainingWorkflow.assertContext(layout.scope);
   if(saved?.company_id!==layout.scope.company)throw Error('The layout save could not be confirmed. Reload the matrix before trying again.');
+  if(!add){
+    const actual=saved[axis==='rows'?'person_ids':'competency_ids'];
+    if(!Array.isArray(actual)||actual.length!==ids.length||ids.some(id=>!actual.includes(id)))throw Error('The layout save could not be confirmed. Reload the matrix before trying again.');
+  }
 }
 
 function cmManageRows(trigger){
@@ -50,6 +58,51 @@ function cmManageRows(trigger){
     toast('Matrix rows saved.');
     await cmLoad();
   });
+}
+
+function cmManageColumns(trigger,selected){
+  const layout=cmCurrentLayout();
+  if(!layout.settings.available||!cmCanWrite('PATCH'))return;
+  pickMatrixMembers(layout.scope,'columns',layout.columns,selected||cmCompetencies.map(comp=>comp.id),trigger,async ids=>{
+    await cmSaveMembers(layout,'columns',ids,false);
+    toast('Matrix columns saved.');
+    await cmLoad();
+  },null,{manage:true,onEdit:cmCanEditColumn()?(comp,ids)=>cmEditColumn(layout,comp,trigger,ids):null});
+}
+
+function cmEditColumn(layout,comp,trigger,selected){
+  TrainingWorkflow.assertContext(layout.scope);
+  if(!cmCanEditColumn())return;
+  matrixDialog('Edit matrix column','Update the competency name and category. Existing assessments and evidence links are kept.',
+    trigger,(form,footer,handle)=>{
+      const name=el('input'),category=el('input');
+      name.value=comp.name;
+      name.required=true;
+      category.value=comp.category||'';
+      formField(form,'Column name',name);
+      formField(form,'Category',category);
+      handle('Save column',async()=>{
+        TrainingWorkflow.assertContext(layout.scope);
+        if(!cmCanEditColumn())throw Error('You do not have access to edit competency columns.');
+        const body={name:name.value.trim(),category:category.value.trim()||null};
+        if(!body.name)throw Error('Enter a column name.');
+        const query='/competencies?id=eq.'+encodeURIComponent(comp.id)+'&company_id=eq.'+encodeURIComponent(layout.scope.company)
+          +'&name=eq.'+encodeURIComponent(comp.name)
+          +(comp.category==null?'&category=is.null':'&category=eq.'+encodeURIComponent(comp.category));
+        const saved=await api(query,{m:'PATCH',p:'return=representation',b:body});
+        TrainingWorkflow.assertContext(layout.scope);
+        if(saved?.length!==1||saved[0].id!==comp.id||saved[0].company_id!==layout.scope.company
+          ||saved[0].name!==body.name||saved[0].category!==body.category){
+          throw Error('The column changed or the save could not be confirmed. Close this window and reload the matrix before editing again.');
+        }
+        trainingAudit('update','Competency column updated','competencies',saved[0],{previous_name:comp.name,previous_category:comp.category});
+        toast('Column updated.');
+        await cmLoad();
+      });
+    },()=>{
+      const current=TrainingWorkflow.context();
+      if(current.company===layout.scope.company&&current.user===layout.scope.user&&cmLayout)cmManageColumns(trigger,selected);
+    });
 }
 
 function cmReset(trigger){
@@ -77,8 +130,8 @@ async function cmLoad(){
   cmPeople=[];
   cmCompetencies=[];
   cmAllData=[];
-  const resetBtn=document.getElementById('cm3reset-btn'), rowsBtn=document.getElementById('cm3rows-btn'), addBtn=document.getElementById('cm3add-comp-btn');
-  [resetBtn,rowsBtn,addBtn].forEach(button=>{if(button)button.hidden=true;});
+  const resetBtn=document.getElementById('cm3reset-btn'), rowsBtn=document.getElementById('cm3rows-btn'), columnsBtn=document.getElementById('cm3columns-btn'), addBtn=document.getElementById('cm3add-comp-btn');
+  [resetBtn,rowsBtn,columnsBtn,addBtn].forEach(button=>{if(button)button.hidden=true;});
   if(!loadContext.company||!cmCompanySelected()){
     el.innerHTML='<div class="loading-msg">Select a company to open its training matrix.</div>';
     return;
@@ -103,6 +156,7 @@ async function cmLoad(){
       resetBtn.onclick=()=>settings.available?cmReset(resetBtn):toast('The Training Matrix reset upgrade needs to be installed before resetting the matrix.',false);
     }
     if(rowsBtn){rowsBtn.hidden=!settings.available||!cmCanWrite('PATCH');rowsBtn.onclick=()=>cmManageRows(rowsBtn);}
+    if(columnsBtn){columnsBtn.hidden=!settings.available||!cmCanWrite('PATCH');columnsBtn.onclick=()=>cmManageColumns(columnsBtn);}
     if(addBtn)addBtn.hidden=!(cmCanCreateColumn()||(settings.available&&cmCanWrite('PATCH')));
     if(!cmCompetencies.length||!cmPeople.length){
       const missing=!cmCompetencies.length&&!cmPeople.length?'No rows or columns in this matrix.':!cmCompetencies.length?'No columns in this matrix.':'No people selected for this matrix.';
@@ -199,7 +253,7 @@ async function cmCreateCompetency(layout){
 }
 
 
-function matrixDialog(title,description,trigger,build){
+function matrixDialog(title,description,trigger,build,onClose){
   if(document.getElementById('training-matrix-dialog'))return;
   const dialog=el('dialog'), header=el('header'), heading=el('h2',title), form=el('form'), footer=el('footer');
   dialog.id='training-matrix-dialog';
@@ -233,7 +287,7 @@ function matrixDialog(title,description,trigger,build){
   build(form,footer,handle,dialog);
   form.append(message,footer);
   dialog.addEventListener('cancel',event=>{if(cancel.disabled)event.preventDefault();});
-  dialog.addEventListener('close',()=>{dialog.remove();trigger?.focus();},{once:true});
+  dialog.addEventListener('close',()=>{dialog.remove();trigger?.focus();if(onClose)onClose();},{once:true});
   document.body.appendChild(dialog);
   dialog.showModal();
   cancel.focus();
@@ -268,10 +322,11 @@ function resetMatrix(scope,companyName,trigger,onReset){
     });
 }
 
-function pickMatrixMembers(scope,axis,items,selected,trigger,onSave,onCreate){
-  const rows=axis==='rows';
-  matrixDialog(rows?'Manage matrix rows':'Add matrix columns',
+function pickMatrixMembers(scope,axis,items,selected,trigger,onSave,onCreate,config={}){
+  const rows=axis==='rows',manage=!!config.manage;
+  matrixDialog(rows?'Manage matrix rows':manage?'Manage matrix columns':'Add matrix columns',
     rows?'Choose active People to show as rows. Their People profiles stay available.'
+      :manage?'Keep columns checked to show them in the matrix. Uncheck a column to remove it. Assessments and evidence links are kept and return when the column is added again.'
       :'Choose existing competencies to add as columns, or create a new one.',trigger,(form,footer,handle,dialog)=>{
       const options=el('div');
       options.className='training-matrix-picker';
@@ -279,6 +334,7 @@ function pickMatrixMembers(scope,axis,items,selected,trigger,onSave,onCreate){
       search.type='search';
       formField(form,rows?'Find people':'Find competencies',search);
       const active=new Set(selected);
+      const selectedIds=()=>choices.filter(choice=>choice.input.checked).map(choice=>choice.input.value);
       const choices=items.map(item=>{
         const label=el('label'), input=el('input');
         const name=rows?personFullName(item)+(item.job_title?' · '+item.job_title:''):item.name;
@@ -286,17 +342,29 @@ function pickMatrixMembers(scope,axis,items,selected,trigger,onSave,onCreate){
         input.value=item.id;
         input.checked=active.has(item.id);
         label.append(input,el('span',name));
-        options.appendChild(label);
-        return {label,input,name};
+        const row=el('div');
+        row.className='training-matrix-picker-row';
+        row.appendChild(label);
+        if(config.onEdit){
+          const edit=button('Edit',()=>{
+            const ids=selectedIds();
+            dialog.addEventListener('close',()=>config.onEdit(item,ids),{once:true});
+            dialog.close();
+          });
+          edit.setAttribute('aria-label','Edit '+item.name+' column');
+          row.appendChild(edit);
+        }
+        options.appendChild(row);
+        return {label,row,input,name};
       });
       const empty=el('p',rows?'No matching active people.':'No matching competencies to add.');
       empty.hidden=choices.length>0;
       search.addEventListener('input',()=>{
         const query=search.value.trim().toLowerCase();
-        choices.forEach(choice=>choice.label.hidden=!choice.name.toLowerCase().includes(query));
-        empty.hidden=choices.some(choice=>!choice.label.hidden);
+        choices.forEach(choice=>choice.row.hidden=!choice.name.toLowerCase().includes(query));
+        empty.hidden=choices.some(choice=>!choice.row.hidden);
       });
-      if(rows&&choices.length){
+      if((rows||manage)&&choices.length){
         const toggle=el('div');
         toggle.className='training-matrix-picker-actions';
         toggle.append(button('Select all',()=>choices.forEach(choice=>choice.input.checked=true)),
@@ -305,9 +373,9 @@ function pickMatrixMembers(scope,axis,items,selected,trigger,onSave,onCreate){
       }
       form.append(options,empty);
       if(onCreate)footer.appendChild(button('Create competency',()=>{dialog.close();onCreate();}));
-      if(rows||choices.length)handle(rows?'Save rows':'Add selected columns',async()=>{
-        const ids=choices.filter(choice=>choice.input.checked).map(choice=>choice.input.value);
-        if(!rows&&!ids.length)throw Error('Select at least one competency.');
+      if(rows||manage||choices.length)handle(rows?'Save rows':manage?'Save columns':'Add selected columns',async()=>{
+        const ids=selectedIds();
+        if(!rows&&!manage&&!ids.length)throw Error('Select at least one competency.');
         TrainingWorkflow.assertContext(scope);
         await onSave(ids);
       });
