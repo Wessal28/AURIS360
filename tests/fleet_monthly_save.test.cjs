@@ -10,13 +10,24 @@ const decode=value=>String(value).replace(/&quot;/g,'"').replace(/&#39;|&#x27;/g
 // Parse the actual dialog markup, so assertions exercise the same controls and
 // event handlers used in the app without depending on an installed browser.
 class Element{
-  constructor(tag,doc){this.tagName=tag.toUpperCase();this.doc=doc;this.children=[];this.listeners={};this.attributes={};this.dataset={};this.style={};this.disabled=false;this.hidden=false;this.value='';this._text='';}
-  appendChild(child){child.remove();this.children.push(child);child.parentElement=this;return child;}
+  constructor(tag,doc){this.tagName=tag.toUpperCase();this.doc=doc;this.children=[];this.listeners={};this.attributes={};this.dataset={};this.style={};this.disabled=false;this.hidden=false;this._value='';this._selectedOption=null;this._hasValue=false;this._text='';}
+  appendChild(child){child.remove();this.children.push(child);child.parentElement=this;if(this.tagName==='SELECT'&&child.tagName==='OPTION'&&!this._selectedOption)this._selectedOption=child;return child;}
   append(...nodes){nodes.forEach(node=>this.appendChild(node));}
   prepend(node){node.remove();this.children.unshift(node);node.parentElement=this;}
-  replaceChildren(...nodes){this.children.forEach(node=>node.parentElement=null);this.children=[];this._text='';this.append(...nodes);}
+  replaceChildren(...nodes){this.children.forEach(node=>node.parentElement=null);this.children=[];this._text='';this._selectedOption=null;this.append(...nodes);}
   before(node){if(!this.parentElement)return;node.remove();const parent=this.parentElement;parent.children.splice(parent.children.indexOf(this),0,node);node.parentElement=parent;}
   remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(node=>node!==this);this.parentElement=null;}
+  get options(){return this.tagName==='SELECT'?this.all().filter(node=>node.tagName==='OPTION'):undefined;}
+  get selectedOptions(){return this.tagName==='SELECT'?this.options.filter(node=>node===this._selectedOption):undefined;}
+  get value(){
+    if(this.tagName==='SELECT')return this.options.find(node=>node===this._selectedOption)?.value||'';
+    if(this.tagName==='OPTION'&&!this._hasValue)return this.textContent;
+    return this._value;
+  }
+  set value(value){
+    if(this.tagName==='SELECT'){this._selectedOption=this.options.find(node=>node.value===String(value))||null;return;}
+    this._value=String(value??'');this._hasValue=true;
+  }
   get isConnected(){return this===this.doc.body||!!this.parentElement?.isConnected;}
   all(){return this.children.flatMap(node=>[node,...node.all()]);}
   set textContent(value){this.replaceChildren();this._text=String(value??'');}
@@ -202,70 +213,93 @@ test('a confirmed save closes before a failed register refresh and cannot be ret
 });
 
 
-test('inspector starts as the signed-in user and saves an edited, trimmed name',async()=>{
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
+async function chooseOther(h,name){
+  const form=h.modal(),inspector=form.querySelector('#fleet-check-inspector');
+  inspector.value='__other__';await inspector.trigger('change');
+  const other=form.querySelector('#fleet-check-inspector-other');assert.ok(other,'A separate field accepts another inspector name');
+  other.value=name;return other;
+}
+function visible(node){for(let current=node;current;current=current.parentElement)if(current.hidden)return false;return true;}
+
+test('inspector defaults to the signed-in user and saves another entered, trimmed name',async()=>{
   const h=runtime();h.open();const inspector=h.modal().querySelector('#fleet-check-inspector');
-  assert.ok(inspector,'The inspection dialog exposes an inspector field');
+  assert.equal(inspector.tagName,'SELECT','Use a real dropdown whose full employee list remains available with a default value');
   assert.equal(inspector.value,'Fictional Inspector');assert.equal(inspector.disabled,false);
-  inspector.value='  Selected Inspector  ';h.fill();await h.save().trigger('click');
+  await chooseOther(h,'  Selected Inspector  ');h.fill();await h.save().trigger('click');
   assert.equal(h.requests[0].request.b.p_inspector_name,'Selected Inspector');
   assert.equal(h.requests[0].request.b.p_created_by,undefined,'The inspector is separate from the authenticated save actor');
-  assert.match(h.requests[1].path,/inspected_by_name/,'Confirm the name returned with the saved inspection');
-  assert.equal(h.modal(),null);assert.ok(h.messages.some(([message])=>/saved/i.test(message)));
+  assert.match(h.requests[1].path,/inspected_by_name/);assert.equal(h.modal(),null);
 });
 
-test('a blank inspector name prevents saving and leaves inspection answers intact',async()=>{
-  const h=runtime();h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='  ';
-  const entered=h.entries();await h.save().trigger('click');
-  assert.equal(h.requests.length,0);assert.deepEqual(h.entries(),entered);assert.equal(inspector.disabled,false);
-  assert.match(h.modal().textContent,/inspector/i);assert.equal(h.doc.activeElement,inspector);
+test('a blank custom inspector name prevents saving and leaves inspection answers intact',async()=>{
+  const h=runtime();h.open();h.fill();const other=await chooseOther(h,'  '),entered=h.entries();
+  await h.save().trigger('click');assert.equal(h.requests.length,0);assert.deepEqual(h.entries(),entered);
+  assert.equal(other.disabled,false);assert.match(h.modal().textContent,/inspector/i);assert.equal(h.doc.activeElement,other);
 });
 
-test('a failed save retains the chosen inspector and allows correction before retry',async()=>{
-  let unavailable=true;
-  const h=runtime({rpc:async()=>{if(unavailable)throw Error('Database is unavailable');return inspectionId;}});
-  h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Chosen Inspector';
-  await h.save().trigger('click');assert.ok(h.modal());assert.equal(inspector.value,'Chosen Inspector');assert.equal(inspector.disabled,false);
-  inspector.value='Replacement Inspector';unavailable=false;await h.save().trigger('click');
+test('a failed save retains the selected custom inspector and permits correction before retry',async()=>{
+  let unavailable=true;const h=runtime({rpc:async()=>{if(unavailable)throw Error('Database is unavailable');return inspectionId;}});
+  h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector'),other=await chooseOther(h,'Chosen Inspector');
+  await h.save().trigger('click');assert.ok(h.modal());assert.equal(inspector.value,'__other__');assert.equal(other.value,'Chosen Inspector');assert.equal(other.disabled,false);
+  other.value='Replacement Inspector';unavailable=false;await h.save().trigger('click');
   const saves=h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check');
   assert.deepEqual(saves.map(call=>call.request.b.p_inspector_name),['Chosen Inspector','Replacement Inspector']);assert.equal(h.modal(),null);
 });
 
-test('confirmation-only retry retains and verifies the inspector without another save',async()=>{
-  let reads=0;
-  const h=runtime({read:row=>{if(++reads===1)throw Error('Confirmation timed out');return [row];}});
-  h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Chosen Inspector';
-  await h.save().trigger('click');assert.ok(h.modal());assert.equal(inspector.disabled,true);assert.equal(inspector.value,'Chosen Inspector');
+test('confirmation-only retry retains the custom inspector without creating another inspection',async()=>{
+  let reads=0;const h=runtime({read:row=>{if(++reads===1)throw Error('Confirmation timed out');return [row];}});
+  h.open();h.fill();const other=await chooseOther(h,'Chosen Inspector');await h.save().trigger('click');
+  assert.ok(h.modal());assert.equal(other.disabled,true);assert.equal(other.value,'Chosen Inspector');
   await h.save().trigger('click');assert.equal(h.modal(),null);
   const saves=h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check');assert.equal(saves.length,1);assert.equal(saves[0].request.b.p_inspector_name,'Chosen Inspector');
 });
 
-
-test('inspector suggestions use active People from the selected company without replacing an edited name',async()=>{
-  let release;
-  const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();
-  const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Edited While Loading';
-  assert.equal(h.peopleRequests.length,1);const query=new URL(h.peopleRequests[0].path,'https://example.test').searchParams;
+test('the dropdown shows the whole same-company employee list while retaining the current-user default',async()=>{
+  const h=runtime({people:[{company_id:'company-a',first_name:'Selected',last_name:'Inspector'},{company_id:'company-a',first_name:'Another',last_name:'Employee'},{company_id:'company-b',first_name:'Foreign',last_name:'Person'}]});
+  h.open();await settle();const inspector=h.modal().querySelector('#fleet-check-inspector');
+  assert.equal(inspector.tagName,'SELECT');assert.equal(inspector.value,'Fictional Inspector');
+  const names=inspector.options.map(option=>option.value);
+  assert.ok(names.includes('Selected Inspector'));assert.ok(names.includes('Another Employee'));assert.ok(names.includes('__other__'));
+  assert.ok(!names.some(name=>/Foreign/.test(name)));
+  const query=new URL(h.peopleRequests[0].path,'https://example.test').searchParams;
   assert.equal(query.get('company_id'),'eq.company-a');assert.equal(query.get('status'),'eq.active');
-  release([{company_id:'company-a',first_name:'Selected',last_name:'Inspector'},{company_id:'company-b',first_name:'Foreign',last_name:'Person'}]);
-  await new Promise(resolve=>setImmediate(resolve));
-  const list=h.modal().querySelector('#fleet-check-inspector-options');
-  assert.equal(inspector.value,'Edited While Loading');assert.equal(inspector.getAttribute('list'),'fleet-check-inspector-options');
-  assert.ok(list.querySelectorAll('option').some(option=>option.value==='Selected Inspector'));
-  assert.ok(!list.querySelectorAll('option').some(option=>/Foreign/.test(option.value)));
-  inspector.value='Selected Inspector';h.fill();await h.save().trigger('click');
+  inspector.value='Selected Inspector';await inspector.trigger('change');h.fill();await h.save().trigger('click');
   assert.equal(h.requests[0].request.b.p_inspector_name,'Selected Inspector');assert.equal(h.modal(),null);
 });
 
-test('inspector remains usable when People suggestions cannot load',async()=>{
-  const h=runtime({people:async()=>{throw Error('People unavailable');}});h.open();
-  await new Promise(resolve=>setImmediate(resolve));
-  h.modal().querySelector('#fleet-check-inspector').value='External Inspector';h.fill();await h.save().trigger('click');
+test('employee options arriving late preserve a custom inspector selected while loading',async()=>{
+  let release;const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();const other=await chooseOther(h,'Edited While Loading');
+  release([{company_id:'company-a',first_name:'Selected',last_name:'Inspector'}]);await settle();
+  assert.equal(h.modal().querySelector('#fleet-check-inspector').value,'__other__');assert.equal(other.value,'Edited While Loading');assert.ok(visible(other));
+  h.fill();await h.save().trigger('click');assert.equal(h.requests[0].request.b.p_inspector_name,'Edited While Loading');assert.equal(h.modal(),null);
+});
+
+test('a People loading failure is visible and another inspector can still be entered',async()=>{
+  const h=runtime({people:async()=>{throw Error('People unavailable');}});h.open();await settle();
+  const help=h.modal().querySelector('#fleet-check-inspector-status');assert.ok(help);assert.ok(visible(help));
+  assert.match(help.textContent,/unable|could not|unavailable|cannot/i);
+  await chooseOther(h,'External Inspector');h.fill();await h.save().trigger('click');
   assert.equal(h.requests[0].request.b.p_inspector_name,'External Inspector');assert.equal(h.modal(),null);
 });
 
-test('People suggestions arriving after a company switch cannot populate the old editor',async()=>{
-  let release;const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();
-  h.state.companyId='company-b';release([{company_id:'company-a',first_name:'Stale',last_name:'Inspector'}]);
-  await new Promise(resolve=>setImmediate(resolve));
-  assert.ok(!h.modal().querySelector('#fleet-check-inspector-options').querySelectorAll('option').some(option=>option.value==='Stale Inspector'));
+test('employee options arriving after a company switch cannot populate the old editor',async()=>{
+  let release;const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();h.state.companyId='company-b';
+  release([{company_id:'company-a',first_name:'Stale',last_name:'Inspector'}]);await settle();
+  assert.ok(!h.modal().querySelector('#fleet-check-inspector').options.some(option=>option.value==='Stale Inspector'));
+});
+
+test('reason fields occupy space only for failed and N/A answers and retain typed notes',async()=>{
+  const h=runtime();h.open();const checks=h.modal().querySelectorAll('.fleet-check-item'),notes=h.modal().querySelectorAll('.fleet-check-note');
+  assert.ok(notes.every(note=>!visible(note)),'Unanswered checks do not add a row of empty reason fields');
+  checks[0].value='ok';await checks[0].trigger('change');assert.equal(visible(notes[0]),false);
+  checks[0].value='fail';await checks[0].trigger('change');assert.equal(visible(notes[0]),true);notes[0].value='Retain the failure reason';
+  checks[0].value='ok';await checks[0].trigger('change');assert.equal(visible(notes[0]),false);assert.equal(notes[0].value,'Retain the failure reason');
+  checks[0].value='na';await checks[0].trigger('change');assert.equal(visible(notes[0]),true);assert.equal(notes[0].value,'Retain the failure reason');
+});
+
+test('compact header groups inspector and inspection date without nesting checklist controls in labels',()=>{
+  const h=runtime();h.open();const meta=h.modal().querySelector('.fleet-check-meta');assert.ok(meta);
+  assert.ok(meta.querySelector('#fleet-check-inspector'));assert.ok(meta.querySelector('#fleet-check-date'));
+  for(const check of h.modal().querySelectorAll('.fleet-check-item'))assert.notEqual(check.parentElement.tagName,'LABEL','Each result and reason has its own accessible control rather than sharing a wrapping label');
 });
