@@ -72,9 +72,14 @@ class Element{
   focus(){this.doc.activeElement=this;}
 }
 
+function savedInspection(overrides={}){
+  return {id:inspectionId,company_id:'company-a',tool_id:'vehicle-a',inspection_type:'periodic',inspection_date:'2026-10-18',inspected_by_name:'Saved Inspector',overall_result:'pass',checklist_results:[{item:'Saved first check',result:'ok',note:''},{item:'Saved optional check',result:'na',note:'Not fitted on this vehicle'}],defects_found:'Saved defect details',actions_taken:'Saved actions',next_inspection_date:'2026-11-17',notes:'Fleet monthly check',signed_off:false,created_by:'original-author',created_at:'2026-10-18T09:00:00.000Z',...overrides};
+}
+
 function runtime(options={}){
   const state={companyId:'company-a',userId:'user-a',role:'manager',name:'Fictional Inspector'};
   const requests=[],peopleRequests=[],messages=[],events=[];
+  const initialRecord=copy(options.record||savedInspection());
   const doc={createElement:tag=>new Element(tag,doc),getElementById:id=>doc.body.all().find(node=>node.id===id)||null};doc.body=new Element('body',doc);
   const session=()=>({...state});
   const assertSession=expected=>{
@@ -83,6 +88,7 @@ function runtime(options={}){
   };
   const c={Date,Intl,Map,Set,URL,URLSearchParams,console,document:doc,
     fleetVehicles:[{id:'vehicle-a',company_id:'company-a',is_vehicle:true,vehicle_type:'car',registration_number:'FLEET-001',...options.vehicle}],
+    fleetInspections:[copy(initialRecord)],assetPrintSaved:()=>{},
     TOOL_INSPECTION_CHECKLISTS:{vehicle:['Tyres and wheels','Brakes and steering']},
     AurisFleetListWorkspace:{session,assertSession},ccid:()=>state.companyId,isMgr:()=>state.role==='manager',
     prof:{id:'user-a',full_name:'Fictional Inspector'},escH:value=>String(value),fleetLabel:vehicle=>vehicle.registration_number,
@@ -96,25 +102,32 @@ function runtime(options={}){
       return typeof options.people==='function'?await options.people():copy(options.people||[]);
     }
     requests.push({path,request:copy(request)});
-    if(path==='/rpc/record_fleet_monthly_check'){
+    if(path==='/rpc/record_fleet_monthly_check'||path==='/rpc/update_fleet_monthly_check'){
       payload=copy(request.b);
-      return options.rpc?await options.rpc(payload):inspectionId;
+      const callback=path==='/rpc/update_fleet_monthly_check'?(options.updateRpc||options.rpc):options.rpc;
+      return callback?await callback(payload):inspectionId;
     }
     assert.match(path,/^\/tool_inspections\?/,'Confirm through the saved inspection table');
     const search=new URL(path,'https://example.test').searchParams;
     assert.equal(search.get('id'),'eq.'+inspectionId);
     assert.equal(search.get('company_id'),'eq.company-a');
+    if(!payload)return options.loadRecord?await options.loadRecord(copy(initialRecord)):[copy(initialRecord)];
     assert.equal(search.get('tool_id'),'eq.vehicle-a');
-    const row={id:inspectionId,company_id:payload.p_company_id,tool_id:payload.p_vehicle_id,inspection_date:payload.p_inspection_date,inspection_type:'periodic',inspected_by_name:payload.p_inspector_name,overall_result:payload.p_checklist.some(item=>item.result==='fail')?'fail':'pass',checklist_results:copy(payload.p_checklist),defects_found:payload.p_defects,actions_taken:payload.p_actions};
+    const row={id:inspectionId,company_id:payload.p_company_id,tool_id:payload.p_vehicle_id||initialRecord.tool_id,inspection_date:payload.p_inspection_date,inspection_type:'periodic',inspected_by_name:payload.p_inspector_name,overall_result:payload.p_checklist.some(item=>item.result==='fail')?'fail':'pass',checklist_results:copy(payload.p_checklist),defects_found:payload.p_defects,actions_taken:payload.p_actions};
     return options.read?await options.read(row):[row];
   };
   c.window=c;vm.createContext(c);
   const records=fs.readFileSync('auris-fleet-records.js','utf8');
   const guard=records.match(/function fleetAssertEditor\(current\)\{[^\n]*\}/)?.[0];assert.ok(guard,'Use the fleet editor guard');
   vm.runInContext(guard,c);
-  const source=fs.readFileSync('auris-core.js','utf8'),start=source.indexOf('function fleetMonthlyCheck(id){'),end=source.indexOf('\nasync function fleetFuelNew(',start);
+  const source=fs.readFileSync('auris-core.js','utf8'),monthlyStart=source.search(/function fleetMonthlyCheck\([^)]*\)\{/),editStart=source.indexOf('async function fleetEditInspection('),start=editStart>=0&&editStart<monthlyStart?editStart:monthlyStart,end=source.indexOf('\nasync function fleetFuelNew(',start);
   assert.ok(start>=0&&end>start,'Load the live monthly-check handler');vm.runInContext(source.slice(start,end),c);
+  const viewStart=source.indexOf('function fleetOpenInspectionRecord(id){'),viewEnd=source.indexOf('\nfunction fleetDetailRows(',viewStart);
+  assert.ok(viewStart>=0&&viewEnd>viewStart,'Load the saved inspection viewer');vm.runInContext(source.slice(viewStart,viewEnd),c);
   const open=()=>c.fleetMonthlyCheck('vehicle-a');
+  const openSaved=(record=initialRecord)=>c.fleetMonthlyCheck('vehicle-a',copy(record));
+  const edit=()=>c.fleetEditInspection(inspectionId);
+  const view=()=>c.fleetOpenInspectionRecord(inspectionId);
   const modal=()=>doc.getElementById('fleet-check-modal');
   const save=()=>modal().querySelector('.fleet-check-save');
   const fill=()=>{
@@ -123,7 +136,7 @@ function runtime(options={}){
     form.querySelector('#fleet-check-date').value='2026-11-23';form.querySelector('#fleet-check-defects').value='Retain this defect';form.querySelector('#fleet-check-actions').value='Repair before release';
   };
   const entries=()=>modal().querySelectorAll('input,select,textarea').map(node=>({id:node.id||null,label:node.dataset.label||null,value:node.value}));
-  return {c,state,requests,peopleRequests,messages,events,doc,open,modal,save,fill,entries};
+  return {c,state,requests,peopleRequests,messages,events,doc,open,openSaved,edit,view,initialRecord,modal,save,fill,entries};
 }
 
 test('missing monthly-check RPC keeps every field in an editable dialog and reports a useful setup error',async()=>{
@@ -302,4 +315,150 @@ test('compact header groups inspector and inspection date without nesting checkl
   const h=runtime();h.open();const meta=h.modal().querySelector('.fleet-check-meta');assert.ok(meta);
   assert.ok(meta.querySelector('#fleet-check-inspector'));assert.ok(meta.querySelector('#fleet-check-date'));
   for(const check of h.modal().querySelectorAll('.fleet-check-item'))assert.notEqual(check.parentElement.tagName,'LABEL','Each result and reason has its own accessible control rather than sharing a wrapping label');
+});
+
+
+test('editing a saved inspection prefills its recorded inspector, date, answers and notes',()=>{
+  const h=runtime();h.openSaved();const form=h.modal();assert.ok(form);
+  assert.equal(form.querySelector('#fleet-check-inspector').value,'Saved Inspector');
+  assert.equal(form.querySelector('#fleet-check-date').value,'2026-10-18');
+  assert.deepEqual(form.querySelectorAll('.fleet-check-item').map(control=>control.dataset.label),['Saved first check','Saved optional check']);
+  assert.deepEqual(form.querySelectorAll('.fleet-check-item').map(control=>control.value),['ok','na']);
+  const notes=form.querySelectorAll('.fleet-check-note');assert.equal(notes[1].value,'Not fitted on this vehicle');assert.ok(visible(notes[1]));
+  assert.equal(form.querySelector('#fleet-check-defects').value,'Saved defect details');
+  assert.equal(form.querySelector('#fleet-check-actions').value,'Saved actions');
+});
+
+test('an edited inspection updates the same ID with the original snapshot and never creates another check',async()=>{
+  const h=runtime();h.openSaved();await chooseOther(h,'  Updated Inspector  ');
+  h.modal().querySelector('#fleet-check-date').value='2026-10-19';await h.save().trigger('click');
+  const writes=h.requests.filter(call=>call.request.m==='POST');assert.equal(writes.length,1);
+  assert.equal(writes[0].path,'/rpc/update_fleet_monthly_check');const body=writes[0].request.b;
+  assert.equal(body.p_id,inspectionId);assert.equal(body.p_company_id,'company-a');
+  assert.equal(body.p_inspection_date,'2026-10-19');assert.equal(body.p_inspector_name,'Updated Inspector');
+  assert.equal(body.p_expected.inspection_date,'2026-10-18');assert.equal(body.p_expected.inspected_by_name,'Saved Inspector');
+  assert.deepEqual(body.p_expected.checklist_results,h.initialRecord.checklist_results);
+  assert.equal(body.p_created_by,undefined);assert.equal(body.p_created_at,undefined);
+  assert.equal(h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check').length,0);
+  assert.equal(h.modal(),null);assert.deepEqual(h.events,[{type:'refresh',modalOpen:false}]);
+});
+
+test('an inspection edit conflict retains all changes without automatically overwriting or creating a record',async()=>{
+  const h=runtime({updateRpc:async()=>{throw Error('This inspection changed after it was opened. Reopen it before saving.');}});
+  h.openSaved();await chooseOther(h,'Correction retained');h.modal().querySelector('#fleet-check-actions').value='Retain this edit';
+  const entered=h.entries();await h.save().trigger('click');assert.ok(h.modal());assert.deepEqual(h.entries(),entered);
+  assert.equal(h.requests.filter(call=>call.request.m==='POST').length,1);assert.equal(h.events.length,0);
+  assert.ok(h.modal().querySelectorAll('input,select,textarea').every(control=>!control.disabled));
+  assert.match(h.modal().querySelector('#fleet-check-error').textContent,/changed|reopen/i);
+  await h.save().trigger('click');const writes=h.requests.filter(call=>call.request.m==='POST');
+  assert.equal(writes.length,2,'Only a second deliberate click retries the edit');
+  assert.deepEqual(writes[0].request.b.p_expected,writes[1].request.b.p_expected,'A retry cannot silently replace the original concurrency snapshot');
+  assert.ok(writes.every(call=>call.path==='/rpc/update_fleet_monthly_check'));
+});
+
+test('a saved inspection edit retries confirmation with its original ID without updating twice',async()=>{
+  let reads=0;const h=runtime({read:row=>{if(++reads===1)throw Error('Confirmation timed out');return [row];}});
+  h.openSaved();await chooseOther(h,'Edited inspector');const entered=h.entries();await h.save().trigger('click');
+  assert.ok(h.modal());assert.deepEqual(h.entries(),entered);assert.match(h.save().textContent,/Retry confirmation/i);
+  assert.ok(h.modal().querySelectorAll('input,select,textarea').every(control=>control.disabled));
+  await h.save().trigger('click');assert.equal(h.modal(),null);
+  assert.equal(h.requests.filter(call=>call.path==='/rpc/update_fleet_monthly_check').length,1);
+  assert.equal(h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check').length,0);
+});
+
+test('editing cannot report success when the update returns a different inspection ID',async()=>{
+  const h=runtime({updateRpc:async()=>'f2400000-0000-4000-8000-000000000099'});h.openSaved();
+  const entered=h.entries();await h.save().trigger('click');assert.ok(h.modal());assert.deepEqual(h.entries(),entered);
+  assert.equal(h.requests.length,1,'Reject the mismatching update receipt before looking up another inspection');
+  assert.equal(h.events.length,0);assert.equal(h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check').length,0);
+  assert.ok(!h.messages.some(([message])=>/saved|updated/i.test(message)));
+});
+
+test('saved inspection edit is loaded fresh with exact company and inspection filters',async()=>{
+  const h=runtime();await h.edit();assert.ok(h.modal());assert.equal(h.requests.length,1);
+  const query=new URL(h.requests[0].path,'https://example.test').searchParams;
+  assert.equal(query.get('id'),'eq.'+inspectionId);assert.equal(query.get('company_id'),'eq.company-a');
+  assert.equal(h.modal().querySelector('#fleet-check-inspector').value,'Saved Inspector');
+});
+
+test('an edit read arriving after a company or account switch cannot open an editor',async()=>{
+  for(const [key,value] of [['companyId','company-b'],['userId','user-b'],['role','employee']]){
+    let release;const h=runtime({loadRecord:row=>new Promise(resolve=>release=()=>resolve([row]))});
+    const pending=h.edit();h.state[key]=value;release();await pending;assert.equal(h.modal(),null);assert.equal(h.events.length,0);
+  }
+});
+
+test('foreign, signed-off and non-monthly inspections cannot open the saved inspection editor',async()=>{
+  for(const record of [{company_id:'company-b'},{tool_id:'unrelated-vehicle'},{signed_off:true},{inspection_type:'pre_use'},{notes:'Other equipment inspection'}]){
+    const h=runtime({record:savedInspection(record)});await h.edit();assert.equal(h.modal(),null);assert.equal(h.events.length,0);
+    assert.equal(h.requests.filter(call=>call.request.m==='POST').length,0);
+  }
+  const h=runtime();h.state.role='employee';await h.edit();assert.equal(h.modal(),null);assert.equal(h.requests.length,0);
+});
+
+
+test('editing the inspector or date retains an existing note on a passing checklist item',async()=>{
+  const record=savedInspection();record.checklist_results[0].note='Keep the original pass observation';
+  const h=runtime({record});h.openSaved();await chooseOther(h,'Corrected Inspector');
+  const note=h.modal().querySelectorAll('.fleet-check-note')[0];assert.equal(note.value,'Keep the original pass observation');
+  h.modal().querySelector('#fleet-check-date').value='2026-10-19';await h.save().trigger('click');
+  assert.equal(h.requests[0].request.b.p_checklist[0].note,'Keep the original pass observation');
+  assert.equal(h.requests[0].request.b.p_checklist[0].result,'ok');assert.equal(h.modal(),null);
+});
+
+test('the saved inspection viewer exposes Edit inspection and loads its current record before editing',async()=>{
+  const h=runtime({loadRecord:row=>[{...row,inspected_by_name:'Fresh Server Inspector'}]});h.view();
+  const viewer=h.doc.getElementById('fleet-inspection-modal');assert.ok(viewer);
+  const button=viewer.querySelector('.fleet-inspection-edit');assert.ok(button,'Managers can edit from the saved inspection view');
+  assert.match(button.textContent,/Edit inspection/);await button.trigger('click');await settle();
+  assert.equal(h.requests.length,1);assert.equal(h.requests[0].request.m,undefined);
+  assert.equal(new URL(h.requests[0].path,'https://example.test').searchParams.get('id'),'eq.'+inspectionId);
+  assert.equal(h.modal().querySelector('#fleet-check-inspector').value,'Fresh Server Inspector','Use the server record rather than the cached viewer value');
+  assert.equal(h.doc.getElementById('fleet-inspection-modal'),null);assert.match(h.save().textContent,/Save changes/);
+});
+
+test('saved inspection viewers hide Edit inspection for viewers, signed-off and other inspection types',()=>{
+  const viewer=runtime();viewer.state.role='employee';viewer.view();
+  assert.equal(viewer.doc.getElementById('fleet-inspection-modal').querySelector('.fleet-inspection-edit'),null);
+  for(const changes of [{signed_off:true},{inspection_type:'pre_use'},{notes:'Other inspection'}]){
+    const h=runtime({record:savedInspection(changes)});h.view();
+    assert.equal(h.doc.getElementById('fleet-inspection-modal').querySelector('.fleet-inspection-edit'),null);
+    assert.ok(h.doc.getElementById('fleet-inspection-modal').querySelector('.fleet-inspection-print'));
+  }
+});
+
+
+test('an inspection viewer cannot start duplicate edit loads while its Edit button is busy',async()=>{
+  let release;const h=runtime({loadRecord:row=>new Promise(resolve=>release=()=>resolve([row]))});h.view();
+  const viewer=h.doc.getElementById('fleet-inspection-modal'),button=viewer.querySelector('.fleet-inspection-edit');
+  const pending=h.edit();assert.equal(button.disabled,true);assert.match(button.textContent,/Loading inspection/);
+  await button.trigger('click');assert.equal(h.requests.length,1,'A second Edit click must not fetch or open another editor');
+  release();await pending;assert.ok(h.modal());assert.equal(h.doc.getElementById('fleet-inspection-modal'),null);
+  assert.equal(h.modal().querySelector('#fleet-check-date').value,'2026-10-18');
+});
+
+test('a saved inspection edit load cannot reopen a viewer that was closed while loading',async()=>{
+  let release;const h=runtime({loadRecord:row=>new Promise(resolve=>release=()=>resolve([row]))});h.view();
+  const viewer=h.doc.getElementById('fleet-inspection-modal'),pending=h.edit();
+  await viewer.querySelector('.fleet-inspection-close').trigger('click');assert.equal(h.doc.getElementById('fleet-inspection-modal'),null);
+  release();await pending;assert.equal(h.modal(),null);assert.equal(h.doc.getElementById('fleet-inspection-modal'),null);
+  assert.equal(h.events.length,0);
+});
+
+test('an earlier inspection edit response cannot close a different inspection viewer opened while loading',async()=>{
+  let release;const h=runtime({loadRecord:row=>new Promise(resolve=>release=()=>resolve([row]))});h.view();
+  const firstViewer=h.doc.getElementById('fleet-inspection-modal'),pending=h.edit();
+  const next=savedInspection({id:'f2400000-0000-4000-8000-000000000002',inspection_date:'2026-10-20',inspected_by_name:'Second inspection'});
+  h.c.fleetInspections.push(next);h.c.fleetOpenInspectionRecord(next.id);
+  const secondViewer=h.doc.getElementById('fleet-inspection-modal');assert.notEqual(secondViewer,firstViewer);
+  release();await pending;assert.equal(h.doc.getElementById('fleet-inspection-modal'),secondViewer);
+  assert.ok(secondViewer.isConnected);assert.match(secondViewer.textContent,/2026-10-20/);assert.equal(h.modal(),null);
+});
+
+test('a pending saved inspection edit cannot overwrite a new monthly check started meanwhile',async()=>{
+  let release;const h=runtime({loadRecord:row=>new Promise(resolve=>release=()=>resolve([row]))});h.view();
+  const pending=h.edit();h.open();h.fill();await chooseOther(h,'New draft inspector');
+  const draft=h.modal(),entered=h.entries();release();await pending;
+  assert.equal(h.modal(),draft);assert.deepEqual(h.entries(),entered);assert.equal(h.requests.length,1);
+  assert.equal(h.requests.filter(call=>call.request.m==='POST').length,0);
 });
