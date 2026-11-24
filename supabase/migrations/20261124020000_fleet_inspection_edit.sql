@@ -17,7 +17,7 @@ begin
     ('tools_register','id,company_id,is_vehicle,status,updated_at,location'),
     ('tool_inspections','id,company_id,tool_id,inspection_type,inspection_date,inspected_by,inspected_by_name,overall_result,checklist_results,defects_found,actions_taken,next_inspection_date,signed_off,notes,created_by,created_at'),
     ('equipment_defects','id,company_id,equipment_id,reference,source,severity,description,reported_by,reported_date,status,quarantine_location,release_required,corrective_action_reference,created_by'),
-    ('equipment_maintenance_events','id,company_id,equipment_id,reference,maintenance_type,status,problem_description,release_required,release_status,notes,created_by')
+    ('equipment_maintenance_events','id,company_id,equipment_id,reference,maintenance_type,status,problem_description,release_required,release_status,notes,created_by,updated_at')
   ) spec(table_name,columns) loop
     if not exists(select 1 from pg_attribute where attrelid=to_regclass('public.'||required.table_name)
       and attname=required.column_name and attnum>0 and not attisdropped) then
