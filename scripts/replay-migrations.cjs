@@ -149,6 +149,10 @@ for (let pass=0; pass<2; pass++) run(psql, [...commonArgs, '--file', path.join(m
   label: pass?'idempotent Fleet inspection save repair':'restore missing Fleet inspection save RPC', quiet: true
 });
 
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261124020000_fleet_inspection_edit.sql')], {
+  label: 'idempotent Fleet inspection editing installation', quiet: true
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -212,3 +216,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_co
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'settings_reliability.sql')], {label: 'atomic approval routes, tenant boundaries and personal notification preferences'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_monthly_check_repair.sql')], {label: 'Fleet inspection authenticated saving, tenant protection and atomic failed checks'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_inspection_edit.sql')], {label: 'Fleet saved inspection editing, immutable history, revision conflicts and retained repair chains'});

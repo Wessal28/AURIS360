@@ -411,6 +411,11 @@
       "order": 82,
       "file": "20261124010000_fleet_monthly_check_repair.sql",
       "sha256": "6a7795599d1cfd4cd147dcda40f7630d95fa614d2aab4247d7ae9d127a08a03b"
+    },
+    {
+      "order": 83,
+      "file": "20261124020000_fleet_inspection_edit.sql",
+      "sha256": "ebd29357d14599bb6149853a435ff87be7840e635bd97b5e8dbd49edf2eab460"
     }
   ]
 }
