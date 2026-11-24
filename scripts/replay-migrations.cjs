@@ -140,6 +140,15 @@ run(psql, [...commonArgs, '--file', '-'], {
   })
 });
 
+// Restore the named Fleet save RPC after an omitted database deployment, then
+// reapply it to prove the installer remains safe on an upgraded database.
+run(psql, [...commonArgs, '--command', 'drop function public.record_fleet_monthly_check(uuid,uuid,date,text,jsonb,text,text);'], {
+  label: 'simulate a missing Fleet inspection save function', quiet: true
+});
+for (let pass=0; pass<2; pass++) run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261124010000_fleet_monthly_check_repair.sql')], {
+  label: pass?'idempotent Fleet inspection save repair':'restore missing Fleet inspection save RPC', quiet: true
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -201,3 +210,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'swms_contro
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_control_workflows.sql')], {label: 'PDF uploads, review decisions, revision history, distribution and recipient acknowledgement'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'settings_reliability.sql')], {label: 'atomic approval routes, tenant boundaries and personal notification preferences'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_monthly_check_repair.sql')], {label: 'Fleet inspection authenticated saving, tenant protection and atomic failed checks'});
