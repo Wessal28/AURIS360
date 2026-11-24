@@ -63,7 +63,7 @@ class Element{
 
 function runtime(options={}){
   const state={companyId:'company-a',userId:'user-a',role:'manager',name:'Fictional Inspector'};
-  const requests=[],messages=[],events=[];
+  const requests=[],peopleRequests=[],messages=[],events=[];
   const doc={createElement:tag=>new Element(tag,doc),getElementById:id=>doc.body.all().find(node=>node.id===id)||null};doc.body=new Element('body',doc);
   const session=()=>({...state});
   const assertSession=expected=>{
@@ -80,6 +80,10 @@ function runtime(options={}){
   };
   let payload;
   c.api=async(path,request={})=>{
+    if(path.startsWith('/people?')){
+      peopleRequests.push({path,request:copy(request)});
+      return typeof options.people==='function'?await options.people():copy(options.people||[]);
+    }
     requests.push({path,request:copy(request)});
     if(path==='/rpc/record_fleet_monthly_check'){
       payload=copy(request.b);
@@ -90,7 +94,7 @@ function runtime(options={}){
     assert.equal(search.get('id'),'eq.'+inspectionId);
     assert.equal(search.get('company_id'),'eq.company-a');
     assert.equal(search.get('tool_id'),'eq.vehicle-a');
-    const row={id:inspectionId,company_id:payload.p_company_id,tool_id:payload.p_vehicle_id,inspection_date:payload.p_inspection_date,inspection_type:'periodic',overall_result:payload.p_checklist.some(item=>item.result==='fail')?'fail':'pass',checklist_results:copy(payload.p_checklist),defects_found:payload.p_defects,actions_taken:payload.p_actions};
+    const row={id:inspectionId,company_id:payload.p_company_id,tool_id:payload.p_vehicle_id,inspection_date:payload.p_inspection_date,inspection_type:'periodic',inspected_by_name:payload.p_inspector_name,overall_result:payload.p_checklist.some(item=>item.result==='fail')?'fail':'pass',checklist_results:copy(payload.p_checklist),defects_found:payload.p_defects,actions_taken:payload.p_actions};
     return options.read?await options.read(row):[row];
   };
   c.window=c;vm.createContext(c);
@@ -108,7 +112,7 @@ function runtime(options={}){
     form.querySelector('#fleet-check-date').value='2026-11-23';form.querySelector('#fleet-check-defects').value='Retain this defect';form.querySelector('#fleet-check-actions').value='Repair before release';
   };
   const entries=()=>modal().querySelectorAll('input,select,textarea').map(node=>({id:node.id||null,label:node.dataset.label||null,value:node.value}));
-  return {c,state,requests,messages,events,doc,open,modal,save,fill,entries};
+  return {c,state,requests,peopleRequests,messages,events,doc,open,modal,save,fill,entries};
 }
 
 test('missing monthly-check RPC keeps every field in an editable dialog and reports a useful setup error',async()=>{
@@ -170,7 +174,7 @@ test('a scalar RPC receipt is verified against the saved company vehicle, date, 
   assert.equal(h.modal(),null);assert.deepEqual(h.events,[{type:'refresh',modalOpen:false}]);assert.ok(h.messages.some(([message])=>/saved/i.test(message)));
 });
 
-for(const [field,value] of [['company_id','company-b'],['tool_id','vehicle-b'],['inspection_date','2026-11-22'],['overall_result','pass'],['checklist_results',[]]]){
+for(const [field,value] of [['company_id','company-b'],['tool_id','vehicle-b'],['inspection_date','2026-11-22'],['inspected_by_name','Different Inspector'],['overall_result','pass'],['checklist_results',[]]]){
   test(`a mismatching ${field} confirmation retains the receipt and never reports a successful save`,async()=>{
     const h=runtime({read:row=>[{...row,[field]:value}]});h.open();h.fill();const entered=h.entries();await h.save().trigger('click');
     assert.ok(h.modal());assert.deepEqual(h.entries(),entered);assert.equal(h.events.length,0);assert.match(h.save().textContent,/Retry confirmation/i);
@@ -195,4 +199,73 @@ test('a confirmed save closes before a failed register refresh and cannot be ret
   assert.equal(h.modal(),null);assert.deepEqual(h.events,[{type:'refresh',modalOpen:false}]);
   assert.ok(h.messages.some(([message])=>/saved[\s\S]*refresh|refresh[\s\S]*saved/i.test(message)));
   await button.trigger('click');assert.equal(h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check').length,1);
+});
+
+
+test('inspector starts as the signed-in user and saves an edited, trimmed name',async()=>{
+  const h=runtime();h.open();const inspector=h.modal().querySelector('#fleet-check-inspector');
+  assert.ok(inspector,'The inspection dialog exposes an inspector field');
+  assert.equal(inspector.value,'Fictional Inspector');assert.equal(inspector.disabled,false);
+  inspector.value='  Selected Inspector  ';h.fill();await h.save().trigger('click');
+  assert.equal(h.requests[0].request.b.p_inspector_name,'Selected Inspector');
+  assert.equal(h.requests[0].request.b.p_created_by,undefined,'The inspector is separate from the authenticated save actor');
+  assert.match(h.requests[1].path,/inspected_by_name/,'Confirm the name returned with the saved inspection');
+  assert.equal(h.modal(),null);assert.ok(h.messages.some(([message])=>/saved/i.test(message)));
+});
+
+test('a blank inspector name prevents saving and leaves inspection answers intact',async()=>{
+  const h=runtime();h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='  ';
+  const entered=h.entries();await h.save().trigger('click');
+  assert.equal(h.requests.length,0);assert.deepEqual(h.entries(),entered);assert.equal(inspector.disabled,false);
+  assert.match(h.modal().textContent,/inspector/i);assert.equal(h.doc.activeElement,inspector);
+});
+
+test('a failed save retains the chosen inspector and allows correction before retry',async()=>{
+  let unavailable=true;
+  const h=runtime({rpc:async()=>{if(unavailable)throw Error('Database is unavailable');return inspectionId;}});
+  h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Chosen Inspector';
+  await h.save().trigger('click');assert.ok(h.modal());assert.equal(inspector.value,'Chosen Inspector');assert.equal(inspector.disabled,false);
+  inspector.value='Replacement Inspector';unavailable=false;await h.save().trigger('click');
+  const saves=h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check');
+  assert.deepEqual(saves.map(call=>call.request.b.p_inspector_name),['Chosen Inspector','Replacement Inspector']);assert.equal(h.modal(),null);
+});
+
+test('confirmation-only retry retains and verifies the inspector without another save',async()=>{
+  let reads=0;
+  const h=runtime({read:row=>{if(++reads===1)throw Error('Confirmation timed out');return [row];}});
+  h.open();h.fill();const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Chosen Inspector';
+  await h.save().trigger('click');assert.ok(h.modal());assert.equal(inspector.disabled,true);assert.equal(inspector.value,'Chosen Inspector');
+  await h.save().trigger('click');assert.equal(h.modal(),null);
+  const saves=h.requests.filter(call=>call.path==='/rpc/record_fleet_monthly_check');assert.equal(saves.length,1);assert.equal(saves[0].request.b.p_inspector_name,'Chosen Inspector');
+});
+
+
+test('inspector suggestions use active People from the selected company without replacing an edited name',async()=>{
+  let release;
+  const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();
+  const inspector=h.modal().querySelector('#fleet-check-inspector');inspector.value='Edited While Loading';
+  assert.equal(h.peopleRequests.length,1);const query=new URL(h.peopleRequests[0].path,'https://example.test').searchParams;
+  assert.equal(query.get('company_id'),'eq.company-a');assert.equal(query.get('status'),'eq.active');
+  release([{company_id:'company-a',first_name:'Selected',last_name:'Inspector'},{company_id:'company-b',first_name:'Foreign',last_name:'Person'}]);
+  await new Promise(resolve=>setImmediate(resolve));
+  const list=h.modal().querySelector('#fleet-check-inspector-options');
+  assert.equal(inspector.value,'Edited While Loading');assert.equal(inspector.getAttribute('list'),'fleet-check-inspector-options');
+  assert.ok(list.querySelectorAll('option').some(option=>option.value==='Selected Inspector'));
+  assert.ok(!list.querySelectorAll('option').some(option=>/Foreign/.test(option.value)));
+  inspector.value='Selected Inspector';h.fill();await h.save().trigger('click');
+  assert.equal(h.requests[0].request.b.p_inspector_name,'Selected Inspector');assert.equal(h.modal(),null);
+});
+
+test('inspector remains usable when People suggestions cannot load',async()=>{
+  const h=runtime({people:async()=>{throw Error('People unavailable');}});h.open();
+  await new Promise(resolve=>setImmediate(resolve));
+  h.modal().querySelector('#fleet-check-inspector').value='External Inspector';h.fill();await h.save().trigger('click');
+  assert.equal(h.requests[0].request.b.p_inspector_name,'External Inspector');assert.equal(h.modal(),null);
+});
+
+test('People suggestions arriving after a company switch cannot populate the old editor',async()=>{
+  let release;const h=runtime({people:()=>new Promise(resolve=>release=resolve)});h.open();
+  h.state.companyId='company-b';release([{company_id:'company-a',first_name:'Stale',last_name:'Inspector'}]);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(!h.modal().querySelector('#fleet-check-inspector-options').querySelectorAll('option').some(option=>option.value==='Stale Inspector'));
 });

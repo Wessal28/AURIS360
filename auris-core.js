@@ -26869,6 +26869,17 @@ function fleetMonthlyCheck(id){
   var today=new Date(),localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
   var dateGroup=document.createElement('div');dateGroup.className='form3group';dateGroup.innerHTML='<label class="form3label" for="fleet-check-date">Inspection date *</label><input id="fleet-check-date" type="date" required value="'+localDate+'">';
   modal.querySelector('div[style="margin:14px 0"]')?.before(dateGroup);
+  var inspectorGroup=document.createElement('div');inspectorGroup.className='form3group';
+  inspectorGroup.innerHTML='<label class="form3label" for="fleet-check-inspector">Inspector *</label><input id="fleet-check-inspector" type="text" list="fleet-check-inspector-options" required autocomplete="off" aria-describedby="fleet-check-inspector-help"><datalist id="fleet-check-inspector-options"></datalist><p id="fleet-check-inspector-help">Select a person or enter the inspector’s name.</p>';
+  dateGroup.before(inspectorGroup);
+  var inspector=modal.querySelector('#fleet-check-inspector');inspector.value=editContext.name||'';
+  var inspectorOptions=modal.querySelector('#fleet-check-inspector-options');
+  function setInspectorOptions(rows){
+    var names=[editContext.name].concat((rows||[]).filter(function(person){return String(person.company_id)===editContext.companyId;}).map(function(person){return [person.first_name,person.last_name].filter(Boolean).join(' ');}));
+    inspectorOptions.replaceChildren();
+    Array.from(new Set(names.map(function(name){return String(name||'').trim();}).filter(Boolean))).forEach(function(name){var option=document.createElement('option');option.value=name;inspectorOptions.appendChild(option);});
+  }
+  setInspectorOptions([]);
   var feedback=document.createElement('p');feedback.id='fleet-check-error';feedback.setAttribute('role','alert');feedback.hidden=true;
   modal.querySelector('.card').appendChild(feedback);
   var save=modal.querySelector('.fleet-check-save');
@@ -26880,12 +26891,19 @@ function fleetMonthlyCheck(id){
   }
   function close(){if(!saving)modal.remove();}
   document.body.appendChild(modal);
+  api('/people?select=company_id,first_name,last_name&company_id=eq.'+encodeURIComponent(editContext.companyId)+'&status=eq.active&order=last_name,first_name&limit=1000').then(function(rows){
+    fleetAssertEditor(editContext);
+    if(document.getElementById('fleet-check-modal')!==modal)return;
+    setInspectorOptions(Array.isArray(rows)?rows:[]);
+  }).catch(function(){/* Inspector names can still be entered when suggestions are unavailable. */});
   modal.querySelectorAll('.fleet-check-close').forEach(function(button){button.addEventListener('click',close);});
   save.addEventListener('click',async function(){
     if(saving)return;
     try{fleetAssertEditor(editContext);}catch(error){showError(error.message+' Your entries are retained.');return;}
     var body=pendingInspection&&pendingInspection.body;
     if(!body){
+      var inspectorName=inspector.value.trim();
+      if(!inspectorName){showError('Enter the inspector’s name.');inspector.focus();return;}
       var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));
       if(controls.some(function(control){return !control.value;})){showError('Answer every check before saving.');controls.find(function(control){return !control.value;})?.focus();return;}
       var items=controls.map(function(control){return {item:control.dataset.label,result:control.value,note:control.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});
@@ -26895,7 +26913,7 @@ function fleetMonthlyCheck(id){
       if(failed&&!actions){showError('Failed checks require corrective actions.');return;}
       var inspectionDate=modal.querySelector('#fleet-check-date').value;
       if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')||Number.isNaN(new Date(inspectionDate+'T12:00:00').getTime())){showError('Select a valid inspection date.');return;}
-      body={company_id:editContext.companyId,tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by_name:editContext.name||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null};
+      body={company_id:editContext.companyId,tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by_name:inspectorName,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null};
     }
     saving=true;feedback.hidden=true;updateControls();
     try{
@@ -26906,10 +26924,10 @@ function fleetMonthlyCheck(id){
         pendingInspection={id:savedId,body:body};
       }
       fleetAssertEditor(editContext);
-      var records=await api('/tool_inspections?select=id,company_id,tool_id,inspection_date,inspection_type,overall_result,checklist_results,defects_found,actions_taken&id=eq.'+encodeURIComponent(pendingInspection.id)+'&company_id=eq.'+encodeURIComponent(body.company_id)+'&tool_id=eq.'+encodeURIComponent(body.tool_id)+'&limit=1');
+      var records=await api('/tool_inspections?select=id,company_id,tool_id,inspection_date,inspection_type,inspected_by_name,overall_result,checklist_results,defects_found,actions_taken&id=eq.'+encodeURIComponent(pendingInspection.id)+'&company_id=eq.'+encodeURIComponent(body.company_id)+'&tool_id=eq.'+encodeURIComponent(body.tool_id)+'&limit=1');
       fleetAssertEditor(editContext);
       var record=Array.isArray(records)&&records.length===1?records[0]:null;
-      if(!record||String(record.id)!==pendingInspection.id||String(record.company_id)!==body.company_id||String(record.tool_id)!==String(body.tool_id)||record.inspection_date!==body.inspection_date||record.inspection_type!==body.inspection_type||record.overall_result!==body.overall_result||JSON.stringify((record.checklist_results||[]).map(function(item){return [item.item,item.result,item.note||''];}))!==JSON.stringify(body.checklist_results.map(function(item){return [item.item,item.result,item.note||''];}))||(record.defects_found||null)!==body.defects_found||(record.actions_taken||null)!==body.actions_taken)throw new Error('The saved inspection could not be confirmed.');
+      if(!record||String(record.id)!==pendingInspection.id||String(record.company_id)!==body.company_id||String(record.tool_id)!==String(body.tool_id)||record.inspection_date!==body.inspection_date||record.inspection_type!==body.inspection_type||record.inspected_by_name!==body.inspected_by_name||record.overall_result!==body.overall_result||JSON.stringify((record.checklist_results||[]).map(function(item){return [item.item,item.result,item.note||''];}))!==JSON.stringify(body.checklist_results.map(function(item){return [item.item,item.result,item.note||''];}))||(record.defects_found||null)!==body.defects_found||(record.actions_taken||null)!==body.actions_taken)throw new Error('The saved inspection could not be confirmed.');
       modal.remove();
       toast(body.overall_result==='fail'?'Failed check saved; vehicle restricted with linked defect and repair task.':'Monthly vehicle check saved in Fleet.');
       try{await loadFleet();}catch(refreshError){toast('Inspection saved. Refresh Fleet to reload the register.',false);}

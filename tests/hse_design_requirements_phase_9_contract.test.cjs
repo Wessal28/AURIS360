@@ -44,7 +44,7 @@ test('Fleet owns its add and edit vehicle workflow', () => {
   const end = js.indexOf('function fleetFuelNew', start);
   const section = js.slice(start, end);
   assert.match(section, /inspection_type:'periodic'/);
-  assert.match(section, /inspected_by_name:editContext.name/);
+  assert.match(section, /inspected_by_name:inspectorName/);
   assert.doesNotMatch(section, /inspected_by:prof\?\.id/);
   assert.match(read('supabase/migrations/20260820000000_production_schema_baseline.sql'), /tool_inspections_inspected_by_fkey FOREIGN KEY \(inspected_by\) REFERENCES public\.people\(id\)/);
   assert.match(read('supabase/migrations/20261124010000_fleet_monthly_check_repair.sql'), /'Fleet monthly check', auth.uid\(\)/);
