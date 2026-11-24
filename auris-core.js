@@ -26855,7 +26855,11 @@ function fleetOpenServiceRecord(vehicleId,serviceId){
 function fleetNewVehicle(){fleetOpenVehicleForm(null);}
 function fleetEditVehicle(id){fleetOpenVehicleForm(id);}
 function fleetMonthlyCheck(id){
-  var v=(fleetVehicles||[]).find(function(x){return String(x.id)===String(id);});if(!v)return;
+  var editContext;
+  try{editContext=AurisFleetListWorkspace.session();fleetAssertEditor(editContext);}catch(error){toast(error.message,false);return;}
+  var v=(fleetVehicles||[]).find(function(x){return String(x.id)===String(id);});
+  if(!v||v.is_vehicle!==true||String(v.company_id)!==editContext.companyId){toast('This vehicle is unavailable in the selected company.',false);return;}
+  var saving=false,pendingInspection=null;
   document.getElementById('fleet-check-modal')?.remove();var modal=document.createElement('div');modal.id='fleet-check-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   var checks=TOOL_INSPECTION_CHECKLISTS.vehicle;
   var vehicleType=String(v.vehicle_type||v.category||'').toLowerCase();
@@ -26865,9 +26869,59 @@ function fleetMonthlyCheck(id){
   var today=new Date(),localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
   var dateGroup=document.createElement('div');dateGroup.className='form3group';dateGroup.innerHTML='<label class="form3label" for="fleet-check-date">Inspection date *</label><input id="fleet-check-date" type="date" required value="'+localDate+'">';
   modal.querySelector('div[style="margin:14px 0"]')?.before(dateGroup);
-  document.body.appendChild(modal);modal.querySelectorAll('.fleet-check-close').forEach(function(b){b.addEventListener('click',function(){modal.remove();});});
-  modal.querySelector('.fleet-check-save')?.addEventListener('click',async function(){var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));if(controls.some(function(c){return !c.value;})){toast('Answer every check before saving.',false);controls.find(function(c){return !c.value;})?.focus();return;}var items=controls.map(function(c){return {item:c.dataset.label,result:c.value,note:c.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});if(items.some(function(x){return (x.result==='na'||x.result==='fail')&&!x.note;})){toast('Explain each N/A and failed answer.',false);return;}var failed=items.some(function(x){return x.result==='fail';}),defects=modal.querySelector('#fleet-check-defects')?.value.trim(),actions=modal.querySelector('#fleet-check-actions')?.value.trim();if(failed&&!defects){defects=items.filter(function(x){return x.result==='fail';}).map(function(x){return x.item+' - '+x.note;}).join('; ');modal.querySelector('#fleet-check-defects').value=defects;}if(failed&&!actions){toast('Failed checks require corrective actions.',false);return;}var inspectionDate=modal.querySelector('#fleet-check-date')?.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')){toast('Select an inspection date.',false);return;}var next=new Date(inspectionDate+'T12:00:00');if(Number.isNaN(next.getTime())){toast('Enter a valid inspection date.',false);return;}next.setDate(next.getDate()+30);var body={company_id:ccid(),tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by:null,inspected_by_name:prof?.full_name||prof?.name||prof?.email||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null,next_inspection_date:[next.getFullYear(),String(next.getMonth()+1).padStart(2,'0'),String(next.getDate()).padStart(2,'0')].join('-'),notes:'Fleet monthly check',created_by:prof?.id||null};var save=modal.querySelector('.fleet-check-save');save.disabled=true;save.textContent='Saving...';try{await api('/rpc/record_fleet_monthly_check',{m:'POST',p:'return=representation',b:{p_company_id:body.company_id,p_vehicle_id:body.tool_id,p_inspection_date:body.inspection_date,p_inspector_name:body.inspected_by_name,p_checklist:body.checklist_results,p_defects:body.defects_found,p_actions:body.actions_taken}});await loadFleet();toast(failed?'Failed check saved; vehicle restricted with linked defect and repair task.':'Monthly vehicle check saved in Fleet.');modal.remove();}catch(e){toastActionError('Save monthly vehicle check / restriction','Fleet',e);}finally{save.disabled=false;save.innerHTML='<i class="ti ti-device-floppy"></i>Save monthly check';}});
-  modal.addEventListener('click',function(ev){if(ev.target===modal)modal.remove();});
+  var feedback=document.createElement('p');feedback.id='fleet-check-error';feedback.setAttribute('role','alert');feedback.hidden=true;
+  modal.querySelector('.card').appendChild(feedback);
+  var save=modal.querySelector('.fleet-check-save');
+  function showError(message){feedback.textContent=message;feedback.hidden=false;}
+  function updateControls(){
+    modal.querySelectorAll('input,select,textarea').forEach(function(control){control.disabled=saving||!!pendingInspection;});
+    modal.querySelectorAll('.fleet-check-close').forEach(function(button){button.disabled=saving;});
+    save.disabled=saving;save.textContent=saving?(pendingInspection?'Confirming...':'Saving...'):(pendingInspection?'Retry confirmation':'Save monthly check');
+  }
+  function close(){if(!saving)modal.remove();}
+  document.body.appendChild(modal);
+  modal.querySelectorAll('.fleet-check-close').forEach(function(button){button.addEventListener('click',close);});
+  save.addEventListener('click',async function(){
+    if(saving)return;
+    try{fleetAssertEditor(editContext);}catch(error){showError(error.message+' Your entries are retained.');return;}
+    var body=pendingInspection&&pendingInspection.body;
+    if(!body){
+      var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));
+      if(controls.some(function(control){return !control.value;})){showError('Answer every check before saving.');controls.find(function(control){return !control.value;})?.focus();return;}
+      var items=controls.map(function(control){return {item:control.dataset.label,result:control.value,note:control.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});
+      if(items.some(function(item){return (item.result==='na'||item.result==='fail')&&!item.note;})){showError('Explain each N/A and failed answer.');return;}
+      var failed=items.some(function(item){return item.result==='fail';}),defects=modal.querySelector('#fleet-check-defects').value.trim(),actions=modal.querySelector('#fleet-check-actions').value.trim();
+      if(failed&&!defects){defects=items.filter(function(item){return item.result==='fail';}).map(function(item){return item.item+' - '+item.note;}).join('; ');modal.querySelector('#fleet-check-defects').value=defects;}
+      if(failed&&!actions){showError('Failed checks require corrective actions.');return;}
+      var inspectionDate=modal.querySelector('#fleet-check-date').value;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate||'')||Number.isNaN(new Date(inspectionDate+'T12:00:00').getTime())){showError('Select a valid inspection date.');return;}
+      body={company_id:editContext.companyId,tool_id:v.id,inspection_date:inspectionDate,inspection_type:'periodic',inspected_by_name:editContext.name||null,overall_result:failed?'fail':'pass',checklist_results:items,defects_found:defects||null,actions_taken:actions||null};
+    }
+    saving=true;feedback.hidden=true;updateControls();
+    try{
+      if(!pendingInspection){
+        fleetAssertEditor(editContext);
+        var savedId=await api('/rpc/record_fleet_monthly_check',{m:'POST',p:'return=representation',b:{p_company_id:body.company_id,p_vehicle_id:body.tool_id,p_inspection_date:body.inspection_date,p_inspector_name:body.inspected_by_name,p_checklist:body.checklist_results,p_defects:body.defects_found,p_actions:body.actions_taken}});
+        if(typeof savedId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(savedId))throw new Error('The save returned no inspection reference. Check the Fleet inspection register before trying again.');
+        pendingInspection={id:savedId,body:body};
+      }
+      fleetAssertEditor(editContext);
+      var records=await api('/tool_inspections?select=id,company_id,tool_id,inspection_date,inspection_type,overall_result,checklist_results,defects_found,actions_taken&id=eq.'+encodeURIComponent(pendingInspection.id)+'&company_id=eq.'+encodeURIComponent(body.company_id)+'&tool_id=eq.'+encodeURIComponent(body.tool_id)+'&limit=1');
+      fleetAssertEditor(editContext);
+      var record=Array.isArray(records)&&records.length===1?records[0]:null;
+      if(!record||String(record.id)!==pendingInspection.id||String(record.company_id)!==body.company_id||String(record.tool_id)!==String(body.tool_id)||record.inspection_date!==body.inspection_date||record.inspection_type!==body.inspection_type||record.overall_result!==body.overall_result||JSON.stringify((record.checklist_results||[]).map(function(item){return [item.item,item.result,item.note||''];}))!==JSON.stringify(body.checklist_results.map(function(item){return [item.item,item.result,item.note||''];}))||(record.defects_found||null)!==body.defects_found||(record.actions_taken||null)!==body.actions_taken)throw new Error('The saved inspection could not be confirmed.');
+      modal.remove();
+      toast(body.overall_result==='fail'?'Failed check saved; vehicle restricted with linked defect and repair task.':'Monthly vehicle check saved in Fleet.');
+      try{await loadFleet();}catch(refreshError){toast('Inspection saved. Refresh Fleet to reload the register.',false);}
+    }catch(error){
+      var message=String(error.message||error);
+      if(pendingInspection)showError('The save returned an inspection reference, but confirmation is pending. Use Retry confirmation to check it without creating another inspection. '+message);
+      else if(/PGRST202|could not find.*record_fleet_monthly_check|record_fleet_monthly_check.*schema cache/i.test(message))showError('Vehicle inspection saving is unavailable in this environment. An administrator must apply the Fleet inspection database repair. Your entries are retained.');
+      else showError(message+' Your entries are retained.');
+    }finally{saving=false;updateControls();}
+  });
+  modal.addEventListener('click',function(event){if(event.target===modal)close();});
+
 }
 async function fleetFuelNew(label){await showPage('esg',null);await loadESG();esgFuelNew();await esgLoadFuelAssets(null);var match=esgFuelAssets.find(function(v){return label&&[v.registration_number,v.ref_number,v.name].includes(label);});if(match){document.getElementById('ff-equipment').value=match.id;esgFuelAssetChanged(true);}}
 

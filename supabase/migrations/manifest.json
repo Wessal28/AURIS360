@@ -406,6 +406,11 @@
       "order": 81,
       "file": "20261123010000_minutes_action_workflow_status.sql",
       "sha256": "c603787e0ed35281e0ba38262ff907aed3537f26e42a0436c1bcb980ab309941"
+    },
+    {
+      "order": 82,
+      "file": "20261124010000_fleet_monthly_check_repair.sql",
+      "sha256": "6a7795599d1cfd4cd147dcda40f7630d95fa614d2aab4247d7ae9d127a08a03b"
     }
   ]
 }
