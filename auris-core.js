@@ -26860,29 +26860,32 @@ function fleetMonthlyCheck(id){
   var v=(fleetVehicles||[]).find(function(x){return String(x.id)===String(id);});
   if(!v||v.is_vehicle!==true||String(v.company_id)!==editContext.companyId){toast('This vehicle is unavailable in the selected company.',false);return;}
   var saving=false,pendingInspection=null;
-  document.getElementById('fleet-check-modal')?.remove();var modal=document.createElement('div');modal.id='fleet-check-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  document.getElementById('fleet-check-modal')?.remove();var modal=document.createElement('div');modal.id='fleet-check-modal';
   var checks=TOOL_INSPECTION_CHECKLISTS.vehicle;
   var vehicleType=String(v.vehicle_type||v.category||'').toLowerCase();
   if(/plant|forklift|excavat|loader|crane/.test(vehicleType))checks=checks.concat(['Hydraulic system and leaks','Attachments and lifting controls','Emergency stop and warning devices']);
   else if(/truck|lorry|bus|van/.test(vehicleType))checks=checks.concat(['Load restraint and body condition','Mirrors and blind-spot aids']);
-  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="Monthly vehicle check" style="width:100%;max-width:760px;max-height:90vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Fleet monthly check</div><h2 style="margin:3px 0">'+escH(fleetLabel(v))+'</h2></div><button class="btn btn-sm fleet-check-close" aria-label="Close"><i class="ti ti-x"></i></button></div><div style="margin:14px 0">'+checks.map(function(c){return '<label style="display:flex;gap:9px;align-items:center;padding:9px;border-bottom:1px solid var(--border)"><span style="flex:1">'+escH(c)+'</span><select class="fleet-check-item" data-label="'+escH(c)+'" aria-label="Result for '+escH(c)+'" required><option value="">Not checked</option><option value="ok">Pass</option><option value="fail">Fail</option><option value="na">N/A - justified</option></select><input class="fleet-check-note" placeholder="Reason for N/A or failure" aria-label="Note for '+escH(c)+'"></label>';}).join('')+'</div><div class="form3group"><label class="form3label">Defects found</label><textarea id="fleet-check-defects"></textarea></div><div class="form3group"><label class="form3label">Actions taken</label><textarea id="fleet-check-actions"></textarea></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn fleet-check-close">Cancel</button><button class="btn btn-primary fleet-check-save"><i class="ti ti-device-floppy"></i>Save monthly check</button></div></div>';
   var today=new Date(),localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
-  var dateGroup=document.createElement('div');dateGroup.className='form3group';dateGroup.innerHTML='<label class="form3label" for="fleet-check-date">Inspection date *</label><input id="fleet-check-date" type="date" required value="'+localDate+'">';
-  modal.querySelector('div[style="margin:14px 0"]')?.before(dateGroup);
-  var inspectorGroup=document.createElement('div');inspectorGroup.className='form3group';
-  inspectorGroup.innerHTML='<label class="form3label" for="fleet-check-inspector">Inspector *</label><input id="fleet-check-inspector" type="text" list="fleet-check-inspector-options" required autocomplete="off" aria-describedby="fleet-check-inspector-help"><datalist id="fleet-check-inspector-options"></datalist><p id="fleet-check-inspector-help">Select a person or enter the inspector’s name.</p>';
-  dateGroup.before(inspectorGroup);
-  var inspector=modal.querySelector('#fleet-check-inspector');inspector.value=editContext.name||'';
-  var inspectorOptions=modal.querySelector('#fleet-check-inspector-options');
+  modal.innerHTML='<div class="card fleet-check-dialog" role="dialog" aria-modal="true" aria-labelledby="fleet-check-title"><header class="fleet-check-header"><div><span class="fleet-check-eyebrow">Fleet monthly check</span><h2 id="fleet-check-title">'+escH(fleetLabel(v))+'</h2></div><button type="button" class="btn btn-sm fleet-check-close" aria-label="Close"><i class="ti ti-x"></i></button></header><div class="fleet-check-body"><div class="fleet-check-meta"><div class="form3group"><label class="form3label" for="fleet-check-inspector">Inspector *</label><select id="fleet-check-inspector" required aria-describedby="fleet-check-inspector-status"></select><input id="fleet-check-inspector-other" hidden placeholder="Enter inspector name" aria-label="Other inspector name"><p id="fleet-check-inspector-status" class="fleet-check-hint" role="status">Loading employees…</p></div><div class="form3group"><label class="form3label" for="fleet-check-date">Inspection date *</label><input id="fleet-check-date" type="date" required value="'+localDate+'"></div></div><div class="fleet-check-list">'+checks.map(function(c,index){return '<div class="fleet-check-row"><label for="fleet-check-result-'+index+'">'+escH(c)+'</label><select id="fleet-check-result-'+index+'" class="fleet-check-item" data-label="'+escH(c)+'" aria-label="Result for '+escH(c)+'" required><option value="">Not checked</option><option value="ok">Pass</option><option value="fail">Fail</option><option value="na">N/A - justified</option></select><input class="fleet-check-note" hidden placeholder="Reason for N/A or failure" aria-label="Note for '+escH(c)+'"></div>';}).join('')+'</div><div class="fleet-check-notes"><div class="form3group"><label class="form3label" for="fleet-check-defects">Defects found</label><textarea id="fleet-check-defects" rows="2"></textarea></div><div class="form3group"><label class="form3label" for="fleet-check-actions">Actions taken</label><textarea id="fleet-check-actions" rows="2"></textarea></div></div></div><p id="fleet-check-error" role="alert" hidden></p><footer class="fleet-check-footer"><button type="button" class="btn fleet-check-close">Cancel</button><button type="button" class="btn btn-primary fleet-check-save"><i class="ti ti-device-floppy"></i>Save monthly check</button></footer></div>';
+  var inspector=modal.querySelector('#fleet-check-inspector'),otherInspector=modal.querySelector('#fleet-check-inspector-other'),inspectorStatus=modal.querySelector('#fleet-check-inspector-status');
+  function updateInspector(){otherInspector.hidden=inspector.value!=='__other__';otherInspector.required=!otherInspector.hidden;}
   function setInspectorOptions(rows){
-    var names=[editContext.name].concat((rows||[]).filter(function(person){return String(person.company_id)===editContext.companyId;}).map(function(person){return [person.first_name,person.last_name].filter(Boolean).join(' ');}));
-    inspectorOptions.replaceChildren();
-    Array.from(new Set(names.map(function(name){return String(name||'').trim();}).filter(Boolean))).forEach(function(name){var option=document.createElement('option');option.value=name;inspectorOptions.appendChild(option);});
+    var previous=inspector.value,defaultName=String(editContext.name||'').trim();
+    var names=(rows||[]).filter(function(person){return String(person.company_id)===editContext.companyId;}).map(function(person){return [person.first_name,person.last_name].filter(Boolean).join(' ').trim();}).filter(Boolean);
+    var choices=Array.from(new Set([defaultName,previous!=='__other__'?previous:''].concat(names).filter(Boolean)));
+    inspector.replaceChildren();
+    choices.forEach(function(name){var option=document.createElement('option');option.value=name;option.textContent=name+(name===defaultName?' (you)':'');inspector.appendChild(option);});
+    var otherOption=document.createElement('option');otherOption.value='__other__';otherOption.textContent='Other inspector…';inspector.appendChild(otherOption);
+    inspector.value=previous||defaultName||'__other__';updateInspector();
+    return names.length;
   }
   setInspectorOptions([]);
-  var feedback=document.createElement('p');feedback.id='fleet-check-error';feedback.setAttribute('role','alert');feedback.hidden=true;
-  modal.querySelector('.card').appendChild(feedback);
-  var save=modal.querySelector('.fleet-check-save');
+  inspector.addEventListener('change',updateInspector);
+  modal.querySelectorAll('.fleet-check-item').forEach(function(control){
+    function showReason(){var note=control.parentElement.querySelector('.fleet-check-note');note.hidden=!['fail','na'].includes(control.value);note.required=!note.hidden;}
+    control.addEventListener('change',showReason);showReason();
+  });
+  var feedback=modal.querySelector('#fleet-check-error'),save=modal.querySelector('.fleet-check-save');
   function showError(message){feedback.textContent=message;feedback.hidden=false;}
   function updateControls(){
     modal.querySelectorAll('input,select,textarea').forEach(function(control){control.disabled=saving||!!pendingInspection;});
@@ -26894,19 +26897,20 @@ function fleetMonthlyCheck(id){
   api('/people?select=company_id,first_name,last_name&company_id=eq.'+encodeURIComponent(editContext.companyId)+'&status=eq.active&order=last_name,first_name&limit=1000').then(function(rows){
     fleetAssertEditor(editContext);
     if(document.getElementById('fleet-check-modal')!==modal)return;
-    setInspectorOptions(Array.isArray(rows)?rows:[]);
-  }).catch(function(){/* Inspector names can still be entered when suggestions are unavailable. */});
+    var count=setInspectorOptions(Array.isArray(rows)?rows:[]);
+    inspectorStatus.textContent=count?'Choose an employee or Other inspector.':'No active employees found. You can use Other inspector.';
+  }).catch(function(){if(document.getElementById('fleet-check-modal')===modal)inspectorStatus.textContent='Employees could not load. You can use Other inspector.';});
   modal.querySelectorAll('.fleet-check-close').forEach(function(button){button.addEventListener('click',close);});
   save.addEventListener('click',async function(){
     if(saving)return;
     try{fleetAssertEditor(editContext);}catch(error){showError(error.message+' Your entries are retained.');return;}
     var body=pendingInspection&&pendingInspection.body;
     if(!body){
-      var inspectorName=inspector.value.trim();
-      if(!inspectorName){showError('Enter the inspector’s name.');inspector.focus();return;}
+      var inspectorField=inspector.value==='__other__'?otherInspector:inspector,inspectorName=inspectorField.value.trim();
+      if(!inspectorName){showError('Enter the inspector’s name.');inspectorField.focus();return;}
       var controls=Array.from(modal.querySelectorAll('.fleet-check-item'));
       if(controls.some(function(control){return !control.value;})){showError('Answer every check before saving.');controls.find(function(control){return !control.value;})?.focus();return;}
-      var items=controls.map(function(control){return {item:control.dataset.label,result:control.value,note:control.parentElement.querySelector('.fleet-check-note')?.value.trim()||''};});
+      var items=controls.map(function(control){return {item:control.dataset.label,result:control.value,note:['fail','na'].includes(control.value)?control.parentElement.querySelector('.fleet-check-note').value.trim():''};});
       if(items.some(function(item){return (item.result==='na'||item.result==='fail')&&!item.note;})){showError('Explain each N/A and failed answer.');return;}
       var failed=items.some(function(item){return item.result==='fail';}),defects=modal.querySelector('#fleet-check-defects').value.trim(),actions=modal.querySelector('#fleet-check-actions').value.trim();
       if(failed&&!defects){defects=items.filter(function(item){return item.result==='fail';}).map(function(item){return item.item+' - '+item.note;}).join('; ');modal.querySelector('#fleet-check-defects').value=defects;}
