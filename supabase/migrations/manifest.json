@@ -421,6 +421,11 @@
       "order": 84,
       "file": "20261125010000_meeting_occurrences.sql",
       "sha256": "b87d1a252a4632ee11b20d6581f0a0961805a9d2bff16ee0eb41114ae3084bac"
+    },
+    {
+      "order": 85,
+      "file": "20261126010000_incident_notification_relationship.sql",
+      "sha256": "564d5c4d7434cf225212fa7e80b0f1538be69284580cea9b606fa50106530b48"
     }
   ]
 }

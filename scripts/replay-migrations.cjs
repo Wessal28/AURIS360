@@ -157,6 +157,10 @@ run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261125010000_meet
   label: 'idempotent meeting occurrence identity and cancellation installation', quiet: true
 });
 
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261126010000_incident_notification_relationship.sql')], {
+  label: 'idempotent draft-aware incident notification relationship repair', quiet: true
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -224,3 +228,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_month
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_inspection_edit.sql')], {label: 'Fleet saved inspection editing, immutable history, revision conflicts and retained repair chains'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meeting_occurrences.sql')], {label: 'stable meeting occurrence dates, reversible cancellation, retained minutes/actions and company protection'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'incident_notifications.sql')], {label: 'incident draft saving, first-report notification relationships, deduplication and tenant protection'});
