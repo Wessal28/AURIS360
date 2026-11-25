@@ -48,7 +48,7 @@ var modules = [
 var extractionMap={
   workschedule:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['auris-work-gantt.js']},
   actions:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js','action-print-reports.js']},
-  meetings:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js']},
+  meetings:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['meeting-occurrences.js','module-report-preview.js']},
   swms:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['swms-upgrade.js']},
   sop:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['sop-video-upgrade.js']},
   inspection:{group:'assurance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]},

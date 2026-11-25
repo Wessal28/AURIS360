@@ -13,7 +13,7 @@ test('probe sends all exact named arguments and an uncastable UUID before routin
   request={url,init};return new Response(JSON.stringify({code:'22P02',message:'invalid input syntax for type uuid: "'+PROBE_ID+'"'}),{status:400});
  }});
  assert.deepEqual(result,{installed:true,authenticated:true,no_write_probe:true,result:'invalid_uuid_rejected'});
- assert.equal(request.url,options.supabaseUrl+'/rest/v1/rpc/save_hse_minutes');
+ assert.equal(request.url,options.supabaseUrl+'/rest/v1/rpc/save_hse_minutes_occurrence');
  assert.equal(request.init.method,'POST');assert.equal(request.init.redirect,'error');
  assert.deepEqual(JSON.parse(request.init.body),{p_id:'invalid-uuid-readiness-probe',p_minutes:{},p_expected_updated_at:null});
  assert.equal(request.init.headers.apikey,publicKey);assert.equal(request.init.headers.Authorization,'Bearer '+accessToken);
@@ -40,7 +40,7 @@ test('an absent, anonymous, service-role or malformed access token cannot start 
 
 test('missing RPC blocks release with the exact repair migration and schema-cache guidance',async()=>{
  await assert.rejects(verifyMeetingsRpc({...options,fetchImpl:reply('PGRST202','unsafe server detail '+publicKey,404)}),error=>{
-  assert.match(error.message,/20261020020000_meetings_rpc_installation_repair\.sql/);assert.match(error.message,/PostgREST schema cache/);assert.doesNotMatch(error.message,/unsafe server detail|synthetic_readiness_key/);return true;
+  assert.match(error.message,/20261125010000_meeting_occurrences\.sql/);assert.match(error.message,/PostgREST schema cache/);assert.doesNotMatch(error.message,/unsafe server detail|synthetic_readiness_key/);return true;
  });
 });
 

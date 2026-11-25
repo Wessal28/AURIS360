@@ -3,7 +3,7 @@
 const PROBE_ID='invalid-uuid-readiness-probe';
 const MAX_TIMEOUT_MS=15000;
 const KNOWN_PROJECTS=new Set(['iarfxjhahzbhncsaohbg','beoutmqttgfyyzndcdxu']);
-const REPAIR='supabase/migrations/20261020020000_meetings_rpc_installation_repair.sql';
+const REPAIR='supabase/migrations/20261125010000_meeting_occurrences.sql';
 class VerificationError extends Error {}
 function authenticatedToken(value){
  const token=String(value||'').trim();
@@ -20,7 +20,7 @@ function endpoint(value,expectedProjectRef){
  if(!KNOWN_PROJECTS.has(expectedProjectRef))throw Error('Minutes RPC verification requires an approved expected project.');
  let url;try{url=new URL(String(value||''));}catch(_){throw Error('Minutes RPC verification requires the approved HTTPS Supabase URL.');}
  if(url.protocol!=='https:'||url.hostname!==expectedProjectRef+'.supabase.co'||url.username||url.password||url.port&&url.port!=='443'||!['','/'].includes(url.pathname)||url.search||url.hash)throw Error('Minutes RPC verification requires the approved HTTPS Supabase URL.');
- return new URL('/rest/v1/rpc/save_hse_minutes',url).href;
+ return new URL('/rest/v1/rpc/save_hse_minutes_occurrence',url).href;
 }
 async function verifyMeetingsRpc(options={}){
  const url=endpoint(options.supabaseUrl,options.expectedProjectRef),credential=publicKey(options.publicKey),accessToken=authenticatedToken(options.accessToken),fetchImpl=options.fetchImpl||fetch,controller=new AbortController();

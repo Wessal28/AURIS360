@@ -11,12 +11,12 @@ function harness(){
 }
 test('missing minutes RPC retains all entries and concurrency token; retry confirms the same record and linked actions',async()=>{
  const h=harness(),requests=[];let missing=true;
- h.c.api=async(path,options)=>{requests.push([path,JSON.parse(JSON.stringify(options))]);if(missing)throw Error('Could not find the function public.save_hse_minutes(p_expected_updated_at, p_id, p_minutes) in the schema cache');return {minutes:{...options.b.p_minutes,id:options.b.p_id,updated_at:'2026-10-20T05:00:01Z'},actions:[{id:'linked-action',company_id:'company-a'}]};};
+ h.c.api=async(path,options)=>{requests.push([path,JSON.parse(JSON.stringify(options))]);if(missing)throw Error('Could not find the function public.save_hse_minutes_occurrence(p_expected_updated_at, p_id, p_minutes) in the schema cache');return {minutes:{...options.b.p_minutes,id:options.b.p_id,updated_at:'2026-10-20T05:00:01Z'},actions:[{id:'linked-action',company_id:'company-a'}]};};
  await h.c.mtgSaveMom();
  assert.equal(h.elements.mom3notes.value,'Keep this unsaved narrative');assert.equal(h.elements.mom3status.value,'draft');assert.equal(h.form.dataset.savedUpdatedAt,'2026-10-18T05:00:00Z');assert.equal(h.form.dataset.pendingMinutesId,'minute-a');assert.deepEqual(h.calls,[]);
  assert.match(h.elements['mtg-save-error'].textContent,/database update[\s\S]*Your entries are retained/);assert.doesNotMatch(h.messages.at(-1)[0],/public\.|p_expected_updated_at|schema cache/);assert.ok(h.buttons.every(b=>!b.disabled));assert.equal(h.c.mtgSavingMom,false);
  missing=false;await h.c.mtgSaveMom();
- assert.equal(requests.length,2);assert.equal(requests[1][0],'/rpc/save_hse_minutes');assert.equal(requests[1][1].b.p_id,'minute-a');assert.equal(requests[1][1].b.p_expected_updated_at,'2026-10-18T05:00:00Z');assert.equal(requests[1][1].b.p_minutes.meeting_date,'2026-10-20T05:00:00.000Z');assert.equal(requests[1][1].b.p_minutes.recommendations[0].desc,'Keep this action');assert.deepEqual(h.calls,['back']);assert.equal(h.c.mapAllData[0].id,'linked-action');assert.equal(h.form.dataset.savedUpdatedAt,'2026-10-20T05:00:01Z');
+ assert.equal(requests.length,2);assert.equal(requests[1][0],'/rpc/save_hse_minutes_occurrence');assert.equal(requests[1][1].b.p_id,'minute-a');assert.equal(requests[1][1].b.p_expected_updated_at,'2026-10-18T05:00:00Z');assert.equal(requests[1][1].b.p_minutes.meeting_date,'2026-10-20T05:00:00.000Z');assert.equal(requests[1][1].b.p_minutes.recommendations[0].desc,'Keep this action');assert.deepEqual(h.calls,['back']);assert.equal(h.c.mapAllData[0].id,'linked-action');assert.equal(h.form.dataset.savedUpdatedAt,'2026-10-20T05:00:01Z');
 });
 test('in-flight minutes saves reject duplicate clicks and release controls after a failure',async()=>{
  const h=harness();let release,requests=0;h.c.api=()=>{requests++;return new Promise((_resolve,reject)=>release=()=>reject(Error('Connection timed out')));};

@@ -1,10 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const helper=fs.readFileSync('meeting-reliability.js','utf8'),core=fs.readFileSync('auris-core.js','utf8');
+const helper=fs.readFileSync('meeting-reliability.js','utf8')+'\n'+fs.readFileSync('meeting-occurrences.js','utf8'),core=fs.readFileSync('auris-core.js','utf8');
 function runtime(extra={}){const c={Intl,Date,Map,Set,crypto:require('node:crypto').webcrypto,document:{addEventListener(){},querySelectorAll(){return [];},getElementById(){return null;}},...extra};c.window=c;vm.createContext(c);vm.runInContext(helper,c);return c;}
 test('09:00 in Dubai persists as 05:00 UTC and reopens and prints as 09:00 with a timezone label',()=>{const h=runtime().AurisMeetingTime;assert.equal(h.instant('2026-10-18T09:00','Asia/Dubai'),'2026-10-18T05:00:00.000Z');assert.equal(h.wall('2026-10-18T05:00:00Z','Asia/Dubai'),'2026-10-18T09:00');assert.match(h.display('2026-10-18T05:00:00Z','Asia/Dubai'),/18\/10\/2026 09:00 \(Asia\/Dubai\)/);});
 test('ambiguous and nonexistent daylight-saving wall times require correction',()=>{const h=runtime().AurisMeetingTime;assert.throws(()=>h.instant('2026-03-08T02:30','America/New_York'),/does not exist/);assert.throws(()=>h.instant('2026-11-01T01:30','America/New_York'),/occurs twice/);});
 test('recurrence preserves occurrence days and month-end anchors',()=>{const h=runtime().AurisMeetingTime;assert.equal(h.next('2026-10-18','quarterly'),'2027-01-18');assert.equal(h.next('2027-01-31','monthly'),'2027-02-28');const rows=h.occurrences({next_date:'2027-01-31',recurrence:'monthly'},2027);assert.ok(rows.includes('2027-02-28'));assert.ok(rows.includes('2027-03-31'));});
-test('an agenda occurrence on Sunday 18 October opens that exact date, not the Monday of its week',()=>{const calls=[],c=runtime({mtgSeriesData:[{id:'s',company_id:'c',title:'Fictional',next_date:'2026-10-18',recurrence:'quarterly'}],mtgMinutesData:[],mtgRoadmapYear:2026,mtgScheduleMeeting:(...args)=>calls.push(args)});let a=core.indexOf('function mtgGetWeeksForSeries('),b=core.indexOf('function mtgCurrentWeek',a);vm.runInContext(core.slice(a,b),c);a=core.indexOf('function mtgClickWeek(seriesId,week){');b=core.indexOf('\nfunction mtgWeekToDate',a);vm.runInContext(core.slice(a,b),c);c.mtgClickWeek('s',c.mtgGetWeekNumber(new Date(2026,9,18,12)));assert.deepEqual(calls,[['s','2026-10-18']]);});
+test('an agenda occurrence on Sunday 18 October opens that exact date, not the Monday of its week',()=>{const calls=[],c=runtime({ccid:()=> 'c',prof:{id:'manager'},isMgr:()=>true,mtgAgendaLoadError:'',mtgSeriesData:[{id:'s',company_id:'c',title:'Fictional',next_date:'2026-10-18',recurrence:'quarterly'}],mtgMinutesData:[],mtgRoadmapYear:2026,mtgScheduleMeeting:(...args)=>calls.push(args)});let a=core.indexOf('function mtgGetWeeksForSeries('),b=core.indexOf('function mtgCurrentWeek',a);vm.runInContext(core.slice(a,b),c);a=core.indexOf('function mtgClickWeek(seriesId,week){');b=core.indexOf('\nfunction mtgWeekToDate',a);vm.runInContext(core.slice(a,b),c);c.mtgClickWeek('s',c.mtgGetWeekNumber(new Date(2026,9,18,12)));assert.deepEqual(calls,[['s','2026-10-18']]);});
 test('partial roadmap refresh preserves full older minutes and rejects foreign-company cache rows',()=>{const c=runtime({ccid:()=> 'a',mtgMinutesData:[{id:'1',company_id:'a',title:'Old minutes',agenda_items:[{item:'Stored'}]},{id:'foreign',company_id:'b',title:'Other'}]});c.mtgMergeMinutes([{id:'1',company_id:'a',status:'draft'}],true);assert.equal(c.mtgMinutesData.length,1);assert.equal(c.mtgMinutesData[0].title,'Old minutes');assert.equal(c.mtgMinutesData[0].agenda_items[0].item,'Stored');assert.equal(c.mtgParseArray('[{"desc":"Legacy action"}]')[0].desc,'Legacy action');});
 
 test('the agenda shows removal controls on active schedules and excludes inactive duplicates',()=>{
@@ -12,7 +12,7 @@ test('the agenda shows removal controls on active schedules and excludes inactiv
   const c=runtime({
     document:{addEventListener(){},getElementById:id=>id==='mtg-roadmap-container'?host:null},
     ccid:()=> 'company-a',prof:{id:'manager'},isMgr:()=>true,escH:String,
-    mtgRoadmapYear:2026,mtgGetWeekNumber:()=>53,mtgCurrentWeek:()=>46,mtgGetWeeksForSeries:()=>[],MTG_RECURRENCE:{quarterly:'Quarterly'},
+    mtgRoadmapYear:2026,mtgAgendaLoadError:'',mtgAgendaRows:()=>[],mtgGetWeekNumber:()=>53,mtgCurrentWeek:()=>46,mtgGetWeeksForSeries:()=>[],MTG_RECURRENCE:{quarterly:'Quarterly'},
     mtgSeriesData:[
       {id:'keep',company_id:'company-a',title:'Main quarterly review',recurrence:'quarterly',active:true},
       {id:'retired',company_id:'company-a',title:'Inactive duplicate review',recurrence:'quarterly',active:false}
@@ -21,6 +21,7 @@ test('the agenda shows removal controls on active schedules and excludes inactiv
   const start=core.indexOf('function mtgCanChangeSeries('),end=core.indexOf('var mtgSeriesRemovalPending=',start);
   const roadmap=core.indexOf('function mtgRenderRoadmap(){'),next=core.indexOf('function mtgClickWeek(',roadmap);
   vm.runInContext(core.slice(start,end)+core.slice(roadmap,next),c);
+  c.mtgAgendaRows=()=>[];
   c.mtgRenderOccurrences=()=>{};
   c.mtgRenderRoadmap();
   assert.match(host.innerHTML,/Main quarterly review/);

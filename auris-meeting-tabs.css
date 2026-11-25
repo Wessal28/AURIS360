@@ -30,3 +30,16 @@
   padding: 3px 5px;
   font-size: 11px;
 }
+
+.meeting-occurrence-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 12px 8px}
+.meeting-occurrence-heading h3{margin:0;font-size:15px}
+.meeting-occurrence-heading label{display:inline-flex;align-items:center;gap:8px;color:var(--text2,#64748b);font-size:12px;cursor:pointer}
+.meeting-occurrence-actions{display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
+.meeting-occurrence-actions .btn{font-size:12px;white-space:nowrap}
+.meeting-occurrence-row.is-removed{background:var(--bg2,#f8fafc);color:var(--text2,#64748b)}
+.meeting-occurrence-row small{display:block;font-size:12px;color:var(--text2,#64748b)}
+.meeting-agenda-error{padding:20px;background:#fff3f1;color:#9d2525}
+.meeting-occurrence-dialog{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:#10283c80}
+.meeting-occurrence-dialog>.card{width:min(460px,100%);max-height:80vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:24px;background:var(--card,#fff);border-radius:16px;box-shadow:0 20px 70px #10283c40}
+.meeting-occurrence-dialog h3{margin:0 0 6px}
+@media(max-width:700px){.meeting-occurrence-row{align-items:flex-start;flex-wrap:wrap}.meeting-occurrence-actions{width:100%}}

@@ -412,7 +412,8 @@ async function main() {
     ['Planned KPI months (apply 20260911010000_kpi_planned_reporting_months.sql if missing)', `kpis_v2?select=id,frequency,planned_months&${companyFilter}&limit=1`],
     ['Retained chemical SDS (apply 20260911020000_chemical_sds_document_storage.sql if missing)', `chemical_register?select=id,sds_file_url,sds_file_path,sds_file_mime&${companyFilter}&limit=1`],
     ['Retained SDS versions (apply 20260911020000_chemical_sds_document_storage.sql if missing)', `chemical_sds_versions?select=id,file_url,file_path,file_mime&${companyFilter}&limit=1`],
-    ['Completed meeting minutes', `hse_meetings?select=id,title,series_id,status,meeting_date,minutes,agenda_items,recommendations&${companyFilter}&limit=1`],
+    ['Completed meeting minutes', `hse_meetings?select=id,title,series_id,scheduled_date,status,meeting_date,minutes,agenda_items,recommendations&${companyFilter}&limit=1`],
+    ['Removed meeting occurrences (apply 20261125010000_meeting_occurrences.sql if missing)', `meeting_occurrence_exceptions?select=id,company_id,series_id,scheduled_date,status&${companyFilter}&limit=1`],
     ['Governed KPI sources', `kpi_indicators?select=id,source_mode,source_metric,source_revision&${companyFilter}&limit=1`],
     ['Workflow governance', `workflow_policy_versions?select=id,module_key,status,version,revision&${companyFilter}&limit=1`],
     ['Approval governance', `approval_requests?select=id,module_name,source_record_id,source_page,source_adapter_key,from_state,to_state,status,revision&${companyFilter}&limit=1`],
@@ -448,7 +449,7 @@ async function main() {
     minutes: minutesNotes, series_id: null, next_meeting_date: null, chair_person_id: null,
     attendee_person_ids: [], agenda_items: [], recommendations: []
   };
-  const minutesSaved = await jsonRequest(`${base}/rest/v1/rpc/save_hse_minutes`, {
+  const minutesSaved = await jsonRequest(`${base}/rest/v1/rpc/save_hse_minutes_occurrence`, {
     method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ p_id: minutesId, p_minutes: minutesPayload, p_expected_updated_at: previousMinutes ? previousMinutes.updated_at : null })
   }).catch((error) => fail(`atomic minutes draft save failed (${error.message}).`));

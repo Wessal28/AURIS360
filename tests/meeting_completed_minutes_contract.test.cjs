@@ -4,16 +4,20 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const source=fs.readFileSync(path.resolve(__dirname,'..','auris-core.js'),'utf8');
+const occurrences=fs.readFileSync(path.resolve(__dirname,'..','meeting-occurrences.js'),'utf8');
+const reliability=fs.readFileSync(path.resolve(__dirname,'..','meeting-reliability.js'),'utf8');
 
 test('agenda opens stored completed minutes and drafts instead of a blank form',()=>{
   assert.match(source,/function mtgClickWeek\(seriesId,week\)/);
-  assert.match(source,/var saved=matches\.find\(function\(m\)\{return String\(m\.status\|\|''\)\.toLowerCase\(\)==='completed';\}\)\|\|matches\[0\]/);
-  assert.match(source,/else mtgOpenMom\(saved\.id\);return;/);
+  assert.match(source,/return mtgOpenWeek\(seriesId,week\)/);
+  assert.match(occurrences,/if\(entry\.status==='completed'\|\|!isMgr\(\)\)mtgViewMomReadOnly\(entry\.minutesId\);else mtgOpenMom\(entry\.minutesId\)/);
+  assert.match(occurrences,/row\.key===key/);
+  assert.doesNotMatch(occurrences.slice(occurrences.indexOf('root.mtgOpenWeek='),occurrences.indexOf('root.mtgChangeOccurrence=')),/matches\[0\]/);
 });
 
 test('week 16 opens the stored draft for editing and keeps completed minutes read only',()=>{
-  const calls=[];const c={AurisMeetingTime:{wall:value=>value.slice(0,10)+'T09:00'},mtgSeriesData:[{id:'series-a',title:'HSE Management Review Meeting'}],mtgMinutesData:[{id:'week-16',series_id:'series-a',meeting_date:'2026-04-15',status:'draft'}],mtgRoadmapYear:2026,mtgGetWeekNumber:()=>16,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
-  vm.createContext(c);const start=source.indexOf('function mtgClickWeek(seriesId,week){'),end=source.indexOf('\nfunction mtgWeekToDate',start);vm.runInContext(source.slice(start,end),c);
+  const calls=[];const c={Intl,Date,Map,Set,document:{addEventListener(){}},ccid:()=> 'company-a',prof:{id:'user-a'},mtgAgendaLoadError:'',mtgSeriesData:[{id:'series-a',company_id:'company-a',title:'HSE Management Review Meeting',agenda_anchor_date:'2026-01-15',next_date:'2026-10-15',recurrence:'quarterly'}],mtgMinutesData:[{id:'week-16',company_id:'company-a',series_id:'series-a',scheduled_date:'2026-04-15',meeting_date:'2026-04-15T05:00:00Z',meeting_timezone:'Asia/Dubai',status:'draft'}],mtgRoadmapYear:2026,isMgr:()=>true,mtgOpenMom:id=>calls.push(['edit',id]),mtgViewMomReadOnly:id=>calls.push(['view',id])};
+  c.window=c;vm.createContext(c);vm.runInContext(reliability+'\n'+occurrences,c);const start=source.indexOf('function mtgClickWeek(seriesId,week){'),end=source.indexOf('\nfunction mtgWeekToDate',start);vm.runInContext(source.slice(start,end),c);
   c.mtgClickWeek('series-a',16);assert.deepEqual(calls,[['edit','week-16']]);
   c.mtgMinutesData[0].status='completed';c.mtgClickWeek('series-a',16);assert.deepEqual(calls[1],['view','week-16']);
 });
