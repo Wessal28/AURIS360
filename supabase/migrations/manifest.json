@@ -431,6 +431,11 @@
       "order": 86,
       "file": "20261126020000_investigation_workflow_status.sql",
       "sha256": "f1531114b85168a27d83974a5f00fcd3e667c7fbadd6d954ed2d830f2981b7a0"
+    },
+    {
+      "order": 87,
+      "file": "20261126030000_document_record_metadata_edit.sql",
+      "sha256": "dbe5dd72c6dba140d65544c8fd5680e25bca0b416443eadc8906217079b7a39b"
     }
   ]
 }

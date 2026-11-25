@@ -46,6 +46,7 @@ var modules = [
 ];
 
 var extractionMap={
+  documents:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['document-record-editor.js']},
   events:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['incident-safety-communication.js']},
   workschedule:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['auris-work-gantt.js']},
   actions:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js','action-print-reports.js']},
