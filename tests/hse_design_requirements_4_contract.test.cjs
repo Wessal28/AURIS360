@@ -10,6 +10,7 @@ const core = read('auris-core.js');
 const work = read('auris-runtime-event-handlers.js');
 const generated = read('auris-generated-event-handlers.js');
 const incidents = read('incident-management-upgrade.js');
+const communications = read('incident-safety-communication.js');
 const bbs = read('bbs-observations.js');
 const risk = read('risk-assessment-upgrade.js');
 
@@ -46,7 +47,9 @@ test('register rows open read-only previews while explicit edit actions remain a
 
 test('incident lessons generate a validated, shareable safety communication', () => {
   assert.match(incidents, /window\.imv2GenerateSafetyCommunication/);
-  assert.match(incidents, /linked investigation must be completed before communication is generated/i);
+  assert.match(incidents, /AurisIncidentCommunication\.generate\(lessonId,services\)/);
+  assert.match(communications, /function finalInvestigation\(row\)\{return \['completed','closed'\]\.includes/);
+  assert.match(communications, /function approved\(lesson\)[^\n]*\['approved','published'\]\.includes/);
   assert.match(incidents, /window\.imv2ShareSafetyCommunication/);
   assert.match(incidents, /safety_communication/);
 });
