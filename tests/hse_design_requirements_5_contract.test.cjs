@@ -53,7 +53,8 @@ test('chemical approvals are read-only first and emergency cards print by select
 });
 
 test('incident lessons create a linked Safety Bulletin and e-learning uses visual cards', () => {
-  assert.match(incidents, /safety_bulletins/);
+  assert.match(read('incident-safety-communication.js'), /safety_bulletins/);
+  assert.match(incidents, /AurisIncidentCommunication\.generate/);
   assert.match(incidents, /Safety Communication and linked Safety Bulletin/);
   assert.match(core, /lcu-course-grid/);
   assert.match(core, /thumbnail_url/);
