@@ -230,3 +230,6 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_inspe
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meeting_occurrences.sql')], {label: 'stable meeting occurrence dates, reversible cancellation, retained minutes/actions and company protection'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'incident_notifications.sql')], {label: 'incident draft saving, first-report notification relationships, deduplication and tenant protection'});
+
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261126020000_investigation_workflow_status.sql')], {label: 'idempotent investigation workflow status alignment', quiet: true});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'investigation_workflow_status.sql')], {label: 'investigation workflow statuses, retained records and tenant protections'});
