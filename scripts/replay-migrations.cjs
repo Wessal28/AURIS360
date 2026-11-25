@@ -153,6 +153,10 @@ run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261124020000_flee
   label: 'idempotent Fleet inspection editing installation', quiet: true
 });
 
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261125010000_meeting_occurrences.sql')], {
+  label: 'idempotent meeting occurrence identity and cancellation installation', quiet: true
+});
+
 const inventorySql = [
   "select json_build_object(",
   "  'tables', (select count(*) from pg_catalog.pg_tables where schemaname='public'),",
@@ -218,3 +222,5 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'settings_re
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_monthly_check_repair.sql')], {label: 'Fleet inspection authenticated saving, tenant protection and atomic failed checks'});
 
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'fleet_inspection_edit.sql')], {label: 'Fleet saved inspection editing, immutable history, revision conflicts and retained repair chains'});
+
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'meeting_occurrences.sql')], {label: 'stable meeting occurrence dates, reversible cancellation, retained minutes/actions and company protection'});

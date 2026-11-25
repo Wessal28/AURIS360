@@ -416,6 +416,11 @@
       "order": 83,
       "file": "20261124020000_fleet_inspection_edit.sql",
       "sha256": "4869a8019edea3333f70c3bdd0e62b669323e68b43c7c5bff9b1af6c764171c1"
+    },
+    {
+      "order": 84,
+      "file": "20261125010000_meeting_occurrences.sql",
+      "sha256": "b87d1a252a4632ee11b20d6581f0a0961805a9d2bff16ee0eb41114ae3084bac"
     }
   ]
 }

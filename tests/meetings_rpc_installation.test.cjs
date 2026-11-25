@@ -156,7 +156,8 @@ test('installed RPC grants preserve authenticated company and section checks',()
 
 test('frontend RPC argument names agree with the installation and saved results are confirmed',()=>{
   const core=read('auris-core.js'),start=core.indexOf('async function mtgSaveMom(){'),end=core.indexOf('async function mtgDeleteMom',start),save=core.slice(start,end);
-  assert.match(save,/api\('\/rpc\/save_hse_minutes',\{m:'POST',b:\{p_id:savedId,p_minutes:body,p_expected_updated_at:form\.dataset\.savedUpdatedAt\|\|null\}\}/);
+  assert.match(save,/api\('\/rpc\/save_hse_minutes_occurrence',\{m:'POST',b:\{p_id:savedId,p_minutes:body,p_expected_updated_at:form\.dataset\.savedUpdatedAt\|\|null\}\}/);
+  assert.match(read('supabase/migrations/20261125010000_meeting_occurrences.sql'),/function public\.save_hse_minutes_occurrence\(p_id uuid,p_minutes jsonb,p_expected_updated_at timestamptz default null\) returns jsonb/);
   assert.match(save,/result\?\.minutes\?\.id/);
   assert.doesNotMatch(save,/api\('\/hse_meetings[^\n]*m:'(?:POST|PATCH)'/);
   assert.match(read('tests/sql/meetings_rpc_installation.sql'),/routine\.proargnames is distinct from array\['p_id','p_minutes','p_expected_updated_at'\]/);

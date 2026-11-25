@@ -66,7 +66,7 @@ test('saving minutes transmits the recorded value unchanged and accepts the sepa
     h.fields['.mom3rec-status'].value=selectedOption(h.c.mtgRecordedStatusOptions(value)).value;
     await h.c.mtgSaveMom();
     assert.equal(h.requests.length,1);
-    assert.equal(h.requests[0].path,'/rpc/save_hse_minutes');
+    assert.equal(h.requests[0].path,'/rpc/save_hse_minutes_occurrence');
     assert.equal(h.requests[0].request.b.p_id,'minute-a');
     assert.equal(h.requests[0].request.b.p_minutes.recommendations[0].status,value);
     assert.equal(h.requests[0].request.b.p_minutes.recommendations[0].key,'stable-recommendation-key');
