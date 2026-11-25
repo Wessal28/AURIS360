@@ -84,10 +84,14 @@ select set_config('qa.metadata.initial',public.qa_metadata_snapshot()::text,true
 select set_config('qa.metadata.original_doc',(select to_jsonb(d)::text from public.documents d where id='d1263000-0000-4000-8000-000000000100'),true);
 select set_config('qa.metadata.original_revision',(select to_jsonb(r)::text from public.document_control_revisions r where id='d1263000-0000-4000-8000-000000000150'),true);
 select set_config('qa.metadata.initial_expected',public.qa_metadata_expected('d1263000-0000-4000-8000-000000000100')::text,true);
+-- Staging may already contain these PDFs while the separate upload service is
+-- not deployed. Editing an existing record must not depend on that service.
+alter function public.document_upload_command(text,uuid,text,text,uuid,jsonb,jsonb) rename to qa_metadata_hidden_upload_command;
 set local role authenticated;
 do $$declare result jsonb;d public.documents;r public.document_control_revisions;expected jsonb:=current_setting('qa.metadata.initial_expected')::jsonb;
  document_changes text[]:=array['title','document_type','doc_type','department','category','owner','description','scope','tags','legal_refs','issue_date','review_date','language_code','scope_type','scope_id','confidentiality','updated_at'];
  revision_changes text[]:=array['title','metadata_json','content_hash','language_code','scope_type','scope_id','updated_at'];begin
+ if to_regprocedure('public.document_upload_command(text,uuid,text,text,uuid,jsonb,jsonb)') is not null then raise exception 'Partial-deployment fixture unexpectedly retained its upload RPC';end if;
  result:=public.save_document_metadata('d1263000-0000-4000-8000-000000000100','d1263000-0000-4000-8000-000000000150',expected,public.qa_metadata_body(),'Correct initial unissued record details');
  select * into strict d from public.documents where id='d1263000-0000-4000-8000-000000000100';
  select * into strict r from public.document_control_revisions where id=d.current_revision_id;
@@ -106,6 +110,8 @@ do $$declare result jsonb;d public.documents;r public.document_control_revisions
    raise exception 'Metadata edit changed non-metadata content or lost its complete revision snapshot';end if;
 end$$;
 reset role;
+do $$begin if to_regprocedure('public.document_upload_command(text,uuid,text,text,uuid,jsonb,jsonb)') is not null then raise exception 'Metadata editing installed an unrelated upload RPC';end if;end$$;
+alter function public.qa_metadata_hidden_upload_command(text,uuid,text,text,uuid,jsonb,jsonb) rename to document_upload_command;
 do $$declare before_rows jsonb:=current_setting('qa.metadata.initial')::jsonb;original jsonb:=current_setting('qa.metadata.original_doc')::jsonb;d jsonb;notice public.document_control_audit_events;begin
  if public.qa_metadata_snapshot()-'documents'-'revisions'-'audit' is distinct from before_rows-'documents'-'revisions'-'audit' then
    raise exception 'Metadata edit changed files, approval records, copies, acknowledgements or stored PDF objects';end if;

@@ -3,7 +3,7 @@
 begin;
 
 do $preflight$
-declare required record;expected record;
+declare required record;expected record;missing_helpers text;
 begin
  for required in select * from (values
   ('public.documents'),('public.document_control_revisions'),('public.document_control_files'),
@@ -50,11 +50,18 @@ begin
    raise exception 'Document metadata setup requires %.% with type %. Install the Document Control workflow migrations first.',expected.table_name,expected.column_name,expected.type_name;
   end if;
  end loop;
- if to_regprocedure('auth.uid()') is null
- or to_regprocedure('public.auris_can_access_company(uuid)') is null
- or to_regprocedure('public.user_access_allowed(text,text)') is null
- or to_regprocedure('public.document_upload_command(text,uuid,text,text,uuid,jsonb,jsonb)') is null then
-  raise exception 'Document metadata setup requires the existing authenticated Document Control workflow helpers. Install the Document Control workflow migrations first.';
+ -- Metadata editing does not upload files or call document_upload_command.
+ -- Check only the authentication helpers that this function actually executes.
+ select string_agg(h.signature||' returns '||h.type_name,', ' order by h.signature)
+ into missing_helpers from (values
+  ('auth.uid()','uuid'),
+  ('public.auris_can_access_company(uuid)','boolean'),
+  ('public.user_access_allowed(text,text)','boolean')
+ ) h(signature,type_name)
+ left join pg_proc p on p.oid=to_regprocedure(h.signature)
+ where p.oid is null or p.prorettype is distinct from to_regtype(h.type_name);
+ if missing_helpers is not null then
+  raise exception 'Document metadata setup requires these existing authentication helpers with the stated return types: %. Install the corresponding authentication/access migration first.',missing_helpers;
  end if;
  for required in select * from (values
   ('public.documents','document_release_guard'),
