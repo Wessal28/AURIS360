@@ -17,6 +17,23 @@ test('chemical record printing opens the exact saved product preview in the orig
 test('record links preserve company and select chemical view or edit',()=>{const {ctx}=runtime({ccid:()=> 'a',deepLinkRecordUrl:record=>'https://example.com/?module='+record.module+'&company='+record.company_id+'&record='+record.id});const url=new URL(ctx.chemRecordHref('r','edit'));assert.equal(url.searchParams.get('module'),'chemical');assert.equal(url.searchParams.get('company'),'a');assert.equal(url.searchParams.get('chemMode'),'edit');});
 test('edit route uses exact loaded record and resets opening flag',async()=>{const {ctx}=runtime({location:{search:'?chemMode=edit'},api:async()=>[{id:'r',company_id:'a',persons_exposed:0}]});ctx.chemEdit=id=>{assert.equal(id,'r');assert.equal(ctx.chemOpeningRecord,true);assert.equal(ctx.chemData[0].persons_exposed,0);};await ctx.chemOpenRecordRequest({record:'r'});assert.equal(ctx.chemOpeningRecord,false);});
 
+test('in-app View and Edit load the exact current company record before showing fresh data',async()=>{
+ for(const mode of ['view','edit']){
+  const requests=[],opened=[],fresh={id:'r',company_id:'a',product_name:'Fresh product',persons_exposed:0};
+  const {ctx}=runtime({location:{search:'?chemMode=edit'},chemData:[{id:'r',company_id:'a',product_name:'Stale product'}],window:{open:()=>assert.fail('No additional app window')},document:{getElementById:()=>null},toast:message=>assert.fail(message),api:async path=>{requests.push(path);return [{...fresh,company_id:'b'},{...fresh,id:'other'},fresh];}});
+  ctx.chemReadRelated=async(row,current)=>{assert.equal(row.product_name,'Fresh product');assert.equal(current.companyId,'a');return [];};ctx.chemShowRecord=(row,current)=>opened.push(['view',row.id,row.product_name,current.companyId]);
+  ctx.chemEdit=id=>{assert.equal(ctx.chemOpeningRecord,true);const row=ctx.chemData.find(item=>item.id===id);opened.push(['edit',id,row.product_name,row.company_id]);};
+  assert.equal(await ctx.chemRecordWindow('r',mode),true);assert.equal(requests.length,1);assert.match(requests[0],/^\/chemical_register\?select=\*&id=eq\.r&company_id=eq\.a$/);assert.deepEqual(opened,[[mode,'r','Fresh product','a']]);assert.equal(ctx.chemOpeningRecord,false);
+ }
+});
+
+test('an account, company or role switch during in-app record loading cannot show or edit a stale chemical',async()=>{
+ for(const mode of ['view','edit'])for(const change of [state=>state.companyId='b',state=>state.userId='other',state=>state.role='viewer']){
+  let resolve;const pending=new Promise(done=>{resolve=done;}),messages=[],{ctx,state}=runtime({api:()=>pending,toast:message=>messages.push(message),document:{getElementById:()=>null}});
+  ctx.chemShowRecord=()=>assert.fail('No stale View');ctx.chemEdit=()=>assert.fail('No stale Edit');const opening=ctx.chemRecordWindow('r',mode);change(state);resolve([{id:'r',company_id:'a',product_name:'Stale response'}]);assert.equal(await opening,false);assert.match(messages[0],/Session changed/);assert.equal(ctx.chemOpeningRecord,false);
+ }
+});
+
 const core=fs.readFileSync(path.join(__dirname,'../auris-core.js'),'utf8');
 function coreFunction(ctx,name){const start=core.indexOf('function '+name+'('),end=core.indexOf('\n}',start)+2;vm.runInContext((core.slice(start-6,start)==='async '?'async ':'')+core.slice(start,end),ctx);}
 test('real chemical editor preserves zero values',()=>{const controls={};const {ctx}=runtime({chemData:[{id:'r',company_id:'a',persons_exposed:0,quantity_stored:0}],document:{getElementById:id=>controls[id]||(controls[id]={style:{},value:''})},chemExposureValues:r=>r,displayRecordRef:()=> 'CHEM-1',chemClearAIReview:()=>{},chemUpdateRiskPreview:()=>{},chemRefreshSdsPreview:()=>{},chemShowForm:()=>{}});ctx.chemOpeningRecord=true;coreFunction(ctx,'chemEdit');ctx.chemEdit('r');assert.equal(controls['chem3persons'].value,0);assert.equal(controls['chem3qty'].value,0);});

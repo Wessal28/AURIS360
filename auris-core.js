@@ -8475,13 +8475,12 @@ function chemRenderTable(){
   if(window.AurisChemicalListWorkspace){
     try{
       return window.AurisChemicalListWorkspace.mount(el,chemData||[],{
-        recordHref:chemRecordHref,
         sdsSnapshot:window.ccuSdsSnapshot,
         filters:{search:document.getElementById('chem3search')?.value||'',risk:document.getElementById('chem3risk-filter')?.value||'',status:document.getElementById('chem3status-filter')?.value||'',attention:document.getElementById('chem3attention-filter')?.value||''},
         canEdit:typeof isMgr==='function'&&isMgr(),
         onApplyFilters:function(value){[['chem3search','search'],['chem3risk-filter','risk'],['chem3status-filter','status'],['chem3attention-filter','attention']].forEach(function(pair){var control=document.getElementById(pair[0]);if(control)control.value=value[pair[1]]||'';});chemRenderTable();},
         openRecord:function(id){return chemRecordWindow(id,'view');},
-        editRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit chemicals.');if(typeof chemEdit!=='function')throw new Error('The chemical form is unavailable. Reload the register.');return chemEdit(id);}
+        editRecord:function(id,current){var selected=(chemData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!(typeof isMgr==='function'&&isMgr()))throw new Error('Manager access is required to edit chemicals.');if(typeof chemEdit!=='function')throw new Error('The chemical form is unavailable. Reload the register.');return chemRecordWindow(id,'edit');}
       });
     }catch(error){el.innerHTML=setupFriendlyMessage('Chemical Control',error.message||String(error));console.error(error);return;}
   }
