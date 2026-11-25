@@ -426,6 +426,11 @@
       "order": 85,
       "file": "20261126010000_incident_notification_relationship.sql",
       "sha256": "564d5c4d7434cf225212fa7e80b0f1538be69284580cea9b606fa50106530b48"
+    },
+    {
+      "order": 86,
+      "file": "20261126020000_investigation_workflow_status.sql",
+      "sha256": "f1531114b85168a27d83974a5f00fcd3e667c7fbadd6d954ed2d830f2981b7a0"
     }
   ]
 }

@@ -33,6 +33,7 @@ const testFiles = [
   'tests/people_user_linking_ui.test.cjs',
   'tests/meeting_save_recovery.test.cjs',
   'tests/incident_draft_save_recovery.test.cjs',
+  'tests/investigation_save_recovery.test.cjs',
   'tests/incident_safety_communication.test.cjs',
   'tests/header_report_integration.test.cjs',
   'tests/action_print_reports.test.cjs',
