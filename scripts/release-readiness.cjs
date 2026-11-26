@@ -34,6 +34,7 @@ const testFiles = [
   'tests/meeting_save_recovery.test.cjs',
   'tests/incident_draft_save_recovery.test.cjs',
   'tests/investigation_save_recovery.test.cjs',
+  'tests/document_record_edit.test.cjs',
   'tests/incident_safety_communication.test.cjs',
   'tests/header_report_integration.test.cjs',
   'tests/action_print_reports.test.cjs',

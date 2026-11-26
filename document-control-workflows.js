@@ -3,6 +3,7 @@
 root.AurisDocumentWorkflows={install:function(h){
 var D=h.D,esc=h.esc,field=h.field,btn=h.btn,head=h.head,table=h.table,company=h.company,uid=h.uid,notify=h.notify,byId=h.byId,ref=h.ref,title=h.title,version=h.version;
 var pdfSession=null,busy=false,reviewSnapshot=null,distributionSnapshot=null,reportSnapshot=null,ackSnapshot=null,previewTicket=0;
+root.dcxEditDocument=function(id){return root.AurisDocumentRecordEditor?root.AurisDocumentRecordEditor.open(id,h):notify('Reopen Document Control to load the editor.',false);};root.dcxSaveDocumentEdit=function(){return root.AurisDocumentRecordEditor?.save(h);};D.renderMetadata=function(d,r){return root.AurisDocumentRecordEditor?.metadata(d,r,h)||'';};
 function localDate(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
 function context(){return {company:String(company()||''),user:String(uid()||'')};}
 function sameContext(c){return c.company===String(company()||'')&&c.user===String(uid()||'');}
@@ -11,7 +12,7 @@ function val(id){return document.getElementById(id)?.value||'';}
 function stopPreview(){previewTicket++;if(typeof dcStopPdfPreview==='function')dcStopPdfPreview();}
 function cleanDrawer(titleValue,body,footer,kicker){stopPreview();h.openDrawer(titleValue,body,footer,kicker);D.drawerBaseline=drawerState();D.drawerDirty=false;}
 function drawerState(){return JSON.stringify(Array.from(document.querySelectorAll('#dcx-drawer-body input,#dcx-drawer-body select,#dcx-drawer-body textarea')).map(function(x){return [x.id,x.type==='file'?Array.from(x.files||[]).map(function(f){return [f.name,f.size,f.lastModified];}):x.multiple?Array.from(x.selectedOptions).map(function(o){return o.value;}):x.type==='checkbox'?x.checked:x.value];}));}
-root.dcxCloseDrawer=function(force){var changed=D.drawerBaseline!==undefined&&drawerState()!==D.drawerBaseline;if(busy&&!force)return notify('Please wait for the save to finish.',false);if(changed&&!force&&!confirm('Discard unsaved changes?'))return;stopPreview();document.getElementById('dcx-drawer')?.classList.remove('open','dcx-preview-open');D.drawerDirty=false;D.drawerBaseline=undefined;};
+root.dcxCloseDrawer=function(force){var changed=D.drawerBaseline!==undefined&&drawerState()!==D.drawerBaseline;if((busy||D.documentEditSaving)&&!force)return notify('Please wait for the save to finish.',false);if(changed&&!force&&!confirm('Discard unsaved changes?'))return;stopPreview();document.getElementById('dcx-drawer')?.classList.remove('open','dcx-preview-open');D.drawerDirty=false;D.drawerBaseline=undefined;};
 function users(){return (D.data.users||[]).filter(function(p){return String(p.company_id)===String(company())&&(!p.status||p.status==='active');});}
 function userOptions(approval){return [['','Select a company user']].concat(users().filter(function(p){return !approval||['admin','hse_manager','manager','site_manager','document_controller','records_manager'].includes(p.role);}).map(function(p){return [p.id,p.full_name||p.email||'Company user'];}));}
 function documentOptions(released){return [['','Select a document']].concat(D.data.documents.filter(function(d){return h.visibleDocument(d)&&(!released||h.authorisedRevision(d));}).map(function(d){return [d.id,ref(d)+' · '+title(d)];}));}

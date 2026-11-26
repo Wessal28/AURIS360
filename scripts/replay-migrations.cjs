@@ -233,3 +233,8 @@ run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'incident_no
 
 run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261126020000_investigation_workflow_status.sql')], {label: 'idempotent investigation workflow status alignment', quiet: true});
 run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'investigation_workflow_status.sql')], {label: 'investigation workflow statuses, retained records and tenant protections'});
+
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261126025000_document_decision_guard_repair.sql')], {label: 'idempotent missing Document Control decision-guard repair', quiet: true});
+run(psql, [...commonArgs, '--file', path.join(migrationDir, '20261126030000_document_record_metadata_edit.sql')], {label: 'idempotent Document Control metadata editor installation', quiet: true});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_record_metadata_edit.sql')], {label: 'atomic same-document metadata edits, draft gates and retained files/decisions/history'});
+run(psql, [...commonArgs, '--file', path.join(root, 'tests', 'sql', 'document_control_guard_contract.sql')], {label: 'semantic decision guards, retained aliases and immutable controlled records'});

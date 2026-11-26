@@ -431,6 +431,16 @@
       "order": 86,
       "file": "20261126020000_investigation_workflow_status.sql",
       "sha256": "f1531114b85168a27d83974a5f00fcd3e667c7fbadd6d954ed2d830f2981b7a0"
+    },
+    {
+      "order": 87,
+      "file": "20261126025000_document_decision_guard_repair.sql",
+      "sha256": "5c15a6a094f1a8e271acf18398424aef6b4f135e57e133487248fb3e393e6b1c"
+    },
+    {
+      "order": 88,
+      "file": "20261126030000_document_record_metadata_edit.sql",
+      "sha256": "8e8101ac12d8b7282453ae91ff3e4dc7298e1a210394a3df3d5efc046908aa86"
     }
   ]
 }
