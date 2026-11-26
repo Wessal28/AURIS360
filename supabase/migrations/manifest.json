@@ -434,8 +434,13 @@
     },
     {
       "order": 87,
+      "file": "20261126025000_document_decision_guard_repair.sql",
+      "sha256": "5c15a6a094f1a8e271acf18398424aef6b4f135e57e133487248fb3e393e6b1c"
+    },
+    {
+      "order": 88,
       "file": "20261126030000_document_record_metadata_edit.sql",
-      "sha256": "a2ec21df8e9b68b118a4778bd5adfd7cfe00ae0c7b5e33e00a0acdbcd48b85d8"
+      "sha256": "8e8101ac12d8b7282453ae91ff3e4dc7298e1a210394a3df3d5efc046908aa86"
     }
   ]
 }

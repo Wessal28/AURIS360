@@ -64,14 +64,18 @@ begin
   raise exception 'Document metadata setup requires these existing authentication helpers with the stated return types: %. Install the corresponding authentication/access migration first.',missing_helpers;
  end if;
  for required in select * from (values
-  ('public.documents','document_release_guard'),
-  ('public.document_control_revisions','document_revision_guard')
- ) guards(table_name,trigger_name) loop
+  ('public.documents',23,'INSERT and UPDATE'),
+  ('public.document_control_revisions',31,'INSERT, UPDATE and DELETE')
+ ) guards(table_name,trigger_type,operations) loop
+  -- Trigger names may differ between installations; equivalent complete coverage is sufficient.
+  -- tgtype 23/31 means BEFORE ROW with exactly the required operation set.
   if not exists(select 1 from pg_trigger t
-   where t.tgrelid=to_regclass(required.table_name) and t.tgname=required.trigger_name
+   where t.tgrelid=to_regclass(required.table_name)
    and t.tgfoid=to_regprocedure('public.guard_document_decisions()')
-   and not t.tgisinternal and t.tgenabled in ('O','A')) then
-   raise exception 'Document metadata setup requires the enabled % control on %. Install the Document Control workflow migrations first.',required.trigger_name,required.table_name;
+   and not t.tgisinternal and t.tgenabled in ('O','A') and t.tgtype=required.trigger_type
+   and t.tgqual is null and t.tgattr::text='' and t.tgnargs=0
+   and not t.tgdeferrable and not t.tginitdeferred) then
+   raise exception 'Document metadata setup requires an enabled public.guard_document_decisions() BEFORE ROW trigger for all % operations on %, without WHEN, column, argument or deferrable restrictions. Install the Document Control workflow migrations first.',required.operations,required.table_name;
   end if;
  end loop;
 end $preflight$;
