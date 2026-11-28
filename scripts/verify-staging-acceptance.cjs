@@ -375,7 +375,8 @@ async function main() {
   requireMarkers(coreSource, 'Module navigation', [
     'function moduleLoaderFor(pageKey)',
     'window.AurisModuleRegistry',
-    'pageLoader=moduleLoaderFor(name)'
+    'pageLoader=navigationTicket?.reuse?function(){}:moduleLoaderFor(name)',
+    'reuseView:!!navigationTicket?.reuse'
   ]);
   requireMarkers(coreSource, 'Workspace profile', ['companies:companies!profiles_company_id_fkey(*)']);
 
