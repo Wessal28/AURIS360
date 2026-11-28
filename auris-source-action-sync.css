@@ -1,0 +1,5 @@
+.inv-source-action-state{display:grid;gap:4px;min-width:0}
+.inv-source-action-state select{width:100%;min-width:0;padding:6px 8px;font-size:12px}
+.inv-source-action-state .btn{font-size:11px;padding:4px 6px;white-space:normal}
+.inv-source-action-note{display:block;font-size:11px;line-height:1.35;color:var(--text2,#526174)}
+@media(max-width:760px){.inv-ca-row[data-action-key]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.inv-ca-row[data-action-key]>.inv-ca-desc{grid-column:1/-1}.inv-ca-row[data-action-key]>.inv-source-action-state{grid-column:1/-1}}

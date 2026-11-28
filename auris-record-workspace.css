@@ -23,3 +23,11 @@
 @media(max-width:520px){.arw-section-nav{flex-wrap:wrap;gap:6px}.arw-section-nav select{flex:1}.arw-section-nav small{flex-basis:100%}}
 
 .arw-tab-help{margin:0 0 12px;color:#526780;font-size:13px;line-height:1.4}
+
+/* Record viewers use the same centered workspace at desktop and mobile sizes. */
+.arw-panel{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(980px,calc(100vw - 40px));height:min(880px,calc(100dvh - 48px));max-height:calc(100dvh - 48px);border:1px solid var(--border,#d9e0ea);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgb(15 23 42 / .24);font-family:inherit;font-size:14px;line-height:1.5}
+.arw-panel>header h2{line-height:1.25}.arw-section dt{font-size:12px}.arw-section dd{font-size:14px}.arw-panel>footer{display:flex;align-items:center;max-height:28dvh}.arw-panel>footer button{flex:0 1 auto}
+@media(max-width:700px){.arw-panel{width:calc(100vw - 24px);height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);border-radius:14px}.arw-panel>footer button{flex:1 1 140px}}
+.auris-breadcrumb-link{font:inherit;color:inherit;border:0;background:none;padding:1px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.auris-breadcrumb-link:hover{color:var(--green,#07866f)}.auris-breadcrumb-link:focus-visible,.auris-navigation-back:focus-visible{outline:2px solid #2563eb;outline-offset:3px}
+.auris-navigation-back{font:inherit;font-size:12px;line-height:1.3;padding:4px 9px;margin-right:7px;border:1px solid var(--border,#d9e0ea);border-radius:7px;color:var(--text,#17213a);background:var(--card,#fff);cursor:pointer}.auris-navigation-back[hidden]{display:none}

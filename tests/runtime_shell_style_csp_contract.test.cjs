@@ -31,9 +31,10 @@ test('authentication shell visibility no longer writes display styles', () => {
 });
 
 test('shared page routing relies on the existing active page contract', () => {
-  const start = core.indexOf('function showPage(name,el)');
+  const start = core.indexOf('function showPage(');
   const end = core.indexOf('function toggleForm(id)', start);
   const router = core.slice(start, end);
+  assert.ok(start > 0 && end > start, 'The shared router must be available for visibility assertions');
   assert.doesNotMatch(router, /\.style\.display/);
   assert.match(router, /querySelectorAll\('\.page'\)[\s\S]*classList\.remove\('active'\)/);
   assert.match(router, /target\.classList\.add\('active'\)/);
@@ -44,7 +45,7 @@ test('shared page routing relies on the existing active page contract', () => {
 
 test('programmatic routes keep the matching sidebar module active', () => {
   const helperStart = core.indexOf('function activatePageNavigation(pageKey, suppliedElement)');
-  const routerStart = core.indexOf('function showPage(name,el)', helperStart);
+  const routerStart = core.indexOf('function showPage(', helperStart);
   const helper = core.slice(helperStart, routerStart);
   const routerEnd = core.indexOf('function toggleForm(id)', routerStart);
   const router = core.slice(routerStart, routerEnd);

@@ -36,6 +36,13 @@ const testFiles = [
   'tests/investigation_save_recovery.test.cjs',
   'tests/document_record_edit.test.cjs',
   'tests/incident_safety_communication.test.cjs',
+  'tests/incident_record_reports.test.cjs',
+  'tests/incident_lazy_entry.test.cjs',
+  'tests/inspection_print_reports.test.cjs',
+  'tests/training_record_windows.test.cjs',
+  'tests/navigation_trail.test.cjs',
+  'tests/source_action_sync.test.cjs',
+  'tests/investigation_action_sync.test.cjs',
   'tests/header_report_integration.test.cjs',
   'tests/action_print_reports.test.cjs',
   'tests/chemical_print_reports.test.cjs',
@@ -101,6 +108,7 @@ const testFiles = [
   'tests/migration_replay_contract.test.cjs',
   'tests/staging_acceptance_gate_contract.test.cjs',
   'tests/production_smoke_gate_contract.test.cjs'
+  ,'tests/deployed_lazy_asset.test.cjs'
   ,'tests/command_centre_contract.test.cjs'
   ,'tests/view_engine_contract.test.cjs'
   ,'tests/record_workspace_contract.test.cjs'

@@ -1,1 +1,24 @@
 @page{size:A4 portrait;margin:14mm 12mm}.rpt-section{break-inside:avoid}
+.imx-record-document,.imx-safety-comm{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;text-align:left;color:#213b48;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.imx-record-document *,.imx-safety-comm *{box-sizing:border-box}
+.imx-record-document{background:#fff;border:1px solid #dce7e6;border-radius:12px;padding:24px;max-width:1000px;margin:0 auto}
+.imx-record-document-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;border-bottom:3px solid #0b806d;padding-bottom:18px;margin-bottom:22px}
+.imx-record-document-head h1{margin:4px 0 7px;font-size:25px;line-height:1.25;color:#123c49;overflow-wrap:anywhere}
+.imx-record-document-head p{margin:0;font-size:13px;line-height:1.6;color:#5b747d}.imx-record-document-head .imx-record-kicker{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:#087865}
+.imx-record-state{padding:6px 11px;border-radius:20px;background:#e5f3ee;color:#086850;font-size:11px;line-height:1.4;white-space:nowrap;font-weight:700;text-transform:capitalize}
+.imx-detail-section{margin:0 0 24px}.imx-detail-section:last-of-type{margin-bottom:12px}.imx-detail-section h3{font-size:15px;line-height:1.4;color:#145347;border-bottom:1px solid #dce7e6;padding:0 0 9px;margin:0 0 14px;break-after:avoid}
+.imx-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;row-gap:18px;margin:0}
+.imx-detail-field{min-width:0;text-align:left}.imx-detail-field.full{grid-column:1/-1}.imx-detail-field>dt{font-size:11px;font-weight:700;color:#59727b;line-height:1.4;margin:0 0 5px}.imx-detail-field>dd{font-size:14px;line-height:1.6;color:#183d49;margin:0;overflow-wrap:anywhere;text-align:left}
+.imx-detail-text{white-space:pre-wrap;overflow-wrap:anywhere}.imx-detail-field ul{margin:0;padding-left:20px}.imx-detail-field li{padding:0 0 5px;line-height:1.6;text-align:left}.imx-detail-field dl{margin:0;display:grid;gap:10px}.imx-detail-field dl>div{min-width:0}.imx-detail-field dl dt{font-size:11px;font-weight:700;color:#59727b;margin-bottom:3px}.imx-detail-field dl dd{margin:0;font-size:14px;line-height:1.6}
+.imx-record-document-foot{font-size:10px;line-height:1.6;color:#617b84;border-top:1px solid #dce7e6;padding-top:14px;margin-top:20px}
+/* One document and stylesheet are shared by the saved Safety Communication view and print. */
+.imx-safety-comm{background:#fff;border:3px solid #e75718;width:100%;max-width:850px;margin:0 auto;color:#263238;border-radius:0}
+.imx-safety-comm header{background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;padding:18px}
+.imx-safety-comm header>div{display:flex;justify-content:space-between;gap:16px;font-size:11px;line-height:1.5;text-transform:uppercase}.imx-safety-comm h1{margin:10px 0 0;font-size:26px;line-height:1.25;color:#fff;overflow-wrap:anywhere}
+.imx-comm-meta{padding:11px 16px;background:#fff4e8;border-bottom:1px solid #f4b27a;font-size:12px;line-height:1.6}
+.imx-safety-comm section{padding:13px 16px;border-bottom:1px solid #f3c19a;min-width:0}
+.imx-safety-comm section h3{margin:-13px -16px 10px;padding:7px 12px;background:#e75718;color:#fff;font-size:12px;line-height:1.4;text-transform:uppercase;break-after:avoid}
+.imx-safety-comm p,.imx-safety-comm li{font-size:13px;line-height:1.6;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}.imx-safety-comm p{margin:0}.imx-safety-comm ul{margin:0;padding-left:20px}.imx-safety-comm li+li{margin-top:5px}
+.imx-comm-cols{display:grid;grid-template-columns:1fr 1fr}.imx-comm-cols section:first-child{border-right:1px solid #f3c19a}.imx-safety-comm footer{padding:9px 16px;background:#f8fafc;font-size:10px;line-height:1.5;color:#64748b}
+@media screen and (max-width:700px){.imx-record-document{padding:18px}.imx-record-document-head{flex-wrap:wrap}.imx-record-document-head h1{font-size:22px}.imx-detail-grid{grid-template-columns:1fr;row-gap:16px}.imx-detail-field.full{grid-column:auto}.imx-comm-cols{grid-template-columns:1fr}.imx-comm-cols section:first-child{border-right:0}.imx-safety-comm h1{font-size:23px}}
+@media print{.imx-record-document{border:0;border-radius:0;padding:0;max-width:none}.imx-record-document-head{break-after:avoid}.imx-detail-field{break-inside:avoid}.imx-detail-field.full{break-inside:auto}.imx-safety-comm{max-width:none;margin:0;break-inside:auto}.imx-safety-comm header,.imx-comm-meta{break-after:avoid}.imx-safety-comm section{break-inside:auto}.imx-comm-cols{grid-template-columns:1fr 1fr}.imx-safety-comm h3{break-after:avoid}}

@@ -1,0 +1,104 @@
+/* Opt-in compact record windows; long values remain fully visible. */
+#auris-readonly-record-modal.auris-record-view-compact {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.auris-record-view-compact .auris-readonly-dialog {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  width: min(980px, 100%);
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  border: 1px solid var(--border, #dbe3eb);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  color: var(--text, #152a40);
+  box-shadow: 0 20px 64px rgb(19 39 56 / .24);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.auris-record-view-compact .auris-readonly-header {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border, #dbe3eb);
+}
+.auris-record-view-compact .auris-readonly-header h2 {
+  margin: 3px 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.auris-record-view-compact .auris-readonly-header h2:focus { outline: none; }
+.auris-record-view-compact .auris-readonly-close {
+  flex: none;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 8px;
+}
+.auris-record-view-compact .auris-readonly-body {
+  min-height: 0;
+  padding: 16px 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.auris-record-view-compact .auris-readonly-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+.auris-record-view-compact .auris-readonly-field {
+  min-width: 0;
+  padding: 0 0 9px;
+  border-bottom: 1px solid var(--border, #dbe3eb);
+}
+.auris-record-view-compact .auris-readonly-field.wide { grid-column: 1 / -1; }
+.auris-record-view-compact .auris-readonly-field > :first-child {
+  margin-bottom: 3px;
+  color: var(--text2, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.auris-record-view-compact .auris-readonly-field > :last-child {
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.auris-record-view-compact .auris-readonly-footer {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--border, #dbe3eb);
+}
+.auris-record-view-compact button { font-family: inherit; font-size: 13px; }
+@media (max-width: 760px) {
+  #auris-readonly-record-modal.auris-record-view-compact { padding: 12px; }
+  .auris-record-view-compact .auris-readonly-dialog {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .auris-record-view-compact .auris-readonly-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auris-record-view-compact .auris-readonly-header,
+  .auris-record-view-compact .auris-readonly-body,
+  .auris-record-view-compact .auris-readonly-footer { padding-right: 16px; padding-left: 16px; }
+}
+@media (max-width: 480px) {
+  .auris-record-view-compact .auris-readonly-fields { grid-template-columns: 1fr; }
+  .auris-record-view-compact .auris-readonly-header h2 { font-size: 19px; }
+}

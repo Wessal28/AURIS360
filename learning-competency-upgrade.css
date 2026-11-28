@@ -3,3 +3,64 @@
 @media(max-width:760px){.lcu-hero{display:block}.lcu-actions{justify-content:flex-start;margin-top:12px}.lcu-grid.metrics{grid-template-columns:1fr 1fr}.lcu-ladder,.lcu-form{grid-template-columns:1fr}.lcu-level:after{content:'⌄';right:50%;top:auto;bottom:-16px}.lcu-course-grid{grid-template-columns:1fr}.lcu-row{align-items:flex-start}.lcu-drawer{width:100vw}}
 .lcu-tabs{flex-wrap:wrap;overflow:visible}.lcu-tabs button{flex:1 1 145px;white-space:normal;min-height:40px}
 .lcu-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 16px}
+
+/* Center learning forms and scroll only their content, retaining visible actions. */
+.lcu-drawer-bg {
+  --lcu-ink: var(--text, #152a40);
+  --lcu-muted: var(--text2, #64748b);
+  --lcu-line: var(--border, #dbe3eb);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.lcu-drawer {
+  box-sizing: border-box;
+  width: min(820px, 100%);
+  height: auto;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  border: 1px solid var(--lcu-line);
+  border-radius: 16px;
+  box-shadow: 0 20px 64px rgb(19 39 56 / .24);
+  color: var(--lcu-ink);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.lcu-drawer header,
+.lcu-drawer footer { flex: none; padding: 14px 20px; gap: 12px; }
+.lcu-drawer header h2 { font-family: inherit; font-size: 20px; line-height: 1.25; }
+.lcu-drawer header h2:focus { outline: none; }
+.lcu-drawer-body { min-height: 0; padding: 16px 20px; overscroll-behavior: contain; }
+.lcu-drawer footer { flex-wrap: wrap; gap: 8px; }
+.lcu-drawer .lcu-note { font-size: 13px; line-height: 1.45; padding: 10px 12px; }
+.lcu-drawer .lcu-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.lcu-drawer .lcu-field { min-width: 0; }
+.lcu-drawer .lcu-field label { font-family: inherit; font-size: 11px; line-height: 1.4; }
+.lcu-drawer input:not([type="checkbox"]),
+.lcu-drawer select,
+.lcu-drawer textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.lcu-drawer textarea { min-height: 70px; resize: vertical; }
+.lcu-drawer .lcu-btn { font-family: inherit; font-size: 13px; min-height: 36px; }
+.lcu-drawer .lcu-btn.compact { min-width: 36px; }
+.lcu-drawer :is(button,input,select,textarea,a):focus-visible { outline: 2px solid #1a5685; outline-offset: 2px; }
+@media (max-width: 600px) {
+  .lcu-drawer-bg { padding: 12px; }
+  .lcu-drawer { width: 100%; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
+  .lcu-drawer .lcu-form { grid-template-columns: 1fr; }
+  .lcu-drawer header,
+  .lcu-drawer footer,
+  .lcu-drawer-body { padding-right: 16px; padding-left: 16px; }
+}

@@ -236,7 +236,9 @@ function fixture() {
   for (const name of ['activatePageNavigation', 'closeTransientOverlays', 'peopleCloseProfile', 'usersCloseModal', 'peopleFormVisible']) ctx[name] = () => {};
   ctx.canAccessPage = () => true;
   ctx.moduleLoaderFor = () => () => ctx.loadTools();
-  vm.runInContext(core.slice(core.indexOf('function showPage(name,el)'), core.indexOf('function toggleForm(id)')), ctx);
+  const routerStart=core.indexOf('function showPage('),routerEnd=core.indexOf('function toggleForm(id)',routerStart);
+  assert.ok(routerStart>0&&routerEnd>routerStart,'The current shared router must be extracted for navigation behavior tests');
+  vm.runInContext(core.slice(routerStart,routerEnd), ctx);
   const load = file => vm.runInContext(read(file), ctx, {filename: file});
   load('auris-user-access.js');
   load('auris-section-picker.js');

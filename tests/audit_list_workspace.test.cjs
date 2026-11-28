@@ -27,8 +27,13 @@ test('unknown inspection values remain visible without unsafe relabelling',()=>{
   assert.equal(data.length,1);assert.equal(data[0].type,'special review');assert.equal(data[0].status,'awaiting signoff');assert.equal(data[0].score,null);
 });
 test('shared audit register exposes report and manager edit actions and protects sessions',async()=>{
-  const r=runtime(),calls=[];r.api.mount({},rows,{canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'audits-inspections');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','edit']);assert.deepEqual(Array.from(m.options.actions,x=>x.icon),['ti-eye','ti-pencil']);await m.options.onAction('open',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','in-1','co-a'],['edit','in-1','co-a']]);
+  const r=runtime(),calls=[];r.api.mount({},rows,{canEdit:true,openRecord:(id,c)=>calls.push(['open',id,c.companyId]),printRecord:(id,c)=>calls.push(['print',id,c.companyId]),editRecord:(id,c)=>calls.push(['edit',id,c.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'audits-inspections');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','print','edit']);assert.deepEqual(Array.from(m.options.actions,x=>x.icon),['ti-eye','ti-printer','ti-pencil']);await m.options.onAction('open',m.data[0]);await m.options.onAction('print',m.data[0]);await m.options.onAction('edit',m.data[0]);assert.deepEqual(calls,[['open','in-1','co-a'],['print','in-1','co-a'],['edit','in-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},rows,{canEdit:true,openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}
+});
+
+test('inspection print actions are optional and reject changed sessions and foreign records',async()=>{
+  const r=runtime();r.api.mount({},rows,{});assert.equal(r.mounted().options.actions.find(x=>x.key==='print').when(),false);
+  const x=runtime();x.api.mount({},rows,{printRecord:()=>assert.fail('stale or foreign print')});const view=x.mounted();assert.equal(view.options.actions.find(x=>x.key==='print').when(),true);await assert.rejects(view.options.onAction('print',{id:'foreign',company_id:'co-b'}),/outside/);x.identity.company.id='co-b';await assert.rejects(view.options.onAction('print',view.data[0]),/changed/);
 });
 test('audit register starts with essential columns and leaves optional columns selectable',()=>{
   const r=runtime(),fields=r.api.definition().fields;
