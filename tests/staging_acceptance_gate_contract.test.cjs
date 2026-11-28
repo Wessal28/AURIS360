@@ -152,7 +152,10 @@ test('deployed module navigation is verified through the canonical registry', ()
     assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(source, /function moduleLoaderFor\(pageKey\)/);
-  assert.match(source, /pageLoader=moduleLoaderFor\(name\)/);
+  for(const marker of ['pageLoader=navigationTicket?.reuse?function(){}:moduleLoaderFor(name)','reuseView:!!navigationTicket?.reuse']){
+    assert.ok(source.includes(marker),'staging checks the retained-view loader contract');
+    assert.ok(read('auris-core.js').includes(marker),'the checked-in core satisfies the actual deployed navigation marker');
+  }
   assert.doesNotMatch(source, /executive:loadExecutive/);
   for (const marker of ['activate:activate', 'readiness:readiness', "'auris:module-'+phase"]) assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });

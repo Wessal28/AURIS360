@@ -45,6 +45,7 @@ test('corrected design assets use their expected release cache keys', () => {
       : ['auris-base.css'].includes(asset)
       ? '20260822-1'
       : asset === 'tools-equipment-upgrade.css' || asset === 'contractor-management-upgrade.css' ? '20260821-4' : '20260821-3';
+    if(asset==='incident-management-upgrade.js'){assert.match(fs.readFileSync(path.join(root,'auris-module-registry.js'),'utf8'),/incident-management-upgrade\.js/);assert.match(fs.readFileSync(path.join(root,'auris-module-extraction.js'),'utf8'),/incident-ui-20261128-1/);continue;}
     assert.match(index, new RegExp(`${escaped}\\?v=${expected}`), `${asset} must be cache-versioned`);
   }
 });

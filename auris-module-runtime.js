@@ -40,7 +40,7 @@ function activate(key,options){
   if(previous&&previous!==key){callHook(previous,'leave',context);emit('leave',context,false);}
   activeKey=key;
   activeRoute=context;
-  var loader=typeof options.loader==='function'?options.loader:root[status.manifest.loader];
+  var loader=options.reuseView?null:typeof options.loader==='function'?options.loader:root[status.manifest.loader];
   function complete(){
     if(activeRoute===context){callHook(key,'enter',context);emit('enter',context,false);}
     return {ok:true,key:key,previousKey:previous,missingDependencies:status.missing};
@@ -60,8 +60,8 @@ function activate(key,options){
     throw error;
   }
   try{
-    var preparation=root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.prepare==='function'?root.AurisModuleExtraction.prepare(key,context):null;
-    if(preparation&&typeof preparation.then==='function')return preparation.then(function(){loader=root[status.manifest.loader]||loader;var loaded=typeof loader==='function'?loader(context):undefined;return loaded&&typeof loaded.then==='function'?loaded.then(complete,failed):complete();},failed);
+    var preparation=!options.reuseView&&root.AurisModuleExtraction&&typeof root.AurisModuleExtraction.prepare==='function'?root.AurisModuleExtraction.prepare(key,context):null;
+    if(preparation&&typeof preparation.then==='function')return preparation.then(function(){if(activeRoute!==context)return {ok:false,cancelled:true,key:key};loader=root[status.manifest.loader]||loader;var loaded=typeof loader==='function'?loader(context):undefined;return loaded&&typeof loaded.then==='function'?loaded.then(complete,failed):complete();},failed);
     var result=typeof loader==='function'?loader(context):undefined;
     return result&&typeof result.then==='function'?result.then(complete,failed):complete();
   }catch(error){return failed(error);}

@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { deployedLazyAssetUrl } = require('./deployed-lazy-asset.cjs');
 
 const root = path.resolve(__dirname, '..');
 const PRODUCTION_REF = 'iarfxjhahzbhncsaohbg';
@@ -143,6 +144,12 @@ async function verifyProduction(options, evidence) {
   evidence.minutes_rpc = { installed: null, verified: false, result: 'database_not_verified', required_check: 'authenticated_staging_check_required' };
 
   const assetChecks = evidence.assets;
+  const assetSources = new Map();
+  const lazyAssets = new Map([
+    ['incident-management-upgrade.js', { moduleKey: 'events', requiredVersion: 'incident-ui-20261128-1' }],
+    ['incident-record-reports.js', { moduleKey: 'events', requiredVersion: 'record-views-20261128-1' }],
+    ['inspection-print-reports.js', { moduleKey: 'inspection', requiredVersion: 'record-views-20261128-1' }]
+  ]);
   const assets = [
     ['auris-module-registry.js', ["version:'2.2.0'", 'platformVersion:platformVersion', 'module.compatibility=freezeCompatibility']],
     ['auris-platform-services.js', ["version:'1.0.0'", 'configure:configure', 'notifications:facade']],
@@ -209,18 +216,24 @@ async function verifyProduction(options, evidence) {
     ['auris-module-extraction.js', ["version:'1.0.0'", 'prepare:prepare', 'isolateFailure:isolateFailure']],
     ['auris-extracted-module-adapters.js', ["version:'1.0.0'", 'contextFor:contextFor']],
     ['auris-core.js', ['AURIS_RUNTIME_CONFIG_READY', 'async function loadDash']],
+    ['auris-navigation-trail.js', ['AurisNavigationTrail', 'handlePopState:handlePopState', 'back:back']],
+    ['auris-source-action-sync.js', ['AurisSourceActions', 'create:create', 'synchronize:synchronize']],
     ['kpi-definition-editor.js', ['function openObjModal(', 'async function kpiSaveObjective(', 'function openKpiAddModal(', 'async function kpiSaveKPI(', 'function kpiDefinitionCheckContext(']],
     ['incident-management-upgrade.js', ['async function loadAll', 'window.imv2SaveForm']],
+    ['incident-record-reports.js', ['AurisIncidentReports', 'load:load', 'print:print']],
+    ['inspection-print-reports.js', ['AurisInspectionReports', 'print:print']],
     ['risk-assessment-upgrade.js', ['function renderDashboard', 'window.loadRA']],
     ['sw.js', ['AURIS_SW_ASSET_MANIFEST']]
   ];
   for (const [fileName, markers] of assets) {
     evidence.stage = 'critical_assets';
     evidence.checking_asset = fileName;
-    const url = fileName === 'sw.js' ? new URL('/sw.js', base).href : deployedAssetUrl(shell.text, base, fileName);
+    const lazy = lazyAssets.get(fileName);
+    const url = lazy ? deployedLazyAssetUrl({ registrySource: assetSources.get('auris-module-registry.js'), extractionSource: assetSources.get('auris-module-extraction.js'), base, fileName, ...lazy }) : fileName === 'sw.js' ? new URL('/sw.js', base).href : deployedAssetUrl(shell.text, base, fileName);
     const result = await requestAsset(url, fileName);
     if (result.text.length < 100) fail(`${fileName} was returned without usable application code.`);
     requireMarkers(result.text, fileName, markers);
+    assetSources.set(fileName, result.text);
     assetChecks.push({ asset: fileName, duration_ms: result.duration_ms, bytes: Buffer.byteLength(result.text) });
   }
 

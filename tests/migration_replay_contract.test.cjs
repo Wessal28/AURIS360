@@ -19,6 +19,13 @@ function run(databaseUrl) {
   });
 }
 
+test('migration replay executes the generated investigation-action identity install and rollback-only behavior fixture',()=>{
+  const source=fs.readFileSync(replay,'utf8');
+  assert.match(source,/20261128010000_investigation_action_identity\.sql/);
+  assert.match(source,/'tests', 'sql', 'investigation_action_identity\.sql'/);
+  assert.match(fs.readFileSync(path.join(root,'tests/sql/investigation_action_identity.sql'),'utf8'),/rollback;/i);
+});
+
 test('accepts only the named disposable local replay database', () => {
   const result = run('postgresql://postgres:test@127.0.0.1:5432/auris360_migration_replay');
   assert.equal(result.status, 0, result.stderr);

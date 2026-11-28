@@ -3,7 +3,7 @@
 var sequence=0,registerSequence=0,active=null;
 var editRoles=['admin','sephs_admin','hse_manager','hse_officer','manager','site_manager','supervisor','compliance_manager','legal_reviewer','document_controller'];
 var statuses={draft:'Draft',submitted:'Submitted for review',completed:'Completed',reviewed:'Reviewed',approved:'Approved',archived:'Archived',not_assessed:'Not assessed',compliant:'Compliant',partial:'Partial compliance',non_compliant:'Non-compliant',not_applicable:'Not applicable'};
-function ensureStyle(){if(!root.document||root.document.getElementById('legal-assessment-viewer-style'))return;var style=root.document.createElement('link');style.id='legal-assessment-viewer-style';style.rel='stylesheet';style.href='/legal-assessment-viewer.css?v=20261020-1&legal-meetings-fix-1';(root.document.head||root.document.documentElement).appendChild(style);}
+function ensureStyle(){if(!root.document||root.document.getElementById('legal-assessment-viewer-style'))return;var style=root.document.createElement('link');style.id='legal-assessment-viewer-style';style.rel='stylesheet';style.href='/legal-assessment-viewer.css?v=20261128-1';(root.document.head||root.document.documentElement).appendChild(style);}
 function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function text(value,fallback){if(typeof value!=='string'&&typeof value!=='number')return fallback||'';var result=String(value).trim();return result||fallback||'';}
 function named(value,fallback){var result=text(value);return /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(result)?fallback||'Name not recorded':result||fallback||'Not recorded';}
@@ -19,14 +19,15 @@ function savedRequirement(row,index){
   var snapshot=row.requirement_snapshot&&typeof row.requirement_snapshot==='object'?row.requirement_snapshot:{},reference=named(row.req_ref||row.requirement_ref||snapshot.req_ref||snapshot.reference,''),title=text(row.title||row.legislation||snapshot.title||snapshot.legislation),wording=text(row.requirement_text||row.requirement||snapshot.requirement_text||snapshot.requirement),result=friendly(row.status||row.compliance_status||'not_assessed');
   if(reference==='Not recorded'||reference==='Name not recorded')reference='';
   var heading=(reference?reference+' · ':'')+(title||'Requirement '+(index+1));
-  var html='<section class="lav-requirement"><h3>'+esc(heading)+'</h3><p class="lav-result">Recorded result: <span class="lav-status">'+esc(result)+'</span></p>';
-  html+=paragraph(wording,'Requirement wording was not retained in this saved worksheet.');
-  html+='<dl class="lav-worksheet-fields">'+field('Current controls',text(row.controls||row.current_controls,'Not recorded'))+field('Further controls / action',text(row.recommendation||row.recommendations||row.further_controls||row.action_required||row.gap_description,'Not recorded'))+field('Action owner',named(row.responsible||row.responsibility||row.responsible_person||row.owner_name,'Not recorded'))+field('Target date',dateLabel(row.target_date||row.due_date));
+  var html='<tr class="lav-requirement"><td><h4>'+esc(heading)+'</h4>'+paragraph(wording,'Requirement wording was not retained in this saved worksheet.')+'</td><td class="lav-result"><span class="lav-status">'+esc(result)+'</span></td>';
+  html+='<td>'+paragraph(row.controls||row.current_controls,'Not recorded')+'</td><td>'+paragraph(row.recommendation||row.recommendations||row.further_controls||row.action_required||row.gap_description,'Not recorded')+'</td>';
+  html+='<td><dl class="lav-worksheet-fields">'+field('Action owner',named(row.responsible||row.responsibility||row.responsible_person||row.owner_name,'Not recorded'))+field('Target date',dateLabel(row.target_date||row.due_date));
+  if(text(snapshot.legislation)&&text(snapshot.legislation)!==title)html+=field('Saved legislation',text(snapshot.legislation));
   if(text(snapshot.section))html+=field('Saved section',text(snapshot.section));
   if(text(snapshot.source_reference))html+=field('Saved source reference',text(snapshot.source_reference));
   var gap=typeof row.gap==='boolean'?row.gap:typeof row.gap_identified==='boolean'?row.gap_identified:null;if(gap!==null)html+=field('Gap recorded',gap?'Yes':'No');
   if(row.action_ref)html+=field('Saved action reference',named(row.action_ref,'Reference not recorded'));
-  html+='</dl></section>';return html;
+  return html+'</dl></td></tr>';
 }
 function build(record){
   record=record||{};var title=named(record.title,'Compliance assessment'),reference=named(record.assessment_ref,'Reference not recorded'),rows=worksheetRows(record.worksheet),score=number(record.overall_score,100),status=text(record.status,'draft'),html='<article class="legal-assessment-report"><p class="lav-reference">Assessment reference: '+esc(reference)+'</p>';
@@ -40,7 +41,7 @@ function build(record){
   else{
     html+='<p>'+rows.length+' saved requirement row'+(rows.length===1?'':'s')+'. References and wording appear only where they were retained in the saved worksheet.</p>';
     if(number(record.total_requirements)!==null&&Number(record.total_requirements)!==rows.length)html+='<p class="lav-note">The saved worksheet row count differs from the reported total. The original saved figures are preserved above.</p>';
-    html+=rows.map(savedRequirement).join('');
+    html+='<table><thead><tr><th scope="col">Requirement and saved wording</th><th scope="col">Recorded result</th><th scope="col">Current controls</th><th scope="col">Further controls / action</th><th scope="col">Owner, target and references</th></tr></thead><tbody>'+rows.map(savedRequirement).join('')+'</tbody></table>';
   }
   html+='</section>';
   if(record.approved_by||record.approved_at||record.approved_date||record.decision_note)html+='<section class="lav-approval"><h3>Recorded approval details</h3><dl class="lav-summary">'+field('Approver',named(record.approved_by,'Name not recorded'))+field('Approval date',dateLabel(record.approved_at||record.approved_date))+'</dl>'+narrative('Decision note',record.decision_note)+'</section>';
@@ -89,7 +90,7 @@ function enhance(){
     var view=button('',function(event){event.stopPropagation();try{assertContext(captured);open(id);}catch(error){if(typeof root.toast==='function')root.toast(error.message,false);}});view.className='btn btn-sm lav-view-assessment';view.title='View assessment';view.setAttribute('aria-label','View assessment '+named(record.assessment_ref||record.title,'record'));var icon=element('i','ti ti-eye');icon.setAttribute('aria-hidden','true');view.appendChild(icon);edit.parentNode.insertBefore(view,edit);
   });
 }
-root.AurisLegalAssessmentViewer=Object.freeze({version:'1.0.0',open:open,close:close,report:report,build:build,context:context,enhance:enhance});
+root.AurisLegalAssessmentViewer=Object.freeze({version:'1.1.0',open:open,close:close,report:report,build:build,context:context,enhance:enhance});
 ensureStyle();
 function registerError(host,error){host.replaceChildren();var box=element('section','lav-register-error');box.setAttribute('role','alert');box.appendChild(element('h3',null,'Unable to load compliance assessments'));box.appendChild(element('p',null,error.message||'The saved assessments could not be loaded.'));box.appendChild(button('Retry assessments',function(){return root.lcaLoad();}));host.appendChild(box);}
 if(typeof root.lcaLoad==='function'){var baseLoad=root.lcaLoad;root.lcaLoad=async function(){var host=root.document.getElementById('lca-list');if(!host)return;var captured,token,ticket=++registerSequence;host.setAttribute('aria-busy','true');try{captured=context();var task=baseLoad.apply(this,arguments);token=host._lcaLoadSeq;var result=await boundedRead(task);if(ticket!==registerSequence||root.document.getElementById('lca-list')!==host)return;assertContext(captured);if(result&&result.error)throw result.error;enhance();return result;}catch(error){if(ticket!==registerSequence||root.document.getElementById('lca-list')!==host)return;if(token==null||host._lcaLoadSeq===token)host._lcaLoadSeq=(host._lcaLoadSeq||0)+1;registerError(host,error);return false;}finally{if(ticket===registerSequence&&root.document.getElementById('lca-list')===host)host.setAttribute('aria-busy','false');}};}

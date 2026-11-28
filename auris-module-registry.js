@@ -47,7 +47,8 @@ var modules = [
 
 var extractionMap={
   documents:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['document-record-editor.js']},
-  events:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['incident-safety-communication.js']},
+  events:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['incident-record-reports.js','incident-safety-communication.js','incident-management-upgrade.js']},
+  investigation:{group:'platform',mode:'extracted',services:['auth','api','rbac','audit'],assets:['incident-record-reports.js','incident-safety-communication.js','incident-management-upgrade.js']},
   workschedule:{group:'operations',mode:'extracted',services:['auth','api','rbac','audit'],assets:['auris-work-gantt.js']},
   actions:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['module-report-preview.js','action-print-reports.js']},
   meetings:{group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:['meeting-occurrences.js','module-report-preview.js']},
@@ -81,6 +82,7 @@ reportCatalogues.forEach(function(catalogue){catalogue.keys.forEach(function(key
   ['module-report-preview.js','module-print-catalogue.js',catalogue.asset].forEach(function(asset){if(extraction.assets.indexOf(asset)===-1)extraction.assets.push(asset);});
   extractionMap[key]=extraction;
 });});
+extractionMap.inspection.assets.push('inspection-print-reports.js');
 // KPI already loads its specialised print tools on demand. Its extraction
 // boundary adds service readiness without changing that independent loader.
 extractionMap.kpi={group:'governance',mode:'extracted',services:['auth','api','rbac','audit'],assets:[]};

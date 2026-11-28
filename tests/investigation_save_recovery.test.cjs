@@ -15,17 +15,20 @@ function harness(){
   'ws1-event-link':{value:'INC-2026-001'},'ws1-location':{value:'Workshop'},
   'inv-type-sel':{value:'incident'},'inv-method':{value:'5why'},
   'inv-form3ref':{textContent:existing.investigation_ref},
-  'ims-inv-form':{style:{display:'block'}},'ims-inv-list':{style:{display:'none'}}
+  'ims-inv-form':{style:{display:'block'},querySelectorAll:()=>[]},'ims-inv-list':{style:{display:'none'}}
  };
  const requests=[],notices=[],errors=[],effects=[];
  const c={Date,console,prof:{id:'manager-a',company_id:'company-a',role:'sephs_admin'},sephsCompanyContext:'company-a',imsInvEditId:existing.id,imsInvAllData:[structuredClone(existing)],invTeam:[],
+  invSourceSavePending:false,invSourceActionParseError:'',invSourceActionLoadPromise:null,
+  invSourceActionContext:()=>({companyId:'company-a',userId:'manager-a',role:'sephs_admin'}),
+  invSourceActionService:()=>({prepare:rows=>rows}),invHydrateSourceActionRows:()=>{},invSourceFormFingerprint:()=>'',
   document:{getElementById:id=>fields[id]||null,querySelectorAll:()=>[]},
-  workflowCanMutate:()=>true,invCanEditRecord:()=>true,isSA:()=>true,isAdm:()=>true,
+  workflowCanMutate:()=>true,invCanEditRecord:()=>true,canAccessPage:()=>true,isSA:()=>true,isAdm:()=>true,
   toast:(...args)=>notices.push(args),toastActionError:(...args)=>errors.push(args),
-  invSaveWitnesses:async(...args)=>effects.push(['witnesses',...args]),invRefreshSignButtons:()=>effects.push(['sign-buttons']),
+  invSaveWitnesses:async(...args)=>{effects.push(['witnesses',...args]);assert.equal(c.imsInvAllData[0].status,'completed','Witness writes run only after the source status is confirmed');if(c.rejectWitness)throw c.rejectWitness;},invRefreshSignButtons:()=>{},invApplyLockMode:()=>{},
   imsInvBack:()=>{effects.push(['back']);fields['ims-inv-form'].style.display='none';},
   queueNotification:()=>effects.push(['notification']),
-  api:async(path,options)=>{requests.push({path,options:structuredClone(options)});if(c.reject)throw c.reject;return null;}
+  api:async(path,options)=>{requests.push({path,options:structuredClone(options)});if(c.reject)throw c.reject;return [{...structuredClone(existing),...structuredClone(options.b),updated_at:'2026-11-28T11:00:00Z'}];}
  };
  c.window=c;vm.createContext(c);vm.runInContext(saveSource,c);
  return {c,fields,requests,notices,errors,effects,existing,values:()=>Object.fromEntries(Object.entries(fields).filter(([,field])=>'value' in field).map(([id,field])=>[id,field.value]))};
@@ -51,7 +54,17 @@ test('a supported Completed update saves the requested value and keeps the same 
  assert.equal(h.requests[0].options.b.status,'completed');assert.equal(h.requests[0].options.b.linked_event_ref,'INC-2026-001');
  assert.equal(h.requests[0].options.b.description,'Confirmed investigation findings');assert.equal(h.c.imsInvEditId,h.existing.id);
  assert.equal(h.errors.length,0);assert.deepEqual(h.effects,[['witnesses',h.existing.id,'company-a'],['back']]);
- assert.ok(h.notices.some(([message])=>/Investigation updated/.test(message)));
+ assert.equal(h.requests[0].options.p,'return=representation','Success requires the exact saved source row to be confirmed');
+ assert.equal(h.c.imsInvAllData[0].status,'completed');assert.equal(h.fields['ims-inv-form'].style.display,'none');
+ assert.ok(h.notices.some(([message])=>/Investigation and linked Master Actions saved/.test(message)));
+});
+
+test('a witness save failure keeps the editor and entered fields while retaining the confirmed source version for retry',async()=>{
+ const h=harness(),entered=h.values();h.c.rejectWitness=new Error('Witness statement upload failed');
+ assert.equal(await h.c.invSave(),false);assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.b.status,'completed');
+ assert.equal(h.c.imsInvAllData[0].id,h.existing.id);assert.equal(h.c.imsInvAllData[0].status,'completed');assert.equal(h.c.imsInvAllData[0].updated_at,'2026-11-28T11:00:00Z');
+ assert.deepEqual(h.values(),entered);assert.equal(h.fields['ims-inv-form'].style.display,'block');assert.equal(h.effects.some(([type])=>type==='back'),false);assert.equal(h.notices.length,0);assert.equal(h.errors.length,1);assert.match(h.errors[0][2].message,/Witness statement upload failed/);
+ h.c.rejectWitness=null;assert.equal(await h.c.invSave(),true);assert.equal(h.requests.length,2);assert.match(h.requests[1].path,/updated_at=eq\.2026-11-28T11%3A00%3A00Z/,'Retry uses the confirmed source version');assert.equal(h.c.imsInvEditId,h.existing.id);assert.equal(h.fields['ims-inv-form'].style.display,'none');
 });
 
 test('the investigation status migration accepts exactly the six workflow choices offered by the form',()=>{

@@ -84,7 +84,7 @@ test('the register receives a keyboard-accessible View assessment action without
 });
 
 test('the viewer owns its lazy stylesheet and follows the real access policy edit signature',async()=>{
-  const r=runtime(),style=r.doc.getElementById('legal-assessment-viewer-style');assert.equal(style.tagName,'LINK');assert.equal(style.rel,'stylesheet');assert.equal(style.href,'/legal-assessment-viewer.css?v=20261020-1&legal-meetings-fix-1');assert.equal(r.doc.head.children.length,1);
+  const r=runtime(),style=r.doc.getElementById('legal-assessment-viewer-style');assert.equal(style.tagName,'LINK');assert.equal(style.rel,'stylesheet');assert.equal(style.href,'/legal-assessment-viewer.css?v=20261128-1');assert.equal(r.doc.head.children.length,1);
   const policy=require('../auris-user-access.js');r.scope.AurisUserAccess=policy;r.scope.prof.permissions={access_v1:{legal:{view:true,edit:true},'legal.assessments':{view:true,edit:false}}};await r.api.open('assessment-a');assert.equal(r.button('Edit assessment'),undefined,'A module-level edit grant cannot override assessment-specific denial');
   r.scope.prof.permissions.access_v1['legal.assessments'].edit=true;await r.api.open('assessment-a');assert.ok(r.button('Edit assessment'));r.scope.prof.permissions.access_v1.legal.edit=false;await r.button('Edit assessment').handlers.click();assert.equal(r.edits.length,0);assert.match(r.modal().textContent,/access to edit.*changed/);assert.equal(r.doc.head.children.length,1);
 });
@@ -119,4 +119,24 @@ test('denied assessment access is explicit and concurrent same-company loads ret
 test('unresponsive exact assessment loading and print refresh stop loading with a retryable message',async()=>{
   const r=runtime(),timers=manualTimers(r);r.scope.api=()=>new Promise(()=>{});const loading=r.api.open('assessment-a');timers[0].callback();await loading;assert.ok(r.button('Retry'));assert.match(r.modal().textContent,/did not respond within 15 seconds/);
   r.scope.api=async()=>[r.record];await r.api.open('assessment-a');r.scope.api=()=>new Promise(()=>{});const printing=r.button('Print assessment').handlers.click(),timer=timers.at(-1);timer.callback();await printing;assert.equal(r.windows[0].closed,true);assert.equal(r.button('Print assessment').disabled,false);assert.match(r.modal().textContent,/did not respond within 15 seconds/);assert.equal(r.previews.length,0);
+});
+
+test('compact assessment worksheet keeps all 76 saved requirements, complete wording and action fields',()=>{
+  const rows=Array.from({length:76},(_,index)=>({
+    status:index%2?'partial':'compliant',controls:'Full saved controls '+index,
+    recommendation:'Full further action '+index,responsible:'Owner '+index,target_date:'2026-12-01',gap:index%2===1,action_ref:'MAP-'+index,
+    requirement_snapshot:{reference:'REQ-'+index,title:'Requirement title '+index,legislation:'Saved legislation '+index,section:'Section '+index,source_reference:'Source revision '+index,requirement:'BEGIN-'+index+' '+('Full statutory wording retained without clipping. '.repeat(18))+' END-'+index}
+  }));
+  const h=runtime({worksheet:rows,total_requirements:76}),before=JSON.stringify(h.record),report=h.api.build(h.record);
+  assert.equal(report.worksheetRows,76);assert.equal((report.html.match(/<tr class="lav-requirement">/g)||[]).length,76);
+  assert.match(report.html,/<thead><tr><th scope="col">Requirement and saved wording/);
+  assert.doesNotMatch(report.html,/<section class="lav-requirement"|line-clamp|text-overflow|ellipsis/);
+  for(let index=0;index<76;index++)for(const text of ['REQ-'+index,'Requirement title '+index,'BEGIN-'+index,'END-'+index,'Full saved controls '+index,'Full further action '+index,'Owner '+index,'MAP-'+index,'Saved legislation '+index,'Source revision '+index])assert.ok(report.html.includes(text),text);
+  assert.match(report.html,/01\/12\/2026/);assert.match(report.html,/Gap recorded/);assert.match(report.html,/>Yes</);assert.match(report.html,/>No</);
+  assert.equal(JSON.stringify(h.record),before);assert.equal(h.requests.length,0,'Compacting never writes or replaces source records');
+});
+
+test('compact saved worksheet escapes complete long text and retains each duplicate reference row',()=>{
+  const h=runtime({worksheet:[{req_ref:'REPEATED',requirement:'First <full> wording\nRetained tail',controls:'Control & evidence',recommendation:'<script>unsafe()</script>',status:'partial'},{req_ref:'REPEATED',requirement:'Second full wording',controls:'Independent controls',status:'not_assessed'}],total_requirements:2});
+  const report=h.api.build(h.record);assert.equal((report.html.match(/REPEATED/g)||[]).length,2);assert.match(report.html,/First &lt;full&gt; wording<br>Retained tail/);assert.match(report.html,/Second full wording/);assert.match(report.html,/Control &amp; evidence/);assert.match(report.html,/&lt;script&gt;unsafe\(\)&lt;\/script&gt;/);assert.doesNotMatch(report.html,/<script>/);assert.equal(report.worksheetRows,2);
 });

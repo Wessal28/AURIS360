@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { verifyMeetingsRpc } = require('./verify-meetings-rpc.cjs');
+const { deployedLazyAssetUrl } = require('./deployed-lazy-asset.cjs');
 
 const root = path.resolve(__dirname, '..');
 const APPROVED_STAGING_REF = 'beoutmqttgfyyzndcdxu';
@@ -177,6 +178,25 @@ async function main() {
     .catch((error) => fail(`auris-training-plan-list-workspace.js deployment verification failed (${error.message}).`));
   if (trainingPlanSource.length < 100) fail('auris-training-plan-list-workspace.js was returned without usable application code.');
   assetSources.set('auris-training-plan-list-workspace.js', trainingPlanSource);
+  for (const [fileName, markers] of [
+    ['auris-navigation-trail.js', ['AurisNavigationTrail', 'handlePopState:handlePopState', 'back:back']],
+    ['auris-source-action-sync.js', ['AurisSourceActions', 'create:create', 'synchronize:synchronize']]
+  ]) {
+    const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders });
+    requireMarkers(source, fileName, markers);
+    assetSources.set(fileName, source);
+  }
+  for (const [fileName, moduleKey, requiredVersion, markers] of [
+    ['incident-management-upgrade.js', 'events', 'incident-ui-20261128-1', ['async function loadAll', 'window.imv2SaveForm']],
+    ['incident-record-reports.js', 'events', 'record-views-20261128-1', ['AurisIncidentReports', 'load:load', 'print:print']],
+    ['inspection-print-reports.js', 'inspection', 'record-views-20261128-1', ['AurisInspectionReports', 'print:print']]
+  ]) {
+    const url = deployedLazyAssetUrl({ registrySource: assetSources.get('auris-module-registry.js'), extractionSource: assetSources.get('auris-module-extraction.js'), base: preview, fileName, moduleKey, requiredVersion });
+    const source = await responseText(url, { headers: previewHeaders });
+    if (source.length < 100) fail(`${fileName} was returned without usable application code.`);
+    requireMarkers(source, fileName, markers);
+    assetSources.set(fileName, source);
+  }
   for (const [fileName, marker] of [['tools-print-reports.js', 'AurisToolsPrint'], ['fleet-print-reports.js', 'AurisFleetPrint'], ['module-print-catalogue.js','AurisPrintCatalogue'], ['operational-print-catalogue.js',"register('events'"], ['specialist-print-catalogue.js',"register('ohealth'"], ['governance-print-catalogue.js',"register('settings'"], ['platform-print-catalogue.js',"register('dashboard'"]]) {
     const source = await responseText(deployedAssetUrl(appHtml, preview, fileName), { headers: previewHeaders })
       .catch((error) => fail(`${fileName} deployment verification failed (${error.message}).`));
@@ -355,7 +375,8 @@ async function main() {
   requireMarkers(coreSource, 'Module navigation', [
     'function moduleLoaderFor(pageKey)',
     'window.AurisModuleRegistry',
-    'pageLoader=moduleLoaderFor(name)'
+    'pageLoader=navigationTicket?.reuse?function(){}:moduleLoaderFor(name)',
+    'reuseView:!!navigationTicket?.reuse'
   ]);
   requireMarkers(coreSource, 'Workspace profile', ['companies:companies!profiles_company_id_fkey(*)']);
 

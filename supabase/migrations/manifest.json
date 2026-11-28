@@ -441,6 +441,11 @@
       "order": 88,
       "file": "20261126030000_document_record_metadata_edit.sql",
       "sha256": "8e8101ac12d8b7282453ae91ff3e4dc7298e1a210394a3df3d5efc046908aa86"
+    },
+    {
+      "order": 89,
+      "file": "20261128010000_investigation_action_identity.sql",
+      "sha256": "7bac9e4d7438ca6740d070cef8890941d5500d4904bf763f59aafcdf994efa63"
     }
   ]
 }

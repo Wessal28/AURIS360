@@ -3398,8 +3398,8 @@ function activatePageNavigation(pageKey, suppliedElement){
   }
 }
 
-function showPage(name,el){
-  if(typeof mapEditorLeave==='function'&&name!=='actions'&&(mapEditorBusy||mapEditorDirty())){return mapEditorLeave().then(function(ok){return ok?showPage(name,el):{ok:false,cancelled:true};});}
+function showPage(name,el,navigationOptions){
+  if(typeof mapEditorLeave==='function'&&name!=='actions'&&(mapEditorBusy||mapEditorDirty())){return mapEditorLeave().then(function(ok){return ok?showPage(name,el,navigationOptions):{ok:false,cancelled:true};});}
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
   if(!canAccessPage(name)) {
@@ -3407,6 +3407,7 @@ function showPage(name,el){
     return;
   }
   if(window.AurisCommandCentre)window.AurisCommandCentre.recordOpen(name);
+  var navigationTicket=window.AurisNavigationTrail?.begin(name,el,navigationOptions);
 
 closeTransientOverlays();
 if(window.AurisApprovalReview)window.AurisApprovalReview.close();
@@ -3424,6 +3425,7 @@ const activateRoutedPage=function(){
   // Shared page CSS owns visibility; routing only changes the active state.
   document.querySelectorAll('.page').forEach(function(page){page.classList.remove('active');});
   target.classList.add('active');
+  window.AurisNavigationTrail?.commit(navigationTicket);
   // Dynamic/upgraded modules must not be allowed to retain a stale inline
   // hidden state after the router has selected them.
   if(target.style.getPropertyValue('display')==='none')target.style.removeProperty('display');
@@ -3434,12 +3436,12 @@ const activateRoutedPage=function(){
   }
   return target;
 };
-var pageLoader=moduleLoaderFor(name);
+var pageLoader=navigationTicket?.reuse?function(){}:moduleLoaderFor(name);
 var moduleRuntime=window.AurisModuleRuntime;
 if(moduleRuntime){
   try{
     var enabledModules=co&&Array.isArray(co.module_access)?co.module_access:null;
-    var activationResult=routeReady=moduleRuntime.activate(name,{element:el,loader:pageLoader,activateView:activateRoutedPage,enabledKeys:enabledModules,strictDependencies:false});
+    var activationResult=routeReady=moduleRuntime.activate(name,{element:el,loader:pageLoader,activateView:activateRoutedPage,enabledKeys:enabledModules,strictDependencies:false,reuseView:!!navigationTicket?.reuse});
     if(activationResult&&typeof activationResult.then==='function')activationResult.then(activateRoutedPage,function(error){activateRoutedPage();console.error('Module load failed ('+name+'):',error);});
   }catch(error){
     activateRoutedPage();
@@ -3465,7 +3467,7 @@ if(moduleRuntime){
   }
 }else activateRoutedPage();
 // Mobile: close sidebar and scroll to top
-if(window.innerWidth<=768){
+if(window.innerWidth<=768&&!navigationOptions?.navigationReturn){
   if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
   // Scroll the main content area to top
   var mainEl=document.querySelector('.main');
@@ -7922,16 +7924,18 @@ function invRenderCA(cas){
   if(!cas||!cas.length){if(empty)empty.style.display='block';return;}
   if(empty)empty.style.display='none';
   cas.forEach(function(ca,i){
-    body.innerHTML+='<tr>'
+    ca=invSourceActionService().identify(ca);
+    body.innerHTML+='<tr data-action-key="'+escH(ca.action_key)+'" data-action-id="'+escH(ca.action_id||'')+'" data-action-initial="'+invSourceActionInitial({description:ca.desc||'',responsible:ca.resp||'',target_date:ca.date||'',priority:ca.prio||'low'})+'" data-recorded-status="'+escH(ca.recorded_status||'')+'" data-investigation-id="'+escH(imsInvEditId||'')+'">'
       +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+(i+1)+'</td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-desc" value="'+(ca.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-src" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="WS1"'+(ca.src==='WS1'?' selected':'')+'>WS1</option><option value="WS2"'+(ca.src==='WS2'?' selected':'')+'>WS2</option><option value="WS3"'+(ca.src==='WS3'?' selected':'')+'>WS3</option><option value="General"'+(ca.src==='General'?' selected':'')+'>General</option></select></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-resp" value="'+(ca.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="ca-date" value="'+(ca.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(ca.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+(ca.prio==='medium'?' selected':'')+'>Medium</option><option value="high"'+(ca.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(ca.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
-      +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(ca.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(ca.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(ca.status==='closed'?' selected':'')+'>Closed</option></select></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)">'+invSourceActionStatus(ca,'ca-status')+'</td>'
       +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-runtime-onclick="r0151" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
   });
+  invBindSourceActions();
 }
 
 function invCollectData(){
@@ -7950,7 +7954,7 @@ function invCollectData(){
   var rcs=[];document.querySelectorAll('.ws2-rc').forEach(function(el){rcs.push(el.value||'');});
   var cas=[];document.querySelectorAll('#inv-ca-body tr').forEach(function(tr){
     var desc=tr.querySelector('.ca-desc')?.value;
-    if(desc)cas.push({desc:desc,src:tr.querySelector('.ca-src')?.value||'General',resp:tr.querySelector('.ca-resp')?.value||'',date:tr.querySelector('.ca-date')?.value||'',prio:tr.querySelector('.ca-prio')?.value||'medium',status:tr.querySelector('.ca-status')?.value||'open'});
+    if(desc)cas.push(Object.assign(invSourceActionIdentity(tr),{desc:desc,src:tr.querySelector('.ca-src')?.value||'General',resp:tr.querySelector('.ca-resp')?.value||'',date:tr.querySelector('.ca-date')?.value||'',prio:tr.querySelector('.ca-prio')?.value||'medium',status:tr.querySelector('.ca-status')?.value||'open'}));
   });
   var ws3rows=[];document.querySelectorAll('.ws3-why-row').forEach(function(tr){
     var cause=tr.querySelector('.ws3-cause-input')?.value||'';
@@ -8021,29 +8025,53 @@ async function invDelete(id){
 
 
 async function invSyncToMAP(invId,body){
-  try{
-    // Delete old MAP entries for this investigation
-    await api('/action_tracker?source_id=eq.'+invId+'&source_module=eq.investigation',{m:'DELETE'});
-    // Re-create from current corrective actions
-    var invRef=document.getElementById('inv-form3ref')?.textContent||'INV';
-    var title=body.incident_location||body.incident_description||'Investigation';
-    for(var i=0;i<body.corrective_actions.length;i++){
-      var ca=body.corrective_actions[i];
-      if(!ca.desc)continue;
-      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:ccid(),
-        source_module:'investigation',source_id:invId,
-        source_ref:invRef+' ('+ca.src+')',
-        description:ca.desc,
-        responsible:ca.resp||null,
-        target_date:ca.date||null,
-        priority:ca.prio||'medium',
-        status:ca.status||'open',
-        created_by:prof?.id
-      }});
-    }
-    toast('Corrective actions synced to Master Action Plan!');
-  }catch(e){console.error('MAP sync error:',e);}
+  var submitted=invSourceActionRows(body.corrective_actions);
+  var result=await invSourceActionService().synchronize({module:'investigation',id:invId,companyId:String(body.company_id||ccid()),ref:document.getElementById('inv-form3ref')?.textContent||'INV'},body.corrective_actions);
+  body.corrective_actions=result.rows;invHydrateSourceActionRows(result.rows,invId,submitted);
+  return result;
+}
+
+var invSourceActionInstance=null,invSourceSavePending=false,invSourceActionParseError='',invSourceActionSnapshot='',invSourceActionLoadGeneration=0,invSourceActionLoadPromise=null,invSourceActionLoadError='';
+function invSourceActionContext(){return {companyId:String(ccid()||''),userId:String(prof?.id||''),role:String(activeRole()),canView:!!canAccessPage('actions'),canEdit:!!canAccessPage('actions')&&isMgr()};}
+function invSourceFormFingerprint(){return JSON.stringify(Array.from(document.querySelectorAll('#ims-inv-form input,#ims-inv-form select,#ims-inv-form textarea')).filter(function(el){return !el.classList.contains('inv-ca-status')&&!el.classList.contains('ca-status');}).map(function(el){return [el.id||el.className,el.type==='checkbox'?el.checked:el.value];}));}
+function invSourceActionService(){
+  if(!window.AurisSourceActions)throw new Error('Linked action tools are unavailable. Reload the app before saving this investigation.');
+  if(!invSourceActionInstance)invSourceActionInstance=window.AurisSourceActions.create({request:api,getContext:invSourceActionContext,openAction:async function(id,expected){
+    if(invSourceSavePending||invSourceFormFingerprint()!==invSourceActionSnapshot)throw new Error('Save the investigation first so your entered changes are kept before managing the linked action.');
+    await showPage('actions',null);await mapEdit(id,expected);
+  }});
+  return invSourceActionInstance;
+}
+function invSourceActionRows(value){if(typeof value==='string'){if(!value.trim())return [];try{value=JSON.parse(value);}catch(_){throw new Error('Saved corrective actions could not be read. Their original content is retained; review it before editing.');}}if(value==null)return [];if(!Array.isArray(value))throw new Error('Saved corrective actions are not a record list. Their original content has been retained.');return value;}
+function invSourceActionMetadata(row){return {description:String(row.description||row.desc||'').trim(),responsible:String(row.responsible||row.assigned_to||row.resp||'').trim(),target_date:String(row.target_date||row.due_date||row.date||''),priority:String(row.priority||row.prio||'medium')};}
+function invSourceActionInitial(row){return encodeURIComponent(JSON.stringify(invSourceActionMetadata(row)));}
+function invSourceActionFields(row){var active=row.classList.contains('inv-ca-row');return {description:row.querySelector(active?'.inv-ca-desc':'.ca-desc')?.value?.trim()||'',responsible:row.querySelector(active?'.inv-ca-assigned':'.ca-resp')?.value?.trim()||'',target_date:row.querySelector(active?'.inv-ca-due':'.ca-date')?.value||'',priority:active?row.dataset.actionPriority||'high':row.querySelector('.ca-prio')?.value||'medium'};}
+function invSourceActionBaseline(row){if(!row.dataset.actionInitial)return invSourceActionFields(row);try{return invSourceActionMetadata(JSON.parse(decodeURIComponent(row.dataset.actionInitial)));}catch(_){throw new Error('The source action edit baseline could not be read. Retain your entries and reopen its exact link.');}}
+function invSourceActionIdentity(row){var fields=invSourceActionFields(row),initial=invSourceActionBaseline(row),item=invSourceActionService().identify({action_id:row.dataset.actionId||null,action_key:row.dataset.actionKey||null,recorded_status:row.dataset.recordedStatus||null,metadata_changed_fields:Object.keys(fields).filter(function(key){return fields[key]!==initial[key];})});row.dataset.actionKey=item.action_key;return item;}
+function invSourceActionStatus(row,className,verified){
+  var status=String(row.status||'open');if(status==='completed')status='closed';
+  var states=['open','in_progress','overdue','pending_verification','pending_closure','closed','cancelled'];if(!states.includes(status))states.push(status);
+  return '<div class="inv-source-action-state"><select disabled class="'+className+'" aria-label="'+(verified?'Master Action status':'Recorded action status (unverified)')+'" title="Managed through the linked Master Action">'+states.map(function(value){return '<option value="'+escH(value)+'"'+(status===value?' selected':'')+'>'+escH(value.replace(/_/g,' '))+'</option>';}).join('')+'</select><button type="button" class="btn btn-sm inv-manage-linked-action"'+(!row.action_id?' disabled':'')+'>Manage linked action</button><small class="inv-source-action-note">'+escH(row.recorded_status&&row.recorded_status!==status?'Recorded source status: '+row.recorded_status+'. Review the linked Master Action workflow.':verified?'Status comes from this exact Master Action.':row.action_id?'Recorded status is unverified while the Master Action loads.':'Save to create and confirm the Master Action link.')+'</small></div>';
+}
+function invBindSourceActions(){var body=document.getElementById('inv-ca-body');if(!body||body.dataset.actionLinksBound)return;body.dataset.actionLinksBound='1';body.addEventListener('click',async function(event){var button=event.target.closest('.inv-manage-linked-action');if(!button)return;var row=button.closest('[data-action-key]');if(!row||String(row.dataset.investigationId)!==String(imsInvEditId||''))return;try{await invSourceActionService().manage({module:'investigation',id:imsInvEditId,companyId:String(ccid())},invSourceActionIdentity(row));}catch(error){toast(error.message,false);}});}
+function invHydrateSourceActionRows(rows,id,submitted){
+  var body=document.getElementById('inv-ca-body');if(!body)return;
+  var clean=invSourceFormFingerprint()===invSourceActionSnapshot;
+  Array.from(body.querySelectorAll('[data-action-key]')).forEach(function(node){var row=(rows||[]).find(function(item){return item.action_key===node.dataset.actionKey||item.action_id&&item.action_id===node.dataset.actionId;});if(!row)return;
+    var prior=(submitted||[]).find(function(item){return item.action_key===node.dataset.actionKey||item.action_id&&item.action_id===node.dataset.actionId;}),initial=prior?invSourceActionMetadata(prior):invSourceActionBaseline(node),fields=invSourceActionFields(node),canonical=invSourceActionMetadata(row),active=node.classList.contains('inv-ca-row'),selectors=active?{description:'.inv-ca-desc',responsible:'.inv-ca-assigned',target_date:'.inv-ca-due'}:{description:'.ca-desc',responsible:'.ca-resp',target_date:'.ca-date',priority:'.ca-prio'};
+    Object.keys(selectors).forEach(function(key){var input=node.querySelector(selectors[key]);if(input&&fields[key]===initial[key])input.value=canonical[key];});
+    if(active&&fields.priority===initial.priority)node.dataset.actionPriority=canonical.priority;
+    node.dataset.actionInitial=invSourceActionInitial(canonical);node.dataset.actionKey=row.action_key;node.dataset.actionId=row.action_id||'';node.dataset.recordedStatus=row.recorded_status||'';node.dataset.investigationId=id;
+    var stateNode=node.querySelector('.inv-source-action-state');if(stateNode){var holder=document.createElement('div');holder.innerHTML=invSourceActionStatus(row,active?'inv-ca-status':'ca-status',!!row.action_id);stateNode.replaceWith(holder.firstElementChild);}});
+  if(clean)invSourceActionSnapshot=invSourceFormFingerprint();
+}
+function invLoadSourceActions(record,rows){
+  var current=invSourceActionContext(),body=document.getElementById('inv-ca-body'),id=String(record.id),ticket=++invSourceActionLoadGeneration;
+  invSourceActionLoadError='';
+  invSourceActionLoadPromise=(async function(){
+    try{if(!rows.length)return;var result=await invSourceActionService().load({module:'investigation',id:id,companyId:String(record.company_id||current.companyId),ref:record.investigation_ref||''},rows);if(ticket!==invSourceActionLoadGeneration||document.getElementById('inv-ca-body')!==body||String(imsInvEditId)!==id)return;invHydrateSourceActionRows(result.rows,id);}
+    catch(error){var now=invSourceActionContext();if(ticket!==invSourceActionLoadGeneration||now.companyId!==current.companyId||now.userId!==current.userId||now.role!==current.role||String(imsInvEditId)!==id||document.getElementById('inv-ca-body')!==body)return;invSourceActionLoadError=error.message;body?.querySelectorAll('.inv-source-action-note').forEach(function(note){note.textContent='Master Action status could not load. The recorded source status is unverified.';});toast(error.message,false);}
+  })();return invSourceActionLoadPromise;
 }
 
 async function saveInv(){invSave();}
@@ -14713,10 +14741,12 @@ async function wsOpenLinkedRecord(kind,value){
       auditOpenReadOnly(record.id);return;
     }
     if(kind==='event'){
-      showPage('events',document.querySelector('[onclick*="\'events\'"]'));
-      var ev=(typeof imsAllData!=='undefined'?imsAllData:[]).find(function(r){return r.id===value||r.event_ref===value||r.incident_number===value;});
-      if(!ev){var eventRows=await api('/events?select=*'+cf()+'&or=(id.eq.'+wsRestEqValue(value)+',event_ref.eq.'+wsRestEqValue(value)+',incident_number.eq.'+wsRestEqValue(value)+')&limit=1').catch(function(){return[];});ev=eventRows&&eventRows[0];}
-      if(ev&&typeof imv2OpenIncidentReadOnly==='function'){setTimeout(function(){imv2OpenIncidentReadOnly(ev.id);},180);return;}
+      var eventCompany=String(ccid()||''),eventUser=String(prof?.id||''),eventRole=String(activeRole()),eventWork=wsCurrentId;
+      function eventGuard(){if(eventCompany!==String(ccid()||'')||eventUser!==String(prof?.id||'')||eventRole!==String(activeRole())||eventWork!==wsCurrentId||!canAccessPage('events')||!document.getElementById('page-events')?.classList.contains('active'))throw new Error('Account, company, work order or module changed. Reopen the linked incident.');}
+      var eventRoute=await showPage('events',document.querySelector('[onclick*="\'events\'"]'));if(eventRoute?.cancelled||eventRoute?.ok===false)throw new Error('Incident Management could not open. Reopen the linked incident.');eventGuard();
+      var ev=(typeof imsAllData!=='undefined'?imsAllData:[]).find(function(r){return String(r.company_id)===eventCompany&&(r.id===value||r.event_ref===value||r.incident_number===value);});
+      if(!ev){var eventRows=await api('/events?select=*&company_id=eq.'+encodeURIComponent(eventCompany)+'&or=(id.eq.'+wsRestEqValue(value)+',event_ref.eq.'+wsRestEqValue(value)+',incident_number.eq.'+wsRestEqValue(value)+')&limit=1');eventGuard();ev=eventRows&&eventRows[0];}
+      if(ev&&String(ev.company_id)===eventCompany&&typeof imv2OpenIncidentReadOnly==='function'){eventGuard();return await imv2OpenIncidentReadOnly(ev.id);}
     }
     toast('Linked record not found or not accessible',false);
   }catch(e){
@@ -15316,7 +15346,7 @@ function imsRenderIncidentDashboard(data){
 function imsFilterList(){
   if(window.AurisIncidentListWorkspace){
     var el=document.getElementById('ims-register-inner')||document.getElementById('ims-register-list');if(!el)return;
-    try{return window.AurisIncidentListWorkspace.mount(el,imsAllData||[],{filters:{search:document.getElementById('ev-search')?.value||'',type:document.getElementById('ev-filter-type')?.value||'',severity:document.getElementById('ev-filter-severity')?.value||'',status:document.getElementById('ev-filter-status')?.value||'',site:document.getElementById('ev-filter-site')?.value||'',department:document.getElementById('ev-filter-department')?.value||'',range:document.getElementById('ev-filter-range')?.value||'year'},openRecord:function(id,current){var selected=(imsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This incident is unavailable or outside your company access.');if(typeof imv2OpenIncidentReadOnly==='function')return imv2OpenIncidentReadOnly(id);if(typeof evOpenDetail==='function')return evOpenDetail(id);throw new Error('The incident record viewer is unavailable. Reload the register.');}});}
+    try{return window.AurisIncidentListWorkspace.mount(el,imsAllData||[],{filters:{search:document.getElementById('ev-search')?.value||'',type:document.getElementById('ev-filter-type')?.value||'',severity:document.getElementById('ev-filter-severity')?.value||'',status:document.getElementById('ev-filter-status')?.value||'',site:document.getElementById('ev-filter-site')?.value||'',department:document.getElementById('ev-filter-department')?.value||'',range:document.getElementById('ev-filter-range')?.value||'year'},printRecord:function(id,current){var selected=(imsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This incident is unavailable or outside your company access.');if(typeof imv2PrintIncident!=='function')throw new Error('Incident report printing is unavailable. Reload this module.');return imv2PrintIncident(id);},openRecord:function(id,current){var selected=(imsAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This incident is unavailable or outside your company access.');if(typeof imv2OpenIncidentReadOnly==='function')return imv2OpenIncidentReadOnly(id);if(typeof evOpenDetail==='function')return evOpenDetail(id);throw new Error('The incident record viewer is unavailable. Reload the register.');}});}
     catch(error){el.innerHTML='<div class="imx-empty"><strong>Incident register could not be displayed</strong><span>'+escH(error.message||error)+'</span></div>';console.error(error);return;}
   }
   imsRenderIncidentRegister(imsIncidentFiltered());
@@ -15929,10 +15959,11 @@ async function imsLoadInvestigations(){
         +'<td style="padding:8px;font-size:11px">'+escH(x.reported_by||x.investigator||'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+(x.incident_date||x.date?new Date(x.incident_date||x.date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0096"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button type="button" class="btn btn-sm ims-investigation-print" data-id="'+escH(x.id)+'" aria-label="Print investigation report" title="Print investigation report"><i class="ti ti-printer" aria-hidden="true"></i></button> <button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0096" aria-label="Edit investigation"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
+    el.querySelectorAll('.ims-investigation-print').forEach(function(button){button.addEventListener('click',function(event){event.stopPropagation();if(typeof imv2PrintInvestigation!=='function'){toast('Investigation report printing is unavailable. Reload this module.',false);return;}Promise.resolve(imv2PrintInvestigation(button.dataset.id)).catch(function(error){toast(error.message||String(error),false);});});});
     if(window.mapPendingInvestigationSource){
       setTimeout(function(){
         var pending=window.mapPendingInvestigationSource||{};
@@ -15943,6 +15974,7 @@ async function imsLoadInvestigations(){
 }
 
 function imsNewInvestigation(linkedEventId){
+  invSourceActionParseError='';invSourceActionSnapshot='';invSourceActionLoadPromise=null;invSourceActionLoadError='';++invSourceActionLoadGeneration;
   imsInvEditId=null; imsInvMethod='5why';
   document.getElementById('ims-inv-list').style.display='none';
   document.getElementById('ims-inv-form').style.display='block';
@@ -15950,6 +15982,7 @@ function imsNewInvestigation(linkedEventId){
   document.getElementById('inv-form3ref').textContent='INV-AUTO';
   document.getElementById('inv-delete-btn').style.display='none';
   invApplyLockMode(null);
+  invBindSourceActions();
   // Clear all fields
   ['ws1-reported-by','ws1-reported-title','ws1-event-link','ws1-inc-time','ws1-location',
    'ws1-description','ws1-person-name','ws1-person-function','ws1-witnesses','ws1-immediate-actions',
@@ -15992,6 +16025,7 @@ function imsNewInvestigation(linkedEventId){
   invSelectMethod('5why');
   invShowTab('ws1', document.getElementById('inv-tab-ws1'));
   invApplyLockMode(null);
+  invSourceActionSnapshot=invSourceFormFingerprint();
 }
 
 function invCanEditRecord(rec){
@@ -16004,9 +16038,10 @@ function invApplyLockMode(rec){
   var locked=!!imsInvEditId && !invCanEditRecord(rec||{status:document.getElementById('inv-status-sel')?.value});
   form.querySelectorAll('input,select,textarea').forEach(function(el){
     if(el.type==='hidden') return;
-    el.disabled=locked;
+    el.disabled=locked||el.classList.contains('inv-ca-status')||el.classList.contains('ca-status');
   });
   form.querySelectorAll('button').forEach(function(btn){
+    if(btn.classList.contains('inv-manage-linked-action')){btn.disabled=!canAccessPage('actions')||!btn.closest('[data-action-id]')?.dataset.actionId;return;}
     var action=btn.getAttribute('onclick')||'';
     var keep=action.includes('imsInvBack') || action.includes('invReleaseForEdit') || action.includes('invDeleteCurrent');
     if(action.includes('invSave')) btn.style.display=locked?'none':'';
@@ -16025,7 +16060,9 @@ function invApplyLockMode(rec){
 
 function imsOpenInvestigation(id){
   var x=imsInvAllData.find(r=>r.id===id); if(!x)return;
+  if(String(x.company_id||'')!==String(ccid())){toast('This investigation is unavailable in the selected company.',false);return;}
   imsInvEditId=id;
+  invSourceActionParseError='';invSourceActionLoadPromise=null;invSourceActionLoadError='';++invSourceActionLoadGeneration;
   document.getElementById('ims-inv-list').style.display='none';
   document.getElementById('ims-inv-form').style.display='block';
   document.getElementById('inv-form3title').textContent=x.description||x.incident_description||'Investigation';
@@ -16088,9 +16125,12 @@ function imsOpenInvestigation(id){
   var caBody=document.getElementById('inv-ca-body');
   var caEmpty=document.getElementById('inv-ca-empty');
   if(caBody){
-    var cas=Array.isArray(x.corrective_actions)?x.corrective_actions:[];
-    caBody.innerHTML=cas.map(function(ca,i){return invCaRow(ca.description||'',ca.assigned_to||'',ca.due_date||'',ca.status||'open',i);}).join('');
-    if(caEmpty)caEmpty.style.display=cas.length?'none':'block';
+    try{
+      var cas=invSourceActionService().prepare(invSourceActionRows(x.corrective_actions));
+      caBody.innerHTML=cas.map(function(ca,i){return invCaRow(ca.description||ca.desc||'',ca.assigned_to||ca.resp||'',ca.due_date||ca.date||'',ca.status||'open',i,ca);}).join('');
+      if(caEmpty)caEmpty.style.display=cas.length?'none':'block';
+      invBindSourceActions();invLoadSourceActions(x,cas);
+    }catch(actionError){invSourceActionParseError=actionError.message;caBody.innerHTML='<div role="alert">'+escH(actionError.message)+'</div>';if(caEmpty)caEmpty.style.display='none';}
   }
   document.getElementById('inv-type-sel').value=x.investigation_type||'incident';
   document.getElementById('inv-status-sel').value=x.status||'open';
@@ -16103,6 +16143,7 @@ function imsOpenInvestigation(id){
   invRefreshSignButtons();
   invShowTab('ws1', document.getElementById('inv-tab-ws1'));
   invApplyLockMode(x);
+  invSourceActionSnapshot=invSourceFormFingerprint();
 }
 
 function imsAddWhyRow(container, num, answer){
@@ -16164,16 +16205,13 @@ function invAddTimelineRow(){
   imsAddTimelineRow(el,'','');
 }
 
-function invCaRow(desc, assigned, due, status, idx){
-  return '<div class="inv-ca-row" style="display:grid;grid-template-columns:3fr 2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">'
+function invCaRow(desc, assigned, due, status, idx, identity){
+  var row=invSourceActionService().identify(Object.assign({},identity||{},{status:status||'open'}));
+  return '<div class="inv-ca-row" data-action-key="'+escH(row.action_key)+'" data-action-id="'+escH(row.action_id||'')+'" data-action-initial="'+invSourceActionInitial({description:desc,responsible:assigned,target_date:due,priority:row.priority||row.prio||'high'})+'" data-action-priority="'+escH(row.priority||row.prio||'high')+'" data-recorded-status="'+escH(row.recorded_status||'')+'" data-investigation-id="'+escH(imsInvEditId||'')+'" style="display:grid;grid-template-columns:3fr 2fr 1fr 2fr auto;gap:6px;margin-bottom:6px;align-items:center">'
     +'<input type="text" placeholder="Corrective action description..." value="'+escH(desc)+'" class="inv-ca-desc" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<input type="text" placeholder="Assigned to" value="'+escH(assigned)+'" class="inv-ca-assigned" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<input type="date" value="'+escH(due)+'" class="inv-ca-due" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<select class="inv-ca-status" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
-    +'<option value="open"'+(status==='open'?' selected':'')+'>Open</option>'
-    +'<option value="in_progress"'+(status==='in_progress'?' selected':'')+'>In progress</option>'
-    +'<option value="completed"'+(status==='completed'?' selected':'')+'>Completed</option>'
-    +'</select>'
+    +invSourceActionStatus(row,'inv-ca-status')
     +'<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" data-auris-generated-onclick="g0099"><i class="ti ti-x"></i></button>'
     +'</div>';
 }
@@ -16182,6 +16220,7 @@ function invAddCA(){
   var caEmpty=document.getElementById('inv-ca-empty'); if(caEmpty)caEmpty.style.display='none';
   var caBody=document.getElementById('inv-ca-body'); if(!caBody)return;
   caBody.insertAdjacentHTML('beforeend', invCaRow('','','','open',caBody.querySelectorAll('.inv-ca-row').length));
+  invBindSourceActions();
 }
 
 function aiExtractJson(raw){
@@ -16575,7 +16614,14 @@ async function invSign(role){
 }
 
 async function invSave(){
+  if(invSourceSavePending)return false;
   if(!workflowCanMutate('events','investigations'))return;
+  if(invSourceActionParseError){toast(invSourceActionParseError,false);return false;}
+  if(imsInvEditId&&invSourceActionLoadPromise){
+    var waitingId=String(imsInvEditId),waitingContext=invSourceActionContext(),waitingGeneration=invSourceActionLoadGeneration;invSourceSavePending=true;
+    try{await invSourceActionLoadPromise;var afterLoad=invSourceActionContext();if(String(imsInvEditId)!==waitingId||waitingGeneration!==invSourceActionLoadGeneration||['companyId','userId','role'].some(function(key){return afterLoad[key]!==waitingContext[key];}))throw new Error('Company, account or investigation changed. Reopen the saved source record.');if(invSourceActionLoadError)throw new Error('The exact Master Action links could not load. Your entries are retained. Reopen the investigation before saving: '+invSourceActionLoadError);}
+    catch(loadError){toast(loadError.message,false);return false;}finally{invSourceSavePending=false;}
+  }
   var currentInv=(imsInvAllData||[]).find(function(r){return r.id===imsInvEditId;})||{};
   if(imsInvEditId && !invCanEditRecord(currentInv)){
     toast('Submitted investigations are locked. Admin must release it before modification.',false);
@@ -16592,7 +16638,7 @@ async function invSave(){
   var cas=[];
   document.querySelectorAll('.inv-ca-row').forEach(row=>{
     var desc=row.querySelector('.inv-ca-desc')?.value?.trim();
-    if(desc)cas.push({description:desc,assigned_to:row.querySelector('.inv-ca-assigned')?.value?.trim()||'',due_date:row.querySelector('.inv-ca-due')?.value||null,status:row.querySelector('.inv-ca-status')?.value||'open'});
+    if(desc)cas.push(Object.assign(invSourceActionIdentity(row),{description:desc,assigned_to:row.querySelector('.inv-ca-assigned')?.value?.trim()||'',due_date:row.querySelector('.inv-ca-due')?.value||null,status:row.querySelector('.inv-ca-status')?.value||'open',priority:row.dataset.actionPriority||'high'}));
   });
   // Use sephs_admin's selected company if applicable, else user's own
   var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
@@ -16626,44 +16672,44 @@ async function invSave(){
     sign_approver:g('inv-sign-approver'),sign_app_date:g('inv-sign-app-date')||null,
     effectiveness_review_date:g('inv-effectiveness-date')||null,effectiveness_rating:g('inv-effectiveness-rating'),
     updated_at:new Date().toISOString()};
+  var context=invSourceActionContext(),savingId=imsInvEditId||null,savedSource=currentInv,existingSource=!!imsInvEditId;
+  function current(){var now=invSourceActionContext();if(now.companyId!==context.companyId||now.userId!==context.userId||now.role!==context.role||String(imsInvEditId||'')!==String(savingId||'')||!canAccessPage('events'))throw new Error('Company, account or investigation changed. Reopen the saved source record.');}
+  function confirmed(rows,id){if(!Array.isArray(rows)||rows.length!==1||String(rows[0].company_id)!==String(effectiveCompanyId)||(id&&String(rows[0].id)!==String(id))||!rows[0].id)throw new Error('The investigation save was not confirmed. Your entered values are retained.');return rows[0];}
+  function rememberSource(){var at=imsInvAllData.findIndex(function(row){return String(row.id)===String(savingId);});if(at<0)imsInvAllData.push(savedSource);else imsInvAllData[at]=savedSource;}
+  function nextSourceTime(){return new Date(Math.max(Date.now(),Date.parse(savedSource.updated_at)||0)+1).toISOString();}
+  var savingForm=document.getElementById('ims-inv-form'),savingControls=savingForm?Array.from(savingForm.querySelectorAll('input,select,textarea,button')).map(function(control){return {control:control,disabled:control.disabled};}):[];
+  invSourceSavePending=true;savingControls.forEach(function(item){item.control.disabled=true;});
   try{
-    if(imsInvEditId){
-      await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:body});
-      await invSaveWitnesses(imsInvEditId, effectiveCompanyId);
-      toast('Investigation updated!');
-    }else{
-      body.created_by=prof?.id;
-      var res=await api('/investigations',{m:'POST',p:'return=representation',b:body});
-      if(res?.[0]?.id){
-        // Generate ref number by querying actual DB for highest existing - same
-        // pattern as incidents - more reliable than counting in-memory array.
-        var yr=new Date().getFullYear();
-        var seq=1;
-        try{
-          var existing=await api('/investigations?select=investigation_ref&company_id=eq.'+effectiveCompanyId+'&investigation_ref=like.INV-'+yr+'-*&order=investigation_ref.desc&limit=1');
-          if(existing && existing[0] && existing[0].investigation_ref){
-            var match=existing[0].investigation_ref.match(/INV-\d{4}-(\d+)/);
-            if(match) seq=parseInt(match[1])+1;
-          }
-        }catch(_){}
-        var ref='INV-'+yr+'-'+String(seq).padStart(3,'0');
-        await api('/investigations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{investigation_ref:ref}});
-        toast('Investigation saved! Ref: '+ref);
-        imsInvEditId=res[0].id;
-        document.getElementById('inv-form3ref').textContent=ref;
-        await invSaveWitnesses(imsInvEditId, effectiveCompanyId);
-        invRefreshSignButtons();
-        // Auto-create action_tracker rows for each corrective action - also fix company_id
-        for(var ca of cas){
-          if(ca.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:effectiveCompanyId,title:ca.description.substring(0,80),description:ca.description,source_type:'investigation',source_module:'investigation',source_id:res[0].id,source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}
-            catch(ex){}
-          }
-        }
-      }
+    if(!context.companyId||context.companyId!==String(effectiveCompanyId))throw new Error('Select the investigation company before saving.');
+    cas=invSourceActionService().prepare(cas);body.corrective_actions=cas.length?JSON.stringify(cas):null;current();
+    if(!savingId){
+      // Obtain one stable source ID in an editable state. Submission/sign-off is
+      // saved only after its linked actions and evidence have been confirmed.
+      var created=await api('/investigations',{m:'POST',p:'return=representation',b:Object.assign({},body,{status:'open',created_by:context.userId})});current();savedSource=confirmed(created);
+      savingId=savedSource.id;imsInvEditId=savingId;imsInvAllData.push(savedSource);
+      invHydrateSourceActionRows(cas,savingId);
+    }else if(String(savedSource.company_id)!==String(effectiveCompanyId))throw new Error('The investigation is outside the selected company.');
+    var ref=savedSource.investigation_ref;
+    if(!ref){
+      ref=await nextCompanyRef('investigations','investigation_ref','INV-'+new Date().getFullYear()+'-');current();
+      var referenced=await api('/investigations?id=eq.'+encodeURIComponent(savingId)+'&company_id=eq.'+encodeURIComponent(effectiveCompanyId),{m:'PATCH',p:'return=representation',b:{investigation_ref:ref}});current();savedSource=confirmed(referenced,savingId);
+      rememberSource();document.getElementById('inv-form3ref').textContent=ref;
     }
-    imsInvBack();
-  }catch(e){toastActionError('Save investigation','Incident Management',e);}
+    var linked=cas.length?await invSourceActionService().synchronize({module:'investigation',id:savingId,companyId:String(effectiveCompanyId),ref:ref},cas,{beforeWrite:async function(prepared){
+      if(!existingSource)return;current();
+      var claimRows=prepared.map(function(row){var item=Object.assign({},row);delete item.metadata_changed_fields;return item;}),claimPath='/investigations?id=eq.'+encodeURIComponent(savingId)+'&company_id=eq.'+encodeURIComponent(effectiveCompanyId)+(savedSource.updated_at?'&updated_at=eq.'+encodeURIComponent(savedSource.updated_at):'&updated_at=is.null');
+      var claimed=await api(claimPath,{m:'PATCH',p:'return=representation',b:{corrective_actions:JSON.stringify(claimRows),updated_at:nextSourceTime()}});current();savedSource=confirmed(claimed,savingId);rememberSource();
+    }}):{rows:[],differences:[]};current();
+    invHydrateSourceActionRows(linked.rows,savingId,cas);
+    body.corrective_actions=linked.rows.length?JSON.stringify(linked.rows):null;
+    var target='/investigations?id=eq.'+encodeURIComponent(savingId)+'&company_id=eq.'+encodeURIComponent(effectiveCompanyId)+(savedSource.updated_at?'&updated_at=eq.'+encodeURIComponent(savedSource.updated_at):'&updated_at=is.null');
+    body.updated_at=nextSourceTime();var persisted=await api(target,{m:'PATCH',p:'return=representation',b:body});current();savedSource=confirmed(persisted,savingId);rememberSource();
+    await invSaveWitnesses(savingId,effectiveCompanyId);current();
+    invRefreshSignButtons();invSourceActionSnapshot=invSourceFormFingerprint();
+    if(linked.differences.some(function(item){return item.needsWorkflow;})){toast('Investigation saved. A recorded source completion still needs the linked Master Action evidence, verification and approval workflow.',false);invApplyLockMode(savedSource);return true;}
+    toast('Investigation and linked Master Actions saved.');imsInvBack();return true;
+  }catch(e){toastActionError('Save investigation and linked actions','Incident Management',e);return false;}
+  finally{invSourceSavePending=false;if(document.getElementById('ims-inv-form')===savingForm&&String(imsInvEditId||'')===String(savingId||'')){savingControls.forEach(function(item){item.control.disabled=item.disabled;});invApplyLockMode(savedSource);invRefreshSignButtons();}}
 }
 
 async function invReleaseForEdit(){
@@ -21884,11 +21930,13 @@ function conOpenDetail(id){
 
 function aurisReadOnlyRecordModal(kind,title,row,fields){
   document.getElementById('auris-readonly-record-modal')?.remove();
-  var modal=document.createElement('div');modal.id='auris-readonly-record-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  var body=(fields||[]).filter(function(f){return f[1]!==null&&f[1]!==undefined&&String(f[1]).trim()!=='';}).map(function(f){return '<div style="border-bottom:1px solid var(--border);padding:9px 0"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(f[0])+'</div><div style="font-size:13px;line-height:1.45;white-space:pre-wrap">'+escH(String(f[1]))+'</div></div>';}).join('');
-  modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-label="'+escH(kind)+'" style="width:100%;max-width:720px;max-height:88vh;overflow:auto;padding:20px"><div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">'+escH(kind)+'</div><h2 style="margin:4px 0">'+escH(title||'Record')+'</h2><div style="font-family:monospace;font-size:11px;color:var(--text2)">'+escH(displayRecordRef(row||{},['reference_no','ref_number','plan_ref','drill_ref','issuance_ref'],'READ ONLY'))+'</div></div><button class="btn btn-sm auris-readonly-close"><i class="ti ti-x"></i></button></div><div style="margin-top:14px">'+(body||'<div class="empty">No additional details recorded.</div>')+'</div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary auris-readonly-close">Close</button></div></div>';
-  var close=function(){modal.remove();if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();};
+  var compact=/^Training (session|record)$/i.test(kind),previousFocus=document.activeElement;
+  var modal=document.createElement('div');modal.id='auris-readonly-record-modal';if(compact)modal.className='auris-record-view-compact';modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center'+(compact?'':';padding:20px');
+  var body=(fields||[]).filter(function(f){return f[1]!==null&&f[1]!==undefined&&String(f[1]).trim()!=='';}).map(function(f){var wide=/^(Training|Objective|Description|Notes|Summary|Review note)$/i.test(f[0])||String(f[1]).length>140;return '<div class="auris-readonly-field'+(wide?' wide':'')+'"'+(compact?'':' style="border-bottom:1px solid var(--border);padding:9px 0"')+'><div class="auris-readonly-label"'+(compact?'':' style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase"')+'>'+escH(f[0])+'</div><div class="auris-readonly-value"'+(compact?'':' style="font-size:13px;line-height:1.45;white-space:pre-wrap"')+'>'+escH(String(f[1]))+'</div></div>';}).join('');
+  modal.innerHTML='<div class="card auris-readonly-dialog" role="dialog" aria-modal="true" aria-label="'+escH(kind)+'" aria-labelledby="auris-readonly-title"'+(compact?'':' style="width:100%;max-width:720px;max-height:88vh;overflow:auto;padding:20px"')+'><div class="auris-readonly-header"'+(compact?'':' style="display:flex;justify-content:space-between;gap:12px"')+'><div><div class="auris-readonly-kind">'+escH(kind)+'</div><h2 id="auris-readonly-title">'+escH(title||'Record')+'</h2><div class="auris-readonly-reference">'+escH(displayRecordRef(row||{},['reference_no','ref_number','plan_ref','drill_ref','issuance_ref'],'READ ONLY'))+'</div></div><button type="button" class="btn btn-sm auris-readonly-close" aria-label="Close '+escH(kind)+'"><i class="ti ti-x" aria-hidden="true"></i></button></div><div class="auris-readonly-body"'+(compact?'':' style="margin-top:14px"')+'><div class="auris-readonly-fields">'+(body||'<div class="empty">No additional details recorded.</div>')+'</div></div><div class="auris-readonly-footer"'+(compact?'':' style="display:flex;justify-content:flex-end;margin-top:16px"')+'><button type="button" class="btn btn-primary auris-readonly-close">Close</button></div></div>';
+  var close=function(){modal.remove();if(previousFocus?.isConnected)previousFocus.focus();if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();};
   document.body.appendChild(modal);modal.querySelectorAll('.auris-readonly-close').forEach(function(b){b.addEventListener('click',close);});modal.addEventListener('click',function(ev){if(ev.target===modal)close();});
+  modal.addEventListener('keydown',function(event){if(event.key==='Escape'){event.preventDefault();close();}else if(event.key==='Tab'){var items=Array.from(modal.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')),first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}});modal.querySelector('.auris-readonly-close')?.focus();
 }
 
 function aurisRowRecordId(row){
@@ -21947,13 +21995,15 @@ function jsaOpenReadOnly(id){
   aurisReadOnlyRecordModal('JSA / JHA · View',row.title||'Job safety analysis',row,[['Reference',row.jsa_ref],['Job description',row.job_description],['Location',row.location],['Work order',row.work_order_ref],['Prepared by',row.prepared_by],['Reviewed by',row.reviewed_by],['Approved by',row.approved_by],['Status',row.status],['Revision',row.revision],['Job steps, hazards, controls and PPE',detail||'No steps recorded']]);
 }
 function auditOpenReadOnly(id){
-  var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id);});if(!row)return;
+  var row=(auditAllData||[]).find(function(x){return String(x.id)===String(id)&&String(x.company_id)===String(ccid());});if(!row)return;
   document.getElementById('audit-inspection-report')?.closeReport?.();
   var opener=document.activeElement,company=ccid(),modal=document.createElement('div'),oldOverflow=document.body.style.overflow;
   modal.id='audit-inspection-report';modal.className='inspection-report-overlay';
   var reviewState=row.review_status||'draft',canReview=reviewState==='pending_review'&&String(row.reviewer_profile_id||'')===String(prof?.id||'')&&String(row.created_by||'')!==String(prof?.id||'');
   modal.innerHTML='<section class="inspection-report-dialog" role="dialog" aria-modal="true" aria-labelledby="inspection-report-title"><header><div><p>Audit / inspection · '+(reviewState==='approved'?'Approved report':reviewState==='pending_review'?'Awaiting independent review':reviewState==='changes_requested'?'Changes requested':'Draft report · reviewer sign-off pending')+'</p><h2 id="inspection-report-title">'+escH(row.site||row.activity||row.audit_scope||'Inspection')+'</h2></div><div><button type="button" class="btn inspection-report-findings-link">Findings</button> '+(canReview?'<button type="button" class="btn inspection-report-approve">Approve</button> <button type="button" class="btn inspection-report-reject">Request changes</button> ':'')+(reviewState==='pending_review'&&['admin','hse_manager','sephs_admin'].includes(activeRole())?'<button type="button" class="btn inspection-report-reassign">Reassign reviewer</button> ':'')+(isMgr()&&!['pending_review','approved'].includes(reviewState)?'<button type="button" class="btn inspection-report-edit">Edit</button> ':'')+'<button type="button" class="btn inspection-report-close" aria-label="Close inspection report">Close</button></div></header><div class="inspection-report-body">'+auditInspectionReportHTML(row)+'<section><h3>Recorded findings / non-conformances</h3><div id="inspection-report-findings" role="status">Loading recorded findings…</div></section><section><h3>Linked corrective actions</h3><div id="inspection-report-actions" role="status">Loading linked actions…</div></section></div></section>';
   document.body.appendChild(modal);
+  var printButton=document.createElement('button');printButton.type='button';printButton.className='btn inspection-report-print';printButton.textContent='Print this report';modal.querySelector('header>div:last-child').prepend(printButton);
+  printButton.addEventListener('click',async function(){if(printButton.disabled)return;printButton.disabled=true;try{await auditPrintSavedRecord(row.id,function(){if(!modal.isConnected)throw Error('The inspection viewer was closed. Reopen the report to print it.');});}catch(error){toast(error.message||String(error),false);}finally{if(printButton.isConnected)printButton.disabled=false;}});
   document.body.style.overflow='hidden';
   var close=function(){modal.remove();document.body.style.overflow=oldOverflow;if(typeof wsRecordReturnMatches==='function'&&wsRecordReturnMatches())wsReturnToWork();else if(opener?.isConnected)opener.focus();};
   modal.closeReport=close;
@@ -21993,6 +22043,12 @@ function auditOpenReadOnly(id){
     if(!modal.isConnected||String(ccid())!==String(company))return;
     linkedActions.innerHTML=actions?.length?actions.map(function(action){return '<div class="inspection-report-item"><strong>'+escH(action.title||action.description||'Corrective action')+'</strong> · '+escH(action.status||'open')+(action.target_date?' · Due '+escH(action.target_date):'')+' <button type="button" class="btn btn-sm inspection-report-action-link" data-action-id="'+escH(action.id)+'">Open action</button></div>';}).join(''):'<p>No linked corrective actions recorded.</p>';
   }).catch(function(){if(modal.isConnected&&String(ccid())===String(company))linkedActions.textContent='Linked actions could not be loaded. Reopen the report to retry.';});
+}
+function auditPrintSavedRecord(id,guard){
+  var row=(auditAllData||[]).find(function(item){return String(item.id)===String(id)&&String(item.company_id)===String(ccid());});
+  if(!row)throw Error('This inspection is unavailable in the selected company.');
+  if(!window.AurisInspectionReports)throw Error('Inspection report printing is unavailable. Reload Audits & Inspections.');
+  return window.AurisInspectionReports.print(row.id,{type:row.inspection_type,guard:guard});
 }
 function auditInspectionFieldsHTML(fields){
   return '<dl class="inspection-report-fields">'+fields.filter(function(f){return f[1]!==null&&f[1]!==undefined&&f[1]!=='';}).map(function(f){return '<div><dt>'+escH(f[0])+'</dt><dd>'+escH(String(f[1]))+'</dd></div>';}).join('')+'</dl>';
@@ -34112,6 +34168,7 @@ function auditFilter() {
         filters:{search:document.getElementById('audit-search')?.value||'',range:'all'},
         onApplyFilters:function(){var sourceSearch=document.getElementById('audit-search');if(sourceSearch)sourceSearch.value='';auditFilter();},
         openRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected)throw new Error('This inspection is unavailable or outside your company access.');return auditOpenReadOnly(id);},
+        printRecord:function(id,current){if(String(ccid())!==String(current.companyId))throw Error('Your company changed. Reopen the register.');return auditPrintSavedRecord(id);},
         editRecord:function(id,current){var selected=(auditAllData||[]).find(function(row){return row&&String(row.id)===String(id)&&String(row.company_id||'')===String(current.companyId);});if(!selected||!isMgr())throw new Error('You do not have permission to edit this inspection.');return auditOpen(id);}
       });
     }catch(error){el.innerHTML='<div class="card" style="padding:24px;border-color:#fecaca;background:#fff7f7;color:#991b1b"><div style="font-weight:700;margin-bottom:6px">Audits &amp; Inspections register could not be displayed</div><div style="font-size:13px;color:#7f1d1d">'+escH(error.message||error)+'</div></div>';console.error(error);return;}
@@ -39222,7 +39279,7 @@ function deepLinkCaptureRequest(){var req=deepLinkReadUrl()||pendingDeepLinkRequ
 function deepLinkClear(removeQuery){
   deepLinkStore(null);
   var notice=document.getElementById('deep-link-notice');if(notice)notice.remove();
-  if(removeQuery!==false)try{var url=new URL(window.location.href);['goto','record','ref','table','company'].forEach(function(k){url.searchParams.delete(k);});history.replaceState(null,'',url.pathname+(url.search||'')+(url.hash||''));}catch(_){}
+    if(removeQuery!==false)try{var url=new URL(window.location.href);['goto','record','ref','table','company'].forEach(function(k){url.searchParams.delete(k);});history.replaceState(history.state,'',url.pathname+(url.search||'')+(url.hash||''));}catch(_){}
 }
 function deepLinkShowNotice(message,retry){
   try{var failed=pendingDeepLinkRequest||deepLinkReadStored();rolloutRecordHealthEvent('failed_deep_link',{module_key:failed?.goto||'',record_table:failed?.table||null,record_id:failed?.record||null,record_ref:failed?.ref||null,fingerprint:['deep-link',failed?.goto||'',failed?.record||'',String(message||'').slice(0,80)].join(':'),detail:{reason:String(message||'').slice(0,500),retryable:!!retry}});}catch(_){}
@@ -39729,6 +39786,7 @@ function mobileSetBottomNavActive(page, btnEl) {
 }
 
 function mobileGoBack() {
+  if(window.AurisNavigationTrail?.diagnostics().depth)return window.AurisNavigationTrail.back();
   if (_mobileHistory.length > 1) {
     _mobileHistory.pop();
     var prev = _mobileHistory[_mobileHistory.length - 1];
@@ -39744,6 +39802,7 @@ function mobileGoBack() {
 
 // Intercept browser back button - prevent app from closing
 window.addEventListener('popstate', function(e) {
+  if(window.AurisNavigationTrail?.handlePopState(e))return;
   if (window.innerWidth > 768) return;
   e.preventDefault();
   if (_modulesOpen) { mobileCloseModules(); }
@@ -39961,14 +40020,15 @@ document.addEventListener('click', function(e) {
 // Scroll to top on mobile navigation - non-recursive
 if (typeof showPage === 'function') {
   var _sp = showPage;
-  showPage = function(name, el) {
-    _sp(name, el);
-    if (window.innerWidth <= 768) {
+  showPage = function(name, el, navigationOptions) {
+    var ready=_sp(name, el, navigationOptions);
+    if (window.innerWidth <= 768&&!navigationOptions?.navigationReturn) {
       setTimeout(function() {
         var mainEl = document.querySelector('.main');
         if (mainEl) mainEl.scrollTop = 0;
       }, 50);
     }
+    return ready;
   };
 }
 

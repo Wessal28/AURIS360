@@ -69,7 +69,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.equal(result.status, 'passed');
   assert.equal(result.stage, 'complete');
   assert.equal(result.deployed_release_sha, releaseSha);
-  assert.equal(result.assets.length, 69);
+  assert.equal(result.assets.length, 73);
   assert.equal(result.verification_scope, 'public_deployment_smoke');
   assert.deepEqual(result.minutes_rpc, { installed: null, verified: false, result: 'database_not_verified', required_check: 'authenticated_staging_check_required' });
   assert.ok(!response.requests.some(url=>url.includes('/rest/v1/')));
@@ -100,6 +100,7 @@ test('the complete smoke probe accepts the real application shell and all critic
   assert.ok(response.requests.includes('/auris-action-editor.js'));
   assert.ok(response.requests.includes('/auris-action-editor.css'));
   assert.ok(response.requests.includes('/incident-management-upgrade.js'));
+  for (const file of ['incident-record-reports.js', 'inspection-print-reports.js', 'auris-navigation-trail.js', 'auris-source-action-sync.js']) assert.ok(response.requests.includes('/' + file));
   assert.ok(response.requests.includes('/risk-assessment-upgrade.js'));
   assert.ok(response.requests.includes('/sw.js'));
   assert.ok(response.requests.includes('/kpi-definition-editor.js'));

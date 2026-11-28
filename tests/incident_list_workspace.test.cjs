@@ -24,9 +24,14 @@ test('incident filters combine type severity status site department and date ran
 test('unknown incident values remain visible and are labelled safely',()=>{
   const r=runtime(),data=r.api.project(rows,current,{filters:{range:'all'}});assert.equal(data[2].type,'unrecognised');assert.equal(data[2].status,'Submitted');assert.equal(data[2].actual_severity,'Not assessed');
 });
-test('shared incident register exposes only exact read-only opening and protects sessions',async()=>{
-  const r=runtime(),calls=[];r.api.mount({},rows,{filters:{range:'all'},openRecord:(id,context)=>calls.push([id,context.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'incident-management');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open']);await m.options.onAction('open',m.data[0]);assert.deepEqual(calls,[['inc-1','co-a']]);
+test('shared incident register exposes exact read-only opening and printing and protects sessions',async()=>{
+  const r=runtime(),calls=[];r.api.mount({},rows,{filters:{range:'all'},openRecord:(id,context)=>calls.push(['open',id,context.companyId]),printRecord:(id,context)=>calls.push(['print',id,context.companyId])});const m=r.mounted();assert.equal(m.options.moduleKey,'incident-management');assert.deepEqual(Array.from(m.options.actions,x=>x.key),['open','print']);await m.options.onAction('open',m.data[0]);await m.options.onAction('print',m.data[0]);assert.deepEqual(calls,[['open','inc-1','co-a'],['print','inc-1','co-a']]);
   for(const change of [x=>x.identity.company.id='co-b',x=>x.identity.profile.id='other',x=>x.identity.role='viewer',x=>x.deny(),x=>x.signOut()]){const x=runtime();x.api.mount({},rows,{openRecord:()=>assert.fail('stale action')});const view=x.mounted();change(x);await assert.rejects(view.options.onAction('open',view.data[0]),/changed|denied|Sign in/);}
+});
+
+test('incident printing is optional and rejects changed sessions and foreign records',async()=>{
+  const r=runtime();r.api.mount({},rows,{});assert.equal(r.mounted().options.actions.find(x=>x.key==='print').when(),false);
+  const x=runtime();x.api.mount({},rows,{printRecord:()=>assert.fail('stale or foreign print')});const view=x.mounted();assert.equal(view.options.actions.find(x=>x.key==='print').when(),true);await assert.rejects(view.options.onAction('print',{id:'foreign',company_id:'co-b'}),/outside/);x.identity.company.id='co-b';await assert.rejects(view.options.onAction('print',view.data[0]),/changed/);
 });
 test('release wiring publishes the incident register before the core loader',()=>{
   const html=read('index.html'),core=read('auris-core.js');assert.ok(html.indexOf('auris-incident-list-workspace.js?')<html.indexOf('auris-core.js?'));assert.match(core,/AurisIncidentListWorkspace\.mount\(el,imsAllData/);assert.match(read('sw-assets.js'),/auris-incident-list-workspace\.js/);assert.match(read('scripts/verify-production-smoke.cjs'),/auris-incident-list-workspace\.js/);assert.match(read('scripts/verify-staging-acceptance.cjs'),/auris-incident-list-workspace\.js/);assert.doesNotMatch(read('auris-incident-list-workspace.js'),/\bfetch\(|\bapi\.request\(|\bPOST|\bPATCH|\bDELETE/);

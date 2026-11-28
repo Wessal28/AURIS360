@@ -41,7 +41,7 @@
     if(mirror.dataset.sourcePage!==pageId)resetSection(mirror,document.getElementById('auris-module-section-wrap'));
     schedule();
   }
-  window.AurisModuleHeader=Object.freeze({preparePage:preparePage});
+  window.AurisModuleHeader=Object.freeze({preparePage:preparePage,refresh:schedule});
   function update(){
     pending=false;
     var page=document.querySelector('#app .page.active'),title=document.getElementById('auris-module-name'),crumb=document.getElementById('auris-module-crumb');
@@ -78,7 +78,7 @@
       if(mirror.disabled)mirror.disabled=false;
     }else{resetSection(mirror,wrap);}
     var section=page.dataset.swmsEditorLabel||clean(source?.selectedOptions[0]?.textContent);
-    var path=name==='Home'?'':' / '+name+(section?' / '+section:'');if(crumb.textContent!==path)crumb.textContent=path;
+    var path=name==='Home'?'':' / '+name+(section?' / '+section:'');if(!window.AurisNavigationTrail?.render(crumb,{key:key,name:name,section:section})&&crumb.textContent!==path)crumb.textContent=path;
     var company=document.getElementById('auris-global-company'),sidebarCompany=document.getElementById('sb-company');
     if(company&&sidebarCompany){var companyName=clean(sidebarCompany.textContent);if(company.textContent!==companyName)company.textContent=companyName;var hideCompany=visible(document.getElementById('sa-company-switcher'))||!companyName;if(company.hidden!==hideCompany)company.hidden=hideCompany;}
     var icon=page.querySelector('.page-title i'),symbol=document.querySelector('.auris-module-symbol i');
